@@ -1,0 +1,119 @@
+package eu.auctionplatform.catalog.infrastructure.persistence.repository
+
+import eu.auctionplatform.catalog.domain.model.LotStatus
+import eu.auctionplatform.catalog.infrastructure.persistence.entity.LotEntity
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
+import io.quarkus.hibernate.orm.PersistenceUnit
+import io.quarkus.panache.common.Page
+import io.quarkus.panache.common.Sort
+import jakarta.enterprise.context.ApplicationScoped
+import java.util.UUID
+
+/**
+ * Repository for [LotEntity] persistence operations.
+ *
+ * Uses the named `system` datasource configured in `application.yml`.
+ */
+@ApplicationScoped
+@PersistenceUnit("system")
+class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
+
+    /**
+     * Returns lots for a given seller, ordered by creation time descending.
+     *
+     * @param sellerId The seller's user identifier.
+     * @return List of lot entities owned by the seller.
+     */
+    fun findBySellerId(sellerId: UUID): List<LotEntity> =
+        list("sellerId = ?1 order by createdAt desc", sellerId)
+
+    /**
+     * Returns lots assigned to a specific auction event.
+     *
+     * @param auctionId The auction event identifier.
+     * @return List of lot entities in the auction.
+     */
+    fun findByAuctionId(auctionId: UUID): List<LotEntity> =
+        list("auctionId = ?1 order by title asc", auctionId)
+
+    /**
+     * Returns lots in a specific category with pagination.
+     *
+     * @param categoryId The category identifier.
+     * @param page       The page to retrieve (0-based).
+     * @param pageSize   The number of items per page.
+     * @return List of lot entities in the category.
+     */
+    fun findByCategoryId(categoryId: UUID, page: Int, pageSize: Int): List<LotEntity> =
+        find("categoryId = ?1 and status != ?2", Sort.descending("createdAt"), categoryId, LotStatus.WITHDRAWN)
+            .page(Page.of(page, pageSize))
+            .list()
+
+    /**
+     * Counts lots in a specific category (excluding withdrawn lots).
+     *
+     * @param categoryId The category identifier.
+     * @return Total number of non-withdrawn lots in the category.
+     */
+    fun countByCategoryId(categoryId: UUID): Long =
+        count("categoryId = ?1 and status != ?2", categoryId, LotStatus.WITHDRAWN)
+
+    /**
+     * Returns lots with a given status, paginated.
+     *
+     * @param status   The lot status to filter by.
+     * @param page     The page to retrieve (0-based).
+     * @param pageSize The number of items per page.
+     * @return List of lot entities with the given status.
+     */
+    fun findByStatus(status: LotStatus, page: Int, pageSize: Int): List<LotEntity> =
+        find("status", Sort.descending("createdAt"), status)
+            .page(Page.of(page, pageSize))
+            .list()
+
+    /**
+     * Counts lots with a given status.
+     */
+    fun countByStatus(status: LotStatus): Long =
+        count("status", status)
+
+    /**
+     * Returns lots matching a brand, with pagination.
+     *
+     * @param brand    The brand/tenant code.
+     * @param page     The page to retrieve (0-based).
+     * @param pageSize The number of items per page.
+     * @return List of lot entities for the brand.
+     */
+    fun findByBrand(brand: String, page: Int, pageSize: Int): List<LotEntity> =
+        find("brand = ?1 and status != ?2", Sort.descending("createdAt"), brand, LotStatus.WITHDRAWN)
+            .page(Page.of(page, pageSize))
+            .list()
+
+    /**
+     * Counts lots for a given brand (excluding withdrawn).
+     */
+    fun countByBrand(brand: String): Long =
+        count("brand = ?1 and status != ?2", brand, LotStatus.WITHDRAWN)
+
+    /**
+     * Returns lots matching a country and optional status filter, with pagination.
+     *
+     * @param country  ISO 3166-1 alpha-2 country code.
+     * @param status   Optional status filter (null = all non-withdrawn).
+     * @param page     The page to retrieve (0-based).
+     * @param pageSize The number of items per page.
+     * @return List of lot entities matching the criteria.
+     */
+    fun findByCountry(country: String, status: LotStatus?, page: Int, pageSize: Int): List<LotEntity> {
+        return if (status != null) {
+            find("locationCountry = ?1 and status = ?2", Sort.descending("createdAt"), country, status)
+                .page(Page.of(page, pageSize))
+                .list()
+        } else {
+            find("locationCountry = ?1 and status != ?2", Sort.descending("createdAt"), country, LotStatus.WITHDRAWN)
+                .page(Page.of(page, pageSize))
+                .list()
+        }
+    }
+}

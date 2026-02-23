@@ -1,0 +1,153 @@
+# Production overrides
+global:
+  environment: production
+
+services:
+  auction-engine:
+    replicas: 3
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 20
+      targetCPUUtilization: 70
+
+  user-service:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 300m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+  catalog-service:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 300m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+  search-service:
+    replicas: 3
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilization: 70
+
+  payment-service:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 300m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilization: 60
+
+  notification-service:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 15
+      targetCPUUtilization: 70
+
+  gateway-service:
+    replicas: 3
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 15
+      targetCPUUtilization: 70
+
+frontends:
+  buyer-web:
+    replicas: 3
+  seller-portal:
+    replicas: 2
+
+ingress:
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/websocket-services: "gateway-service"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+postgresql:
+  enabled: true
+  primary:
+    resources:
+      requests:
+        cpu: "1"
+        memory: 2Gi
+      limits:
+        cpu: "4"
+        memory: 8Gi
+    persistence:
+      size: 200Gi
+  readReplicas:
+    replicaCount: 2
+
+redis:
+  enabled: true
+  master:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+nats:
+  enabled: true
+  nats:
+    jetstream:
+      enabled: true
+      memStorage:
+        size: 4Gi
+      fileStorage:
+        size: 50Gi
+  cluster:
+    enabled: true
+    replicas: 3
+
+elasticsearch:
+  enabled: true
+  master:
+    replicaCount: 3
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi

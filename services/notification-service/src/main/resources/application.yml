@@ -1,0 +1,204 @@
+# =============================================================================
+# Notification Service – Quarkus Configuration
+# =============================================================================
+
+quarkus:
+  application:
+    name: notification-service
+
+  # ---------------------------------------------------------------------------
+  # Datasource (named "system")
+  # ---------------------------------------------------------------------------
+  datasource:
+    system:
+      db-kind: postgresql
+      jdbc:
+        url: jdbc:postgresql://localhost:5432/auction_notifications
+        max-size: 16
+      username: dev
+      password: dev
+
+  # ---------------------------------------------------------------------------
+  # Flyway (named "system")
+  # ---------------------------------------------------------------------------
+  flyway:
+    system:
+      migrate-at-start: true
+      baseline-on-migrate: true
+      default-schema: app
+
+  # ---------------------------------------------------------------------------
+  # OIDC
+  # ---------------------------------------------------------------------------
+  oidc:
+    auth-server-url: http://localhost:8180/realms/auction-platform
+    client-id: notification-service
+    credentials:
+      secret: ${OIDC_SECRET:secret}
+
+  # ---------------------------------------------------------------------------
+  # HTTP
+  # ---------------------------------------------------------------------------
+  http:
+    port: 8085
+    cors:
+      origins: http://localhost:3000,http://localhost:3001,http://localhost:3002
+      methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+      headers: accept,authorization,content-type,x-requested-with
+      exposed-headers: location
+      access-control-allow-credentials: true
+
+  # ---------------------------------------------------------------------------
+  # Logging – structured JSON
+  # ---------------------------------------------------------------------------
+  log:
+    level: INFO
+    console:
+      json: true
+
+  # ---------------------------------------------------------------------------
+  # Mailer (SMTP)
+  # ---------------------------------------------------------------------------
+  mailer:
+    from: noreply@auction-platform.eu
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    start-tls: DISABLED
+    login: DISABLED
+    mock: false
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASS:}
+
+  # ---------------------------------------------------------------------------
+  # Metrics – Prometheus
+  # ---------------------------------------------------------------------------
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  # ---------------------------------------------------------------------------
+  # OpenTelemetry
+  # ---------------------------------------------------------------------------
+  opentelemetry:
+    tracer:
+      exporter:
+        otlp:
+          endpoint: http://localhost:4317
+
+  # ---------------------------------------------------------------------------
+  # Health
+  # ---------------------------------------------------------------------------
+  smallrye-health:
+    root-path: /q/health
+
+# -----------------------------------------------------------------------------
+# NATS
+# -----------------------------------------------------------------------------
+nats:
+  url: nats://localhost:4222
+
+# -----------------------------------------------------------------------------
+# Casbin RBAC
+# -----------------------------------------------------------------------------
+casbin:
+  model-path: classpath:casbin_model.conf
+
+# =============================================================================
+# Profile: dev  (MailHog on localhost:1025, web UI on localhost:8025)
+# =============================================================================
+"%dev":
+  quarkus:
+    log:
+      level: DEBUG
+      console:
+        json: false
+    datasource:
+      system:
+        jdbc:
+          url: jdbc:postgresql://localhost:5432/auction_notifications
+        username: dev
+        password: dev
+    oidc:
+      auth-server-url: http://localhost:8180/realms/auction-platform
+    mailer:
+      host: localhost
+      port: 1025
+      start-tls: DISABLED
+      login: DISABLED
+      mock: false
+    opentelemetry:
+      tracer:
+        exporter:
+          otlp:
+            endpoint: http://localhost:4317
+
+# =============================================================================
+# Profile: staging
+# =============================================================================
+"%staging":
+  quarkus:
+    log:
+      level: INFO
+      console:
+        json: true
+    datasource:
+      system:
+        jdbc:
+          url: ${DB_URL:jdbc:postgresql://db-staging:5432/auction_notifications}
+          max-size: 32
+        username: ${DB_USER:staging}
+        password: ${DB_PASS:staging}
+    oidc:
+      auth-server-url: ${OIDC_AUTH_URL:https://auth-staging.auction-platform.eu/realms/auction-platform}
+    http:
+      cors:
+        origins: ${CORS_ORIGINS:https://staging.auction-platform.eu}
+    mailer:
+      host: ${SMTP_HOST:mailhog-staging}
+      port: ${SMTP_PORT:1025}
+      start-tls: DISABLED
+      login: DISABLED
+    opentelemetry:
+      tracer:
+        exporter:
+          otlp:
+            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+  nats:
+    url: ${NATS_URL:nats://nats-staging:4222}
+
+# =============================================================================
+# Profile: prod
+# =============================================================================
+"%prod":
+  quarkus:
+    log:
+      level: WARN
+      console:
+        json: true
+    datasource:
+      system:
+        jdbc:
+          url: ${DB_URL:jdbc:postgresql://db-prod:5432/auction_notifications}
+          max-size: 64
+        username: ${DB_USER}
+        password: ${DB_PASS}
+    oidc:
+      auth-server-url: ${OIDC_AUTH_URL:https://auth.auction-platform.eu/realms/auction-platform}
+    http:
+      cors:
+        origins: ${CORS_ORIGINS:https://auction-platform.eu}
+    mailer:
+      host: ${SMTP_HOST}
+      port: ${SMTP_PORT:587}
+      start-tls: REQUIRED
+      login: REQUIRED
+      username: ${SMTP_USER}
+      password: ${SMTP_PASS}
+    opentelemetry:
+      tracer:
+        exporter:
+          otlp:
+            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+  nats:
+    url: ${NATS_URL:nats://nats-prod:4222}

@@ -1,0 +1,281 @@
+package eu.auctionplatform.compliance.api.v1.resource
+
+import eu.auctionplatform.commons.dto.ApiResponse
+import eu.auctionplatform.commons.dto.PagedResponse
+import eu.auctionplatform.compliance.api.v1.dto.AmlScreeningRequest
+import eu.auctionplatform.compliance.api.v1.dto.AmlReportRequest
+import eu.auctionplatform.compliance.api.v1.dto.ContentReportRequest
+import eu.auctionplatform.compliance.api.v1.dto.ErasureRequest
+import eu.auctionplatform.compliance.api.v1.dto.ExportRequest
+import eu.auctionplatform.compliance.api.v1.dto.toResponse
+import eu.auctionplatform.compliance.application.service.AmlService
+import eu.auctionplatform.compliance.application.service.AuditService
+import eu.auctionplatform.compliance.application.service.DsaService
+import eu.auctionplatform.compliance.application.service.GdprService
+import eu.auctionplatform.compliance.domain.model.ContentReportStatus
+import eu.auctionplatform.compliance.domain.model.GdprRequestStatus
+import jakarta.annotation.security.RolesAllowed
+import jakarta.inject.Inject
+import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.DefaultValue
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.PathParam
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.QueryParam
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
+
+/**
+ * REST resource for compliance operations including GDPR, AML, DSA,
+ * and audit log queries.
+ *
+ * All endpoints are secured. GDPR and AML endpoints require authenticated
+ * users; audit log and admin-level queries require the `admin` role.
+ */
+@Path("/api/v1/compliance")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+class ComplianceResource {
+
+    @Inject
+    lateinit var gdprService: GdprService
+
+    @Inject
+    lateinit var amlService: AmlService
+
+    @Inject
+    lateinit var dsaService: DsaService
+
+    @Inject
+    lateinit var auditService: AuditService
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ComplianceResource::class.java)
+    }
+
+    // -----------------------------------------------------------------------
+    // GDPR endpoints
+    // -----------------------------------------------------------------------
+
+    /**
+     * Creates a GDPR data export request (Art. 20 right to data portability).
+     *
+     * **POST /api/v1/compliance/gdpr/export-request**
+     */
+    @POST
+    @Path("/gdpr/export-request")
+    @RolesAllowed("user", "admin")
+    fun requestExport(request: ExportRequest): Response {
+        logger.info("GDPR export request from userId={}", request.userId)
+
+        val gdprRequest = gdprService.requestExport(request.userId)
+
+        return Response
+            .status(Response.Status.CREATED)
+            .entity(ApiResponse.ok(gdprRequest.toResponse()))
+            .build()
+    }
+
+    /**
+     * Creates a GDPR data erasure request (Art. 17 right to erasure).
+     *
+     * **POST /api/v1/compliance/gdpr/erasure-request**
+     */
+    @POST
+    @Path("/gdpr/erasure-request")
+    @RolesAllowed("user", "admin")
+    fun requestErasure(request: ErasureRequest): Response {
+        logger.info("GDPR erasure request from userId={}", request.userId)
+
+        val gdprRequest = gdprService.requestErasure(request.userId, request.reason)
+
+        return Response
+            .status(Response.Status.CREATED)
+            .entity(ApiResponse.ok(gdprRequest.toResponse()))
+            .build()
+    }
+
+    /**
+     * Lists GDPR requests with optional status filter (admin only).
+     *
+     * **GET /api/v1/compliance/gdpr/requests**
+     */
+    @GET
+    @Path("/gdpr/requests")
+    @RolesAllowed("admin")
+    fun getGdprRequests(
+        @QueryParam("status") status: String?,
+        @QueryParam("page") @DefaultValue("1") page: Int,
+        @QueryParam("size") @DefaultValue("20") size: Int
+    ): Response {
+        val statusEnum = status?.let {
+            try { GdprRequestStatus.valueOf(it.uppercase()) } catch (_: Exception) { null }
+        }
+
+        val pagedResult = gdprService.getRequests(statusEnum, page, size)
+        val responseItems = pagedResult.items.map { it.toResponse() }
+        val pagedResponse = PagedResponse(
+            items = responseItems,
+            total = pagedResult.total,
+            page = pagedResult.page,
+            pageSize = pagedResult.pageSize
+        )
+
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    // -----------------------------------------------------------------------
+    // AML endpoints
+    // -----------------------------------------------------------------------
+
+    /**
+     * Triggers a new AML screening check.
+     *
+     * **POST /api/v1/compliance/aml/screening**
+     */
+    @POST
+    @Path("/aml/screening")
+    @RolesAllowed("admin")
+    fun triggerScreening(request: AmlScreeningRequest): Response {
+        logger.info("AML screening triggered for userId={}", request.userId)
+
+        val screening = amlService.triggerScreening(request.userId)
+
+        return Response
+            .status(Response.Status.CREATED)
+            .entity(ApiResponse.ok(screening.toResponse()))
+            .build()
+    }
+
+    /**
+     * Retrieves the result of an AML screening.
+     *
+     * **GET /api/v1/compliance/aml/screening/{id}**
+     */
+    @GET
+    @Path("/aml/screening/{id}")
+    @RolesAllowed("admin")
+    fun getScreeningResult(@PathParam("id") id: UUID): Response {
+        val screening = amlService.getScreeningResult(id)
+
+        return Response.ok(ApiResponse.ok(screening.toResponse())).build()
+    }
+
+    // -----------------------------------------------------------------------
+    // DSA endpoints
+    // -----------------------------------------------------------------------
+
+    /**
+     * Files a content report under the DSA notice-and-action mechanism.
+     *
+     * **POST /api/v1/compliance/dsa/content-report**
+     */
+    @POST
+    @Path("/dsa/content-report")
+    @RolesAllowed("user", "admin")
+    fun reportContent(request: ContentReportRequest): Response {
+        logger.info("DSA content report from reporterId={}, lotId={}", request.reporterId, request.lotId)
+
+        val report = dsaService.reportContent(request.reporterId, request.lotId, request.reason)
+
+        return Response
+            .status(Response.Status.CREATED)
+            .entity(ApiResponse.ok(report.toResponse()))
+            .build()
+    }
+
+    /**
+     * Lists content reports with optional status filter.
+     *
+     * **GET /api/v1/compliance/dsa/content-reports**
+     */
+    @GET
+    @Path("/dsa/content-reports")
+    @RolesAllowed("admin", "moderator")
+    fun getContentReports(
+        @QueryParam("status") status: String?,
+        @QueryParam("page") @DefaultValue("1") page: Int,
+        @QueryParam("size") @DefaultValue("20") size: Int
+    ): Response {
+        val statusEnum = status?.let {
+            try { ContentReportStatus.valueOf(it.uppercase()) } catch (_: Exception) { null }
+        }
+
+        val pagedResult = dsaService.getReports(statusEnum, page, size)
+        val responseItems = pagedResult.items.map { it.toResponse() }
+        val pagedResponse = PagedResponse(
+            items = responseItems,
+            total = pagedResult.total,
+            page = pagedResult.page,
+            pageSize = pagedResult.pageSize
+        )
+
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    /**
+     * Generates a DSA transparency report for the last 6 months.
+     *
+     * **GET /api/v1/compliance/dsa/transparency-report**
+     */
+    @GET
+    @Path("/dsa/transparency-report")
+    @RolesAllowed("admin")
+    fun getTransparencyReport(): Response {
+        val report = dsaService.generateTransparencyReport()
+
+        return Response.ok(ApiResponse.ok(report.toResponse())).build()
+    }
+
+    // -----------------------------------------------------------------------
+    // Audit log endpoints
+    // -----------------------------------------------------------------------
+
+    /**
+     * Queries the platform audit log with optional filters (admin only).
+     *
+     * **GET /api/v1/compliance/audit/log**
+     */
+    @GET
+    @Path("/audit/log")
+    @RolesAllowed("admin")
+    fun queryAuditLog(
+        @QueryParam("action") action: String?,
+        @QueryParam("entityType") entityType: String?,
+        @QueryParam("userId") userId: UUID?,
+        @QueryParam("source") source: String?,
+        @QueryParam("from") from: String?,
+        @QueryParam("to") to: String?,
+        @QueryParam("page") @DefaultValue("1") page: Int,
+        @QueryParam("size") @DefaultValue("50") size: Int
+    ): Response {
+        val fromInstant = from?.let { Instant.parse(it) }
+        val toInstant = to?.let { Instant.parse(it) }
+
+        val pagedResult = auditService.queryLog(
+            action = action,
+            entityType = entityType,
+            userId = userId,
+            source = source,
+            from = fromInstant,
+            to = toInstant,
+            page = page,
+            size = size
+        )
+
+        val responseItems = pagedResult.items.map { it.toResponse() }
+        val pagedResponse = PagedResponse(
+            items = responseItems,
+            total = pagedResult.total,
+            page = pagedResult.page,
+            pageSize = pagedResult.pageSize
+        )
+
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+}

@@ -1,0 +1,13 @@
+p, buyer_active, /api/v1/users/me, GET|PUT, allow
+p, buyer_active, /api/v1/users/me/company, POST|PUT, allow
+p, buyer_active, /api/v1/users/me/deposit, GET|POST, allow
+p, buyer_active, /api/v1/users/me/deposit/refund, POST, allow
+p, seller_verified, /api/v1/users/me, GET|PUT, allow
+p, seller_verified, /api/v1/users/me/company, POST|PUT, allow
+p, broker_active, /api/v1/users/me, GET|PUT, allow
+p, admin_ops, /api/v1/users/*, GET, allow
+p, admin_ops, /api/v1/users/*/status, PUT, allow
+p, admin_ops, /api/v1/users/*/kyc, GET, allow
+p, admin_ops, /api/v1/users/*/kyc/verify, POST, allow
+p, admin_super, /api/v1/**, .*, allow
+g, admin_ops, admin_super

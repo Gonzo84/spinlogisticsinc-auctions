@@ -1,0 +1,1296 @@
+{
+  "id": "auction-platform",
+  "realm": "auction-platform",
+  "displayName": "EU Auction Platform",
+  "displayNameHtml": "<strong>EU Auction Platform</strong>",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "rememberMe": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "nl", "de", "fr", "pl", "it", "ro"],
+  "defaultLocale": "en",
+  "bruteForceProtected": true,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "permanentLockout": false,
+  "sslRequired": "none",
+  "defaultSignatureAlgorithm": "RS256",
+  "revokeRefreshToken": false,
+  "refreshTokenMaxReuse": 0,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "ssoSessionIdleTimeoutRememberMe": 0,
+  "ssoSessionMaxLifespanRememberMe": 0,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespanEnabled": false,
+  "offlineSessionMaxLifespan": 5184000,
+  "clientSessionIdleTimeout": 0,
+  "clientSessionMaxLifespan": 0,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+  "oauth2DeviceCodeLifespan": 600,
+  "oauth2DevicePollingInterval": 5,
+  "passwordPolicy": "length(8) and notUsername and notEmail",
+  "smtpServer": {},
+  "eventsEnabled": true,
+  "eventsExpiration": 604800,
+  "eventsListeners": ["jboss-logging"],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "roles": {
+    "realm": [
+      {
+        "id": "role-buyer-active",
+        "name": "buyer_active",
+        "description": "Active buyer with verified KYC and deposit",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "id": "role-buyer-blocked",
+        "name": "buyer_blocked",
+        "description": "Blocked buyer account",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "id": "role-buyer-pending-kyc",
+        "name": "buyer_pending_kyc",
+        "description": "Buyer pending KYC verification",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "id": "role-seller-pending",
+        "name": "seller_pending",
+        "description": "Seller pending verification",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "id": "role-seller-verified",
+        "name": "seller_verified",
+        "description": "Verified seller account",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "id": "role-broker",
+        "name": "broker",
+        "description": "Licensed auction broker",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "id": "role-admin-ops",
+        "name": "admin_ops",
+        "description": "Operations administrator",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "id": "role-admin-super",
+        "name": "admin_super",
+        "description": "Super administrator with full access",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "groups": [
+    {
+      "id": "group-buyers",
+      "name": "Buyers",
+      "path": "/Buyers",
+      "subGroups": [
+        {
+          "id": "group-buyers-business",
+          "name": "Business",
+          "path": "/Buyers/Business",
+          "subGroups": []
+        },
+        {
+          "id": "group-buyers-private",
+          "name": "Private",
+          "path": "/Buyers/Private",
+          "subGroups": []
+        }
+      ]
+    },
+    {
+      "id": "group-sellers",
+      "name": "Sellers",
+      "path": "/Sellers",
+      "subGroups": [
+        {
+          "id": "group-sellers-verified",
+          "name": "Verified",
+          "path": "/Sellers/Verified",
+          "subGroups": []
+        },
+        {
+          "id": "group-sellers-pending",
+          "name": "Pending",
+          "path": "/Sellers/Pending",
+          "subGroups": []
+        }
+      ]
+    },
+    {
+      "id": "group-brokers",
+      "name": "Brokers",
+      "path": "/Brokers",
+      "subGroups": []
+    },
+    {
+      "id": "group-admins",
+      "name": "Admins",
+      "path": "/Admins",
+      "subGroups": [
+        {
+          "id": "group-admins-operations",
+          "name": "Operations",
+          "path": "/Admins/Operations",
+          "subGroups": []
+        },
+        {
+          "id": "group-admins-super",
+          "name": "Super",
+          "path": "/Admins/Super",
+          "subGroups": []
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "id": "client-buyer-web",
+      "clientId": "buyer-web",
+      "name": "Buyer Web Application",
+      "description": "Public SPA for buyers to browse and bid on auctions",
+      "rootUrl": "http://localhost:3000",
+      "adminUrl": "http://localhost:3000",
+      "baseUrl": "http://localhost:3000",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "post.logout.redirect.uris": "http://localhost:3000/*",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-buyer-web-account-type",
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-buyer-web-deposit-status",
+          "name": "deposit_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "deposit_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "deposit_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-buyer-web-kyc-status",
+          "name": "kyc_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "kyc_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "kyc_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-buyer-web-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-buyer-web-groups",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "client-seller-portal",
+      "clientId": "seller-portal",
+      "name": "Seller Portal",
+      "description": "Portal for sellers to manage listings and auctions",
+      "rootUrl": "http://localhost:3001",
+      "adminUrl": "http://localhost:3001",
+      "baseUrl": "http://localhost:3001",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "http://localhost:3001/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "post.logout.redirect.uris": "http://localhost:3001/*",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-seller-portal-account-type",
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-seller-portal-deposit-status",
+          "name": "deposit_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "deposit_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "deposit_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-seller-portal-kyc-status",
+          "name": "kyc_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "kyc_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "kyc_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-seller-portal-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-seller-portal-groups",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "client-admin-dashboard",
+      "clientId": "admin-dashboard",
+      "name": "Admin Dashboard",
+      "description": "Administrative dashboard for platform management",
+      "rootUrl": "http://localhost:3002",
+      "adminUrl": "http://localhost:3002",
+      "baseUrl": "http://localhost:3002",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "http://localhost:3002/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "post.logout.redirect.uris": "http://localhost:3002/*",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-admin-dashboard-account-type",
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-admin-dashboard-deposit-status",
+          "name": "deposit_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "deposit_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "deposit_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-admin-dashboard-kyc-status",
+          "name": "kyc_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "kyc_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "kyc_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-admin-dashboard-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-admin-dashboard-groups",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "client-mobile-app",
+      "clientId": "mobile-app",
+      "name": "Mobile Application",
+      "description": "Native mobile app for buyers and sellers",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "eu.auction.mobile:/callback",
+        "http://localhost:8080/callback"
+      ],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-mobile-app-account-type",
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-mobile-app-deposit-status",
+          "name": "deposit_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "deposit_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "deposit_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-mobile-app-kyc-status",
+          "name": "kyc_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "kyc_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "kyc_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-mobile-app-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-mobile-app-groups",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "client-broker-app",
+      "clientId": "broker-app",
+      "name": "Broker Application",
+      "description": "Application for licensed brokers to manage auctions",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "http://localhost:3003/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-broker-app-account-type",
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-broker-app-deposit-status",
+          "name": "deposit_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "deposit_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "deposit_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-broker-app-kyc-status",
+          "name": "kyc_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "kyc_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "kyc_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-broker-app-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-broker-app-groups",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "client-auction-engine-service",
+      "clientId": "auction-engine-service",
+      "name": "Auction Engine Service",
+      "description": "Backend service account for the auction engine microservice",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "auction-engine-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "client.secret.creation.time": "1700000000",
+        "use.refresh.tokens": "true"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-auction-engine-account-type",
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-auction-engine-deposit-status",
+          "name": "deposit_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "deposit_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "deposit_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-auction-engine-kyc-status",
+          "name": "kyc_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "kyc_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "kyc_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-auction-engine-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-auction-engine-groups",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "client-gateway-service",
+      "clientId": "gateway-service",
+      "name": "API Gateway Service",
+      "description": "Backend service account for the API gateway",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "gateway-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "client.secret.creation.time": "1700000000",
+        "use.refresh.tokens": "true"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-gateway-account-type",
+          "name": "account_type",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "account_type",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "account_type",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-gateway-deposit-status",
+          "name": "deposit_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "deposit_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "deposit_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-gateway-kyc-status",
+          "name": "kyc_status",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "kyc_status",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "kyc_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-gateway-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "mapper-gateway-groups",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "user-buyer-test",
+      "username": "buyer@test.com",
+      "email": "buyer@test.com",
+      "firstName": "Test",
+      "lastName": "Buyer",
+      "enabled": true,
+      "emailVerified": true,
+      "createdTimestamp": 1700000000000,
+      "attributes": {
+        "account_type": ["business"],
+        "deposit_status": ["active"],
+        "kyc_status": ["verified"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "buyer_active",
+        "default-roles-auction-platform"
+      ],
+      "groups": [
+        "/Buyers/Business"
+      ]
+    },
+    {
+      "id": "user-seller-test",
+      "username": "seller@test.com",
+      "email": "seller@test.com",
+      "firstName": "Test",
+      "lastName": "Seller",
+      "enabled": true,
+      "emailVerified": true,
+      "createdTimestamp": 1700000000000,
+      "attributes": {
+        "account_type": ["business"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "seller_verified",
+        "default-roles-auction-platform"
+      ],
+      "groups": [
+        "/Sellers/Verified"
+      ]
+    },
+    {
+      "id": "user-broker-test",
+      "username": "broker@test.com",
+      "email": "broker@test.com",
+      "firstName": "Test",
+      "lastName": "Broker",
+      "enabled": true,
+      "emailVerified": true,
+      "createdTimestamp": 1700000000000,
+      "attributes": {},
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "broker",
+        "default-roles-auction-platform"
+      ],
+      "groups": [
+        "/Brokers"
+      ]
+    },
+    {
+      "id": "user-admin-test",
+      "username": "admin@test.com",
+      "email": "admin@test.com",
+      "firstName": "Test",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "createdTimestamp": 1700000000000,
+      "attributes": {},
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin_super",
+        "default-roles-auction-platform"
+      ],
+      "groups": [
+        "/Admins/Super"
+      ]
+    },
+    {
+      "id": "user-blocked-test",
+      "username": "blocked@test.com",
+      "email": "blocked@test.com",
+      "firstName": "Test",
+      "lastName": "Blocked",
+      "enabled": true,
+      "emailVerified": true,
+      "createdTimestamp": 1700000000000,
+      "attributes": {
+        "account_type": ["business"],
+        "deposit_status": ["none"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "buyer_blocked",
+        "default-roles-auction-platform"
+      ],
+      "groups": [
+        "/Buyers/Business"
+      ]
+    }
+  ],
+  "scopeMappings": [],
+  "clientScopeMappings": {},
+  "defaultDefaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "acr"
+  ],
+  "defaultOptionalClientScopes": [
+    "offline_access",
+    "address",
+    "phone",
+    "microprofile-jwt"
+  ],
+  "browserSecurityHeaders": {
+    "contentSecurityPolicyReportOnly": "",
+    "xContentTypeOptions": "nosniff",
+    "referrerPolicy": "no-referrer",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  },
+  "authenticationFlows": [],
+  "authenticatorConfig": [],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 10
+    },
+    {
+      "alias": "TERMS_AND_CONDITIONS",
+      "name": "Terms and Conditions",
+      "providerId": "TERMS_AND_CONDITIONS",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 20
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 30
+    },
+    {
+      "alias": "UPDATE_PROFILE",
+      "name": "Update Profile",
+      "providerId": "UPDATE_PROFILE",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 40
+    },
+    {
+      "alias": "VERIFY_EMAIL",
+      "name": "Verify Email",
+      "providerId": "VERIFY_EMAIL",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 50
+    },
+    {
+      "alias": "VERIFY_PROFILE",
+      "name": "Verify Profile",
+      "providerId": "VERIFY_PROFILE",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 90
+    }
+  ],
+  "identityProviders": [],
+  "identityProviderMappers": [],
+  "components": {},
+  "userFederationProviders": [],
+  "userFederationMappers": [],
+  "clientProfiles": {
+    "profiles": []
+  },
+  "clientPolicies": {
+    "policies": []
+  }
+}

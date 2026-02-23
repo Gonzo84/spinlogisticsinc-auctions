@@ -1,0 +1,35 @@
+# Multi-stage Dockerfile for Quarkus services (JVM mode)
+# Usage: docker build -f infrastructure/docker/Dockerfile.service -t service-name services/service-name/
+
+FROM eclipse-temurin:21-jre-alpine AS runtime
+
+ARG APP_DIR=/deployments
+ARG QUARKUS_HTTP_PORT=8080
+
+RUN addgroup -S quarkus && adduser -S quarkus -G quarkus \
+    && mkdir -p ${APP_DIR} \
+    && chown -R quarkus:quarkus ${APP_DIR}
+
+WORKDIR ${APP_DIR}
+
+# Copy Quarkus fast-jar output
+COPY --chown=quarkus:quarkus build/quarkus-app/lib/ ${APP_DIR}/lib/
+COPY --chown=quarkus:quarkus build/quarkus-app/*.jar ${APP_DIR}/
+COPY --chown=quarkus:quarkus build/quarkus-app/app/ ${APP_DIR}/app/
+COPY --chown=quarkus:quarkus build/quarkus-app/quarkus/ ${APP_DIR}/quarkus/
+
+USER quarkus
+
+EXPOSE ${QUARKUS_HTTP_PORT}
+
+# JVM options optimized for containers
+ENV JAVA_OPTS_APPEND="\
+    -Djava.util.logging.manager=org.jboss.logmanager.LogManager \
+    -XX:+UseG1GC \
+    -XX:MaxGCPauseMillis=200 \
+    -XX:InitialRAMPercentage=50.0 \
+    -XX:MaxRAMPercentage=75.0 \
+    -XX:+ExitOnOutOfMemoryError \
+    -Dquarkus.http.host=0.0.0.0"
+
+ENTRYPOINT ["java", "-jar", "quarkus-run.jar"]

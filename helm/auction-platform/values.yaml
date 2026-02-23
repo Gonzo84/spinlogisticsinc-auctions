@@ -1,0 +1,361 @@
+# Default values for auction-platform
+
+global:
+  imageRegistry: ghcr.io
+  imagePullSecrets: []
+  environment: development
+
+# ─── Backend Services ───────────────────────────────────────────
+services:
+  auction-engine:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/auction-engine
+      tag: latest
+    port: 8080
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 20
+      targetCPUUtilization: 70
+
+  user-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/user-service
+      tag: latest
+    port: 8081
+    resources:
+      requests:
+        cpu: 200m
+        memory: 384Mi
+      limits:
+        cpu: 500m
+        memory: 768Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilization: 70
+
+  catalog-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/catalog-service
+      tag: latest
+    port: 8082
+    resources:
+      requests:
+        cpu: 200m
+        memory: 384Mi
+      limits:
+        cpu: 500m
+        memory: 768Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilization: 70
+
+  search-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/search-service
+      tag: latest
+    port: 8083
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilization: 70
+
+  payment-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/payment-service
+      tag: latest
+    port: 8084
+    resources:
+      requests:
+        cpu: 200m
+        memory: 384Mi
+      limits:
+        cpu: 500m
+        memory: 768Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilization: 60
+
+  notification-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/notification-service
+      tag: latest
+    port: 8085
+    resources:
+      requests:
+        cpu: 150m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 15
+      targetCPUUtilization: 70
+
+  media-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/media-service
+      tag: latest
+    port: 8086
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilization: 70
+
+  seller-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/seller-service
+      tag: latest
+    port: 8087
+    resources:
+      requests:
+        cpu: 150m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  broker-service:
+    enabled: true
+    replicas: 1
+    image:
+      repository: auction-platform/broker-service
+      tag: latest
+    port: 8088
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 300m
+        memory: 512Mi
+
+  compliance-service:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/compliance-service
+      tag: latest
+    port: 8089
+    resources:
+      requests:
+        cpu: 150m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  co2-service:
+    enabled: true
+    replicas: 1
+    image:
+      repository: auction-platform/co2-service
+      tag: latest
+    port: 8090
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 300m
+        memory: 512Mi
+
+  analytics-service:
+    enabled: true
+    replicas: 1
+    image:
+      repository: auction-platform/analytics-service
+      tag: latest
+    port: 8091
+    resources:
+      requests:
+        cpu: 150m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  gateway-service:
+    enabled: true
+    replicas: 3
+    image:
+      repository: auction-platform/gateway-service
+      tag: latest
+    port: 8092
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 15
+      targetCPUUtilization: 70
+
+# ─── Frontend Apps ──────────────────────────────────────────────
+frontends:
+  buyer-web:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/buyer-web
+      tag: latest
+    port: 3000
+
+  seller-portal:
+    enabled: true
+    replicas: 2
+    image:
+      repository: auction-platform/seller-portal
+      tag: latest
+    port: 80
+
+  admin-dashboard:
+    enabled: true
+    replicas: 1
+    image:
+      repository: auction-platform/admin-dashboard
+      tag: latest
+    port: 80
+
+# ─── Ingress ────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/websocket-services: "gateway-service"
+  hosts:
+    buyer:
+      host: platform.eu
+      service: buyer-web
+    seller:
+      host: seller.platform.eu
+      service: seller-portal
+    admin:
+      host: admin.platform.eu
+      service: admin-dashboard
+    api:
+      host: api.platform.eu
+      service: gateway-service
+  tls:
+    - secretName: platform-tls
+      hosts:
+        - platform.eu
+        - seller.platform.eu
+        - admin.platform.eu
+        - api.platform.eu
+
+# ─── Infrastructure Dependencies ───────────────────────────────
+postgresql:
+  enabled: true
+  auth:
+    username: auction
+    database: auction
+    existingSecret: postgres-credentials
+  primary:
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+    persistence:
+      size: 50Gi
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+nats:
+  enabled: true
+  nats:
+    jetstream:
+      enabled: true
+      memStorage:
+        enabled: true
+        size: 1Gi
+      fileStorage:
+        enabled: true
+        size: 10Gi
+
+keycloak:
+  enabled: true
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-credentials
+
+elasticsearch:
+  enabled: true
+  master:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+
+minio:
+  enabled: true
+  auth:
+    existingSecret: minio-credentials
+  persistence:
+    size: 20Gi

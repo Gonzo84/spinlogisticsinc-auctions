@@ -1,0 +1,36 @@
+apiVersion: v2
+name: auction-platform
+description: EU B2B Online Auction Platform - Helm Chart
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+maintainers:
+  - name: Platform Team
+    email: devops@auctionplatform.eu
+
+dependencies:
+  - name: postgresql
+    version: "15.5.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "19.0.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: nats
+    version: "1.2.0"
+    repository: https://nats-io.github.io/k8s/helm/charts/
+    condition: nats.enabled
+  - name: keycloak
+    version: "21.0.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: keycloak.enabled
+  - name: elasticsearch
+    version: "21.0.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: elasticsearch.enabled
+  - name: minio
+    version: "14.0.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: minio.enabled

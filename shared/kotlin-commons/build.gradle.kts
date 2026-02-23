@@ -1,0 +1,29 @@
+plugins {
+    kotlin("jvm")
+}
+
+dependencies {
+    // Jackson for JSON serialization
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
+
+    // NATS client
+    implementation("io.nats:jnats:2.24.1")
+
+    // Casbin for authorization
+    implementation("org.casbin:jcasbin:1.93.0")
+    implementation("org.casbin:jdbc-adapter:2.13.0")
+
+    // Jakarta EE APIs (for JAX-RS annotations, CDI)
+    compileOnly("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
+    compileOnly("jakarta.enterprise:jakarta.enterprise.cdi-api:4.1.0")
+    compileOnly("jakarta.inject:jakarta.inject-api:2.0.1")
+
+    // Logging
+    implementation("org.slf4j:slf4j-api:2.0.16")
+
+    // Test
+    testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testImplementation("io.mockk:mockk:1.13.16")
+}

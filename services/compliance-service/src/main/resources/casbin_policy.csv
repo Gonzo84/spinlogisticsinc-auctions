@@ -1,0 +1,11 @@
+p, buyer_active, /api/v1/compliance/gdpr/export-request, POST, allow
+p, buyer_active, /api/v1/compliance/gdpr/erasure-request, POST, allow
+p, seller_verified, /api/v1/compliance/gdpr/export-request, POST, allow
+p, seller_verified, /api/v1/compliance/gdpr/erasure-request, POST, allow
+p, buyer_active, /api/v1/compliance/dsa/content-report, POST, allow
+p, admin_ops, /api/v1/compliance/gdpr/requests, GET, allow
+p, admin_ops, /api/v1/compliance/aml/*, GET|POST, allow
+p, admin_ops, /api/v1/compliance/dsa/*, GET, allow
+p, admin_ops, /api/v1/compliance/audit/log, GET, allow
+p, admin_super, /api/v1/**, .*, allow
+g, admin_ops, admin_super

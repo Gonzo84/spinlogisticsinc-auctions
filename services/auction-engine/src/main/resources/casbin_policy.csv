@@ -1,0 +1,16 @@
+p, buyer_active, /api/v1/auctions, GET, allow
+p, buyer_active, /api/v1/auctions/*, GET, allow
+p, buyer_active, /api/v1/auctions/*/bids, GET|POST, allow
+p, buyer_active, /api/v1/auctions/*/auto-bids, POST|DELETE, allow
+p, buyer_blocked, /api/v1/auctions, GET, allow
+p, buyer_blocked, /api/v1/auctions/*, GET, allow
+p, buyer_blocked, /api/v1/auctions/*/bids, POST, deny
+p, buyer_blocked, /api/v1/auctions/*/auto-bids, POST, deny
+p, seller_verified, /api/v1/auctions, GET, allow
+p, seller_verified, /api/v1/auctions/*, GET, allow
+p, broker_active, /api/v1/auctions, GET, allow
+p, broker_active, /api/v1/auctions/*, GET, allow
+p, admin_ops, /api/v1/auctions, GET|POST, allow
+p, admin_ops, /api/v1/auctions/*, .*, allow
+p, admin_super, /api/v1/**, .*, allow
+g, admin_ops, admin_super

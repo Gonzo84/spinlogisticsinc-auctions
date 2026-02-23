@@ -1,0 +1,8 @@
+p, buyer_active, /api/v1/**, GET, allow
+p, buyer_active, /ws/**, GET, allow
+p, seller_verified, /api/v1/**, GET, allow
+p, seller_verified, /ws/**, GET, allow
+p, broker_active, /api/v1/**, GET, allow
+p, admin_ops, /api/v1/**, .*, allow
+p, admin_super, /api/v1/**, .*, allow
+g, admin_ops, admin_super

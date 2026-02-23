@@ -1,0 +1,122 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "title": "Bid Processing Latency",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(auction_bid_processing_duration_seconds_bucket{job=\"auction-engine\"}[5m]))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(auction_bid_processing_duration_seconds_bucket{job=\"auction-engine\"}[5m]))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(auction_bid_processing_duration_seconds_bucket{job=\"auction-engine\"}[5m]))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "title": "Bids per Second",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(auction_bids_total{job=\"auction-engine\"}[1m])",
+          "legendFormat": "total",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(auction_bids_total{job=\"auction-engine\",type=\"proxy\"}[1m])",
+          "legendFormat": "proxy",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Anti-Sniping Extensions",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(auction_extensions_total{job=\"auction-engine\"}[5m])",
+          "legendFormat": "extensions/sec",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Optimistic Lock Retries",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(auction_optimistic_lock_retries_total{job=\"auction-engine\"}[5m])",
+          "legendFormat": "retries/sec",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Active Auctions by Status",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "auction_count_by_status",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Event Store Growth",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "targets": [
+        {
+          "expr": "auction_event_store_total_events",
+          "legendFormat": "events",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Outbox Queue Depth",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        {
+          "expr": "auction_outbox_pending_count",
+          "legendFormat": "pending",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 1000 }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["auction-platform", "auction-engine"],
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Auction Engine",
+  "uid": "auction-engine-dashboard"
+}

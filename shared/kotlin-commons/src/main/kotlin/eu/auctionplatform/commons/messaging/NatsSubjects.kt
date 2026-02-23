@@ -1,0 +1,54 @@
+package eu.auctionplatform.commons.messaging
+
+/**
+ * Centralised constants for all NATS subject names used across the platform.
+ *
+ * Convention: `<domain>.<entity>.<verb>` (dot-separated, lowercase).
+ *
+ * Subjects can be scoped to a brand / tenant via [withBrand], which inserts the
+ * brand code as a prefix segment, e.g. `troostwijk.auction.bid.placed`.
+ */
+object NatsSubjects {
+
+    // ── Auction / Bidding ────────────────────────────────────────────────
+    const val AUCTION_BID_PLACED: String        = "auction.bid.placed"
+    const val AUCTION_BID_PROXY: String         = "auction.bid.proxy"
+    const val AUCTION_LOT_EXTENDED: String      = "auction.lot.extended"
+    const val AUCTION_LOT_CLOSED: String        = "auction.lot.closed"
+    const val AUCTION_LOT_AWARDED: String       = "auction.lot.awarded"
+
+    // ── Catalog ──────────────────────────────────────────────────────────
+    const val CATALOG_LOT_CREATED: String       = "catalog.lot.created"
+    const val CATALOG_LOT_UPDATED: String       = "catalog.lot.updated"
+
+    // ── Payment ──────────────────────────────────────────────────────────
+    const val PAYMENT_CHECKOUT_COMPLETED: String = "payment.checkout.completed"
+    const val PAYMENT_SETTLEMENT_READY: String   = "payment.settlement.ready"
+    const val PAYMENT_DEPOSIT_PAID: String       = "payment.deposit.paid"
+
+    // ── User / Identity ──────────────────────────────────────────────────
+    const val USER_REGISTERED: String           = "user.registered"
+    const val USER_KYC_VERIFIED: String         = "user.kyc.verified"
+
+    // ── Media ────────────────────────────────────────────────────────────
+    const val MEDIA_IMAGE_PROCESSED: String     = "media.image.processed"
+    const val MEDIA_IMAGE_UPLOADED: String      = "media.image.uploaded"
+
+    // ── Notifications ────────────────────────────────────────────────────
+    const val NOTIFY_OVERBID: String            = "notify.overbid"
+    const val NOTIFY_CLOSING_SOON: String       = "notify.closing.soon"
+
+    // ── Compliance ───────────────────────────────────────────────────────
+    const val COMPLIANCE_GDPR_ERASURE: String   = "compliance.gdpr.erasure"
+
+    // ── CO₂ / Sustainability ─────────────────────────────────────────────
+    const val CO2_CALCULATED: String            = "co2.calculated"
+
+    /**
+     * Prefixes a NATS [subject] with the given [brand] code.
+     *
+     * Example: `withBrand("auction.bid.placed", "troostwijk")` →
+     * `"troostwijk.auction.bid.placed"`.
+     */
+    fun withBrand(subject: String, brand: String): String = "$brand.$subject"
+}

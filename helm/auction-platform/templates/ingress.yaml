@@ -1,0 +1,82 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  labels:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: auction-platform
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- range .Values.ingress.tls }}
+    - secretName: {{ .secretName }}
+      hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+    {{- end }}
+  {{- end }}
+  rules:
+    # Buyer web (main domain)
+    - host: {{ .Values.ingress.hosts.buyer.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.hosts.buyer.service }}
+                port:
+                  name: http
+    # Seller portal
+    - host: {{ .Values.ingress.hosts.seller.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.hosts.seller.service }}
+                port:
+                  name: http
+    # Admin dashboard
+    - host: {{ .Values.ingress.hosts.admin.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.hosts.admin.service }}
+                port:
+                  name: http
+    # API gateway
+    - host: {{ .Values.ingress.hosts.api.host | quote }}
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.hosts.api.service }}
+                port:
+                  name: http
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.hosts.api.service }}
+                port:
+                  name: http
+          - path: /webhooks
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.hosts.api.service }}
+                port:
+                  name: http
+{{- end }}

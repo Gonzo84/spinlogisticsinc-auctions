@@ -1,0 +1,84 @@
+# Staging overrides - minimal resources
+global:
+  environment: staging
+
+services:
+  auction-engine:
+    replicas: 1
+    autoscaling:
+      enabled: false
+  user-service:
+    replicas: 1
+  catalog-service:
+    replicas: 1
+  search-service:
+    replicas: 1
+    autoscaling:
+      enabled: false
+  payment-service:
+    replicas: 1
+    autoscaling:
+      enabled: false
+  notification-service:
+    replicas: 1
+    autoscaling:
+      enabled: false
+  media-service:
+    replicas: 1
+  seller-service:
+    replicas: 1
+  broker-service:
+    replicas: 1
+  compliance-service:
+    replicas: 1
+  co2-service:
+    replicas: 1
+  analytics-service:
+    replicas: 1
+  gateway-service:
+    replicas: 1
+    autoscaling:
+      enabled: false
+
+frontends:
+  buyer-web:
+    replicas: 1
+  seller-portal:
+    replicas: 1
+  admin-dashboard:
+    replicas: 1
+
+ingress:
+  hosts:
+    buyer:
+      host: staging.platform.eu
+    seller:
+      host: seller.staging.platform.eu
+    admin:
+      host: admin.staging.platform.eu
+    api:
+      host: api.staging.platform.eu
+  tls:
+    - secretName: staging-platform-tls
+      hosts:
+        - staging.platform.eu
+        - seller.staging.platform.eu
+        - admin.staging.platform.eu
+        - api.staging.platform.eu
+
+postgresql:
+  primary:
+    persistence:
+      size: 20Gi
+
+nats:
+  nats:
+    jetstream:
+      memStorage:
+        size: 512Mi
+      fileStorage:
+        size: 5Gi
+
+elasticsearch:
+  master:
+    replicaCount: 1

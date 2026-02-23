@@ -1,0 +1,6 @@
+p, buyer_active, /api/v1/search/*, GET, allow
+p, buyer_blocked, /api/v1/search/*, GET, allow
+p, seller_verified, /api/v1/search/*, GET, allow
+p, broker_active, /api/v1/search/*, GET, allow
+p, admin_ops, /api/v1/search/*, GET, allow
+p, admin_super, /api/v1/**, .*, allow

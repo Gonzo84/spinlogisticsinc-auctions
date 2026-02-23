@@ -1,0 +1,223 @@
+# =============================================================================
+# Search Service – Quarkus Configuration
+# =============================================================================
+
+quarkus:
+  application:
+    name: search-service
+
+  # ---------------------------------------------------------------------------
+  # Datasource (named "system")
+  # ---------------------------------------------------------------------------
+  datasource:
+    system:
+      db-kind: postgresql
+      jdbc:
+        url: jdbc:postgresql://localhost:5432/auction_search
+        max-size: 16
+      username: dev
+      password: dev
+
+  # ---------------------------------------------------------------------------
+  # Flyway (named "system")
+  # ---------------------------------------------------------------------------
+  flyway:
+    system:
+      migrate-at-start: true
+      baseline-on-migrate: true
+      default-schema: app
+
+  # ---------------------------------------------------------------------------
+  # OIDC
+  # ---------------------------------------------------------------------------
+  oidc:
+    auth-server-url: http://localhost:8180/realms/auction-platform
+    client-id: search-service
+    credentials:
+      secret: ${OIDC_SECRET:secret}
+
+  # ---------------------------------------------------------------------------
+  # HTTP
+  # ---------------------------------------------------------------------------
+  http:
+    port: 8087
+    cors:
+      origins: http://localhost:3000,http://localhost:3001,http://localhost:3002
+      methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+      headers: accept,authorization,content-type,x-requested-with
+      exposed-headers: location
+      access-control-allow-credentials: true
+
+  # ---------------------------------------------------------------------------
+  # Logging – structured JSON
+  # ---------------------------------------------------------------------------
+  log:
+    level: INFO
+    console:
+      json: true
+
+  # ---------------------------------------------------------------------------
+  # Hibernate Search / Elasticsearch
+  # ---------------------------------------------------------------------------
+  hibernate-search-orm:
+    elasticsearch:
+      version: 8
+      hosts: ${ELASTICSEARCH_HOSTS:localhost:9200}
+      protocol: ${ELASTICSEARCH_PROTOCOL:http}
+      username: ${ELASTICSEARCH_USER:}
+      password: ${ELASTICSEARCH_PASS:}
+    schema-management:
+      strategy: create-or-validate
+
+  # ---------------------------------------------------------------------------
+  # Metrics – Prometheus
+  # ---------------------------------------------------------------------------
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  # ---------------------------------------------------------------------------
+  # OpenTelemetry
+  # ---------------------------------------------------------------------------
+  opentelemetry:
+    tracer:
+      exporter:
+        otlp:
+          endpoint: http://localhost:4317
+
+  # ---------------------------------------------------------------------------
+  # Health
+  # ---------------------------------------------------------------------------
+  smallrye-health:
+    root-path: /q/health
+
+# -----------------------------------------------------------------------------
+# NATS
+# -----------------------------------------------------------------------------
+nats:
+  url: nats://localhost:4222
+
+# -----------------------------------------------------------------------------
+# Casbin RBAC
+# -----------------------------------------------------------------------------
+casbin:
+  model-path: classpath:casbin_model.conf
+
+# -----------------------------------------------------------------------------
+# Elasticsearch (custom app-level settings)
+# -----------------------------------------------------------------------------
+elasticsearch:
+  index:
+    prefix: ${ES_INDEX_PREFIX:auction_}
+    number-of-shards: ${ES_SHARDS:1}
+    number-of-replicas: ${ES_REPLICAS:0}
+
+# =============================================================================
+# Profile: dev
+# =============================================================================
+"%dev":
+  quarkus:
+    log:
+      level: DEBUG
+      console:
+        json: false
+    datasource:
+      system:
+        jdbc:
+          url: jdbc:postgresql://localhost:5432/auction_search
+        username: dev
+        password: dev
+    oidc:
+      auth-server-url: http://localhost:8180/realms/auction-platform
+    hibernate-search-orm:
+      elasticsearch:
+        hosts: localhost:9200
+        protocol: http
+    opentelemetry:
+      tracer:
+        exporter:
+          otlp:
+            endpoint: http://localhost:4317
+  elasticsearch:
+    index:
+      number-of-shards: 1
+      number-of-replicas: 0
+
+# =============================================================================
+# Profile: staging
+# =============================================================================
+"%staging":
+  quarkus:
+    log:
+      level: INFO
+      console:
+        json: true
+    datasource:
+      system:
+        jdbc:
+          url: ${DB_URL:jdbc:postgresql://db-staging:5432/auction_search}
+          max-size: 32
+        username: ${DB_USER:staging}
+        password: ${DB_PASS:staging}
+    oidc:
+      auth-server-url: ${OIDC_AUTH_URL:https://auth-staging.auction-platform.eu/realms/auction-platform}
+    http:
+      cors:
+        origins: ${CORS_ORIGINS:https://staging.auction-platform.eu}
+    hibernate-search-orm:
+      elasticsearch:
+        hosts: ${ELASTICSEARCH_HOSTS:elasticsearch-staging:9200}
+        protocol: ${ELASTICSEARCH_PROTOCOL:http}
+        username: ${ELASTICSEARCH_USER:}
+        password: ${ELASTICSEARCH_PASS:}
+    opentelemetry:
+      tracer:
+        exporter:
+          otlp:
+            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+  nats:
+    url: ${NATS_URL:nats://nats-staging:4222}
+  elasticsearch:
+    index:
+      number-of-shards: 2
+      number-of-replicas: 1
+
+# =============================================================================
+# Profile: prod
+# =============================================================================
+"%prod":
+  quarkus:
+    log:
+      level: WARN
+      console:
+        json: true
+    datasource:
+      system:
+        jdbc:
+          url: ${DB_URL:jdbc:postgresql://db-prod:5432/auction_search}
+          max-size: 64
+        username: ${DB_USER}
+        password: ${DB_PASS}
+    oidc:
+      auth-server-url: ${OIDC_AUTH_URL:https://auth.auction-platform.eu/realms/auction-platform}
+    http:
+      cors:
+        origins: ${CORS_ORIGINS:https://auction-platform.eu}
+    hibernate-search-orm:
+      elasticsearch:
+        hosts: ${ELASTICSEARCH_HOSTS}
+        protocol: ${ELASTICSEARCH_PROTOCOL:https}
+        username: ${ELASTICSEARCH_USER}
+        password: ${ELASTICSEARCH_PASS}
+    opentelemetry:
+      tracer:
+        exporter:
+          otlp:
+            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+  nats:
+    url: ${NATS_URL:nats://nats-prod:4222}
+  elasticsearch:
+    index:
+      number-of-shards: 5
+      number-of-replicas: 2

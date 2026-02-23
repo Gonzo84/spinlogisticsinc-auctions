@@ -1,0 +1,121 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "title": "Checkout Success Rate",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(payment_checkout_success_total[1h]) / rate(payment_checkout_total[1h]) * 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "title": "Payments Processing",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "payment_status_count{status=\"PROCESSING\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Overdue Payments",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "payment_overdue_count",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Pending Settlements",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "settlement_status_count{status=\"PENDING\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Payment Volume (EUR)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum(rate(payment_amount_eur_total[1h])) * 3600",
+          "legendFormat": "hourly volume",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyEUR" } }
+    },
+    {
+      "title": "Payment Methods Distribution",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "payment_method_count",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "VAT Scheme Distribution",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "payment_vat_scheme_count",
+          "legendFormat": "{{scheme}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Settlement SLA (days to settle)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 12 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(settlement_duration_days_bucket[24h]))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(settlement_duration_days_bucket[24h]))",
+          "legendFormat": "p95",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "d" } }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["auction-platform", "payment"],
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "Payment Pipeline",
+  "uid": "payment-pipeline-dashboard"
+}

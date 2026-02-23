@@ -1,0 +1,18 @@
+p, buyer_active, /api/v1/lots, GET, allow
+p, buyer_active, /api/v1/lots/*, GET, allow
+p, buyer_active, /api/v1/categories, GET, allow
+p, buyer_active, /api/v1/categories/*, GET, allow
+p, buyer_active, /api/v1/auctions, GET, allow
+p, buyer_active, /api/v1/auctions/*, GET, allow
+p, seller_verified, /api/v1/lots, GET|POST, allow
+p, seller_verified, /api/v1/lots/*, GET|PUT|DELETE, allow
+p, seller_verified, /api/v1/lots/*/submit, POST, allow
+p, seller_verified, /api/v1/lots/*/combine, POST, allow
+p, broker_active, /api/v1/lots, GET|POST, allow
+p, broker_active, /api/v1/lots/*, GET|PUT, allow
+p, broker_active, /api/v1/lots/*/submit, POST, allow
+p, admin_ops, /api/v1/lots/*/approve, POST, allow
+p, admin_ops, /api/v1/auctions, GET|POST, allow
+p, admin_ops, /api/v1/auctions/*, GET|PUT|DELETE, allow
+p, admin_super, /api/v1/**, .*, allow
+g, admin_ops, admin_super

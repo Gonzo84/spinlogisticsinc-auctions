@@ -1,0 +1,7 @@
+p, seller_verified, /api/v1/sellers/register, POST, allow
+p, seller_verified, /api/v1/sellers/me/*, GET, allow
+p, seller_verified, /api/v1/sellers/me/lots/*/accept-below-reserve, POST, allow
+p, seller_verified, /api/v1/sellers/me/lots/*/relist, POST, allow
+p, admin_ops, /api/v1/sellers/*, GET, allow
+p, admin_super, /api/v1/**, .*, allow
+g, admin_ops, admin_super

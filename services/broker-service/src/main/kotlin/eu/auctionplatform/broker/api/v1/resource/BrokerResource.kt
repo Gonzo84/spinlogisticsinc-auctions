@@ -1,0 +1,230 @@
+package eu.auctionplatform.broker.api.v1.resource
+
+import eu.auctionplatform.broker.api.v1.dto.BrokerDashboardResponse
+import eu.auctionplatform.broker.api.v1.dto.BulkLotIntakeRequest
+import eu.auctionplatform.broker.api.v1.dto.LeadResponse
+import eu.auctionplatform.broker.api.v1.dto.LotIntakeResponse
+import eu.auctionplatform.broker.api.v1.dto.VisitScheduleRequest
+import eu.auctionplatform.broker.application.service.BrokerService
+import eu.auctionplatform.broker.application.service.LotIntakeInput
+import eu.auctionplatform.broker.domain.model.Lead
+import eu.auctionplatform.broker.domain.model.LotIntake
+import eu.auctionplatform.commons.auth.userId
+import eu.auctionplatform.commons.dto.ApiResponse
+import jakarta.annotation.security.RolesAllowed
+import jakarta.inject.Inject
+import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.HeaderParam
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.PathParam
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
+import org.slf4j.LoggerFactory
+import java.util.UUID
+
+/**
+ * REST resource for broker operations.
+ *
+ * Provides endpoints for lead management, visit scheduling, bulk lot intake,
+ * and broker dashboard retrieval.
+ *
+ * Authentication is handled by Quarkus OIDC; the bearer token is expected
+ * in the `Authorization` header. The Keycloak `sub` claim is used to
+ * resolve the broker identity.
+ */
+@Path("/api/v1/brokers")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+class BrokerResource {
+
+    @Inject
+    lateinit var brokerService: BrokerService
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(BrokerResource::class.java)
+    }
+
+    // -------------------------------------------------------------------------
+    // Lead endpoints
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns all leads assigned to the authenticated broker.
+     *
+     * **GET /api/v1/brokers/leads**
+     *
+     * @param authorization The Bearer token from the Authorization header.
+     * @return 200 OK with the list of leads.
+     */
+    @GET
+    @Path("/leads")
+    @RolesAllowed("broker", "admin")
+    fun getLeads(@HeaderParam("Authorization") authorization: String): Response {
+        val brokerId = extractBrokerId(authorization)
+        logger.info("GET /leads for broker={}", brokerId)
+
+        val leads = brokerService.getLeads(brokerId)
+        val response = leads.map { it.toResponse() }
+
+        return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    /**
+     * Schedules a visit for a specific lead.
+     *
+     * **POST /api/v1/brokers/leads/{id}/visit**
+     *
+     * @param id            The lead identifier.
+     * @param authorization The Bearer token.
+     * @param request       The visit scheduling details.
+     * @return 200 OK with the updated lead.
+     */
+    @POST
+    @Path("/leads/{id}/visit")
+    @RolesAllowed("broker", "admin")
+    fun scheduleVisit(
+        @PathParam("id") id: UUID,
+        @HeaderParam("Authorization") authorization: String,
+        request: VisitScheduleRequest
+    ): Response {
+        val brokerId = extractBrokerId(authorization)
+        logger.info("POST /leads/{}/visit for broker={}, date={}", id, brokerId, request.scheduledDate)
+
+        val updatedLead = brokerService.scheduleVisit(id, request.scheduledDate)
+
+        return Response.ok(ApiResponse.ok(updatedLead.toResponse())).build()
+    }
+
+    // -------------------------------------------------------------------------
+    // Lot intake endpoints
+    // -------------------------------------------------------------------------
+
+    /**
+     * Performs a bulk lot intake operation for the authenticated broker.
+     *
+     * **POST /api/v1/brokers/lots/intake**
+     *
+     * @param authorization The Bearer token.
+     * @param request       The bulk intake payload containing seller ID and lot details.
+     * @return 201 Created with the list of created lot intakes.
+     */
+    @POST
+    @Path("/lots/intake")
+    @RolesAllowed("broker", "admin")
+    fun bulkLotIntake(
+        @HeaderParam("Authorization") authorization: String,
+        request: BulkLotIntakeRequest
+    ): Response {
+        val brokerId = extractBrokerId(authorization)
+        logger.info("POST /lots/intake for broker={}, seller={}, count={}",
+            brokerId, request.sellerId, request.lots.size)
+
+        val inputs = request.lots.map { lotReq ->
+            LotIntakeInput(
+                leadId = lotReq.leadId,
+                title = lotReq.title,
+                categoryId = lotReq.categoryId,
+                description = lotReq.description,
+                specifications = lotReq.specifications,
+                reservePrice = lotReq.reservePrice,
+                locationAddress = lotReq.locationAddress,
+                locationCountry = lotReq.locationCountry,
+                locationLat = lotReq.locationLat,
+                locationLng = lotReq.locationLng,
+                imageKeys = lotReq.imageKeys
+            )
+        }
+
+        val intakes = brokerService.bulkLotIntake(brokerId, request.sellerId, inputs)
+        val response = intakes.map { it.toResponse() }
+
+        return Response
+            .status(Response.Status.CREATED)
+            .entity(ApiResponse.ok(response))
+            .build()
+    }
+
+    // -------------------------------------------------------------------------
+    // Dashboard endpoint
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the authenticated broker's dashboard summary.
+     *
+     * **GET /api/v1/brokers/me/dashboard**
+     *
+     * @param authorization The Bearer token.
+     * @return 200 OK with the broker dashboard.
+     */
+    @GET
+    @Path("/me/dashboard")
+    @RolesAllowed("broker", "admin")
+    fun getDashboard(@HeaderParam("Authorization") authorization: String): Response {
+        val brokerId = extractBrokerId(authorization)
+        logger.info("GET /me/dashboard for broker={}", brokerId)
+
+        val dashboard = brokerService.getDashboard(brokerId)
+
+        val response = BrokerDashboardResponse(
+            totalLeads = dashboard.totalLeads,
+            newLeads = dashboard.newLeads,
+            contactedLeads = dashboard.contactedLeads,
+            scheduledVisits = dashboard.scheduledVisits,
+            completedVisits = dashboard.completedVisits,
+            closedLeads = dashboard.closedLeads,
+            totalIntakes = dashboard.totalIntakes,
+            draftIntakes = dashboard.draftIntakes,
+            submittedIntakes = dashboard.submittedIntakes,
+            approvedIntakes = dashboard.approvedIntakes,
+            upcomingVisits = dashboard.upcomingVisits.map { it.toResponse() }
+        )
+
+        return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private fun extractBrokerId(authorization: String): UUID {
+        val token = authorization.removePrefix("Bearer ").trim()
+        return UUID.fromString(token.userId())
+    }
+
+    private fun Lead.toResponse(): LeadResponse = LeadResponse(
+        id = id,
+        sellerId = sellerId,
+        brokerId = brokerId,
+        companyName = companyName,
+        contactName = contactName,
+        contactEmail = contactEmail,
+        contactPhone = contactPhone,
+        status = status,
+        notes = notes,
+        scheduledVisitDate = scheduledVisitDate,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+
+    private fun LotIntake.toResponse(): LotIntakeResponse = LotIntakeResponse(
+        id = id,
+        brokerId = brokerId,
+        sellerId = sellerId,
+        leadId = leadId,
+        title = title,
+        categoryId = categoryId,
+        description = description,
+        specifications = specifications,
+        reservePrice = reservePrice,
+        locationAddress = locationAddress,
+        locationCountry = locationCountry,
+        locationLat = locationLat,
+        locationLng = locationLng,
+        imageKeys = imageKeys,
+        status = status,
+        createdAt = createdAt
+    )
+}
