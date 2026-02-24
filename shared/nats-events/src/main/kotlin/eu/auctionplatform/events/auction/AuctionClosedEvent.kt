@@ -23,7 +23,7 @@ data class AuctionClosedEvent(
     override val eventId: String,
 
     @JsonProperty("eventType")
-    override val eventType: String = "auction.closed",
+    override val eventType: String = "auction.lot.closed",
 
     @JsonProperty("aggregateId")
     override val aggregateId: String,

@@ -284,12 +284,16 @@ class LotService {
     fun listLots(filter: LotListFilter): Pair<List<Lot>, Long> {
         return when {
             filter.sellerId != null -> {
-                val lots = lotRepository.findBySellerId(filter.sellerId).map { it.toDomain() }
-                Pair(lots, lots.size.toLong())
+                val lots = lotRepository.findBySellerId(filter.sellerId, filter.page, filter.pageSize)
+                    .map { it.toDomain() }
+                val total = lotRepository.countBySellerId(filter.sellerId)
+                Pair(lots, total)
             }
             filter.auctionId != null -> {
-                val lots = lotRepository.findByAuctionId(filter.auctionId).map { it.toDomain() }
-                Pair(lots, lots.size.toLong())
+                val lots = lotRepository.findByAuctionId(filter.auctionId, filter.page, filter.pageSize)
+                    .map { it.toDomain() }
+                val total = lotRepository.countByAuctionId(filter.auctionId)
+                Pair(lots, total)
             }
             filter.categoryId != null -> {
                 val lots = lotRepository.findByCategoryId(filter.categoryId, filter.page, filter.pageSize)
@@ -312,7 +316,8 @@ class LotService {
             filter.country != null -> {
                 val lots = lotRepository.findByCountry(filter.country, null, filter.page, filter.pageSize)
                     .map { it.toDomain() }
-                Pair(lots, lots.size.toLong())
+                val total = lotRepository.countByCountry(filter.country)
+                Pair(lots, total)
             }
             else -> {
                 val lots = lotRepository.findAll()

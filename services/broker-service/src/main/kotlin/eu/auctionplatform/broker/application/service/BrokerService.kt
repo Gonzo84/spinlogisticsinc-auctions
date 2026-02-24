@@ -8,6 +8,7 @@ import eu.auctionplatform.broker.infrastructure.persistence.repository.LeadRepos
 import eu.auctionplatform.broker.infrastructure.persistence.repository.LotIntakeRepository
 import eu.auctionplatform.commons.exception.ConflictException
 import eu.auctionplatform.commons.exception.NotFoundException
+import eu.auctionplatform.commons.exception.ValidationException
 import eu.auctionplatform.commons.util.IdGenerator
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -110,6 +111,16 @@ class BrokerService {
     ): List<LotIntake> {
         logger.info("Bulk lot intake: broker={}, seller={}, count={}", brokerId, sellerId, lots.size)
 
+        // Validate all referenced lead IDs exist before processing
+        val uniqueLeadIds = lots.map { it.leadId }.distinct()
+        val invalidLeadIds = uniqueLeadIds.filter { leadRepository.findById(it) == null }
+        if (invalidLeadIds.isNotEmpty()) {
+            throw ValidationException(
+                field = "leadId",
+                error = "Invalid lead IDs: ${invalidLeadIds.joinToString(", ")}"
+            )
+        }
+
         val now = Instant.now()
         val intakes = lots.map { input ->
             LotIntake(
@@ -135,7 +146,6 @@ class BrokerService {
         lotIntakeRepository.bulkInsert(intakes)
 
         // Update the lead status to LOTS_SUBMITTED if all intakes share the same lead
-        val uniqueLeadIds = lots.map { it.leadId }.distinct()
         for (leadId in uniqueLeadIds) {
             val lead = leadRepository.findById(leadId)
             if (lead != null && lead.status == LeadStatus.VISIT_COMPLETED) {

@@ -21,7 +21,7 @@ data class AuctionExtendedEvent(
     override val eventId: String,
 
     @JsonProperty("eventType")
-    override val eventType: String = "auction.extended",
+    override val eventType: String = "auction.lot.extended",
 
     @JsonProperty("aggregateId")
     override val aggregateId: String,

@@ -4,7 +4,6 @@ import eu.auctionplatform.payment.domain.model.Payment
 import eu.auctionplatform.payment.domain.model.PaymentStatus
 import eu.auctionplatform.payment.domain.model.VatScheme
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -23,7 +22,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class PaymentRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 
@@ -31,7 +29,7 @@ class PaymentRepository @Inject constructor(
 
     companion object {
         private const val SELECT_COLUMNS = """
-            id, buyer_id, auction_id, lot_id, hammer_price, buyer_premium,
+            id, buyer_id, seller_id, auction_id, lot_id, hammer_price, buyer_premium,
             buyer_premium_rate, vat_amount, vat_rate, vat_scheme, total_amount,
             currency, country, payment_method, psp_reference, status,
             due_date, paid_at, created_at
@@ -39,11 +37,11 @@ class PaymentRepository @Inject constructor(
 
         private const val INSERT_PAYMENT = """
             INSERT INTO app.payments
-                (id, buyer_id, auction_id, lot_id, hammer_price, buyer_premium,
+                (id, buyer_id, seller_id, auction_id, lot_id, hammer_price, buyer_premium,
                  buyer_premium_rate, vat_amount, vat_rate, vat_scheme, total_amount,
                  currency, country, payment_method, psp_reference, status,
                  due_date, paid_at, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         private const val SELECT_BY_ID = """
@@ -109,24 +107,25 @@ class PaymentRepository @Inject constructor(
             conn.prepareStatement(INSERT_PAYMENT).use { stmt ->
                 stmt.setObject(1, payment.id)
                 stmt.setObject(2, payment.buyerId)
-                stmt.setObject(3, payment.auctionId)
-                stmt.setObject(4, payment.lotId)
-                stmt.setBigDecimal(5, payment.hammerPrice)
-                stmt.setBigDecimal(6, payment.buyerPremium)
-                stmt.setBigDecimal(7, payment.buyerPremiumRate)
-                stmt.setBigDecimal(8, payment.vatAmount)
-                stmt.setBigDecimal(9, payment.vatRate)
-                stmt.setString(10, payment.vatScheme.name)
-                stmt.setBigDecimal(11, payment.totalAmount)
-                stmt.setString(12, payment.currency)
-                stmt.setString(13, payment.country)
-                stmt.setString(14, payment.paymentMethod)
-                stmt.setString(15, payment.pspReference)
-                stmt.setString(16, payment.status.name)
-                stmt.setTimestamp(17, Timestamp.from(payment.dueDate))
-                stmt.setTimestamp(18, payment.paidAt?.let { Timestamp.from(it) })
-                stmt.setTimestamp(19, Timestamp.from(payment.createdAt))
-                stmt.setTimestamp(20, Timestamp.from(now))
+                stmt.setObject(3, payment.sellerId)
+                stmt.setObject(4, payment.auctionId)
+                stmt.setObject(5, payment.lotId)
+                stmt.setBigDecimal(6, payment.hammerPrice)
+                stmt.setBigDecimal(7, payment.buyerPremium)
+                stmt.setBigDecimal(8, payment.buyerPremiumRate)
+                stmt.setBigDecimal(9, payment.vatAmount)
+                stmt.setBigDecimal(10, payment.vatRate)
+                stmt.setString(11, payment.vatScheme.name)
+                stmt.setBigDecimal(12, payment.totalAmount)
+                stmt.setString(13, payment.currency)
+                stmt.setString(14, payment.country)
+                stmt.setString(15, payment.paymentMethod)
+                stmt.setString(16, payment.pspReference)
+                stmt.setString(17, payment.status.name)
+                stmt.setTimestamp(18, Timestamp.from(payment.dueDate))
+                stmt.setTimestamp(19, payment.paidAt?.let { Timestamp.from(it) })
+                stmt.setTimestamp(20, Timestamp.from(payment.createdAt))
+                stmt.setTimestamp(21, Timestamp.from(now))
                 stmt.executeUpdate()
             }
         }
@@ -318,6 +317,7 @@ class PaymentRepository @Inject constructor(
     private fun ResultSet.toPayment(): Payment = Payment(
         id = getObject("id", UUID::class.java),
         buyerId = getObject("buyer_id", UUID::class.java),
+        sellerId = getObject("seller_id", UUID::class.java),
         auctionId = getObject("auction_id", UUID::class.java),
         lotId = getObject("lot_id", UUID::class.java),
         hammerPrice = getBigDecimal("hammer_price"),

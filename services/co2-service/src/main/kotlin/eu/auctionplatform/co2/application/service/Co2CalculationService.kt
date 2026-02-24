@@ -143,6 +143,16 @@ class Co2CalculationService {
     // -------------------------------------------------------------------------
 
     /**
+     * Returns the emission factor with the given ID, or null if not found.
+     *
+     * @param id The emission factor identifier.
+     * @return The emission factor, or null.
+     */
+    fun getEmissionFactor(id: UUID): EmissionFactor? {
+        return emissionFactorRepository.findById(id)
+    }
+
+    /**
      * Returns all emission factors.
      */
     fun getAllEmissionFactors(): List<EmissionFactor> {

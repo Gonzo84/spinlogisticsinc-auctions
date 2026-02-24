@@ -3,7 +3,6 @@ package eu.auctionplatform.compliance.infrastructure.persistence.repository
 import eu.auctionplatform.compliance.domain.model.AmlScreening
 import eu.auctionplatform.compliance.domain.model.AmlScreeningStatus
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -18,7 +17,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class AmlScreeningRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 
@@ -41,12 +39,12 @@ class AmlScreeningRepository @Inject constructor(
 
         private const val SELECT_BY_USER_ID = """
             SELECT $SELECT_COLUMNS FROM app.aml_screenings
-            WHERE user_id = ? ORDER BY completed_at DESC NULLS FIRST
+            WHERE user_id = ? ORDER BY completed_at DESC NULLS LAST
         """
 
         private const val SELECT_LATEST_BY_USER_ID = """
             SELECT $SELECT_COLUMNS FROM app.aml_screenings
-            WHERE user_id = ? ORDER BY completed_at DESC NULLS FIRST
+            WHERE user_id = ? ORDER BY completed_at DESC NULLS LAST
             LIMIT 1
         """
 

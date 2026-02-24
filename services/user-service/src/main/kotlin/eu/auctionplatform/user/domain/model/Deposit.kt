@@ -32,8 +32,8 @@ data class Deposit(
     val pspReference: String? = null
 ) {
 
-    /** Returns `true` if the deposit has been paid and not yet refunded. */
-    fun isActive(): Boolean = paidAt != null && refundedAt == null
+    /** Returns `true` if the deposit has been paid and no refund has been requested or completed. */
+    fun isActive(): Boolean = paidAt != null && refundRequestedAt == null && refundedAt == null
 
     /** Returns `true` if a refund has been requested but not yet processed. */
     fun isRefundPending(): Boolean = refundRequestedAt != null && refundedAt == null

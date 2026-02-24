@@ -274,17 +274,18 @@ const notifPrefs = reactive({
 
 onMounted(() => {
   if (!requireAuth('/profile')) return
-
-  // Populate form with user data
-  if (user.value) {
-    form.firstName = user.value.firstName || ''
-    form.lastName = user.value.lastName || ''
-    form.phone = user.value.phone || ''
-    form.country = user.value.country || ''
-    form.company = user.value.company || ''
-    form.vatNumber = user.value.vatNumber || ''
-  }
 })
+
+watch(user, (newUser) => {
+  if (newUser) {
+    form.firstName = newUser.firstName || ''
+    form.lastName = newUser.lastName || ''
+    form.phone = newUser.phone || ''
+    form.country = newUser.country || ''
+    form.company = newUser.company || ''
+    form.vatNumber = newUser.vatNumber || ''
+  }
+}, { immediate: true })
 
 async function handleSave() {
   saving.value = true

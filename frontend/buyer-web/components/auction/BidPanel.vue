@@ -326,10 +326,11 @@ async function handleCancelAutoBid() {
   }
 }
 
-function toggleAutoBid() {
-  autoBidEnabled.value = !autoBidEnabled.value
-  if (!autoBidEnabled.value && hasAutoBid.value) {
-    handleCancelAutoBid()
+async function toggleAutoBid() {
+  if (autoBidEnabled.value && hasAutoBid.value) {
+    await handleCancelAutoBid()
+  } else {
+    autoBidEnabled.value = !autoBidEnabled.value
   }
 }
 

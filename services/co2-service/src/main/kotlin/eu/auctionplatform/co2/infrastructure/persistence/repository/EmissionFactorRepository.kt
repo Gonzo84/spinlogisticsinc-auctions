@@ -2,7 +2,6 @@ package eu.auctionplatform.co2.infrastructure.persistence.repository
 
 import eu.auctionplatform.co2.domain.model.EmissionFactor
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -18,7 +17,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class EmissionFactorRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 
@@ -28,6 +26,12 @@ class EmissionFactorRepository @Inject constructor(
         private const val SELECT_COLUMNS = """
             id, category_id, product_type, new_manufacturing_co2_kg,
             reuse_factor, source, last_updated
+        """
+
+        private const val SELECT_BY_ID = """
+            SELECT $SELECT_COLUMNS
+              FROM app.emission_factors
+             WHERE id = ?
         """
 
         private const val SELECT_BY_CATEGORY_ID = """
@@ -58,6 +62,23 @@ class EmissionFactorRepository @Inject constructor(
                    last_updated = ?
              WHERE id = ?
         """
+    }
+
+    /**
+     * Returns the emission factor with the given ID, or null if not found.
+     *
+     * @param id The emission factor identifier.
+     * @return The emission factor, or null.
+     */
+    fun findById(id: UUID): EmissionFactor? {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_BY_ID).use { stmt ->
+                stmt.setObject(1, id)
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) rs.toEmissionFactor() else null
+                }
+            }
+        }
     }
 
     /**

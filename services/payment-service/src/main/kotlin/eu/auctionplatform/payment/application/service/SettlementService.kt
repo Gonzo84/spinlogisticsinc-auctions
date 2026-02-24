@@ -86,10 +86,6 @@ class SettlementService @Inject constructor(
             .subtract(commission)
             .setScale(2, RoundingMode.HALF_UP)
 
-        // The sellerId is not directly on the payment — in a real system, we would
-        // look it up from the auction/lot service. For now, we use the auctionId
-        // as a placeholder lookup key. In production, an event-driven approach
-        // would carry sellerId in the payment creation context.
         val sellerId = resolveSellerId(payment)
 
         val settlement = Settlement(
@@ -191,13 +187,10 @@ class SettlementService @Inject constructor(
     /**
      * Resolves the seller UUID for a payment.
      *
-     * In a full implementation, this would query the lot/auction service
-     * to find the seller for the given lot. For the current implementation,
-     * we use a deterministic UUID derived from the auction ID as a placeholder.
+     * The seller ID is stored directly on the payment record, populated
+     * during checkout from the lot/auction context.
      */
     private fun resolveSellerId(payment: Payment): UUID {
-        // In production: call lot-service or read from a local projection
-        // For now, use the auctionId as a namespace to derive a stable seller UUID.
-        return payment.auctionId
+        return payment.sellerId
     }
 }

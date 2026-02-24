@@ -93,6 +93,7 @@ class PaymentResource @Inject constructor(
             LotCheckoutDetail(
                 lotId = lotId,
                 auctionId = lotId, // Placeholder: would be resolved from lot service
+                sellerId = lotId, // Placeholder: would be resolved from lot/auction service
                 hammerPrice = BigDecimal.ZERO, // Placeholder: would come from auction result
                 currency = request.currency,
                 buyerCountry = request.buyerCountry,
@@ -457,6 +458,7 @@ class PaymentResource @Inject constructor(
         PaymentStatusResponse(
             paymentId = payment.id.toString(),
             buyerId = payment.buyerId.toString(),
+            sellerId = payment.sellerId.toString(),
             auctionId = payment.auctionId.toString(),
             lotId = payment.lotId.toString(),
             hammerPrice = payment.hammerPrice,

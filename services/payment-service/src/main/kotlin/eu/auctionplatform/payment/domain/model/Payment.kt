@@ -13,6 +13,7 @@ import java.util.UUID
  *
  * @property id Unique payment identifier.
  * @property buyerId The winning bidder / buyer.
+ * @property sellerId The seller of the lot.
  * @property auctionId The auction from which the lot was won.
  * @property lotId The specific lot that was purchased.
  * @property hammerPrice The final bid (hammer) price.
@@ -34,6 +35,7 @@ import java.util.UUID
 data class Payment(
     val id: UUID,
     val buyerId: UUID,
+    val sellerId: UUID,
     val auctionId: UUID,
     val lotId: UUID,
     val hammerPrice: BigDecimal,

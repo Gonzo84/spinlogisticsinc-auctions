@@ -169,9 +169,15 @@ class Co2Resource {
     ): Response {
         logger.info("PUT /emission-factors/{}", id)
 
+        val existing = co2CalculationService.getEmissionFactor(id)
+            ?: throw NotFoundException(
+                code = "EMISSION_FACTOR_NOT_FOUND",
+                message = "Emission factor '$id' not found"
+            )
+
         val factor = EmissionFactor(
             id = id,
-            categoryId = UUID.randomUUID(), // categoryId is not updatable; preserved by the repository
+            categoryId = existing.categoryId,
             productType = request.productType,
             newManufacturingCo2Kg = request.newManufacturingCo2Kg,
             reuseFactor = request.reuseFactor,

@@ -147,8 +147,8 @@ class GdprService {
 
         natsPublisher.publish(NatsSubjects.COMPLIANCE_GDPR_ERASURE, event)
 
-        // Mark as completed
-        gdprRequestRepository.updateStatus(requestId, GdprRequestStatus.COMPLETED, Instant.now(), null)
+        // Status remains IN_PROGRESS until downstream services confirm data deletion.
+        // A scheduled job or acknowledgment consumer should handle marking COMPLETED.
 
         logger.info("GDPR erasure processed: requestId={}, userId={}", requestId, request.userId)
     }

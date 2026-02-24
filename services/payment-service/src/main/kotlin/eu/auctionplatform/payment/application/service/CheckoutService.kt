@@ -100,6 +100,7 @@ class CheckoutService @Inject constructor(
             val payment = Payment(
                 id = UUID.randomUUID(),
                 buyerId = buyerId,
+                sellerId = lot.sellerId,
                 auctionId = lot.auctionId,
                 lotId = lot.lotId,
                 hammerPrice = lot.hammerPrice,
@@ -221,6 +222,12 @@ class CheckoutService @Inject constructor(
     // -----------------------------------------------------------------------
 
     private fun handleAuthorisation(payment: Payment, webhookData: PaymentWebhookData): Boolean {
+        // BUG-12: Guard against duplicate webhooks for already-finalized payments
+        if (payment.status == PaymentStatus.COMPLETED || payment.status == PaymentStatus.FAILED) {
+            logger.warn("Ignoring duplicate webhook for already-finalized payment {} (status={})", payment.id, payment.status)
+            return true
+        }
+
         if (webhookData.success) {
             val now = Instant.now()
             paymentRepository.markCompleted(
@@ -232,11 +239,19 @@ class CheckoutService @Inject constructor(
 
             logger.info("Payment {} completed successfully (psp={})", payment.id, webhookData.pspReference)
 
-            // Generate invoices
-            generateInvoices(payment)
+            // Generate invoices — failure should not prevent settlement creation
+            try {
+                generateInvoices(payment)
+            } catch (e: Exception) {
+                logger.error("Failed to generate invoices for payment {}: {}", payment.id, e.message, e)
+            }
 
-            // Create settlement for the seller
-            settlementService.createSettlement(payment.id)
+            // Create settlement for the seller — failure should not affect payment status
+            try {
+                settlementService.createSettlement(payment.id)
+            } catch (e: Exception) {
+                logger.error("Failed to create settlement for payment {}: {}", payment.id, e.message, e)
+            }
 
             return true
         } else {
@@ -315,6 +330,7 @@ class CheckoutService @Inject constructor(
 data class LotCheckoutDetail(
     val lotId: UUID,
     val auctionId: UUID,
+    val sellerId: UUID,
     val hammerPrice: BigDecimal,
     val currency: String = "EUR",
     val buyerCountry: String,

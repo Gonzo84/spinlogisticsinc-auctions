@@ -139,8 +139,9 @@ class NotificationService @Inject constructor(
         )
 
         for (channel in channels) {
+            var notification: Notification? = null
             try {
-                val notification = createNotification(
+                notification = createNotification(
                     userId = userId,
                     type = type,
                     channel = channel,
@@ -165,6 +166,17 @@ class NotificationService @Inject constructor(
                 )
                 // The notification was inserted with PENDING status; update to FAILED
                 // Note: if the insert itself failed, this is a no-op since there's no record.
+                notification?.let { n ->
+                    try {
+                        notificationRepository.updateStatus(
+                            id = n.id,
+                            status = NotificationStatus.FAILED,
+                            sentAt = null
+                        )
+                    } catch (updateEx: Exception) {
+                        logger.error("Failed to mark notification {} as FAILED: {}", n.id, updateEx.message, updateEx)
+                    }
+                }
             }
         }
     }

@@ -15,11 +15,15 @@ object NatsSubjects {
     const val AUCTION_BID_PROXY: String         = "auction.bid.proxy"
     const val AUCTION_LOT_EXTENDED: String      = "auction.lot.extended"
     const val AUCTION_LOT_CLOSED: String        = "auction.lot.closed"
-    const val AUCTION_LOT_AWARDED: String       = "auction.lot.awarded"
+    const val AUCTION_BID_REJECTED: String       = "auction.bid.rejected"
+    const val AUCTION_DEPOSIT_REQUIRED: String   = "auction.deposit.required"
+    const val AUCTION_RESERVE_MET: String        = "auction.reserve.met"
+    const val AUCTION_LOT_AWARDED: String        = "auction.lot.awarded"
 
     // ── Catalog ──────────────────────────────────────────────────────────
     const val CATALOG_LOT_CREATED: String       = "catalog.lot.created"
-    const val CATALOG_LOT_UPDATED: String       = "catalog.lot.updated"
+    const val CATALOG_LOT_UPDATED: String        = "catalog.lot.updated"
+    const val CATALOG_LOT_STATUS_CHANGED: String = "catalog.lot.status_changed"
 
     // ── Payment ──────────────────────────────────────────────────────────
     const val PAYMENT_CHECKOUT_COMPLETED: String = "payment.checkout.completed"

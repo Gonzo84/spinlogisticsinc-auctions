@@ -3,7 +3,6 @@ package eu.auctionplatform.catalog.infrastructure.persistence.repository
 import eu.auctionplatform.catalog.domain.model.LotStatus
 import eu.auctionplatform.catalog.infrastructure.persistence.entity.LotEntity
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
-import io.quarkus.hibernate.orm.PersistenceUnit
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Sort
 import jakarta.enterprise.context.ApplicationScoped
@@ -15,7 +14,6 @@ import java.util.UUID
  * Uses the named `system` datasource configured in `application.yml`.
  */
 @ApplicationScoped
-@PersistenceUnit("system")
 class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
 
     /**
@@ -116,4 +114,57 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
                 .list()
         }
     }
+
+    /**
+     * Counts lots matching a country (excluding withdrawn lots).
+     *
+     * @param country ISO 3166-1 alpha-2 country code.
+     * @return Total number of non-withdrawn lots in the country.
+     */
+    fun countByCountry(country: String): Long =
+        count("locationCountry = ?1 and status != ?2", country, LotStatus.WITHDRAWN)
+
+    /**
+     * Returns lots for a given seller with pagination, ordered by creation time descending.
+     *
+     * @param sellerId The seller's user identifier.
+     * @param page     The page to retrieve (0-based).
+     * @param pageSize The number of items per page.
+     * @return List of lot entities owned by the seller.
+     */
+    fun findBySellerId(sellerId: UUID, page: Int, pageSize: Int): List<LotEntity> =
+        find("sellerId = ?1", Sort.descending("createdAt"), sellerId)
+            .page(Page.of(page, pageSize))
+            .list()
+
+    /**
+     * Counts lots for a given seller.
+     *
+     * @param sellerId The seller's user identifier.
+     * @return Total number of lots owned by the seller.
+     */
+    fun countBySellerId(sellerId: UUID): Long =
+        count("sellerId", sellerId)
+
+    /**
+     * Returns lots assigned to a specific auction event with pagination.
+     *
+     * @param auctionId The auction event identifier.
+     * @param page      The page to retrieve (0-based).
+     * @param pageSize  The number of items per page.
+     * @return List of lot entities in the auction.
+     */
+    fun findByAuctionId(auctionId: UUID, page: Int, pageSize: Int): List<LotEntity> =
+        find("auctionId = ?1", Sort.ascending("title"), auctionId)
+            .page(Page.of(page, pageSize))
+            .list()
+
+    /**
+     * Counts lots assigned to a specific auction event.
+     *
+     * @param auctionId The auction event identifier.
+     * @return Total number of lots in the auction.
+     */
+    fun countByAuctionId(auctionId: UUID): Long =
+        count("auctionId", auctionId)
 }

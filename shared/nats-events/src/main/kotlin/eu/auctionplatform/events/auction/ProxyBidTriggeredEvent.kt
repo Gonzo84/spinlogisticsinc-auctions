@@ -22,7 +22,7 @@ data class ProxyBidTriggeredEvent(
     override val eventId: String,
 
     @JsonProperty("eventType")
-    override val eventType: String = "auction.bid.proxy_triggered",
+    override val eventType: String = "auction.bid.proxy",
 
     @JsonProperty("aggregateId")
     override val aggregateId: String,

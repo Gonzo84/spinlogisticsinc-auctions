@@ -2,7 +2,6 @@ package eu.auctionplatform.co2.infrastructure.persistence.repository
 
 import eu.auctionplatform.co2.domain.model.Co2Calculation
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -18,7 +17,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class Co2CalculationRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 
@@ -64,7 +62,7 @@ class Co2CalculationRepository @Inject constructor(
                   GROUP BY lot_id
              ) latest ON c.lot_id = latest.lot_id AND c.version = latest.max_version
              WHERE c.lot_id IN (
-                 SELECT id FROM app.co2_lot_seller_mapping WHERE seller_id = ?
+                 SELECT lot_id FROM app.co2_lot_seller_mapping WHERE seller_id = ?
              )
         """
     }

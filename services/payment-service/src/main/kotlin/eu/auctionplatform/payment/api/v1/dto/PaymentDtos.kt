@@ -167,6 +167,9 @@ data class PaymentStatusResponse(
     @JsonProperty("buyerId")
     val buyerId: String,
 
+    @JsonProperty("sellerId")
+    val sellerId: String,
+
     @JsonProperty("auctionId")
     val auctionId: String,
 

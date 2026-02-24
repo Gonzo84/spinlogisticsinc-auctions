@@ -16,7 +16,6 @@ import eu.auctionplatform.seller.domain.model.SellerProfile
 import eu.auctionplatform.seller.domain.model.SellerStatus
 import eu.auctionplatform.seller.infrastructure.persistence.repository.SellerProfileRepository
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -36,7 +35,6 @@ import java.util.UUID
 @ApplicationScoped
 class SellerService @Inject constructor(
     private val sellerProfileRepository: SellerProfileRepository,
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 
@@ -228,7 +226,10 @@ class SellerService @Inject constructor(
                                 reservePrice = rs.getBigDecimal("reserve_price"),
                                 bidCount = rs.getInt("bid_count"),
                                 closingAt = rs.getTimestamp("closing_at")?.toInstant(),
-                                createdAt = rs.getTimestamp("created_at")?.toInstant() ?: Instant.now()
+                                createdAt = rs.getTimestamp("created_at")?.toInstant() ?: run {
+                                    logger.warn("Lot record missing created_at timestamp, using epoch as fallback")
+                                    Instant.EPOCH
+                                }
                             )
                         )
                     }
@@ -269,7 +270,10 @@ class SellerService @Inject constructor(
                             reservePrice = rs.getBigDecimal("reserve_price"),
                             bidCount = rs.getInt("bid_count"),
                             closingAt = rs.getTimestamp("closing_at")?.toInstant(),
-                            createdAt = rs.getTimestamp("created_at")?.toInstant() ?: Instant.now()
+                            createdAt = rs.getTimestamp("created_at")?.toInstant() ?: run {
+                                    logger.warn("Lot record missing created_at timestamp, using epoch as fallback")
+                                    Instant.EPOCH
+                                }
                         )
                     }
                 }
