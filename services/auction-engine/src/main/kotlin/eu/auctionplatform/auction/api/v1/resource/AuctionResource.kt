@@ -28,7 +28,6 @@ import eu.auctionplatform.commons.exception.ForbiddenException
 import eu.auctionplatform.commons.exception.NotFoundException
 import eu.auctionplatform.commons.util.JsonMapper
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.annotation.security.PermitAll
 import jakarta.annotation.security.RolesAllowed
 import jakarta.inject.Inject
@@ -83,7 +82,6 @@ class AuctionResource @Inject constructor(
     private val lifecycleService: AuctionLifecycleService,
     private val readModelRepository: AuctionReadModelRepository,
     private val eventRepository: AuctionEventRepository,
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

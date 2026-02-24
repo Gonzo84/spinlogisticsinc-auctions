@@ -3,7 +3,6 @@ package eu.auctionplatform.analytics.infrastructure.persistence.repository
 import eu.auctionplatform.analytics.domain.model.AuctionMetrics
 import eu.auctionplatform.analytics.domain.model.PlatformMetrics
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -23,7 +22,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class AnalyticsRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

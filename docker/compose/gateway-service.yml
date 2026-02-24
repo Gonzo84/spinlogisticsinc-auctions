@@ -1,0 +1,55 @@
+# =============================================================================
+# Gateway Service (API Gateway + WebSocket Hub)
+# =============================================================================
+
+services:
+  gateway-service:
+    build:
+      context: ../../services/gateway-service
+      dockerfile: ../../infrastructure/docker/Dockerfile.service
+    container_name: gateway-service
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/auction_gateway
+      QUARKUS_DATASOURCE_USERNAME: dev
+      QUARKUS_DATASOURCE_PASSWORD: dev
+      QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8080/realms/auction-platform
+      NATS_URL: nats://nats:4222
+      QUARKUS_OPENTELEMETRY_TRACER_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RATE_LIMIT_ENABLED: "false"
+      WEBHOOK_ADYEN_HMAC_KEY: dev-hmac-key
+      WEBHOOK_ONFIDO_TOKEN: dev-onfido-token
+      # Upstream service routes (Docker internal networking)
+      AUCTION_ENGINE_URL: http://auction-engine:8081
+      CATALOG_SERVICE_URL: http://catalog-service:8082
+      USER_SERVICE_URL: http://user-service:8083
+      PAYMENT_SERVICE_URL: http://payment-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      MEDIA_SERVICE_URL: http://media-service:8086
+      SEARCH_SERVICE_URL: http://search-service:8087
+      SELLER_SERVICE_URL: http://seller-service:8088
+      BROKER_SERVICE_URL: http://broker-service:8089
+      ANALYTICS_SERVICE_URL: http://analytics-service:8090
+      COMPLIANCE_SERVICE_URL: http://compliance-service:8091
+      CO2_SERVICE_URL: http://co2-service:8092
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/q/health/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    networks:
+      - auction-network
+
+networks:
+  auction-network:
+    name: auction-network

@@ -1,7 +1,7 @@
 package eu.auctionplatform.gateway.infrastructure.ratelimit
 
-import io.quarkus.redis.datasource.ReactiveRedisDataSource
 import io.quarkus.redis.datasource.RedisDataSource
+import io.quarkus.redis.datasource.sortedset.ScoreRange
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.inject.ConfigProperty
@@ -81,15 +81,15 @@ class RateLimitService @Inject constructor(
         val windowStart = now - (windowSeconds * 1000L)
 
         try {
-            val commands = redisDataSource.sortedSet(String::class.java, key)
+            val commands = redisDataSource.sortedSet(String::class.java)
 
             // Remove entries outside the sliding window
-            commands.zremrangebyscore(Double.NEGATIVE_INFINITY, windowStart.toDouble())
+            commands.zremrangebyscore(key, ScoreRange.from(Double.NEGATIVE_INFINITY, windowStart.toDouble()))
 
             // Count current entries within the window
-            val currentCount = commands.zcard()
+            val currentCount = commands.zcard(key)
 
-            if (currentCount >= limit) {
+            if (currentCount >= limit.toLong()) {
                 logger.debug(
                     "Rate limit exceeded for user={}, endpoint={}, count={}/{}",
                     userId, endpoint, currentCount, limit
@@ -100,7 +100,7 @@ class RateLimitService @Inject constructor(
             // Add the current request with the timestamp as score
             // Use timestamp + random suffix to avoid duplicate scores
             val member = "$now:${System.nanoTime()}"
-            commands.zadd(now.toDouble(), member)
+            commands.zadd(key, now.toDouble(), member)
 
             // Set TTL on the key to auto-expire after the window passes
             // This prevents orphaned keys from accumulating
@@ -156,10 +156,10 @@ class RateLimitService @Inject constructor(
         val windowStart = now - (windowSeconds * 1000L)
 
         return try {
-            val commands = redisDataSource.sortedSet(String::class.java, key)
-            commands.zremrangebyscore(Double.NEGATIVE_INFINITY, windowStart.toDouble())
-            val currentCount = commands.zcard()
-            (limit - currentCount).coerceAtLeast(0)
+            val commands = redisDataSource.sortedSet(String::class.java)
+            commands.zremrangebyscore(key, ScoreRange.from(Double.NEGATIVE_INFINITY, windowStart.toDouble()))
+            val currentCount = commands.zcard(key)
+            (limit.toLong() - currentCount).coerceAtLeast(0L)
         } catch (ex: Exception) {
             logger.error("Redis error getting remaining requests: {}", ex.message, ex)
             -1

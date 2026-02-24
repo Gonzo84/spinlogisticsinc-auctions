@@ -3,7 +3,6 @@ package eu.auctionplatform.catalog.infrastructure.persistence.repository
 import eu.auctionplatform.catalog.domain.model.AuctionEventStatus
 import eu.auctionplatform.catalog.infrastructure.persistence.entity.AuctionEventEntity
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
-import io.quarkus.hibernate.orm.PersistenceUnit
 import io.quarkus.panache.common.Sort
 import jakarta.enterprise.context.ApplicationScoped
 import java.util.UUID
@@ -14,7 +13,6 @@ import java.util.UUID
  * Uses the named `system` datasource configured in `application.yml`.
  */
 @ApplicationScoped
-@PersistenceUnit("system")
 class AuctionEventRepository : PanacheRepositoryBase<AuctionEventEntity, UUID> {
 
     /**

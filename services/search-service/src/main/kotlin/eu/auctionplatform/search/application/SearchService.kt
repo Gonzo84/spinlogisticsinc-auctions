@@ -5,12 +5,12 @@ import co.elastic.clients.elasticsearch._types.FieldValue
 import co.elastic.clients.elasticsearch._types.GeoDistanceType
 import co.elastic.clients.elasticsearch._types.SortOrder
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation
+import co.elastic.clients.elasticsearch._types.aggregations.AggregationRange
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery
 import co.elastic.clients.elasticsearch._types.query_dsl.Query
 import co.elastic.clients.elasticsearch.core.SearchRequest
 import co.elastic.clients.elasticsearch.core.SearchResponse
-import co.elastic.clients.json.JsonData
 import eu.auctionplatform.search.infrastructure.elasticsearch.LotDocument
 import eu.auctionplatform.search.infrastructure.elasticsearch.LotIndexService
 import jakarta.enterprise.context.ApplicationScoped
@@ -317,13 +317,13 @@ class SearchService @Inject constructor(
                     .range { r ->
                         r.field("currentBid")
                             .ranges(
-                                { rng -> rng.key("0-100").from("0").to("100") },
-                                { rng -> rng.key("100-500").from("100").to("500") },
-                                { rng -> rng.key("500-1000").from("500").to("1000") },
-                                { rng -> rng.key("1000-5000").from("1000").to("5000") },
-                                { rng -> rng.key("5000-10000").from("5000").to("10000") },
-                                { rng -> rng.key("10000-50000").from("10000").to("50000") },
-                                { rng -> rng.key("50000+").from("50000") }
+                                AggregationRange.of { rng -> rng.key("0-100").from(0.0).to(100.0) },
+                                AggregationRange.of { rng -> rng.key("100-500").from(100.0).to(500.0) },
+                                AggregationRange.of { rng -> rng.key("500-1000").from(500.0).to(1000.0) },
+                                AggregationRange.of { rng -> rng.key("1000-5000").from(1000.0).to(5000.0) },
+                                AggregationRange.of { rng -> rng.key("5000-10000").from(5000.0).to(10000.0) },
+                                AggregationRange.of { rng -> rng.key("10000-50000").from(10000.0).to(50000.0) },
+                                AggregationRange.of { rng -> rng.key("50000+").from(50000.0) }
                             )
                     }
                     .build())
@@ -471,9 +471,11 @@ class SearchService @Inject constructor(
             if (query.minPrice != null || query.maxPrice != null) {
                 bool.filter { f ->
                     f.range { r ->
-                        r.field("currentBid").apply {
-                            if (query.minPrice != null) gte(JsonData.of(query.minPrice))
-                            if (query.maxPrice != null) lte(JsonData.of(query.maxPrice))
+                        r.number { nr ->
+                            nr.field("currentBid").apply {
+                                if (query.minPrice != null) gte(query.minPrice.toDouble())
+                                if (query.maxPrice != null) lte(query.maxPrice.toDouble())
+                            }
                         }
                     }
                 }

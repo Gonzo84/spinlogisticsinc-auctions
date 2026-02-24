@@ -2,7 +2,6 @@ package eu.auctionplatform.notification.infrastructure.persistence.repository
 
 import eu.auctionplatform.notification.domain.model.DeviceToken
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -18,7 +17,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class DeviceTokenRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

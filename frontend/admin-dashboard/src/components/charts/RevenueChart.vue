@@ -52,7 +52,7 @@ const chartOptions: ChartOptions<'bar'> = {
       cornerRadius: 8,
       callbacks: {
         label: (ctx) => {
-          return `EUR ${ctx.parsed.y.toLocaleString('de-DE', { minimumFractionDigits: 2 })}`
+          return `EUR ${(ctx.parsed.y ?? 0).toLocaleString('de-DE', { minimumFractionDigits: 2 })}`
         },
       },
     },

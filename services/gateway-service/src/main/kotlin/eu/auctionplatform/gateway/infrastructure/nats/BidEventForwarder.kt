@@ -8,8 +8,8 @@ import io.nats.client.Connection
 import io.nats.client.Message
 import io.quarkus.runtime.ShutdownEvent
 import io.quarkus.runtime.StartupEvent
-import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
+import jakarta.inject.Singleton
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
 
@@ -32,12 +32,12 @@ import org.slf4j.LoggerFactory
  * Uses a durable pull consumer named "gateway-auction-consumer" on the
  * "AUCTION" stream to ensure at-least-once delivery and survive restarts.
  */
-@ApplicationScoped
+@Singleton
 class BidEventForwarder @Inject constructor(
-    private val connection: Connection,
+    natsConnection: Connection,
     private val webSocketHub: WebSocketHub
 ) : NatsConsumer(
-    connection = connection,
+    connection = natsConnection,
     streamName = "AUCTION",
     durableName = DURABLE_NAME,
     filterSubject = FILTER_SUBJECT,

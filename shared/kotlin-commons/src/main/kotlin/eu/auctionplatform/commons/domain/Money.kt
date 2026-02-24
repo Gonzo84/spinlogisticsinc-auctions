@@ -102,7 +102,7 @@ class Money private constructor(
 
     private fun requireSameCurrency(other: Money) {
         require(currency == other.currency) {
-            "Currency mismatch: cannot combine ${currency.currencyCode} with ${other.currencyCode}"
+            "Currency mismatch: cannot combine ${currency.currencyCode} with ${other.currency.currencyCode}"
         }
     }
 

@@ -6,7 +6,6 @@ import eu.auctionplatform.events.auction.BidPlacedEvent
 import eu.auctionplatform.events.auction.LotAwardedEvent
 import eu.auctionplatform.events.auction.ReserveMetEvent
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -52,7 +51,6 @@ data class AuctionReadModel(
  */
 @ApplicationScoped
 class AuctionReadModelRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

@@ -6,7 +6,8 @@ FROM eclipse-temurin:21-jre-alpine AS runtime
 ARG APP_DIR=/deployments
 ARG QUARKUS_HTTP_PORT=8080
 
-RUN addgroup -S quarkus && adduser -S quarkus -G quarkus \
+RUN apk add --no-cache curl \
+    && addgroup -S quarkus && adduser -S quarkus -G quarkus \
     && mkdir -p ${APP_DIR} \
     && chown -R quarkus:quarkus ${APP_DIR}
 

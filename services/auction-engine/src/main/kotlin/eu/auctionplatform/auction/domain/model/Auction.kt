@@ -8,6 +8,7 @@ import eu.auctionplatform.auction.domain.exception.AuctionException
 import eu.auctionplatform.commons.domain.*
 import eu.auctionplatform.commons.util.IdGenerator
 import java.time.Instant
+import java.util.UUID
 
 /**
  * Auction aggregate root — the central domain entity of the EU B2B auction platform.
@@ -39,10 +40,10 @@ class Auction private constructor() : AggregateRoot() {
     // State fields — mutated only via apply(event)
     // -----------------------------------------------------------------------
 
-    lateinit var id: AuctionId
+    var id: AuctionId = AuctionId(NIL_UUID)
         private set
 
-    lateinit var lotId: LotId
+    var lotId: LotId = LotId(NIL_UUID)
         private set
 
     lateinit var brand: Brand
@@ -85,7 +86,7 @@ class Auction private constructor() : AggregateRoot() {
     var extensionCount: Int = 0
         private set
 
-    lateinit var sellerId: UserId
+    var sellerId: UserId = UserId(NIL_UUID)
         private set
 
     /** Set of blocked user IDs — populated from external context before command handling. */
@@ -99,6 +100,9 @@ class Auction private constructor() : AggregateRoot() {
     // -----------------------------------------------------------------------
 
     companion object {
+
+        /** Sentinel UUID used as a default before the aggregate is hydrated from events. */
+        private val NIL_UUID: UUID = UUID(0, 0)
 
         /**
          * Creates a new auction from the given [command].

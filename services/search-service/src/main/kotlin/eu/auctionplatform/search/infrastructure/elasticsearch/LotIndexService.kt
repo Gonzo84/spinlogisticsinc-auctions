@@ -133,7 +133,7 @@ class LotIndexService @Inject constructor(
      */
     fun indexDocument(document: LotDocument) {
         val json = JsonMapper.toJson(document)
-        esClient.index { i ->
+        esClient.index<Any> { i ->
             i.index(activeIndexName)
                 .id(document.id)
                 .withJson(StringReader(json))
@@ -198,7 +198,7 @@ class LotIndexService @Inject constructor(
             val json = JsonMapper.toJson(document)
 
             // Index in archive
-            esClient.index { i ->
+            esClient.index<Any> { i ->
                 i.index(archiveIndexName)
                     .id(documentId)
                     .withJson(StringReader(json))
@@ -421,7 +421,7 @@ class LotIndexService @Inject constructor(
                 .build())
             // ----- specifications: object with dynamic mapping -----
             .properties("specifications", Property.Builder()
-                .object_(ObjectProperty.Builder()
+                .`object`(ObjectProperty.Builder()
                     .dynamic(DynamicMapping.True)
                     .build())
                 .build())

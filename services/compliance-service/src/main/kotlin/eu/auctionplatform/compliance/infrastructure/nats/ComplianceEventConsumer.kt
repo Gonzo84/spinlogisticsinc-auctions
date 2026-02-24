@@ -7,6 +7,8 @@ import eu.auctionplatform.compliance.domain.model.AuditLogEntry
 import eu.auctionplatform.compliance.infrastructure.persistence.repository.AuditLogRepository
 import io.nats.client.Connection
 import io.nats.client.Message
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -25,7 +27,8 @@ import java.util.UUID
  * and sub-subjects. Each event is parsed and logged as an [AuditLogEntry]
  * for regulatory retention and forensic analysis.
  */
-class ComplianceEventConsumer(
+@Singleton
+class ComplianceEventConsumer @Inject constructor(
     connection: Connection,
     private val auditLogRepository: AuditLogRepository
 ) : NatsConsumer(

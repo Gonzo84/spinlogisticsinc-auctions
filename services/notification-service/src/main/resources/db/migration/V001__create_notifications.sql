@@ -76,4 +76,4 @@ INSERT INTO app.casbin_rule (ptype, v0, v1, v2, v3) VALUES
     ('p', 'seller_verified', '/api/v1/notifications/*', 'PUT', 'allow'),
     ('p', 'seller_verified', '/api/v1/notifications/preferences', 'GET|PUT', 'allow'),
     ('p', 'admin_super', '/api/v1/**', '.*', 'allow'),
-    ('g', 'admin_ops', 'admin_super');
+    ('g', 'admin_ops', 'admin_super', '', '');

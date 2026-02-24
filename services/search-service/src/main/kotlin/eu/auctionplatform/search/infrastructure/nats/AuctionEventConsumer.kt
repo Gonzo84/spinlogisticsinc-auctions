@@ -8,8 +8,8 @@ import io.nats.client.Connection
 import io.nats.client.Message
 import io.quarkus.runtime.ShutdownEvent
 import io.quarkus.runtime.StartupEvent
-import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
+import jakarta.inject.Singleton
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
@@ -36,9 +36,9 @@ import java.time.Instant
  * Note: The filter subject uses `>` (NATS multi-level wildcard) to capture
  * brand-suffixed subjects, e.g. `auction.bid.placed.troostwijk`.
  */
-@ApplicationScoped
+@Singleton
 class AuctionEventConsumer @Inject constructor(
-    private val connection: Connection,
+    connection: Connection,
     private val lotIndexService: LotIndexService
 ) : NatsConsumer(
     connection = connection,

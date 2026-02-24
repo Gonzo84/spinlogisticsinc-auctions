@@ -2,7 +2,6 @@ package eu.auctionplatform.user.infrastructure.persistence.repository
 
 import eu.auctionplatform.user.infrastructure.persistence.entity.UserEntity
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
-import io.quarkus.hibernate.orm.PersistenceUnit
 import jakarta.enterprise.context.ApplicationScoped
 import java.util.UUID
 
@@ -14,7 +13,6 @@ import java.util.UUID
  * while providing custom query methods for domain-specific lookups.
  */
 @ApplicationScoped
-@PersistenceUnit("system")
 class UserRepository : PanacheRepositoryBase<UserEntity, UUID> {
 
     /**

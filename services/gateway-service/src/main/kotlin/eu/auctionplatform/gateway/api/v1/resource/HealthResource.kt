@@ -5,7 +5,6 @@ import eu.auctionplatform.gateway.api.v1.dto.HealthResponse
 import eu.auctionplatform.gateway.infrastructure.websocket.WebSocketHub
 import io.agroal.api.AgroalDataSource
 import io.nats.client.Connection
-import io.quarkus.agroal.DataSource
 import io.quarkus.redis.datasource.RedisDataSource
 import jakarta.annotation.security.PermitAll
 import jakarta.inject.Inject
@@ -31,7 +30,6 @@ import java.time.Instant
 class HealthResource {
 
     @Inject
-    @DataSource("system")
     lateinit var dataSource: AgroalDataSource
 
     @Inject

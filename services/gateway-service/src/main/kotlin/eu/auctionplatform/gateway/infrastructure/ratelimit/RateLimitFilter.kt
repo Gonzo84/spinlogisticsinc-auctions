@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
  *
  * Rate limit tiers are applied based on the request URI:
  * - `/api/v1/auctions/{id}/bids` (POST) -- bid placement limit (10/min per auction)
- * - `/api/v1/search/**` -- search limit (30/min)
+ * - `/api/v1/search/` (and subpaths) -- search limit (30/min)
  * - Everything else -- general API limit (100/min)
  *
  * When a limit is exceeded the filter aborts the request with **429 Too Many

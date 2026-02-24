@@ -18,6 +18,7 @@ dependencies {
     compileOnly("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
     compileOnly("jakarta.enterprise:jakarta.enterprise.cdi-api:4.1.0")
     compileOnly("jakarta.inject:jakarta.inject-api:2.0.1")
+    compileOnly("org.eclipse.microprofile.config:microprofile-config-api:3.1")
 
     // Logging
     implementation("org.slf4j:slf4j-api:2.0.16")

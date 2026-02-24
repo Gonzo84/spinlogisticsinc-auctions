@@ -7,25 +7,23 @@ quarkus:
     name: auction-engine
 
   # ---------------------------------------------------------------------------
-  # Datasource (named "system")
+  # Datasource (default)
   # ---------------------------------------------------------------------------
   datasource:
-    system:
-      db-kind: postgresql
-      jdbc:
-        url: jdbc:postgresql://localhost:5432/auction_engine
-        max-size: 16
-      username: dev
-      password: dev
+    db-kind: postgresql
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/auction_engine
+      max-size: 16
+    username: dev
+    password: dev
 
   # ---------------------------------------------------------------------------
-  # Flyway (named "system")
+  # Flyway (default)
   # ---------------------------------------------------------------------------
   flyway:
-    system:
-      migrate-at-start: true
-      baseline-on-migrate: true
-      default-schema: app
+    migrate-at-start: true
+    baseline-on-migrate: true
+    default-schema: app
 
   # ---------------------------------------------------------------------------
   # OIDC
@@ -101,11 +99,10 @@ casbin:
       console:
         json: false
     datasource:
-      system:
-        jdbc:
-          url: jdbc:postgresql://localhost:5432/auction_engine
-        username: dev
-        password: dev
+      jdbc:
+        url: jdbc:postgresql://localhost:5432/auction_engine
+      username: dev
+      password: dev
     oidc:
       auth-server-url: http://localhost:8180/realms/auction-platform
     opentelemetry:
@@ -124,12 +121,11 @@ casbin:
       console:
         json: true
     datasource:
-      system:
-        jdbc:
-          url: ${DB_URL:jdbc:postgresql://db-staging:5432/auction_engine}
-          max-size: 32
-        username: ${DB_USER:staging}
-        password: ${DB_PASS:staging}
+      jdbc:
+        url: ${DB_URL:jdbc:postgresql://db-staging:5432/auction_engine}
+        max-size: 32
+      username: ${DB_USER:staging}
+      password: ${DB_PASS:staging}
     oidc:
       auth-server-url: ${OIDC_AUTH_URL:https://auth-staging.auction-platform.eu/realms/auction-platform}
     http:
@@ -153,12 +149,11 @@ casbin:
       console:
         json: true
     datasource:
-      system:
-        jdbc:
-          url: ${DB_URL:jdbc:postgresql://db-prod:5432/auction_engine}
-          max-size: 64
-        username: ${DB_USER}
-        password: ${DB_PASS}
+      jdbc:
+        url: ${DB_URL:jdbc:postgresql://db-prod:5432/auction_engine}
+        max-size: 64
+      username: ${DB_USER}
+      password: ${DB_PASS}
     oidc:
       auth-server-url: ${OIDC_AUTH_URL:https://auth.auction-platform.eu/realms/auction-platform}
     http:

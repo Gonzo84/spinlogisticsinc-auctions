@@ -5,7 +5,6 @@ import eu.auctionplatform.notification.domain.model.NotificationChannel
 import eu.auctionplatform.notification.domain.model.NotificationStatus
 import eu.auctionplatform.notification.domain.model.NotificationType
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -23,7 +22,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class NotificationRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

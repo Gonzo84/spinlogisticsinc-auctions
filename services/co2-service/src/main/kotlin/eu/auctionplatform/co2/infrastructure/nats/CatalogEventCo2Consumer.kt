@@ -8,8 +8,8 @@ import io.nats.client.Connection
 import io.nats.client.Message
 import io.quarkus.runtime.ShutdownEvent
 import io.quarkus.runtime.StartupEvent
-import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
+import jakarta.inject.Singleton
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -34,7 +34,7 @@ import java.util.UUID
  * Uses a durable pull consumer named "co2-catalog-consumer" on the
  * "CATALOG" stream to ensure at-least-once delivery and survive restarts.
  */
-@ApplicationScoped
+@Singleton
 class CatalogEventCo2Consumer @Inject constructor(
     private val natsConnection: Connection,
     private val co2CalculationService: Co2CalculationService

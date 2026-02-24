@@ -3,7 +3,6 @@ package eu.auctionplatform.broker.infrastructure.persistence.repository
 import eu.auctionplatform.broker.domain.model.Lead
 import eu.auctionplatform.broker.domain.model.LeadStatus
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -19,7 +18,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class LeadRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

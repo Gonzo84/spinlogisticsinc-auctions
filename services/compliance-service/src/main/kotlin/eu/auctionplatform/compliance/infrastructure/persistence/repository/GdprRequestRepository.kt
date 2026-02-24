@@ -4,7 +4,6 @@ import eu.auctionplatform.compliance.domain.model.GdprRequest
 import eu.auctionplatform.compliance.domain.model.GdprRequestStatus
 import eu.auctionplatform.compliance.domain.model.GdprRequestType
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -20,7 +19,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class GdprRequestRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

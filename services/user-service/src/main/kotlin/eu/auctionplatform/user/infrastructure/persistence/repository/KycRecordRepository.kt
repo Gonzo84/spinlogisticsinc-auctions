@@ -3,7 +3,6 @@ package eu.auctionplatform.user.infrastructure.persistence.repository
 import eu.auctionplatform.user.domain.model.KycStatus
 import eu.auctionplatform.user.infrastructure.persistence.entity.KycRecordEntity
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
-import io.quarkus.hibernate.orm.PersistenceUnit
 import jakarta.enterprise.context.ApplicationScoped
 import java.util.UUID
 
@@ -13,7 +12,6 @@ import java.util.UUID
  * Uses the named `system` datasource configured in `application.yml`.
  */
 @ApplicationScoped
-@PersistenceUnit("system")
 class KycRecordRepository : PanacheRepositoryBase<KycRecordEntity, UUID> {
 
     /**

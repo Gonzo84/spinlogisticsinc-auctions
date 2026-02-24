@@ -3,7 +3,6 @@ package eu.auctionplatform.media.infrastructure.persistence.repository
 import eu.auctionplatform.media.domain.model.ImageStatus
 import eu.auctionplatform.media.domain.model.MediaImage
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -20,7 +19,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class ImageRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

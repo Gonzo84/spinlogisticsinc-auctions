@@ -47,7 +47,7 @@ subprojects {
         }
     }
 
-    java {
+    configure<org.gradle.api.plugins.JavaPluginExtension> {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
@@ -67,6 +67,7 @@ configure(subprojects.filter { it.path.startsWith(":services:") }) {
         // Core Quarkus
         "implementation"("io.quarkus:quarkus-kotlin")
         "implementation"("io.quarkus:quarkus-arc")
+        "implementation"("io.quarkus:quarkus-config-yaml")
         "implementation"("io.quarkus:quarkus-rest")
         "implementation"("io.quarkus:quarkus-rest-jackson")
         "implementation"("io.quarkus:quarkus-jackson")
@@ -123,9 +124,6 @@ configure(subprojects.filter { it.path.startsWith(":services:") }) {
         "testImplementation"("io.quarkus:quarkus-test-security-oidc")
     }
 
-    configure<org.jetbrains.kotlin.gradle.plugin.KotlinPluginExtension> {
-    }
-
     the<io.quarkus.gradle.extension.QuarkusPluginExtension>().apply {
         // Quarkus extension configuration if needed
     }
@@ -137,5 +135,10 @@ configure(subprojects.filter { it.path.startsWith(":services:") }) {
         annotation("jakarta.enterprise.context.RequestScoped")
         annotation("jakarta.persistence.Entity")
         annotation("io.quarkus.test.junit.QuarkusTest")
+    }
+
+    // noArg for JPA entities
+    configure<org.jetbrains.kotlin.noarg.gradle.NoArgExtension> {
+        annotation("jakarta.persistence.Entity")
     }
 }

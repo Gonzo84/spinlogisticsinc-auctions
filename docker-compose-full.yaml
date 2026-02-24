@@ -1,0 +1,30 @@
+# =============================================================================
+# Full Platform Stack — Infrastructure + All Backend Services
+# =============================================================================
+#
+# Usage:
+#   ./start-platform.sh              # Build JARs + start everything
+#   docker compose -f docker-compose-full.yaml up -d    # Start (pre-built)
+#   docker compose -f docker-compose-full.yaml down -v   # Tear down
+#
+# Individual services can be started separately:
+#   docker compose -f docker/compose/infrastructure.yml up -d
+#   docker compose -f docker/compose/auction-engine.yml up -d
+#
+# =============================================================================
+
+include:
+  - path: docker/compose/infrastructure.yml
+  - path: docker/compose/auction-engine.yml
+  - path: docker/compose/catalog-service.yml
+  - path: docker/compose/user-service.yml
+  - path: docker/compose/payment-service.yml
+  - path: docker/compose/notification-service.yml
+  - path: docker/compose/media-service.yml
+  - path: docker/compose/search-service.yml
+  - path: docker/compose/seller-service.yml
+  - path: docker/compose/broker-service.yml
+  - path: docker/compose/compliance-service.yml
+  - path: docker/compose/co2-service.yml
+  - path: docker/compose/analytics-service.yml
+  - path: docker/compose/gateway-service.yml

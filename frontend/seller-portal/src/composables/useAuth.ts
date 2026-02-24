@@ -2,11 +2,13 @@ import { inject, computed } from 'vue'
 import type Keycloak from 'keycloak-js'
 
 export function useAuth() {
-  const keycloak = inject<Keycloak>('keycloak')
+  const _keycloak = inject<Keycloak>('keycloak')
 
-  if (!keycloak) {
+  if (!_keycloak) {
     throw new Error('Keycloak instance not provided. Ensure keycloak is injected at app level.')
   }
+
+  const keycloak: Keycloak = _keycloak
 
   const isAuthenticated = computed(() => keycloak.authenticated ?? false)
 

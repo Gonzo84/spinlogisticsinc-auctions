@@ -8,7 +8,6 @@ import eu.auctionplatform.gateway.api.v1.dto.WebhookNatsEvent
 import eu.auctionplatform.gateway.infrastructure.webhook.WebhookValidator
 import io.agroal.api.AgroalDataSource
 import io.nats.client.Connection
-import io.quarkus.agroal.DataSource
 import jakarta.annotation.security.PermitAll
 import jakarta.inject.Inject
 import jakarta.ws.rs.Consumes
@@ -44,7 +43,6 @@ class WebhookResource {
     lateinit var natsConnection: Connection
 
     @Inject
-    @DataSource("system")
     lateinit var dataSource: AgroalDataSource
 
     @ConfigProperty(name = "webhook.adyen.hmac-key", defaultValue = "")

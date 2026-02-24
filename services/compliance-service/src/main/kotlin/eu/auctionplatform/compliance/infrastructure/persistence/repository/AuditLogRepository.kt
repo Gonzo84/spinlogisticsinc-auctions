@@ -2,7 +2,6 @@ package eu.auctionplatform.compliance.infrastructure.persistence.repository
 
 import eu.auctionplatform.compliance.domain.model.AuditLogEntry
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -20,7 +19,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class AuditLogRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 

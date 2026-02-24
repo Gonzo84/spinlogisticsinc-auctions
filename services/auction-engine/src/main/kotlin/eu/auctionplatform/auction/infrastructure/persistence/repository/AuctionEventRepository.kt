@@ -2,7 +2,6 @@ package eu.auctionplatform.auction.infrastructure.persistence.repository
 
 import eu.auctionplatform.auction.infrastructure.persistence.entity.AuctionEventEntity
 import io.agroal.api.AgroalDataSource
-import io.quarkus.agroal.DataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
@@ -20,7 +19,6 @@ import java.util.UUID
  */
 @ApplicationScoped
 class AuctionEventRepository @Inject constructor(
-    @DataSource("system")
     private val dataSource: AgroalDataSource
 ) {
 
