@@ -95,7 +95,7 @@ class UserResource {
      */
     @GET
     @Path("/me")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getMe(@HeaderParam("Authorization") authorization: String): Response {
         val keycloakId = extractKeycloakId(authorization)
         val user = userService.getUserByKeycloakId(keycloakId)
@@ -122,7 +122,7 @@ class UserResource {
      */
     @PUT
     @Path("/me")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun updateMe(
         @HeaderParam("Authorization") authorization: String,
         request: UpdateProfileRequest
@@ -145,7 +145,7 @@ class UserResource {
      */
     @POST
     @Path("/me/company")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun addCompany(
         @HeaderParam("Authorization") authorization: String,
         request: AddCompanyRequest
@@ -170,7 +170,7 @@ class UserResource {
      */
     @GET
     @Path("/me/deposit")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getDeposit(@HeaderParam("Authorization") authorization: String): Response {
         val keycloakId = extractKeycloakId(authorization)
         val user = userService.getUserByKeycloakId(keycloakId)
@@ -194,7 +194,7 @@ class UserResource {
      */
     @POST
     @Path("/me/deposit")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun initiateDeposit(
         @HeaderParam("Authorization") authorization: String,
         request: InitiateDepositRequest
@@ -219,7 +219,7 @@ class UserResource {
      */
     @POST
     @Path("/me/deposit/refund")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun requestDepositRefund(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -244,7 +244,7 @@ class UserResource {
      */
     @GET
     @Path("/{id}")
-    @RolesAllowed("admin", "moderator")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getUserById(@PathParam("id") id: UUID): Response {
         val user = userService.getUserById(id)
         val company = userService.getCompanyByUserId(user.id)
@@ -273,7 +273,7 @@ class UserResource {
      */
     @PUT
     @Path("/{id}/status")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun updateUserStatus(
         @PathParam("id") id: UUID,
         request: UpdateUserStatusRequest

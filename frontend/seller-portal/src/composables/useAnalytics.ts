@@ -57,28 +57,48 @@ export function useAnalytics() {
   const buyerDemographics = ref<BuyerDemographic[]>([])
 
   async function fetchOverview(): Promise<void> {
-    overview.value = await get<AnalyticsOverview>('/seller/analytics/overview')
-    sellThrough.value = overview.value.sellThrough
+    try {
+      overview.value = await get<AnalyticsOverview>('/sellers/me/analytics/overview')
+      sellThrough.value = overview.value.sellThrough
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchPriceVsEstimate(): Promise<void> {
-    priceVsEstimate.value = await get<PriceVsEstimate[]>('/seller/analytics/price-vs-estimate')
+    try {
+      priceVsEstimate.value = await get<PriceVsEstimate[]>('/sellers/me/analytics/price-vs-estimate')
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchCategoryPerformance(): Promise<void> {
-    categoryPerformance.value = await get<CategoryPerformance[]>(
-      '/seller/analytics/category-performance',
-    )
+    try {
+      categoryPerformance.value = await get<CategoryPerformance[]>(
+        '/sellers/me/analytics/category-performance',
+      )
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchMonthlyRevenue(months: number = 12): Promise<void> {
-    monthlyRevenue.value = await get<MonthlyRevenue[]>('/seller/analytics/monthly-revenue', {
-      months,
-    })
+    try {
+      monthlyRevenue.value = await get<MonthlyRevenue[]>('/sellers/me/analytics/monthly-revenue', {
+        months,
+      })
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchBuyerDemographics(): Promise<void> {
-    buyerDemographics.value = await get<BuyerDemographic[]>('/seller/analytics/buyer-demographics')
+    try {
+      buyerDemographics.value = await get<BuyerDemographic[]>('/sellers/me/analytics/buyer-demographics')
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchAll(): Promise<void> {

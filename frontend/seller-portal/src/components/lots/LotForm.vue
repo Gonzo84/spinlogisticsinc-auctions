@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import ImageUploader from './ImageUploader.vue'
-import type { LotFormData } from '@/composables/useLots'
+import { useLots, type LotFormData, type Category } from '@/composables/useLots'
 
 const props = withDefaults(defineProps<{
   initialData?: Partial<LotFormData>
@@ -17,10 +17,18 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const { fetchCategories } = useLots()
+const categories = ref<Category[]>([])
+
+onMounted(async () => {
+  categories.value = await fetchCategories()
+})
+
 const form = reactive<LotFormData>({
+  brand: props.initialData?.brand ?? '',
   title: props.initialData?.title ?? '',
   description: props.initialData?.description ?? '',
-  category: props.initialData?.category ?? '',
+  categoryId: props.initialData?.categoryId ?? '',
   specifications: props.initialData?.specifications ?? {},
   startingBid: props.initialData?.startingBid ?? 0,
   reservePrice: props.initialData?.reservePrice ?? null,
@@ -36,25 +44,35 @@ const form = reactive<LotFormData>({
 
 const errors = ref<Record<string, string>>({})
 
-const categories = [
-  'Industrial Equipment',
-  'Construction Machinery',
-  'Vehicles & Transport',
-  'Electronics & IT',
-  'Office Equipment',
-  'Agricultural Machinery',
-  'Medical Equipment',
-  'Catering Equipment',
-  'Warehouse & Logistics',
-  'Other',
-]
 
 const countries = [
-  'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic',
-  'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece',
-  'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
-  'Malta', 'Netherlands', 'Poland', 'Portugal', 'Romania', 'Slovakia',
-  'Slovenia', 'Spain', 'Sweden',
+  { code: 'AT', name: 'Austria' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'BG', name: 'Bulgaria' },
+  { code: 'HR', name: 'Croatia' },
+  { code: 'CY', name: 'Cyprus' },
+  { code: 'CZ', name: 'Czech Republic' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'EE', name: 'Estonia' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'FR', name: 'France' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'GR', name: 'Greece' },
+  { code: 'HU', name: 'Hungary' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'LV', name: 'Latvia' },
+  { code: 'LT', name: 'Lithuania' },
+  { code: 'LU', name: 'Luxembourg' },
+  { code: 'MT', name: 'Malta' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'RO', name: 'Romania' },
+  { code: 'SK', name: 'Slovakia' },
+  { code: 'SI', name: 'Slovenia' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'SE', name: 'Sweden' },
 ]
 
 // Specification management
@@ -95,7 +113,9 @@ function validate(): boolean {
   if (!form.description.trim()) errors.value.description = 'Description is required'
   else if (form.description.length < 20) errors.value.description = 'Description must be at least 20 characters'
 
-  if (!form.category) errors.value.category = 'Category is required'
+  if (!form.brand.trim()) errors.value.brand = 'Brand is required'
+
+  if (!form.categoryId) errors.value.category = 'Category is required'
 
   if (!form.startingBid || form.startingBid <= 0) errors.value.startingBid = 'Starting bid must be greater than 0'
 
@@ -119,26 +139,65 @@ function handleSubmit() {
 </script>
 
 <template>
-  <form class="space-y-8" @submit.prevent="handleSubmit">
+  <form
+    class="space-y-8"
+    @submit.prevent="handleSubmit"
+  >
     <!-- Basic Information -->
     <div class="card">
-      <h3 class="mb-4 text-lg font-semibold text-gray-900">Basic Information</h3>
+      <h3 class="mb-4 text-lg font-semibold text-gray-900">
+        Basic Information
+      </h3>
       <div class="space-y-4">
-        <div>
-          <label class="label" for="lot-title">Lot Title *</label>
-          <input
-            id="lot-title"
-            v-model="form.title"
-            type="text"
-            class="input"
-            :class="errors.title && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
-            placeholder="e.g., Komatsu PC200-8 Hydraulic Excavator"
-          />
-          <p v-if="errors.title" class="mt-1 text-sm text-red-600">{{ errors.title }}</p>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              class="label"
+              for="lot-title"
+            >Lot Title *</label>
+            <input
+              id="lot-title"
+              v-model="form.title"
+              type="text"
+              class="input"
+              :class="errors.title && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
+              placeholder="e.g., Komatsu PC200-8 Hydraulic Excavator"
+            >
+            <p
+              v-if="errors.title"
+              class="mt-1 text-sm text-red-600"
+            >
+              {{ errors.title }}
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="label"
+              for="lot-brand"
+            >Brand / Manufacturer *</label>
+            <input
+              id="lot-brand"
+              v-model="form.brand"
+              type="text"
+              class="input"
+              :class="errors.brand && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
+              placeholder="e.g., Caterpillar, Komatsu, Liebherr"
+            >
+            <p
+              v-if="errors.brand"
+              class="mt-1 text-sm text-red-600"
+            >
+              {{ errors.brand }}
+            </p>
+          </div>
         </div>
 
         <div>
-          <label class="label" for="lot-description">Description *</label>
+          <label
+            class="label"
+            for="lot-description"
+          >Description *</label>
           <textarea
             id="lot-description"
             v-model="form.description"
@@ -148,31 +207,59 @@ function handleSubmit() {
             placeholder="Detailed description of the item including condition, history, and any defects..."
           />
           <div class="mt-1 flex justify-between">
-            <p v-if="errors.description" class="text-sm text-red-600">{{ errors.description }}</p>
-            <p class="ml-auto text-xs text-gray-400">{{ form.description.length }} characters</p>
+            <p
+              v-if="errors.description"
+              class="text-sm text-red-600"
+            >
+              {{ errors.description }}
+            </p>
+            <p class="ml-auto text-xs text-gray-400">
+              {{ form.description.length }} characters
+            </p>
           </div>
         </div>
 
         <div>
-          <label class="label" for="lot-category">Category *</label>
+          <label
+            class="label"
+            for="lot-category"
+          >Category *</label>
           <select
             id="lot-category"
-            v-model="form.category"
+            v-model="form.categoryId"
             class="input"
             :class="errors.category && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
           >
-            <option value="">Select a category</option>
-            <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+            <option value="">
+              Select a category
+            </option>
+            <option
+              v-for="cat in categories"
+              :key="cat.id"
+              :value="cat.id"
+            >
+              {{ cat.name }}
+            </option>
           </select>
-          <p v-if="errors.category" class="mt-1 text-sm text-red-600">{{ errors.category }}</p>
+          <p
+            v-if="errors.category"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ errors.category }}
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Specifications -->
     <div class="card">
-      <h3 class="mb-4 text-lg font-semibold text-gray-900">Specifications</h3>
-      <div v-if="specEntries.length > 0" class="mb-4 space-y-2">
+      <h3 class="mb-4 text-lg font-semibold text-gray-900">
+        Specifications
+      </h3>
+      <div
+        v-if="specEntries.length > 0"
+        class="mb-4 space-y-2"
+      >
         <div
           v-for="[key, value] in specEntries"
           :key="key"
@@ -185,8 +272,18 @@ function handleSubmit() {
             class="text-gray-400 hover:text-red-500"
             @click="removeSpecification(key)"
           >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -199,14 +296,14 @@ function handleSubmit() {
           class="input flex-1"
           placeholder="e.g., Weight"
           @keyup.enter="addSpecification"
-        />
+        >
         <input
           v-model="newSpecValue"
           type="text"
           class="input flex-1"
           placeholder="e.g., 2,500 kg"
           @keyup.enter="addSpecification"
-        />
+        >
         <button
           type="button"
           class="btn-secondary btn-sm"
@@ -219,10 +316,15 @@ function handleSubmit() {
 
     <!-- Pricing -->
     <div class="card">
-      <h3 class="mb-4 text-lg font-semibold text-gray-900">Pricing</h3>
+      <h3 class="mb-4 text-lg font-semibold text-gray-900">
+        Pricing
+      </h3>
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="label" for="lot-starting-bid">Starting Bid (EUR) *</label>
+          <label
+            class="label"
+            for="lot-starting-bid"
+          >Starting Bid (EUR) *</label>
           <div class="relative">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">EUR</span>
             <input
@@ -234,21 +336,29 @@ function handleSubmit() {
               class="input pl-12"
               :class="errors.startingBid && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
               placeholder="0.00"
-            />
+            >
           </div>
-          <p v-if="errors.startingBid" class="mt-1 text-sm text-red-600">{{ errors.startingBid }}</p>
+          <p
+            v-if="errors.startingBid"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ errors.startingBid }}
+          </p>
         </div>
 
         <div>
           <div class="mb-1.5 flex items-center justify-between">
-            <label class="text-sm font-medium text-gray-700" for="lot-reserve-price">Reserve Price (EUR)</label>
+            <label
+              class="text-sm font-medium text-gray-700"
+              for="lot-reserve-price"
+            >Reserve Price (EUR)</label>
             <label class="flex items-center gap-2">
               <input
                 v-model="hasReserve"
                 type="checkbox"
                 class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 @change="toggleReserve"
-              />
+              >
               <span class="text-xs text-gray-500">Set reserve</span>
             </label>
           </div>
@@ -264,31 +374,49 @@ function handleSubmit() {
               :class="errors.reservePrice && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
               :disabled="!hasReserve"
               placeholder="0.00"
-            />
+            >
           </div>
-          <p v-if="errors.reservePrice" class="mt-1 text-sm text-red-600">{{ errors.reservePrice }}</p>
-          <p v-else class="mt-1 text-xs text-gray-400">Minimum price you are willing to accept</p>
+          <p
+            v-if="errors.reservePrice"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ errors.reservePrice }}
+          </p>
+          <p
+            v-else
+            class="mt-1 text-xs text-gray-400"
+          >
+            Minimum price you are willing to accept
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Location -->
     <div class="card">
-      <h3 class="mb-4 text-lg font-semibold text-gray-900">Item Location</h3>
+      <h3 class="mb-4 text-lg font-semibold text-gray-900">
+        Item Location
+      </h3>
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="sm:col-span-2">
-          <label class="label" for="lot-address">Street Address</label>
+          <label
+            class="label"
+            for="lot-address"
+          >Street Address</label>
           <input
             id="lot-address"
             v-model="form.location.address"
             type="text"
             class="input"
             placeholder="123 Industrial Road"
-          />
+          >
         </div>
 
         <div>
-          <label class="label" for="lot-city">City *</label>
+          <label
+            class="label"
+            for="lot-city"
+          >City *</label>
           <input
             id="lot-city"
             v-model="form.location.city"
@@ -296,33 +424,59 @@ function handleSubmit() {
             class="input"
             :class="errors.city && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
             placeholder="Amsterdam"
-          />
-          <p v-if="errors.city" class="mt-1 text-sm text-red-600">{{ errors.city }}</p>
+          >
+          <p
+            v-if="errors.city"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ errors.city }}
+          </p>
         </div>
 
         <div>
-          <label class="label" for="lot-country">Country *</label>
+          <label
+            class="label"
+            for="lot-country"
+          >Country *</label>
           <select
             id="lot-country"
             v-model="form.location.country"
             class="input"
             :class="errors.country && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
           >
-            <option value="">Select country</option>
-            <option v-for="c in countries" :key="c" :value="c">{{ c }}</option>
+            <option value="">
+              Select country
+            </option>
+            <option
+              v-for="c in countries"
+              :key="c.code"
+              :value="c.code"
+            >
+              {{ c.name }}
+            </option>
           </select>
-          <p v-if="errors.country" class="mt-1 text-sm text-red-600">{{ errors.country }}</p>
+          <p
+            v-if="errors.country"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ errors.country }}
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Images -->
     <div class="card">
-      <h3 class="mb-4 text-lg font-semibold text-gray-900">Images</h3>
+      <h3 class="mb-4 text-lg font-semibold text-gray-900">
+        Images
+      </h3>
       <p class="mb-4 text-sm text-gray-500">
         Upload up to 10 images. The first image will be used as the primary thumbnail. You can reorder and set a different primary image after uploading.
       </p>
-      <ImageUploader v-model="form.imageIds" :max-files="10" />
+      <ImageUploader
+        v-model="form.imageIds"
+        :max-files="10"
+      />
     </div>
 
     <!-- Actions -->
@@ -339,9 +493,25 @@ function handleSubmit() {
         class="btn-primary"
         :disabled="isSubmitting"
       >
-        <svg v-if="isSubmitting" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        <svg
+          v-if="isSubmitting"
+          class="h-4 w-4 animate-spin"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
         </svg>
         {{ isSubmitting ? 'Saving...' : submitLabel }}
       </button>

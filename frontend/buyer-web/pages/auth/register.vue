@@ -263,8 +263,8 @@ async function handleRegister() {
 
   try {
     await register(accountType.value)
-  } catch (e: any) {
-    registerError.value = e?.message || t('auth.registrationFailed')
+  } catch (e: unknown) {
+    registerError.value = e instanceof Error ? e.message : t('auth.registrationFailed')
     submitting.value = false
   }
 }

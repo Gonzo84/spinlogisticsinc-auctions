@@ -5,11 +5,15 @@ p, buyer_active, /api/v1/payments/invoices, GET, allow
 p, buyer_active, /api/v1/payments/invoices/*/pdf, GET, allow
 p, buyer_active, /api/v1/payments/deposits, POST, allow
 p, buyer_active, /api/v1/payments/deposits/refund, POST, allow
+p, seller_verified, /api/v1/payments/checkout/*, GET, allow
 p, seller_verified, /api/v1/payments/settlements, GET, allow
 p, seller_verified, /api/v1/payments/invoices, GET, allow
 p, seller_verified, /api/v1/payments/invoices/*/pdf, GET, allow
 p, admin_ops, /api/v1/payments, GET, allow
-p, admin_ops, /api/v1/payments/*, GET, allow
+p, admin_ops, /api/v1/payments/checkout/*, GET, allow
+p, admin_ops, /api/v1/payments/invoices, GET, allow
+p, admin_ops, /api/v1/payments/invoices/*/pdf, GET, allow
+p, admin_ops, /api/v1/payments/settlements, GET, allow
 p, admin_ops, /api/v1/payments/settlements/*/process, POST, allow
 p, admin_super, /api/v1/**, .*, allow
-g, admin_ops, admin_super
+g, admin_super, admin_ops

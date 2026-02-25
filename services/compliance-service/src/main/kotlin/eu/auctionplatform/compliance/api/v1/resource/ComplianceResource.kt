@@ -69,7 +69,7 @@ class ComplianceResource {
      */
     @POST
     @Path("/gdpr/export-request")
-    @RolesAllowed("user", "admin")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun requestExport(request: ExportRequest): Response {
         logger.info("GDPR export request from userId={}", request.userId)
 
@@ -88,7 +88,7 @@ class ComplianceResource {
      */
     @POST
     @Path("/gdpr/erasure-request")
-    @RolesAllowed("user", "admin")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun requestErasure(request: ErasureRequest): Response {
         logger.info("GDPR erasure request from userId={}", request.userId)
 
@@ -107,7 +107,7 @@ class ComplianceResource {
      */
     @GET
     @Path("/gdpr/requests")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getGdprRequests(
         @QueryParam("status") status: String?,
         @QueryParam("page") @DefaultValue("1") page: Int,
@@ -140,7 +140,7 @@ class ComplianceResource {
      */
     @POST
     @Path("/aml/screening")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun triggerScreening(request: AmlScreeningRequest): Response {
         logger.info("AML screening triggered for userId={}", request.userId)
 
@@ -159,7 +159,7 @@ class ComplianceResource {
      */
     @GET
     @Path("/aml/screening/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getScreeningResult(@PathParam("id") id: UUID): Response {
         val screening = amlService.getScreeningResult(id)
 
@@ -177,7 +177,7 @@ class ComplianceResource {
      */
     @POST
     @Path("/dsa/content-report")
-    @RolesAllowed("user", "admin")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun reportContent(request: ContentReportRequest): Response {
         logger.info("DSA content report from reporterId={}, lotId={}", request.reporterId, request.lotId)
 
@@ -196,7 +196,7 @@ class ComplianceResource {
      */
     @GET
     @Path("/dsa/content-reports")
-    @RolesAllowed("admin", "moderator")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getContentReports(
         @QueryParam("status") status: String?,
         @QueryParam("page") @DefaultValue("1") page: Int,
@@ -225,7 +225,7 @@ class ComplianceResource {
      */
     @GET
     @Path("/dsa/transparency-report")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getTransparencyReport(): Response {
         val report = dsaService.generateTransparencyReport()
 
@@ -243,7 +243,7 @@ class ComplianceResource {
      */
     @GET
     @Path("/audit/log")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun queryAuditLog(
         @QueryParam("action") action: String?,
         @QueryParam("entityType") entityType: String?,

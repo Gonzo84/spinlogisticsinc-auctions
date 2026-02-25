@@ -106,7 +106,10 @@ export const useAuctionStore = defineStore('auction', {
 
     minBidAmount: (state): number => {
       if (!state.currentAuction) return 0
-      return state.currentAuction.currentBid + state.currentAuction.minIncrement
+      if (state.currentAuction.currentBid > 0) {
+        return state.currentAuction.currentBid + state.currentAuction.minIncrement
+      }
+      return state.currentAuction.startingPrice || state.currentAuction.minIncrement
     },
   },
 

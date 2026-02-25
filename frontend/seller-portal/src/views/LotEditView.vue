@@ -14,15 +14,23 @@ const initialDataReady = ref(false)
 
 const initialData = computed<Partial<LotFormData> | undefined>(() => {
   if (!currentLot.value) return undefined
+  const lot = currentLot.value as any
   return {
-    title: currentLot.value.title,
-    description: currentLot.value.description,
-    category: currentLot.value.category,
-    specifications: { ...currentLot.value.specifications },
-    startingBid: currentLot.value.startingBid,
-    reservePrice: currentLot.value.reservePrice,
-    location: { ...currentLot.value.location },
-    imageIds: currentLot.value.images.map((img) => img.id),
+    brand: lot.brand ?? '',
+    title: lot.title,
+    description: lot.description,
+    categoryId: lot.categoryId ?? lot.category ?? '',
+    specifications: { ...(lot.specifications ?? {}) },
+    startingBid: lot.startingBid,
+    reservePrice: lot.reservePrice,
+    location: lot.location ? { ...lot.location } : {
+      address: lot.locationAddress ?? '',
+      city: lot.locationCity ?? '',
+      country: lot.locationCountry ?? '',
+      lat: lot.locationLat ?? 0,
+      lng: lot.locationLng ?? 0,
+    },
+    imageIds: (lot.images ?? []).map((img: any) => img.id),
   }
 })
 
@@ -51,36 +59,92 @@ function handleCancel() {
     <!-- Breadcrumb -->
     <div class="mb-6">
       <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link to="/lots" class="hover:text-primary-600">My Lots</router-link>
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        <router-link
+          to="/lots"
+          class="hover:text-primary-600"
+        >
+          My Lots
+        </router-link>
+        <svg
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 5l7 7-7 7"
+          />
         </svg>
-        <router-link :to="`/lots/${lotId}`" class="hover:text-primary-600">
+        <router-link
+          :to="`/lots/${lotId}`"
+          class="hover:text-primary-600"
+        >
           {{ currentLot?.title ?? 'Lot' }}
         </router-link>
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        <svg
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 5l7 7-7 7"
+          />
         </svg>
         <span class="text-gray-700">Edit</span>
       </div>
-      <h1 class="mt-2 text-2xl font-bold text-gray-900">Edit Lot</h1>
+      <h1 class="mt-2 text-2xl font-bold text-gray-900">
+        Edit Lot
+      </h1>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading && !initialDataReady" class="py-12 text-center">
-      <svg class="mx-auto h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    <div
+      v-if="loading && !initialDataReady"
+      class="py-12 text-center"
+    >
+      <svg
+        class="mx-auto h-8 w-8 animate-spin text-primary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        />
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+        />
       </svg>
     </div>
 
     <!-- Error banner -->
-    <div v-if="submitError" class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-      <p class="text-sm font-medium text-red-800">{{ submitError }}</p>
+    <div
+      v-if="submitError"
+      class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4"
+    >
+      <p class="text-sm font-medium text-red-800">
+        {{ submitError }}
+      </p>
     </div>
 
     <!-- Form -->
-    <div v-if="initialDataReady && initialData" class="mx-auto max-w-3xl">
+    <div
+      v-if="initialDataReady && initialData"
+      class="mx-auto max-w-3xl"
+    >
       <LotForm
         :initial-data="initialData"
         submit-label="Save Changes"

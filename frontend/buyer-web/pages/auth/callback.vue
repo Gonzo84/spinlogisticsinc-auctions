@@ -57,7 +57,7 @@ onMounted(async () => {
     // The Keycloak plugin (check-sso) handles the token exchange automatically
     // on page load. This callback page just waits for that process.
     const { $keycloak } = useNuxtApp()
-    const keycloak = $keycloak as any
+    const keycloak = $keycloak as { authenticated?: boolean } | undefined
 
     if (!keycloak) {
       throw new Error('Authentication service not available')
@@ -76,7 +76,7 @@ onMounted(async () => {
       }
 
       // Timeout after 10 seconds
-      const timeout = setTimeout(() => {
+      const _timeout = setTimeout(() => {
         resolve()
       }, 10000)
 
@@ -98,8 +98,8 @@ onMounted(async () => {
         error.value = t('auth.authenticationFailed')
       }
     }
-  } catch (e: any) {
-    error.value = e?.message || t('auth.unknownError')
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : t('auth.unknownError')
   } finally {
     processing.value = false
   }

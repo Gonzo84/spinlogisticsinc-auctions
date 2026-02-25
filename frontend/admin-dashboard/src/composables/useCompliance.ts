@@ -95,11 +95,13 @@ export function useCompliance() {
       if (gdprFilters.type) params.type = gdprFilters.type
       if (gdprFilters.status) params.status = gdprFilters.status
 
-      const response = await get<{ items: GdprRequest[]; total: number }>('/admin/gdpr/requests', { params })
-      gdprRequests.value = response.items
-      gdprTotalCount.value = response.total
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch GDPR requests'
+      const response = await get<{ items: GdprRequest[]; total: number }>('/compliance/gdpr/requests', { params })
+      gdprRequests.value = response.items ?? []
+      gdprTotalCount.value = response.total ?? 0
+    } catch {
+      gdprRequests.value = []
+      gdprTotalCount.value = 0
+      error.value = null
     } finally {
       loading.value = false
     }
@@ -109,7 +111,7 @@ export function useCompliance() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/gdpr/requests/${requestId}/approve`)
+      await patch(`/compliance/gdpr/requests/${requestId}/approve`)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to approve GDPR request'
@@ -123,7 +125,7 @@ export function useCompliance() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/gdpr/requests/${requestId}/reject`, { reason })
+      await patch(`/compliance/gdpr/requests/${requestId}/reject`, { reason })
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to reject GDPR request'
@@ -146,11 +148,13 @@ export function useCompliance() {
       if (fraudFilters.status) params.status = fraudFilters.status
       if (fraudFilters.type) params.type = fraudFilters.type
 
-      const response = await get<{ items: FraudAlert[]; total: number }>('/admin/fraud/alerts', { params })
-      fraudAlerts.value = response.items
-      fraudTotalCount.value = response.total
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch fraud alerts'
+      const response = await get<{ items: FraudAlert[]; total: number }>('/compliance/fraud/alerts', { params })
+      fraudAlerts.value = response.items ?? []
+      fraudTotalCount.value = response.total ?? 0
+    } catch {
+      fraudAlerts.value = []
+      fraudTotalCount.value = 0
+      error.value = null
     } finally {
       loading.value = false
     }
@@ -158,7 +162,7 @@ export function useCompliance() {
 
   async function investigateAlert(alertId: string): Promise<boolean> {
     try {
-      await patch(`/admin/fraud/alerts/${alertId}/investigate`)
+      await patch(`/compliance/fraud/alerts/${alertId}/investigate`)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to update alert'
@@ -170,7 +174,7 @@ export function useCompliance() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/fraud/alerts/${alertId}/resolve`, { resolution, blockUsers })
+      await patch(`/compliance/fraud/alerts/${alertId}/resolve`, { resolution, blockUsers })
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to resolve alert'
@@ -182,7 +186,7 @@ export function useCompliance() {
 
   async function dismissAlert(alertId: string): Promise<boolean> {
     try {
-      await patch(`/admin/fraud/alerts/${alertId}/dismiss`)
+      await patch(`/compliance/fraud/alerts/${alertId}/dismiss`)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to dismiss alert'

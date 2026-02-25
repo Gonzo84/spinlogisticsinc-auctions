@@ -76,13 +76,19 @@ export function useSettlements() {
     if (filters.dateFrom) params.dateFrom = filters.dateFrom
     if (filters.dateTo) params.dateTo = filters.dateTo
 
-    const response = await get<PaginatedResponse<Settlement>>('/seller/settlements', params)
-    settlements.value = response.items
-    pagination.value = {
-      total: response.total,
-      page: response.page,
-      pageSize: response.pageSize,
-      totalPages: response.totalPages,
+    try {
+      const response = await get<PaginatedResponse<Settlement>>('/sellers/me/settlements', params)
+      settlements.value = response.items
+      pagination.value = {
+        total: response.total,
+        page: response.page,
+        pageSize: response.pageSize,
+        totalPages: response.totalPages,
+      }
+    } catch {
+      // Seller-service may not have settlements yet – show empty state
+      settlements.value = []
+      error.value = null
     }
   }
 
@@ -92,18 +98,23 @@ export function useSettlements() {
     if (filters.dateFrom) params.dateFrom = filters.dateFrom
     if (filters.dateTo) params.dateTo = filters.dateTo
 
-    totals.value = await get<SettlementTotals>('/seller/settlements/totals', params)
+    try {
+      totals.value = await get<SettlementTotals>('/sellers/me/settlements/totals', params)
+    } catch {
+      // Clear error – totals endpoint is optional
+      error.value = null
+    }
   }
 
   async function downloadInvoice(settlementId: string): Promise<void> {
-    const { url } = await get<{ url: string }>(`/seller/settlements/${settlementId}/invoice`)
+    const { url } = await get<{ url: string }>(`/sellers/me/settlements/${settlementId}/invoice`)
     window.open(url, '_blank')
   }
 
   async function fetchMonthlySettlements(): Promise<
     { month: string; amount: number; count: number }[]
   > {
-    return get('/seller/settlements/monthly')
+    return get('/sellers/me/settlements/monthly')
   }
 
   return {

@@ -79,19 +79,52 @@ const bidChartData = computed(() =>
     <!-- Breadcrumb -->
     <div class="mb-6">
       <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link to="/auctions" class="hover:text-primary-600">Auctions</router-link>
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        <router-link
+          to="/auctions"
+          class="hover:text-primary-600"
+        >
+          Auctions
+        </router-link>
+        <svg
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 5l7 7-7 7"
+          />
         </svg>
         <span class="text-gray-700">{{ currentAuction?.title ?? 'Detail' }}</span>
       </div>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading && !currentAuction" class="py-12 text-center">
-      <svg class="mx-auto h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    <div
+      v-if="loading && !currentAuction"
+      class="py-12 text-center"
+    >
+      <svg
+        class="mx-auto h-8 w-8 animate-spin text-primary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        />
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+        />
       </svg>
     </div>
 
@@ -100,10 +133,14 @@ const bidChartData = computed(() =>
       <div class="page-header">
         <div>
           <div class="flex items-center gap-3">
-            <h1 class="page-title">{{ currentAuction.title }}</h1>
+            <h1 class="page-title">
+              {{ currentAuction.title }}
+            </h1>
             <StatusBadge :status="currentAuction.status" />
           </div>
-          <p class="mt-1 text-sm text-gray-500">{{ currentAuction.brand }} &middot; {{ currentAuction.country }}</p>
+          <p class="mt-1 text-sm text-gray-500">
+            {{ currentAuction.brand }} &middot; {{ currentAuction.country }}
+          </p>
         </div>
         <div class="flex gap-2">
           <button
@@ -126,29 +163,48 @@ const bidChartData = computed(() =>
       <!-- Info cards -->
       <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div class="card">
-          <p class="text-sm text-gray-500">Lots</p>
-          <p class="text-2xl font-bold text-gray-900">{{ currentAuction.lotCount }}</p>
+          <p class="text-sm text-gray-500">
+            Lots
+          </p>
+          <p class="text-2xl font-bold text-gray-900">
+            {{ currentAuction.lotCount }}
+          </p>
         </div>
         <div class="card">
-          <p class="text-sm text-gray-500">Total Bids</p>
-          <p class="text-2xl font-bold text-gray-900">{{ currentAuction.totalBids }}</p>
+          <p class="text-sm text-gray-500">
+            Total Bids
+          </p>
+          <p class="text-2xl font-bold text-gray-900">
+            {{ currentAuction.totalBids }}
+          </p>
         </div>
         <div class="card">
-          <p class="text-sm text-gray-500">Buyer Premium</p>
-          <p class="text-2xl font-bold text-gray-900">{{ currentAuction.buyerPremiumPercent }}%</p>
+          <p class="text-sm text-gray-500">
+            Buyer Premium
+          </p>
+          <p class="text-2xl font-bold text-gray-900">
+            {{ currentAuction.buyerPremiumPercent }}%
+          </p>
         </div>
         <div class="card">
-          <p class="text-sm text-gray-500">Duration</p>
+          <p class="text-sm text-gray-500">
+            Duration
+          </p>
           <p class="text-sm font-medium text-gray-900">
-            {{ formatDate(currentAuction.startDate) }}<br />
+            {{ formatDate(currentAuction.startDate) }}<br>
             to {{ formatDate(currentAuction.endDate) }}
           </p>
         </div>
       </div>
 
       <!-- Bid Activity -->
-      <div v-if="liveBids.length > 0" class="card mb-6">
-        <h2 class="section-title">Bid Activity</h2>
+      <div
+        v-if="liveBids.length > 0"
+        class="card mb-6"
+      >
+        <h2 class="section-title">
+          Bid Activity
+        </h2>
         <LiveBidChart
           :labels="bidChartLabels"
           :data="bidChartData"
@@ -159,30 +215,65 @@ const bidChartData = computed(() =>
 
       <!-- Lots table -->
       <div class="card">
-        <h2 class="section-title">Lots ({{ auctionLots.length }})</h2>
+        <h2 class="section-title">
+          Lots ({{ auctionLots.length }})
+        </h2>
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead>
               <tr>
-                <th class="table-header">#</th>
-                <th class="table-header">Title</th>
-                <th class="table-header">Status</th>
-                <th class="table-header text-right">Current Bid</th>
-                <th class="table-header text-right">Bids</th>
-                <th class="table-header">Closing</th>
+                <th class="table-header">
+                  #
+                </th>
+                <th class="table-header">
+                  Title
+                </th>
+                <th class="table-header">
+                  Status
+                </th>
+                <th class="table-header text-right">
+                  Current Bid
+                </th>
+                <th class="table-header text-right">
+                  Bids
+                </th>
+                <th class="table-header">
+                  Closing
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="auctionLots.length === 0">
-                <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">No lots assigned to this auction.</td>
+                <td
+                  colspan="6"
+                  class="px-4 py-8 text-center text-sm text-gray-500"
+                >
+                  No lots assigned to this auction.
+                </td>
               </tr>
-              <tr v-for="lot in auctionLots" :key="lot.id" class="table-row">
-                <td class="table-cell font-medium">{{ lot.lotNumber }}</td>
-                <td class="table-cell font-medium text-gray-900">{{ lot.title }}</td>
-                <td class="table-cell"><StatusBadge :status="lot.status" /></td>
-                <td class="table-cell text-right">{{ formatCurrency(lot.currentBid) }}</td>
-                <td class="table-cell text-right">{{ lot.bidCount }}</td>
-                <td class="table-cell text-gray-500">{{ formatDate(lot.closingTime) }}</td>
+              <tr
+                v-for="lot in auctionLots"
+                :key="lot.id"
+                class="table-row"
+              >
+                <td class="table-cell font-medium">
+                  {{ lot.lotNumber }}
+                </td>
+                <td class="table-cell font-medium text-gray-900">
+                  {{ lot.title }}
+                </td>
+                <td class="table-cell">
+                  <StatusBadge :status="lot.status" />
+                </td>
+                <td class="table-cell text-right">
+                  {{ formatCurrency(lot.currentBid) }}
+                </td>
+                <td class="table-cell text-right">
+                  {{ lot.bidCount }}
+                </td>
+                <td class="table-cell text-gray-500">
+                  {{ formatDate(lot.closingTime) }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -190,8 +281,13 @@ const bidChartData = computed(() =>
       </div>
 
       <!-- Recent bids -->
-      <div v-if="liveBids.length > 0" class="card mt-6">
-        <h2 class="section-title">Recent Bids</h2>
+      <div
+        v-if="liveBids.length > 0"
+        class="card mt-6"
+      >
+        <h2 class="section-title">
+          Recent Bids
+        </h2>
         <div class="space-y-2">
           <div
             v-for="bid in liveBids.slice(0, 10)"
@@ -199,12 +295,20 @@ const bidChartData = computed(() =>
             class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2"
           >
             <div>
-              <p class="text-sm font-medium text-gray-900">{{ bid.lotTitle }}</p>
-              <p class="text-xs text-gray-500">by {{ bid.bidderName }}</p>
+              <p class="text-sm font-medium text-gray-900">
+                {{ bid.lotTitle }}
+              </p>
+              <p class="text-xs text-gray-500">
+                by {{ bid.bidderName }}
+              </p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-bold text-gray-900">{{ formatCurrency(bid.amount) }}</p>
-              <p class="text-xs text-gray-400">{{ new Date(bid.timestamp).toLocaleTimeString('en-GB') }}</p>
+              <p class="text-sm font-bold text-gray-900">
+                {{ formatCurrency(bid.amount) }}
+              </p>
+              <p class="text-xs text-gray-400">
+                {{ new Date(bid.timestamp).toLocaleTimeString('en-GB') }}
+              </p>
             </div>
           </div>
         </div>

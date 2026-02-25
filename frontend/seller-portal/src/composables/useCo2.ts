@@ -41,23 +41,39 @@ export function useCo2() {
   const monthlyTrend = ref<Co2MonthlyTrend[]>([])
 
   async function fetchSummary(): Promise<void> {
-    summary.value = await get<Co2Summary>('/seller/co2/summary')
+    try {
+      summary.value = await get<Co2Summary>('/co2/summary')
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchLotBreakdown(): Promise<void> {
-    lotBreakdown.value = await get<Co2LotBreakdown[]>('/seller/co2/lots')
+    try {
+      lotBreakdown.value = await get<Co2LotBreakdown[]>('/co2/lots')
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchCategoryBreakdown(): Promise<void> {
-    categoryBreakdown.value = await get<Co2CategoryBreakdown[]>('/seller/co2/categories')
+    try {
+      categoryBreakdown.value = await get<Co2CategoryBreakdown[]>('/co2/categories')
+    } catch {
+      error.value = null
+    }
   }
 
   async function fetchMonthlyTrend(): Promise<void> {
-    monthlyTrend.value = await get<Co2MonthlyTrend[]>('/seller/co2/monthly')
+    try {
+      monthlyTrend.value = await get<Co2MonthlyTrend[]>('/co2/monthly')
+    } catch {
+      error.value = null
+    }
   }
 
   async function downloadReport(format: 'pdf' | 'csv' = 'pdf'): Promise<void> {
-    const { url } = await get<{ url: string }>('/seller/co2/report', { format })
+    const { url } = await get<{ url: string }>('/co2/report', { format })
     window.open(url, '_blank')
   }
 

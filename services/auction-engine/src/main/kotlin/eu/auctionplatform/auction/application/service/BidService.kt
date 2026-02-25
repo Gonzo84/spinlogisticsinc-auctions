@@ -113,7 +113,11 @@ class BidService @Inject constructor(
             val auction = Auction.reconstitute(domainEvents)
             val expectedVersion = auction.version
 
-            // 3. Execute domain command -- produces new events via raise()
+            // 3. Register deposit for the bidder (auto-register until payment
+            //    integration is wired up -- registerDeposit is a no-op if already set)
+            auction.registerDeposit(command.bidderId)
+
+            // 4. Execute domain command -- produces new events via raise()
             val newEvents = auction.placeBid(command)
 
             if (newEvents.isEmpty()) {
@@ -209,6 +213,9 @@ class BidService @Inject constructor(
             val domainEvents = eventEntities.map { it.toDomainEvent() }
             val auction = Auction.reconstitute(domainEvents)
             val expectedVersion = auction.version
+
+            // Register deposit for the bidder (auto-register until payment integration)
+            auction.registerDeposit(command.bidderId)
 
             // Execute auto-bid command on the aggregate
             val newEvents = auction.setAutoBid(command)

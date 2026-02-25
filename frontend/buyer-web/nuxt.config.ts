@@ -35,7 +35,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api',
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1',
       wsBaseUrl: process.env.NUXT_PUBLIC_WS_BASE_URL || 'ws://localhost:8080/ws',
       keycloakUrl: process.env.NUXT_PUBLIC_KEYCLOAK_URL || 'http://localhost:8180',
       keycloakRealm: process.env.NUXT_PUBLIC_KEYCLOAK_REALM || 'auction-platform',
@@ -61,7 +61,7 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: true },
     '/search': { swr: 300 },
-    '/lots/**': { swr: 60 },
+    '/lots/**': { ssr: false },
     '/my/**': { ssr: false },
     '/checkout/**': { ssr: false },
     '/auth/**': { ssr: false },
@@ -79,6 +79,11 @@ export default defineNuxtConfig({
           'Referrer-Policy': 'strict-origin-when-cross-origin',
           'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)',
           'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        },
+      },
+      '/silent-check-sso.html': {
+        headers: {
+          'X-Frame-Options': 'SAMEORIGIN',
         },
       },
     },

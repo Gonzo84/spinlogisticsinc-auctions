@@ -401,7 +401,7 @@ The GitHub Actions pipeline runs in 7 stages:
 - Fixed search pagination ellipsis placement logic
 - Added 4 missing NATS subject constants
 
-See [BUGS.md](BUGS.md) for the full audit report with file paths and detailed descriptions.
+See [BUGS.md](../docs/BUGS.md) for the full audit report with file paths and detailed descriptions.
 
 ## License
 

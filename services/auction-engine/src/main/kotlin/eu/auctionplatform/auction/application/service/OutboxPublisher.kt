@@ -1,14 +1,14 @@
 package eu.auctionplatform.auction.application.service
 
 import eu.auctionplatform.auction.infrastructure.persistence.repository.OutboxRepository
-import eu.auctionplatform.commons.domain.DomainEvent
-import eu.auctionplatform.commons.messaging.NatsPublisher
 import eu.auctionplatform.commons.util.JsonMapper
+import io.nats.client.Connection
+import io.nats.client.impl.Headers
+import io.nats.client.impl.NatsMessage
 import io.quarkus.scheduler.Scheduled
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.time.Instant
 
 /**
@@ -39,7 +39,7 @@ import java.time.Instant
 @ApplicationScoped
 class OutboxPublisher @Inject constructor(
     private val outboxRepository: OutboxRepository,
-    private val natsPublisher: NatsPublisher
+    private val natsConnection: Connection
 ) {
 
     private val logger = LoggerFactory.getLogger(OutboxPublisher::class.java)
@@ -97,13 +97,26 @@ class OutboxPublisher @Inject constructor(
             }
 
             try {
-                // Deserialize the payload back to a DomainEvent for the NatsPublisher
-                val event = JsonMapper.instance.readValue(
-                    entry.payload,
-                    DomainEvent::class.java
-                )
+                // Publish the raw JSON payload directly to NATS JetStream,
+                // extracting header values from the outbox entry and JSON tree.
+                // This avoids deserializing to the abstract DomainEvent type.
+                val jsonNode = JsonMapper.instance.readTree(entry.payload)
+                val payloadBytes = entry.payload.toByteArray(Charsets.UTF_8)
 
-                natsPublisher.publish(entry.natsSubject, event)
+                val headers = Headers()
+                headers.add("event-id", jsonNode.path("eventId").asText(""))
+                headers.add("event-type", entry.eventType)
+                headers.add("aggregate-id", entry.aggregateId.toString())
+                headers.add("aggregate-type", jsonNode.path("aggregateType").asText("Auction"))
+                headers.add("brand", jsonNode.path("brand").asText(""))
+
+                val message = NatsMessage.builder()
+                    .subject(entry.natsSubject)
+                    .data(payloadBytes)
+                    .headers(headers)
+                    .build()
+
+                natsConnection.jetStream().publish(message)
                 outboxRepository.markAsPublished(entryId)
 
                 logger.debug(

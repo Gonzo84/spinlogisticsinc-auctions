@@ -47,10 +47,22 @@ export interface Lot {
   updatedAt: string
 }
 
+export interface Category {
+  id: string
+  parentId: string | null
+  name: string
+  slug: string
+  icon: string
+  level: number
+  sortOrder: number
+  active: boolean
+}
+
 export interface LotFormData {
+  brand: string
   title: string
   description: string
-  category: string
+  categoryId: string
   specifications: Record<string, string>
   startingBid: number
   reservePrice: number | null
@@ -104,8 +116,10 @@ export function useLots() {
   const draftLots = computed(() => lots.value.filter((l) => l.status === 'draft'))
 
   async function fetchLots(filters: LotsFilter = {}): Promise<void> {
+    // Catalog-service uses 0-based pagination; frontend uses 1-based
+    const frontendPage = filters.page ?? 1
     const params: Record<string, unknown> = {
-      page: filters.page ?? 1,
+      page: frontendPage - 1,
       pageSize: filters.pageSize ?? 20,
     }
     if (filters.status) params.status = filters.status
@@ -113,46 +127,111 @@ export function useLots() {
     if (filters.sortBy) params.sortBy = filters.sortBy
     if (filters.sortDir) params.sortDir = filters.sortDir
 
-    const response = await get<PaginatedResponse<Lot>>('/seller/lots', params)
-    lots.value = response.items
+    // Use catalog-service endpoint; seller-service may not have synced yet
+    const raw = await get<any>('/lots', params)
+    // Unwrap ApiResponse wrapper ({data: T, meta}) if present
+    const response = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    lots.value = (response.items ?? []).map(normalizeLot)
     pagination.value = {
-      total: response.total,
-      page: response.page,
-      pageSize: response.pageSize,
-      totalPages: response.totalPages,
+      total: response.total ?? 0,
+      page: response.page ?? 1,
+      pageSize: response.pageSize ?? 20,
+      totalPages: response.totalPages ?? 0,
+    }
+  }
+
+  /** Normalize backend flat fields into the nested structure the UI expects */
+  function normalizeLot(data: any): Lot {
+    return {
+      ...data,
+      category: data.category ?? data.categoryId ?? '',
+      specifications: data.specifications ?? {},
+      currentBid: data.currentBid ?? null,
+      bidCount: data.bidCount ?? 0,
+      viewerCount: data.viewerCount ?? 0,
+      currency: data.currency ?? 'EUR',
+      status: (data.status ?? 'draft').toLowerCase(),
+      location: data.location ?? {
+        address: data.locationAddress ?? '',
+        city: data.locationCity ?? '',
+        country: data.locationCountry ?? '',
+        lat: data.locationLat ?? 0,
+        lng: data.locationLng ?? 0,
+      },
+      images: data.images ?? [],
+      auctionStart: data.auctionStart ?? null,
+      auctionEnd: data.auctionEnd ?? null,
+      hammerPrice: data.hammerPrice ?? null,
     }
   }
 
   async function fetchLot(id: string): Promise<Lot> {
-    const lot = await get<Lot>(`/seller/lots/${id}`)
+    // Use catalog-service endpoint for lot details (seller-service may not have synced yet)
+    const raw = await get<any>(`/lots/${id}`)
+    const data = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    const lot = normalizeLot(data)
     currentLot.value = lot
     return lot
   }
 
   async function fetchLotBids(lotId: string): Promise<LotBid[]> {
-    const bids = await get<LotBid[]>(`/seller/lots/${lotId}/bids`)
+    const bids = await get<LotBid[]>(`/auctions/${lotId}/bids`)
     lotBids.value = bids
     return bids
   }
 
+  const categories = ref<Category[]>([])
+
+  async function fetchCategories(): Promise<Category[]> {
+    try {
+      const raw = await get<any>('/categories')
+      const data = raw?.data ?? raw
+      categories.value = Array.isArray(data) ? data : (data?.items ?? [])
+      return categories.value
+    } catch {
+      error.value = null
+      return []
+    }
+  }
+
+  /** Transform frontend LotFormData into the flat structure the backend expects */
+  function toBackendPayload(data: LotFormData | Partial<LotFormData>) {
+    return {
+      brand: data.brand ?? '',
+      title: data.title,
+      description: data.description,
+      categoryId: data.categoryId,
+      specifications: data.specifications ?? {},
+      startingBid: data.startingBid,
+      reservePrice: data.reservePrice ?? null,
+      locationAddress: data.location?.address ?? null,
+      locationCity: data.location?.city ?? '',
+      locationCountry: data.location?.country ?? '',
+      locationLat: data.location?.lat ?? null,
+      locationLng: data.location?.lng ?? null,
+    }
+  }
+
   async function createLot(data: LotFormData): Promise<Lot> {
-    const lot = await post<Lot>('/seller/lots', data)
+    const raw = await post<any>('/lots', toBackendPayload(data))
+    const lot = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
     return lot
   }
 
   async function updateLot(id: string, data: Partial<LotFormData>): Promise<Lot> {
-    const lot = await put<Lot>(`/seller/lots/${id}`, data)
+    const raw = await put<any>(`/lots/${id}`, toBackendPayload(data))
+    const lot = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
     currentLot.value = lot
     return lot
   }
 
   async function deleteLot(id: string): Promise<void> {
-    await del(`/seller/lots/${id}`)
+    await del(`/lots/${id}`)
     lots.value = lots.value.filter((l) => l.id !== id)
   }
 
   async function submitForReview(id: string): Promise<Lot> {
-    const lot = await post<Lot>(`/seller/lots/${id}/submit`)
+    const lot = await post<Lot>(`/lots/${id}/submit`)
     if (currentLot.value?.id === id) currentLot.value = lot
     const idx = lots.value.findIndex((l) => l.id === id)
     if (idx !== -1) lots.value[idx] = lot
@@ -160,27 +239,34 @@ export function useLots() {
   }
 
   async function relistLot(id: string): Promise<Lot> {
-    const lot = await post<Lot>(`/seller/lots/${id}/relist`)
+    const lot = await post<Lot>(`/sellers/me/lots/${id}/relist`)
     return lot
   }
 
   async function acceptBelowReserve(lotId: string, bidId: string): Promise<Lot> {
-    const lot = await post<Lot>(`/seller/lots/${lotId}/accept-below-reserve`, { bidId })
+    const lot = await post<Lot>(`/sellers/me/lots/${lotId}/accept-below-reserve`, { bidId })
     currentLot.value = lot
     return lot
   }
 
   async function fetchStatusCounts(): Promise<Record<LotStatus, number>> {
-    const counts = await get<Record<LotStatus, number>>('/seller/lots/status-counts')
-    statusCounts.value = counts
-    return counts
+    try {
+      const raw = await get<any>('/sellers/me/lots/status-counts')
+      const counts = raw?.data ?? raw
+      statusCounts.value = counts
+      return counts
+    } catch {
+      // Clear the shared error ref -- status-counts is optional
+      error.value = null
+      return statusCounts.value
+    }
   }
 
   async function getPresignedUploadUrl(
     filename: string,
     contentType: string,
   ): Promise<{ uploadUrl: string; imageId: string; publicUrl: string }> {
-    return post('/seller/lots/images/presigned-url', { filename, contentType })
+    return post('/media/upload/presigned', { filename, contentType })
   }
 
   return {
@@ -189,6 +275,7 @@ export function useLots() {
     pagination,
     lotBids,
     statusCounts,
+    categories,
     activeLots,
     draftLots,
     loading,
@@ -196,6 +283,7 @@ export function useLots() {
     fetchLots,
     fetchLot,
     fetchLotBids,
+    fetchCategories,
     createLot,
     updateLot,
     deleteLot,

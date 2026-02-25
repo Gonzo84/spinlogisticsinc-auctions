@@ -12,7 +12,7 @@ export interface SearchFilters {
 }
 
 export interface SearchResult {
-  items: any[]
+  items: Record<string, unknown>[]
   total: number
   totalPages: number
   page: number
@@ -55,7 +55,7 @@ export function useSearch() {
 
     try {
       const api = $api as typeof $fetch
-      const params: Record<string, any> = {}
+      const params: Record<string, string | number | boolean> = {}
 
       if (filters.q) params.q = filters.q
       if (filters.category) params.category = filters.category
@@ -68,15 +68,15 @@ export function useSearch() {
       if (filters.page) params.page = filters.page
       if (filters.limit) params.limit = filters.limit
 
-      const result = await api<SearchResult>('/search', { params })
+      const result = await api<SearchResult>('/search/lots', { params })
 
       if (result.aggregations) {
         aggregations.value = result.aggregations
       }
 
       return result
-    } catch (e: any) {
-      error.value = e?.message || 'Search failed'
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Search failed'
       return { items: [], total: 0, totalPages: 0, page: 1 }
     } finally {
       loading.value = false
@@ -105,14 +105,14 @@ export function useSearch() {
 
       try {
         const api = $api as typeof $fetch
-        const result = await api<SearchSuggestion[]>('/search/suggest', {
+        const result = await api<SearchSuggestion[]>('/search/lots/suggest', {
           params: { q: prefix },
           signal: suggestAbortController.signal,
         })
 
         suggestions.value = result
-      } catch (e: any) {
-        if (e?.name !== 'AbortError') {
+      } catch (e: unknown) {
+        if (!(e instanceof Error) || e.name !== 'AbortError') {
           suggestions.value = []
         }
       }
@@ -125,12 +125,12 @@ export function useSearch() {
 
     try {
       const api = $api as typeof $fetch
-      const result = await api<SearchResult>('/search/nearby', {
+      const result = await api<SearchResult>('/search/lots/nearby', {
         params: { lat, lng, radius: radiusKm },
       })
       return result
-    } catch (e: any) {
-      error.value = e?.message || 'Nearby search failed'
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Nearby search failed'
       return { items: [], total: 0, totalPages: 0, page: 1 }
     } finally {
       loading.value = false

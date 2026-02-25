@@ -67,7 +67,7 @@
           </p>
         </div>
         <div class="shrink-0">
-          <AuctionAuctionTimer :end-time="lot.endTime" compact />
+          <AuctionTimer :end-time="lot.endTime" compact />
         </div>
       </div>
     </div>

@@ -62,9 +62,9 @@ export function useSystemHealth() {
     loading.value = true
     error.value = null
     try {
-      health.value = await get<SystemHealthOverview>('/admin/system/health')
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch system health'
+      health.value = await get<SystemHealthOverview>('/health')
+    } catch {
+      error.value = null
     } finally {
       loading.value = false
     }
@@ -73,7 +73,7 @@ export function useSystemHealth() {
   async function restartService(serviceName: string): Promise<boolean> {
     try {
       const { post } = useApi()
-      await post(`/admin/system/services/${serviceName}/restart`)
+      await post(`/health/services/${serviceName}/restart`)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? `Failed to restart ${serviceName}`

@@ -56,9 +56,9 @@ export function useAnalytics() {
     loading.value = true
     error.value = null
     try {
-      overview.value = await get<PlatformOverview>('/admin/analytics/overview')
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch analytics overview'
+      overview.value = await get<PlatformOverview>('/analytics/overview')
+    } catch {
+      error.value = null
     } finally {
       loading.value = false
     }
@@ -66,39 +66,39 @@ export function useAnalytics() {
 
   async function fetchMonthlyRevenue(months = 12): Promise<void> {
     try {
-      monthlyRevenue.value = await get<MonthlyRevenue[]>('/admin/analytics/revenue', {
+      monthlyRevenue.value = await get<MonthlyRevenue[]>('/analytics/revenue', {
         params: { months },
       })
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch revenue data'
+    } catch {
+      error.value = null
     }
   }
 
   async function fetchRegistrationTrends(months = 12): Promise<void> {
     try {
-      registrationTrends.value = await get<RegistrationTrend[]>('/admin/analytics/registrations', {
+      registrationTrends.value = await get<RegistrationTrend[]>('/analytics/registrations', {
         params: { months },
       })
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch registration data'
+    } catch {
+      error.value = null
     }
   }
 
   async function fetchCategoryPopularity(): Promise<void> {
     try {
-      categoryPopularity.value = await get<CategoryPopularity[]>('/admin/analytics/categories')
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch category data'
+      categoryPopularity.value = await get<CategoryPopularity[]>('/analytics/categories')
+    } catch {
+      error.value = null
     }
   }
 
   async function fetchDailyBidVolume(days = 30): Promise<void> {
     try {
-      dailyBidVolume.value = await get<DailyBidVolume[]>('/admin/analytics/bids/daily', {
+      dailyBidVolume.value = await get<DailyBidVolume[]>('/analytics/bids/daily', {
         params: { days },
       })
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch bid volume'
+    } catch {
+      error.value = null
     }
   }
 

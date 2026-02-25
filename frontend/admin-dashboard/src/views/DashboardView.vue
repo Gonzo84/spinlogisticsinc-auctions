@@ -69,8 +69,12 @@ const bidsPerMinute = ref(34)
   <div>
     <div class="page-header">
       <div>
-        <h1 class="page-title">Operations Dashboard</h1>
-        <p class="mt-1 text-sm text-gray-500">Real-time platform monitoring and management.</p>
+        <h1 class="page-title">
+          Operations Dashboard
+        </h1>
+        <p class="mt-1 text-sm text-gray-500">
+          Real-time platform monitoring and management.
+        </p>
       </div>
       <div class="flex items-center gap-2">
         <span class="flex items-center gap-1.5 text-sm text-green-600">
@@ -85,49 +89,105 @@ const bidsPerMinute = ref(34)
       <div class="card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-primary-100 p-2.5">
-            <svg class="h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            <svg
+              class="h-5 w-5 text-primary-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
             </svg>
           </div>
         </div>
-        <p class="mt-3 text-3xl font-bold text-gray-900">{{ activeAuctionsCount }}</p>
-        <p class="text-sm text-gray-500">Active Auctions</p>
+        <p class="mt-3 text-3xl font-bold text-gray-900">
+          {{ activeAuctionsCount }}
+        </p>
+        <p class="text-sm text-gray-500">
+          Active Auctions
+        </p>
       </div>
 
       <div class="card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-admin-100 p-2.5">
-            <svg class="h-5 w-5 text-admin-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            <svg
+              class="h-5 w-5 text-admin-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+              />
             </svg>
           </div>
         </div>
-        <p class="mt-3 text-3xl font-bold text-gray-900">{{ bidsPerMinute }}</p>
-        <p class="text-sm text-gray-500">Bids / Minute</p>
+        <p class="mt-3 text-3xl font-bold text-gray-900">
+          {{ bidsPerMinute }}
+        </p>
+        <p class="text-sm text-gray-500">
+          Bids / Minute
+        </p>
       </div>
 
       <div class="card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-green-100 p-2.5">
-            <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            <svg
+              class="h-5 w-5 text-green-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
             </svg>
           </div>
         </div>
-        <p class="mt-3 text-3xl font-bold text-gray-900">{{ onlineUsers }}</p>
-        <p class="text-sm text-gray-500">Online Users</p>
+        <p class="mt-3 text-3xl font-bold text-gray-900">
+          {{ onlineUsers }}
+        </p>
+        <p class="text-sm text-gray-500">
+          Online Users
+        </p>
       </div>
 
       <div class="card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-amber-100 p-2.5">
-            <svg class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              class="h-5 w-5 text-amber-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
         </div>
-        <p class="mt-3 text-3xl font-bold text-gray-900">{{ formatCurrency(overview?.totalRevenue ?? 0) }}</p>
-        <p class="text-sm text-gray-500">Total Revenue</p>
+        <p class="mt-3 text-3xl font-bold text-gray-900">
+          {{ formatCurrency(overview?.totalRevenue ?? 0) }}
+        </p>
+        <p class="text-sm text-gray-500">
+          Total Revenue
+        </p>
       </div>
     </div>
 
@@ -135,7 +195,9 @@ const bidsPerMinute = ref(34)
     <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div class="card lg:col-span-2">
         <div class="mb-4 flex items-center justify-between">
-          <h2 class="section-title mb-0">Live Bid Activity</h2>
+          <h2 class="section-title mb-0">
+            Live Bid Activity
+          </h2>
           <span class="flex items-center gap-1.5 text-xs text-gray-400">
             <span class="h-1.5 w-1.5 rounded-full bg-admin-500 animate-pulse" />
             Updates every 5s
@@ -149,7 +211,9 @@ const bidsPerMinute = ref(34)
       </div>
 
       <div class="card">
-        <h2 class="section-title">Alerts</h2>
+        <h2 class="section-title">
+          Alerts
+        </h2>
         <div class="space-y-3">
           <router-link
             v-for="alert in alerts"
@@ -164,13 +228,20 @@ const bidsPerMinute = ref(34)
               ]"
             />
             <div class="min-w-0 flex-1">
-              <p class="text-sm text-gray-900">{{ alert.message }}</p>
-              <p class="text-xs text-gray-400">{{ alert.time }}</p>
+              <p class="text-sm text-gray-900">
+                {{ alert.message }}
+              </p>
+              <p class="text-xs text-gray-400">
+                {{ alert.time }}
+              </p>
             </div>
           </router-link>
         </div>
         <div class="mt-4 border-t border-gray-100 pt-3">
-          <router-link to="/fraud" class="text-sm font-medium text-primary-600 hover:text-primary-700">
+          <router-link
+            to="/fraud"
+            class="text-sm font-medium text-primary-600 hover:text-primary-700"
+          >
             View all alerts
           </router-link>
         </div>
@@ -180,29 +251,67 @@ const bidsPerMinute = ref(34)
     <!-- Active Auctions -->
     <div class="card">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="section-title mb-0">Active Auctions</h2>
-        <router-link to="/auctions" class="text-sm font-medium text-primary-600 hover:text-primary-700">
+        <h2 class="section-title mb-0">
+          Active Auctions
+        </h2>
+        <router-link
+          to="/auctions"
+          class="text-sm font-medium text-primary-600 hover:text-primary-700"
+        >
           View all
         </router-link>
       </div>
 
-      <div v-if="loading" class="py-8 text-center">
-        <svg class="mx-auto h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      <div
+        v-if="loading"
+        class="py-8 text-center"
+      >
+        <svg
+          class="mx-auto h-8 w-8 animate-spin text-primary-600"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
         </svg>
       </div>
 
-      <div v-else class="overflow-x-auto">
+      <div
+        v-else
+        class="overflow-x-auto"
+      >
         <table class="w-full">
           <thead>
             <tr>
-              <th class="table-header">Auction</th>
-              <th class="table-header">Brand</th>
-              <th class="table-header">Status</th>
-              <th class="table-header text-right">Lots</th>
-              <th class="table-header text-right">Total Bids</th>
-              <th class="table-header">End Date</th>
+              <th class="table-header">
+                Auction
+              </th>
+              <th class="table-header">
+                Brand
+              </th>
+              <th class="table-header">
+                Status
+              </th>
+              <th class="table-header text-right">
+                Lots
+              </th>
+              <th class="table-header text-right">
+                Total Bids
+              </th>
+              <th class="table-header">
+                End Date
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -212,16 +321,25 @@ const bidsPerMinute = ref(34)
               class="table-row"
             >
               <td class="table-cell">
-                <router-link :to="`/auctions/${auction.id}`" class="font-medium text-gray-900 hover:text-primary-600">
+                <router-link
+                  :to="`/auctions/${auction.id}`"
+                  class="font-medium text-gray-900 hover:text-primary-600"
+                >
                   {{ auction.title }}
                 </router-link>
               </td>
-              <td class="table-cell text-gray-600">{{ auction.brand }}</td>
+              <td class="table-cell text-gray-600">
+                {{ auction.brand }}
+              </td>
               <td class="table-cell">
                 <StatusBadge :status="auction.status" />
               </td>
-              <td class="table-cell text-right">{{ auction.lotCount }}</td>
-              <td class="table-cell text-right">{{ auction.totalBids }}</td>
+              <td class="table-cell text-right">
+                {{ auction.lotCount }}
+              </td>
+              <td class="table-cell text-right">
+                {{ auction.totalBids }}
+              </td>
               <td class="table-cell text-gray-500">
                 {{ new Date(auction.endDate).toLocaleDateString('en-GB') }}
               </td>

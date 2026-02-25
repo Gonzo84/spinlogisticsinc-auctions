@@ -77,7 +77,7 @@ class NotificationResource {
      * @return 200 OK with paginated notifications.
      */
     @GET
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun listNotifications(
         @HeaderParam("Authorization") authorization: String,
         @QueryParam("page") @DefaultValue("1") page: Int,
@@ -107,7 +107,7 @@ class NotificationResource {
      */
     @GET
     @Path("/unread-count")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getUnreadCount(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -128,7 +128,7 @@ class NotificationResource {
      */
     @PUT
     @Path("/{id}/read")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun markAsRead(
         @HeaderParam("Authorization") authorization: String,
         @PathParam("id") id: UUID
@@ -151,7 +151,7 @@ class NotificationResource {
      */
     @PUT
     @Path("/read-all")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun markAllAsRead(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -178,7 +178,7 @@ class NotificationResource {
      */
     @GET
     @Path("/preferences")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getPreferences(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -203,7 +203,7 @@ class NotificationResource {
      */
     @PUT
     @Path("/preferences")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun updatePreferences(
         @HeaderParam("Authorization") authorization: String,
         request: UpdatePreferencesRequest
@@ -235,7 +235,7 @@ class NotificationResource {
      */
     @POST
     @Path("/device-token")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun registerDeviceToken(
         @HeaderParam("Authorization") authorization: String,
         request: RegisterDeviceTokenRequest
@@ -274,7 +274,7 @@ class NotificationResource {
      */
     @DELETE
     @Path("/device-token/{id}")
-    @RolesAllowed("user")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun unregisterDeviceToken(
         @HeaderParam("Authorization") authorization: String,
         @PathParam("id") id: UUID

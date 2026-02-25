@@ -10,7 +10,7 @@
           {{ $t('home.heroSubtitle') }}
         </p>
         <div class="max-w-2xl mx-auto">
-          <SearchSearchBar />
+          <SearchBar />
         </div>
       </div>
       <div class="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-10 pointer-events-none" />
@@ -114,7 +114,7 @@
                       <p class="text-xs text-gray-500">{{ $t('auction.currentBid') }}</p>
                       <p class="text-lg font-bold text-primary">{{ formatCurrency(auction.currentBid) }}</p>
                     </div>
-                    <AuctionAuctionTimer :end-time="auction.endTime" compact />
+                    <AuctionTimer :end-time="auction.endTime" compact />
                   </div>
                 </div>
               </NuxtLink>
@@ -219,14 +219,20 @@ const categories = [
   { slug: 'warehouse', icon: '\ud83d\udce6', name: t('categories.warehouse'), count: 540 },
 ]
 
-const { data: featuredAuctions } = await useAsyncData('featured-auctions', () =>
-  listAuctions({ featured: true, limit: 9 }), {
+const { data: featuredAuctions } = await useAsyncData('featured-auctions', async () => {
+  const result = await listAuctions({ featured: true, limit: 9 })
+  return result.items ?? []
+}, {
   default: () => [],
+  server: false,
 })
 
-const { data: newLots } = await useAsyncData('new-lots', () =>
-  listAuctions({ sort: 'newest', limit: 8 }), {
+const { data: newLots } = await useAsyncData('new-lots', async () => {
+  const result = await listAuctions({ sort: 'newest', limit: 8 })
+  return result.items ?? []
+}, {
   default: () => [],
+  server: false,
 })
 
 const targetCo2 = 2_847_350

@@ -61,7 +61,7 @@ class BrokerResource {
      */
     @GET
     @Path("/leads")
-    @RolesAllowed("broker", "admin")
+    @RolesAllowed("broker", "admin_ops", "admin_super")
     fun getLeads(@HeaderParam("Authorization") authorization: String): Response {
         val brokerId = extractBrokerId(authorization)
         logger.info("GET /leads for broker={}", brokerId)
@@ -84,7 +84,7 @@ class BrokerResource {
      */
     @POST
     @Path("/leads/{id}/visit")
-    @RolesAllowed("broker", "admin")
+    @RolesAllowed("broker", "admin_ops", "admin_super")
     fun scheduleVisit(
         @PathParam("id") id: UUID,
         @HeaderParam("Authorization") authorization: String,
@@ -113,7 +113,7 @@ class BrokerResource {
      */
     @POST
     @Path("/lots/intake")
-    @RolesAllowed("broker", "admin")
+    @RolesAllowed("broker", "admin_ops", "admin_super")
     fun bulkLotIntake(
         @HeaderParam("Authorization") authorization: String,
         request: BulkLotIntakeRequest
@@ -161,7 +161,7 @@ class BrokerResource {
      */
     @GET
     @Path("/me/dashboard")
-    @RolesAllowed("broker", "admin")
+    @RolesAllowed("broker", "admin_ops", "admin_super")
     fun getDashboard(@HeaderParam("Authorization") authorization: String): Response {
         val brokerId = extractBrokerId(authorization)
         logger.info("GET /me/dashboard for broker={}", brokerId)

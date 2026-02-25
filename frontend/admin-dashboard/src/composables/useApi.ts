@@ -1,13 +1,20 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { useAuth } from './useAuth'
+import { inject } from 'vue'
+import type Keycloak from 'keycloak-js'
 
 let apiInstance: AxiosInstance | null = null
+let keycloakRef: Keycloak | null = null
 
 export function useApi() {
+  // Capture keycloak during setup() context (only on first call)
+  if (!keycloakRef) {
+    keycloakRef = inject<Keycloak>('keycloak') ?? null
+  }
+
   if (!apiInstance) {
     apiInstance = axios.create({
-      baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+      baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -15,10 +22,15 @@ export function useApi() {
     })
 
     apiInstance.interceptors.request.use(async (config) => {
-      const { refreshToken } = useAuth()
-      const token = await refreshToken()
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+      if (keycloakRef) {
+        try {
+          await keycloakRef.updateToken(30)
+        } catch {
+          await keycloakRef.login()
+        }
+        if (keycloakRef.token) {
+          config.headers.Authorization = `Bearer ${keycloakRef.token}`
+        }
       }
       return config
     })
@@ -26,9 +38,8 @@ export function useApi() {
     apiInstance.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          const { logout } = useAuth()
-          logout()
+        if (error.response?.status === 401 && keycloakRef) {
+          keycloakRef.logout({ redirectUri: window.location.origin })
         }
         return Promise.reject(error)
       }

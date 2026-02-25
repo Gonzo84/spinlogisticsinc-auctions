@@ -305,8 +305,8 @@ async function handleSave() {
     setTimeout(() => {
       showSuccess.value = false
     }, 3000)
-  } catch (e: any) {
-    saveError.value = e?.message || t('profile.saveFailed')
+  } catch (e: unknown) {
+    saveError.value = e instanceof Error ? e.message : t('profile.saveFailed')
   } finally {
     saving.value = false
   }

@@ -155,7 +155,7 @@
             </div>
           </div>
           <div class="flex items-center gap-3 mt-2 text-sm text-gray-500">
-            <span class="px-2 py-1 bg-gray-100 rounded text-xs font-medium">{{ lot.category }}</span>
+            <span v-if="lot.category && !lot.category.includes('-')" class="px-2 py-1 bg-gray-100 rounded text-xs font-medium">{{ lot.category }}</span>
             <span>{{ $t('lot.lotNumber') }}: {{ lot.lotNumber }}</span>
             <span class="flex items-center gap-1">
               <span class="text-base">{{ countryFlag(lot.country) }}</span>
@@ -297,6 +297,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Auction } from '~/stores/auction'
+
 const { t } = useI18n()
 const route = useRoute()
 const { getAuction, subscribeToAuction, unsubscribeFromAuction } = useAuction()
@@ -306,7 +308,7 @@ const activeImageIndex = ref(0)
 const isFullscreen = ref(false)
 const showBidHistory = ref(false)
 const isWatched = ref(false)
-const relatedLots = ref<any[]>([])
+const relatedLots = ref<Auction[]>([])
 
 const { data: lot, pending, error } = await useAsyncData(
   `lot-${lotId.value}`,

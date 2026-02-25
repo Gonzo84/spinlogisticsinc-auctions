@@ -1,6 +1,9 @@
 import Keycloak from 'keycloak-js'
 import { useAuthStore } from '~/stores/auth'
 
+const TOKEN_KEY = 'kc_token'
+const REFRESH_TOKEN_KEY = 'kc_refresh_token'
+
 export default defineNuxtPlugin(async (nuxtApp) => {
   const config = useRuntimeConfig()
 
@@ -12,17 +15,22 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
   let tokenRefreshInterval: ReturnType<typeof setInterval> | null = null
 
-  try {
-    const authenticated = await keycloak.init({
-      onLoad: 'check-sso',
-      silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
-      pkceMethod: 'S256',
-      checkLoginIframe: false,
-    })
+  function persistTokens() {
+    if (keycloak.token) {
+      localStorage.setItem(TOKEN_KEY, keycloak.token)
+    }
+    if (keycloak.refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, keycloak.refreshToken)
+    }
+  }
 
-    const authStore = useAuthStore(nuxtApp.$pinia as any)
+  function clearPersistedTokens() {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
+  }
 
-    if (authenticated && keycloak.token && keycloak.tokenParsed) {
+  function setupAuthSession(authStore: ReturnType<typeof useAuthStore>) {
+    if (keycloak.token && keycloak.tokenParsed) {
       authStore.setSession({
         user: {
           id: keycloak.tokenParsed.sub || '',
@@ -41,20 +49,62 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         refreshToken: keycloak.refreshToken || '',
       })
 
+      persistTokens()
+
       // Set up token refresh interval (every 30 seconds)
+      if (tokenRefreshInterval) clearInterval(tokenRefreshInterval)
       tokenRefreshInterval = setInterval(async () => {
         try {
           const refreshed = await keycloak.updateToken(60)
           if (refreshed && keycloak.token) {
             authStore.updateToken(keycloak.token, keycloak.refreshToken || undefined)
+            persistTokens()
           }
         } catch {
           authStore.clearSession()
+          clearPersistedTokens()
           if (tokenRefreshInterval) {
             clearInterval(tokenRefreshInterval)
           }
         }
       }, 30000)
+    }
+  }
+
+  try {
+    // Restore persisted tokens if available
+    const storedToken = localStorage.getItem(TOKEN_KEY)
+    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+
+    const initOptions: { pkceMethod: string; checkLoginIframe: boolean; token?: string; refreshToken?: string } = {
+      pkceMethod: 'S256',
+      checkLoginIframe: false,
+    }
+
+    if (storedToken && storedRefreshToken) {
+      initOptions.token = storedToken
+      initOptions.refreshToken = storedRefreshToken
+    }
+
+    console.log('[keycloak] init starting, hasStoredTokens:', !!storedToken)
+    const authenticated = await keycloak.init(initOptions)
+    console.log('[keycloak] init complete, authenticated:', authenticated)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const authStore = useAuthStore(nuxtApp.$pinia as any)
+
+    if (authenticated) {
+      // If we restored from storage, ensure tokens are still valid
+      try {
+        await keycloak.updateToken(30)
+        persistTokens()
+      } catch {
+        // Tokens expired, clear them
+        clearPersistedTokens()
+      }
+      setupAuthSession(authStore)
+    } else {
+      clearPersistedTokens()
     }
 
     // Handle token expiry
@@ -63,21 +113,29 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         await keycloak.updateToken(30)
         if (keycloak.token) {
           authStore.updateToken(keycloak.token, keycloak.refreshToken || undefined)
+          persistTokens()
         }
       } catch {
         authStore.clearSession()
+        clearPersistedTokens()
       }
     }
 
     // Handle auth logout
     keycloak.onAuthLogout = () => {
       authStore.clearSession()
+      clearPersistedTokens()
       if (tokenRefreshInterval) {
         clearInterval(tokenRefreshInterval)
       }
     }
+
+    // Handle successful auth after login redirect
+    keycloak.onAuthSuccess = () => {
+      setupAuthSession(authStore)
+    }
   } catch (error) {
-    console.error('Keycloak initialization failed:', error)
+    console.error('[keycloak] Initialization failed:', error)
   }
 
   return {

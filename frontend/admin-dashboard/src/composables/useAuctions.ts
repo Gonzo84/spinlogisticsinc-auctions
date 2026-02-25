@@ -90,11 +90,28 @@ export function useAuctions() {
       if (filters.dateFrom) params.dateFrom = filters.dateFrom
       if (filters.dateTo) params.dateTo = filters.dateTo
 
-      const response = await get<{ items: Auction[]; total: number }>('/admin/auctions', { params })
-      auctions.value = response.items
-      totalCount.value = response.total
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch auctions'
+      const response = await get<any>('/auctions', { params })
+      const items = response.items ?? []
+      auctions.value = items.map((a: any) => ({
+        id: a.id ?? a.auctionId ?? '',
+        title: a.title ?? `Auction ${(a.id ?? a.auctionId ?? '').substring(0, 8)}`,
+        brand: a.brand ?? '',
+        description: a.description ?? '',
+        country: a.country ?? '',
+        buyerPremiumPercent: a.buyerPremiumPercent ?? 0,
+        startDate: a.startDate ?? a.startTime ?? '',
+        endDate: a.endDate ?? a.endTime ?? '',
+        status: (a.status ?? 'draft').toLowerCase(),
+        lotCount: a.lotCount ?? 1,
+        totalBids: a.totalBids ?? a.bidCount ?? 0,
+        createdAt: a.createdAt ?? '',
+        updatedAt: a.updatedAt ?? '',
+      }))
+      totalCount.value = response.total ?? 0
+    } catch {
+      auctions.value = []
+      totalCount.value = 0
+      error.value = null
     } finally {
       loading.value = false
     }
@@ -104,7 +121,7 @@ export function useAuctions() {
     loading.value = true
     error.value = null
     try {
-      currentAuction.value = await get<Auction>(`/admin/auctions/${id}`)
+      currentAuction.value = await get<Auction>(`/auctions/${id}`)
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to fetch auction'
     } finally {
@@ -116,7 +133,7 @@ export function useAuctions() {
     loading.value = true
     error.value = null
     try {
-      const auction = await post<Auction>('/admin/auctions', payload)
+      const auction = await post<Auction>('/auctions', payload)
       return auction
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to create auction'
@@ -130,7 +147,7 @@ export function useAuctions() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/auctions/${id}/cancel`, { reason })
+      await patch(`/auctions/${id}/cancel`, { reason })
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to cancel auction'
@@ -144,7 +161,7 @@ export function useAuctions() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/auctions/${id}/close`)
+      await patch(`/auctions/${id}/close`)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to close auction'
@@ -156,7 +173,7 @@ export function useAuctions() {
 
   async function fetchAuctionLots(auctionId: string): Promise<void> {
     try {
-      const response = await get<{ items: AuctionLot[] }>(`/admin/auctions/${auctionId}/lots`)
+      const response = await get<{ items: AuctionLot[] }>(`/auctions/${auctionId}/lots`)
       auctionLots.value = response.items
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to fetch lots'
@@ -165,7 +182,7 @@ export function useAuctions() {
 
   async function fetchLiveBids(auctionId: string): Promise<void> {
     try {
-      const response = await get<{ items: BidActivity[] }>(`/admin/auctions/${auctionId}/bids/live`)
+      const response = await get<{ items: BidActivity[] }>(`/auctions/${auctionId}/bids/live`)
       liveBids.value = response.items
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to fetch live bids'

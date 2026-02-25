@@ -1,9 +1,9 @@
-p, broker_active, /api/v1/brokers/leads, GET, allow
-p, broker_active, /api/v1/brokers/leads/*/visit, POST, allow
-p, broker_active, /api/v1/brokers/lots/intake, POST, allow
-p, broker_active, /api/v1/brokers/lots/*/ai-describe, POST, allow
-p, broker_active, /api/v1/brokers/me/dashboard, GET, allow
-p, broker_active, /api/v1/brokers/sellers/*, GET, allow
-p, admin_ops, /api/v1/brokers/**, GET, allow
+p, broker, /api/v1/brokers/leads, GET, allow
+p, broker, /api/v1/brokers/leads/*/visit, POST, allow
+p, broker, /api/v1/brokers/lots/intake, POST, allow
+p, broker, /api/v1/brokers/lots/*/ai-describe, POST, allow
+p, broker, /api/v1/brokers/me/dashboard, GET, allow
+p, broker, /api/v1/brokers/sellers/*, GET, allow
+p, admin_ops, /api/v1/brokers/**, .*, allow
 p, admin_super, /api/v1/**, .*, allow
-g, admin_ops, admin_super
+g, admin_super, admin_ops

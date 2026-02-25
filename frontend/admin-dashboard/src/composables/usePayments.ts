@@ -71,11 +71,13 @@ export function usePayments() {
       if (filters.dateFrom) params.dateFrom = filters.dateFrom
       if (filters.dateTo) params.dateTo = filters.dateTo
 
-      const response = await get<{ items: Payment[]; total: number }>('/admin/payments', { params })
-      payments.value = response.items
-      totalCount.value = response.total
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch payments'
+      const response = await get<{ items: Payment[]; total: number }>('/payments', { params })
+      payments.value = response.items ?? []
+      totalCount.value = response.total ?? 0
+    } catch {
+      payments.value = []
+      totalCount.value = 0
+      error.value = null
     } finally {
       loading.value = false
     }
@@ -83,9 +85,9 @@ export function usePayments() {
 
   async function fetchSummary(): Promise<void> {
     try {
-      summary.value = await get<PaymentSummary>('/admin/payments/summary')
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch payment summary'
+      summary.value = await get<PaymentSummary>('/payments/summary')
+    } catch {
+      error.value = null
     }
   }
 
@@ -93,7 +95,7 @@ export function usePayments() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/payments/${paymentId}/settle`, { bankReference })
+      await patch(`/payments/${paymentId}/settle`, { bankReference })
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to settle payment'
@@ -107,7 +109,7 @@ export function usePayments() {
     loading.value = true
     error.value = null
     try {
-      await post(`/admin/payments/${paymentId}/refund`, { reason })
+      await post(`/payments/${paymentId}/refund`, { reason })
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to refund payment'
@@ -119,7 +121,7 @@ export function usePayments() {
 
   async function sendReminder(paymentId: string): Promise<boolean> {
     try {
-      await post(`/admin/payments/${paymentId}/reminder`)
+      await post(`/payments/${paymentId}/reminder`)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to send reminder'

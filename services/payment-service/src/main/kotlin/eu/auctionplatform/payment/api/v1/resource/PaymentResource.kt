@@ -127,7 +127,7 @@ class PaymentResource @Inject constructor(
      */
     @GET
     @Path("/checkout/{id}")
-    @RolesAllowed("buyer_active", "seller_active", "admin_ops", "admin_super")
+    @RolesAllowed("buyer_active", "seller_verified", "admin_ops", "admin_super")
     fun getCheckoutStatus(@PathParam("id") id: String): Response {
         val paymentId = UUID.fromString(id)
         val payment = paymentRepository.findById(paymentId)
@@ -219,7 +219,7 @@ class PaymentResource @Inject constructor(
      */
     @GET
     @Path("/invoices")
-    @RolesAllowed("buyer_active", "seller_active", "admin_ops", "admin_super")
+    @RolesAllowed("buyer_active", "seller_verified", "admin_ops", "admin_super")
     fun listInvoices(
         @QueryParam("page") @DefaultValue("1") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int
@@ -248,7 +248,7 @@ class PaymentResource @Inject constructor(
      */
     @GET
     @Path("/invoices/{id}/pdf")
-    @RolesAllowed("buyer_active", "seller_active", "admin_ops", "admin_super")
+    @RolesAllowed("buyer_active", "seller_verified", "admin_ops", "admin_super")
     fun downloadInvoicePdf(@PathParam("id") id: String): Response {
         val invoiceId = UUID.fromString(id)
         val invoice = invoiceRepository.findById(invoiceId)
@@ -276,7 +276,7 @@ class PaymentResource @Inject constructor(
      */
     @GET
     @Path("/settlements")
-    @RolesAllowed("seller_active", "admin_ops", "admin_super")
+    @RolesAllowed("seller_verified", "admin_ops", "admin_super")
     fun listSettlements(
         @Context securityContext: SecurityContext
     ): Response {

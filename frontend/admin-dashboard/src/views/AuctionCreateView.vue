@@ -61,27 +61,57 @@ function handleCancel() {
   <div>
     <div class="mb-6">
       <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link to="/auctions" class="hover:text-primary-600">Auctions</router-link>
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        <router-link
+          to="/auctions"
+          class="hover:text-primary-600"
+        >
+          Auctions
+        </router-link>
+        <svg
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 5l7 7-7 7"
+          />
         </svg>
         <span class="text-gray-700">Create Auction</span>
       </div>
-      <h1 class="mt-2 page-title">Create Auction</h1>
+      <h1 class="mt-2 page-title">
+        Create Auction
+      </h1>
     </div>
 
     <!-- Error banner -->
-    <div v-if="error" class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-      <p class="text-sm font-medium text-red-800">{{ error }}</p>
+    <div
+      v-if="error"
+      class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4"
+    >
+      <p class="text-sm font-medium text-red-800">
+        {{ error }}
+      </p>
     </div>
 
     <div class="mx-auto max-w-2xl">
-      <form class="space-y-6" @submit.prevent="handleSubmit">
+      <form
+        class="space-y-6"
+        @submit.prevent="handleSubmit"
+      >
         <div class="card">
-          <h2 class="section-title">Auction Details</h2>
+          <h2 class="section-title">
+            Auction Details
+          </h2>
           <div class="space-y-4">
             <div>
-              <label class="label" for="title">Auction Title *</label>
+              <label
+                class="label"
+                for="title"
+              >Auction Title *</label>
               <input
                 id="title"
                 v-model="form.title"
@@ -89,13 +119,21 @@ function handleCancel() {
                 class="input"
                 :class="errors.title && 'border-red-300'"
                 placeholder="e.g., Industrial Equipment Auction - March 2026"
-              />
-              <p v-if="errors.title" class="mt-1 text-sm text-red-600">{{ errors.title }}</p>
+              >
+              <p
+                v-if="errors.title"
+                class="mt-1 text-sm text-red-600"
+              >
+                {{ errors.title }}
+              </p>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
-                <label class="label" for="brand">Brand / Organizer *</label>
+                <label
+                  class="label"
+                  for="brand"
+                >Brand / Organizer *</label>
                 <input
                   id="brand"
                   v-model="form.brand"
@@ -103,26 +141,50 @@ function handleCancel() {
                   class="input"
                   :class="errors.brand && 'border-red-300'"
                   placeholder="e.g., TradEx"
-                />
-                <p v-if="errors.brand" class="mt-1 text-sm text-red-600">{{ errors.brand }}</p>
+                >
+                <p
+                  v-if="errors.brand"
+                  class="mt-1 text-sm text-red-600"
+                >
+                  {{ errors.brand }}
+                </p>
               </div>
               <div>
-                <label class="label" for="country">Country *</label>
+                <label
+                  class="label"
+                  for="country"
+                >Country *</label>
                 <select
                   id="country"
                   v-model="form.country"
                   class="select"
                   :class="errors.country && 'border-red-300'"
                 >
-                  <option value="">Select country</option>
-                  <option v-for="c in countries" :key="c" :value="c">{{ c }}</option>
+                  <option value="">
+                    Select country
+                  </option>
+                  <option
+                    v-for="c in countries"
+                    :key="c"
+                    :value="c"
+                  >
+                    {{ c }}
+                  </option>
                 </select>
-                <p v-if="errors.country" class="mt-1 text-sm text-red-600">{{ errors.country }}</p>
+                <p
+                  v-if="errors.country"
+                  class="mt-1 text-sm text-red-600"
+                >
+                  {{ errors.country }}
+                </p>
               </div>
             </div>
 
             <div>
-              <label class="label" for="description">Description *</label>
+              <label
+                class="label"
+                for="description"
+              >Description *</label>
               <textarea
                 id="description"
                 v-model="form.description"
@@ -131,16 +193,26 @@ function handleCancel() {
                 :class="errors.description && 'border-red-300'"
                 placeholder="Description of the auction..."
               />
-              <p v-if="errors.description" class="mt-1 text-sm text-red-600">{{ errors.description }}</p>
+              <p
+                v-if="errors.description"
+                class="mt-1 text-sm text-red-600"
+              >
+                {{ errors.description }}
+              </p>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <h2 class="section-title">Schedule & Pricing</h2>
+          <h2 class="section-title">
+            Schedule & Pricing
+          </h2>
           <div class="space-y-4">
             <div>
-              <label class="label" for="premium">Buyer Premium (%)</label>
+              <label
+                class="label"
+                for="premium"
+              >Buyer Premium (%)</label>
               <input
                 id="premium"
                 v-model.number="form.buyerPremiumPercent"
@@ -150,44 +222,96 @@ function handleCancel() {
                 step="0.5"
                 class="input w-32"
                 :class="errors.buyerPremiumPercent && 'border-red-300'"
-              />
-              <p v-if="errors.buyerPremiumPercent" class="mt-1 text-sm text-red-600">{{ errors.buyerPremiumPercent }}</p>
-              <p v-else class="mt-1 text-xs text-gray-400">Commission charged to buyers on top of the hammer price.</p>
+              >
+              <p
+                v-if="errors.buyerPremiumPercent"
+                class="mt-1 text-sm text-red-600"
+              >
+                {{ errors.buyerPremiumPercent }}
+              </p>
+              <p
+                v-else
+                class="mt-1 text-xs text-gray-400"
+              >
+                Commission charged to buyers on top of the hammer price.
+              </p>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
-                <label class="label" for="startDate">Start Date & Time *</label>
+                <label
+                  class="label"
+                  for="startDate"
+                >Start Date & Time *</label>
                 <input
                   id="startDate"
                   v-model="form.startDate"
                   type="datetime-local"
                   class="input"
                   :class="errors.startDate && 'border-red-300'"
-                />
-                <p v-if="errors.startDate" class="mt-1 text-sm text-red-600">{{ errors.startDate }}</p>
+                >
+                <p
+                  v-if="errors.startDate"
+                  class="mt-1 text-sm text-red-600"
+                >
+                  {{ errors.startDate }}
+                </p>
               </div>
               <div>
-                <label class="label" for="endDate">End Date & Time *</label>
+                <label
+                  class="label"
+                  for="endDate"
+                >End Date & Time *</label>
                 <input
                   id="endDate"
                   v-model="form.endDate"
                   type="datetime-local"
                   class="input"
                   :class="errors.endDate && 'border-red-300'"
-                />
-                <p v-if="errors.endDate" class="mt-1 text-sm text-red-600">{{ errors.endDate }}</p>
+                >
+                <p
+                  v-if="errors.endDate"
+                  class="mt-1 text-sm text-red-600"
+                >
+                  {{ errors.endDate }}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         <div class="flex justify-end gap-3">
-          <button type="button" class="btn-secondary" @click="handleCancel">Cancel</button>
-          <button type="submit" class="btn-primary" :disabled="loading">
-            <svg v-if="loading" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <button
+            type="button"
+            class="btn-secondary"
+            @click="handleCancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn-primary"
+            :disabled="loading"
+          >
+            <svg
+              v-if="loading"
+              class="h-4 w-4 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             {{ loading ? 'Creating...' : 'Create Auction' }}
           </button>

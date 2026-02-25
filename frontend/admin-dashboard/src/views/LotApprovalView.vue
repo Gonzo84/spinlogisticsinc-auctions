@@ -40,8 +40,28 @@ async function fetchPendingLots() {
   loading.value = true
   error.value = null
   try {
-    const response = await get<{ items: PendingLot[] }>('/admin/lots/pending')
-    pendingLots.value = response.items
+    const raw = await get<any>('/lots', { params: { status: 'PENDING_REVIEW', page: 0, pageSize: 50 } })
+    // Unwrap ApiResponse wrapper if present
+    const response = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    const items = response.items ?? []
+    pendingLots.value = items.map((lot: any) => ({
+      id: lot.id,
+      title: lot.title ?? '',
+      description: lot.description ?? '',
+      category: lot.category ?? lot.categoryId ?? '',
+      sellerName: lot.sellerName ?? lot.sellerId ?? 'Unknown',
+      sellerId: lot.sellerId ?? '',
+      startingBid: lot.startingBid ?? 0,
+      reservePrice: lot.reservePrice ?? null,
+      location: lot.location ?? {
+        city: lot.locationCity ?? '',
+        country: lot.locationCountry ?? '',
+      },
+      imageCount: lot.imageCount ?? (lot.images?.length ?? 0),
+      primaryImage: lot.primaryImageUrl ?? lot.primaryImage ?? null,
+      specifications: lot.specifications ?? {},
+      submittedAt: lot.updatedAt ?? lot.createdAt ?? new Date().toISOString(),
+    }))
   } catch (err: any) {
     error.value = err.response?.data?.message ?? 'Failed to fetch pending lots'
   } finally {
@@ -55,7 +75,7 @@ function toggleExpand(lotId: string) {
 
 async function approveLot(lotId: string) {
   try {
-    await post(`/admin/lots/${lotId}/approve`)
+    await post(`/lots/${lotId}/approve`)
     pendingLots.value = pendingLots.value.filter((l) => l.id !== lotId)
   } catch (err: any) {
     error.value = err.response?.data?.message ?? 'Failed to approve lot'
@@ -71,7 +91,7 @@ function openRejectDialog(lotId: string) {
 async function confirmReject() {
   if (!rejectingLotId.value || !rejectReason.value.trim()) return
   try {
-    await post(`/admin/lots/${rejectingLotId.value}/reject`, { reason: rejectReason.value })
+    await post(`/lots/${rejectingLotId.value}/admin-withdraw`, { reason: rejectReason.value })
     pendingLots.value = pendingLots.value.filter((l) => l.id !== rejectingLotId.value)
     showRejectDialog.value = false
   } catch (err: any) {
@@ -99,7 +119,9 @@ function formatDate(dateStr: string): string {
   <div>
     <div class="page-header">
       <div>
-        <h1 class="page-title">Lot Approval Queue</h1>
+        <h1 class="page-title">
+          Lot Approval Queue
+        </h1>
         <p class="mt-1 text-sm text-gray-500">
           Review and approve seller lot submissions before they go live.
         </p>
@@ -108,9 +130,22 @@ function formatDate(dateStr: string): string {
         <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
           {{ pendingLots.length }} pending
         </span>
-        <button class="btn-secondary btn-sm" @click="fetchPendingLots">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <button
+          class="btn-secondary btn-sm"
+          @click="fetchPendingLots"
+        >
+          <svg
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
           </svg>
           Refresh
         </button>
@@ -118,29 +153,72 @@ function formatDate(dateStr: string): string {
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="py-12 text-center">
-      <svg class="mx-auto h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    <div
+      v-if="loading"
+      class="py-12 text-center"
+    >
+      <svg
+        class="mx-auto h-8 w-8 animate-spin text-primary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        />
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+        />
       </svg>
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="card border-red-200 bg-red-50 text-center">
-      <p class="text-sm text-red-600">{{ error }}</p>
+    <div
+      v-else-if="error"
+      class="card border-red-200 bg-red-50 text-center"
+    >
+      <p class="text-sm text-red-600">
+        {{ error }}
+      </p>
     </div>
 
     <!-- Empty -->
-    <div v-else-if="pendingLots.length === 0" class="card py-12 text-center">
-      <svg class="mx-auto h-12 w-12 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div
+      v-else-if="pendingLots.length === 0"
+      class="card py-12 text-center"
+    >
+      <svg
+        class="mx-auto h-12 w-12 text-green-300"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </svg>
-      <h3 class="mt-4 text-lg font-medium text-gray-900">All caught up!</h3>
-      <p class="mt-1 text-sm text-gray-500">No lots pending approval.</p>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">
+        All caught up!
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        No lots pending approval.
+      </p>
     </div>
 
     <!-- Lot cards -->
-    <div v-else class="space-y-4">
+    <div
+      v-else
+      class="space-y-4"
+    >
       <div
         v-for="lot in pendingLots"
         :key="lot.id"
@@ -158,31 +236,55 @@ function formatDate(dateStr: string): string {
               :src="lot.primaryImage"
               :alt="lot.title"
               class="h-full w-full object-cover"
-            />
-            <div v-else class="flex h-full w-full items-center justify-center">
-              <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            >
+            <div
+              v-else
+              class="flex h-full w-full items-center justify-center"
+            >
+              <svg
+                class="h-6 w-6 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             </div>
           </div>
 
           <!-- Info -->
           <div class="min-w-0 flex-1">
-            <h3 class="text-sm font-semibold text-gray-900">{{ lot.title }}</h3>
+            <h3 class="text-sm font-semibold text-gray-900">
+              {{ lot.title }}
+            </h3>
             <p class="text-xs text-gray-500">
               {{ lot.category }} &middot; {{ lot.sellerName }} &middot; {{ lot.location.city }}, {{ lot.location.country }}
             </p>
-            <p class="text-xs text-gray-400">Submitted {{ formatDate(lot.submittedAt) }}</p>
+            <p class="text-xs text-gray-400">
+              Submitted {{ formatDate(lot.submittedAt) }}
+            </p>
           </div>
 
           <!-- Price -->
           <div class="hidden text-right sm:block">
-            <p class="text-sm font-medium text-gray-900">{{ formatCurrency(lot.startingBid) }}</p>
-            <p class="text-xs text-gray-500">Starting bid</p>
+            <p class="text-sm font-medium text-gray-900">
+              {{ formatCurrency(lot.startingBid) }}
+            </p>
+            <p class="text-xs text-gray-500">
+              Starting bid
+            </p>
           </div>
 
           <!-- Actions -->
-          <div class="flex gap-2" @click.stop>
+          <div
+            class="flex gap-2"
+            @click.stop
+          >
             <button
               class="btn-success btn-sm"
               @click="approveLot(lot.id)"
@@ -205,36 +307,66 @@ function formatDate(dateStr: string): string {
             stroke="currentColor"
             stroke-width="2"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </div>
 
         <!-- Expanded details -->
-        <div v-if="expandedLotId === lot.id" class="border-t border-gray-100 bg-gray-50 p-4">
+        <div
+          v-if="expandedLotId === lot.id"
+          class="border-t border-gray-100 bg-gray-50 p-4"
+        >
           <div class="grid gap-4 md:grid-cols-2">
             <div>
-              <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">Description</h4>
-              <p class="text-sm text-gray-700">{{ lot.description }}</p>
+              <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
+                Description
+              </h4>
+              <p class="text-sm text-gray-700">
+                {{ lot.description }}
+              </p>
             </div>
             <div>
-              <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">Details</h4>
+              <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
+                Details
+              </h4>
               <dl class="space-y-1 text-sm">
                 <div class="flex justify-between">
-                  <dt class="text-gray-500">Starting Bid</dt>
-                  <dd class="font-medium text-gray-900">{{ formatCurrency(lot.startingBid) }}</dd>
+                  <dt class="text-gray-500">
+                    Starting Bid
+                  </dt>
+                  <dd class="font-medium text-gray-900">
+                    {{ formatCurrency(lot.startingBid) }}
+                  </dd>
                 </div>
                 <div class="flex justify-between">
-                  <dt class="text-gray-500">Reserve Price</dt>
-                  <dd class="font-medium text-gray-900">{{ formatCurrency(lot.reservePrice) }}</dd>
+                  <dt class="text-gray-500">
+                    Reserve Price
+                  </dt>
+                  <dd class="font-medium text-gray-900">
+                    {{ formatCurrency(lot.reservePrice) }}
+                  </dd>
                 </div>
                 <div class="flex justify-between">
-                  <dt class="text-gray-500">Images</dt>
-                  <dd class="font-medium text-gray-900">{{ lot.imageCount }}</dd>
+                  <dt class="text-gray-500">
+                    Images
+                  </dt>
+                  <dd class="font-medium text-gray-900">
+                    {{ lot.imageCount }}
+                  </dd>
                 </div>
                 <div class="flex justify-between">
-                  <dt class="text-gray-500">Seller</dt>
+                  <dt class="text-gray-500">
+                    Seller
+                  </dt>
                   <dd>
-                    <router-link :to="`/users/${lot.sellerId}`" class="font-medium text-primary-600 hover:text-primary-700">
+                    <router-link
+                      :to="`/users/${lot.sellerId}`"
+                      class="font-medium text-primary-600 hover:text-primary-700"
+                    >
                       {{ lot.sellerName }}
                     </router-link>
                   </dd>
@@ -244,8 +376,13 @@ function formatDate(dateStr: string): string {
           </div>
 
           <!-- Specifications -->
-          <div v-if="Object.keys(lot.specifications).length > 0" class="mt-4">
-            <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">Specifications</h4>
+          <div
+            v-if="Object.keys(lot.specifications).length > 0"
+            class="mt-4"
+          >
+            <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
+              Specifications
+            </h4>
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="(value, key) in lot.specifications"

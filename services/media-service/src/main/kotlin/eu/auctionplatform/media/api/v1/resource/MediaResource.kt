@@ -67,7 +67,7 @@ class MediaResource @Inject constructor(
      */
     @POST
     @Path("/upload/presigned")
-    @RolesAllowed("seller", "admin_ops", "admin_super", "broker")
+    @RolesAllowed("seller_verified", "seller_pending", "admin_ops", "admin_super", "broker")
     fun generatePresignedUrl(@Valid request: PresignedUploadRequest): Response {
         logger.info("Generating presigned upload URL for lot {}", request.lotId)
 
@@ -98,11 +98,13 @@ class MediaResource @Inject constructor(
      *
      * @param lotId The lot identifier.
      * @return 200 OK with the list of images.
+     * @return 400 Bad Request if lotId is not a valid UUID.
      */
     @GET
     @Path("/lots/{lotId}/images")
     fun listImages(@PathParam("lotId") lotId: String): Response {
-        val images = imageRepository.findByLotId(UUID.fromString(lotId))
+        val uuid = parseUuid(lotId, "lotId") ?: return badRequestResponse("lotId", lotId)
+        val images = imageRepository.findByLotId(uuid)
         val responses = images.map { it.toResponse() }
 
         return Response.ok(ApiResponse.ok(responses)).build()
@@ -119,12 +121,13 @@ class MediaResource @Inject constructor(
      *
      * @param imageId The image identifier.
      * @return 204 No Content on success.
+     * @return 400 Bad Request if imageId is not a valid UUID.
      */
     @DELETE
     @Path("/images/{imageId}")
-    @RolesAllowed("seller", "admin_ops", "admin_super", "broker")
+    @RolesAllowed("seller_verified", "seller_pending", "admin_ops", "admin_super", "broker")
     fun deleteImage(@PathParam("imageId") imageId: String): Response {
-        val id = UUID.fromString(imageId)
+        val id = parseUuid(imageId, "imageId") ?: return badRequestResponse("imageId", imageId)
         val image = imageRepository.findById(id)
             ?: throw NotFoundException(
                 code = "IMAGE_NOT_FOUND",
@@ -158,15 +161,16 @@ class MediaResource @Inject constructor(
      * @param imageId The image identifier.
      * @param request The new display order.
      * @return 200 OK with the updated image.
+     * @return 400 Bad Request if imageId is not a valid UUID.
      */
     @PUT
     @Path("/images/{imageId}/order")
-    @RolesAllowed("seller", "admin_ops", "admin_super", "broker")
+    @RolesAllowed("seller_verified", "seller_pending", "admin_ops", "admin_super", "broker")
     fun updateOrder(
         @PathParam("imageId") imageId: String,
         @Valid request: UpdateOrderRequest
     ): Response {
-        val id = UUID.fromString(imageId)
+        val id = parseUuid(imageId, "imageId") ?: return badRequestResponse("imageId", imageId)
         val image = imageRepository.findById(id)
             ?: throw NotFoundException(
                 code = "IMAGE_NOT_FOUND",
@@ -194,12 +198,13 @@ class MediaResource @Inject constructor(
      *
      * @param imageId The image identifier.
      * @return 200 OK with the updated image.
+     * @return 400 Bad Request if imageId is not a valid UUID.
      */
     @PUT
     @Path("/images/{imageId}/primary")
-    @RolesAllowed("seller", "admin_ops", "admin_super", "broker")
+    @RolesAllowed("seller_verified", "seller_pending", "admin_ops", "admin_super", "broker")
     fun setPrimary(@PathParam("imageId") imageId: String): Response {
-        val id = UUID.fromString(imageId)
+        val id = parseUuid(imageId, "imageId") ?: return badRequestResponse("imageId", imageId)
         val image = imageRepository.findById(id)
             ?: throw NotFoundException(
                 code = "IMAGE_NOT_FOUND",
@@ -215,8 +220,37 @@ class MediaResource @Inject constructor(
     }
 
     // -----------------------------------------------------------------------
-    // Mapping helpers
+    // Helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * Safely parses a string into a [UUID], returning `null` if the string
+     * is not a valid UUID format.
+     *
+     * @param value     The string to parse.
+     * @param paramName The parameter name (for logging).
+     * @return The parsed [UUID], or `null` if invalid.
+     */
+    private fun parseUuid(value: String, paramName: String): UUID? {
+        return try {
+            UUID.fromString(value)
+        } catch (ex: IllegalArgumentException) {
+            logger.warn("Invalid UUID for parameter '{}': {}", paramName, value)
+            null
+        }
+    }
+
+    /**
+     * Builds a 400 Bad Request response for an invalid UUID path parameter.
+     */
+    private fun badRequestResponse(paramName: String, value: String): Response {
+        return Response.status(Response.Status.BAD_REQUEST)
+            .entity(mapOf(
+                "error" to "INVALID_UUID",
+                "message" to "Parameter '$paramName' must be a valid UUID, got: $value"
+            ))
+            .build()
+    }
 
     /**
      * Converts a [MediaImage] domain model to an [ImageResponse] DTO.

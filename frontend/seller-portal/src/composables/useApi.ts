@@ -11,7 +11,7 @@ export function useApi() {
 
   if (!apiInstance) {
     apiInstance = axios.create({
-      baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+      baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',

@@ -2,6 +2,7 @@ import { useAuthStore } from '~/stores/auth'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const authStore = useAuthStore(nuxtApp.$pinia as any)
 
   const api = $fetch.create({
@@ -27,7 +28,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         authStore.clearSession()
         const { $keycloak } = nuxtApp
         if ($keycloak) {
-          ($keycloak as any).login({
+          ($keycloak as { login: (options: { redirectUri: string }) => void }).login({
             redirectUri: window.location.href,
           })
         }

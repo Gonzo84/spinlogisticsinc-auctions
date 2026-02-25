@@ -14,7 +14,7 @@
 
         <!-- Search Bar (desktop) -->
         <div class="flex-1 max-w-xl mx-4 hidden md:block">
-          <SearchSearchBar />
+          <SearchBar />
         </div>
 
         <!-- Right Side Actions -->
@@ -212,7 +212,7 @@
 
       <!-- Mobile Search Bar -->
       <div class="pb-3 md:hidden">
-        <SearchSearchBar />
+        <SearchBar />
       </div>
     </div>
   </header>
@@ -265,7 +265,7 @@ async function handleLogout() {
   await logout()
 }
 
-function handleNotificationClick(notif: any) {
+function handleNotificationClick(notif: { id: string; read: boolean; actionUrl?: string }) {
   if (!notif.read) {
     markAsRead(notif.id)
   }

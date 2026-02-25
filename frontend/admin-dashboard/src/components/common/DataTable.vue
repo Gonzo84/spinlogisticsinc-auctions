@@ -129,32 +129,66 @@ function getAlignClass(align?: string): string {
 <template>
   <div>
     <!-- Search bar -->
-    <div v-if="searchable" class="mb-4">
+    <div
+      v-if="searchable"
+      class="mb-4"
+    >
       <div class="relative">
-        <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <svg
+          class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="searchPlaceholder"
           class="input pl-10"
-        />
+        >
       </div>
     </div>
 
     <!-- Table -->
     <div class="table-container">
       <!-- Loading overlay -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <svg class="h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      <div
+        v-if="loading"
+        class="flex items-center justify-center py-12"
+      >
+        <svg
+          class="h-8 w-8 animate-spin text-primary-600"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
         </svg>
       </div>
 
       <!-- Table content -->
-      <table v-else class="w-full">
+      <table
+        v-else
+        class="w-full"
+      >
         <thead>
           <tr>
             <th
@@ -178,7 +212,11 @@ function getAlignClass(align?: string): string {
                   stroke="currentColor"
                   stroke-width="2"
                 >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 15l7-7 7 7"
+                  />
                 </svg>
                 <svg
                   v-else
@@ -188,7 +226,11 @@ function getAlignClass(align?: string): string {
                   stroke="currentColor"
                   stroke-width="2"
                 >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+                  />
                 </svg>
               </button>
               <span v-else>{{ col.label }}</span>
@@ -200,7 +242,10 @@ function getAlignClass(align?: string): string {
         </thead>
         <tbody>
           <tr v-if="paginatedData.length === 0">
-            <td :colspan="columns.length + 1" class="px-4 py-12 text-center text-sm text-gray-500">
+            <td
+              :colspan="columns.length + 1"
+              class="px-4 py-12 text-center text-sm text-gray-500"
+            >
               {{ emptyMessage }}
             </td>
           </tr>
@@ -214,19 +259,29 @@ function getAlignClass(align?: string): string {
               :key="col.key"
               :class="['table-cell', getAlignClass(col.align)]"
             >
-              <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]">
+              <slot
+                :name="`cell-${col.key}`"
+                :row="row"
+                :value="row[col.key]"
+              >
                 {{ row[col.key] }}
               </slot>
             </td>
             <td class="table-cell text-right">
-              <slot name="row-actions" :row="row" />
+              <slot
+                name="row-actions"
+                :row="row"
+              />
             </td>
           </tr>
         </tbody>
       </table>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between border-t border-gray-200 px-4 py-3">
+      <div
+        v-if="totalPages > 1"
+        class="flex items-center justify-between border-t border-gray-200 px-4 py-3"
+      >
         <p class="text-sm text-gray-500">
           Showing {{ (currentPage - 1) * pageSize + 1 }} to
           {{ Math.min(currentPage * pageSize, displayTotal) }}

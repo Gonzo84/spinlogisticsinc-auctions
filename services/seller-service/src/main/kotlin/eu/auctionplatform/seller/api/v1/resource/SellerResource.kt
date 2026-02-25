@@ -63,7 +63,7 @@ class SellerResource {
      */
     @POST
     @Path("/register")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun register(
         @HeaderParam("Authorization") authorization: String,
         request: SellerRegistrationRequest
@@ -91,7 +91,7 @@ class SellerResource {
      */
     @GET
     @Path("/me/dashboard")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getDashboard(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -125,7 +125,7 @@ class SellerResource {
      */
     @GET
     @Path("/me/lots")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getMyLots(
         @HeaderParam("Authorization") authorization: String,
         @QueryParam("page") @DefaultValue("1") page: Int,
@@ -166,7 +166,7 @@ class SellerResource {
      */
     @GET
     @Path("/me/lots/{id}")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getLotById(
         @HeaderParam("Authorization") authorization: String,
         @PathParam("id") id: UUID
@@ -202,7 +202,7 @@ class SellerResource {
      */
     @GET
     @Path("/me/settlements")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getSettlements(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -240,7 +240,7 @@ class SellerResource {
      */
     @GET
     @Path("/me/analytics")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getAnalytics(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -275,7 +275,7 @@ class SellerResource {
      */
     @GET
     @Path("/me/co2-report")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getCo2Report(
         @HeaderParam("Authorization") authorization: String
     ): Response {
@@ -310,7 +310,7 @@ class SellerResource {
      */
     @POST
     @Path("/me/lots/{id}/accept-below-reserve")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun acceptBelowReserve(
         @HeaderParam("Authorization") authorization: String,
         @PathParam("id") id: UUID
@@ -332,7 +332,7 @@ class SellerResource {
      */
     @POST
     @Path("/me/lots/{id}/relist")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun relistLot(
         @HeaderParam("Authorization") authorization: String,
         @PathParam("id") id: UUID

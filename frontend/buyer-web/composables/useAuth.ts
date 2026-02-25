@@ -1,10 +1,18 @@
 import { useAuthStore } from '~/stores/auth'
 import type { User } from '~/stores/auth'
 
+interface KeycloakInstance {
+  login(options?: { redirectUri?: string }): Promise<void>
+  logout(options?: { redirectUri?: string }): Promise<void>
+  register(options?: Record<string, unknown>): Promise<void>
+  updateToken(minValidity: number): Promise<boolean>
+  token?: string
+  refreshToken?: string
+}
+
 export function useAuth() {
   const authStore = useAuthStore()
   const { $keycloak, $api } = useNuxtApp()
-  const router = useRouter()
 
   const isAuthenticated = computed(() => authStore.isAuthenticated)
   const user = computed(() => authStore.user)
@@ -15,7 +23,7 @@ export function useAuth() {
   const isBusiness = computed(() => authStore.isBusiness)
 
   async function login(redirectUri?: string) {
-    const keycloak = $keycloak as any
+    const keycloak = $keycloak as KeycloakInstance | undefined
     if (keycloak) {
       await keycloak.login({
         redirectUri: redirectUri || window.location.href,
@@ -24,7 +32,7 @@ export function useAuth() {
   }
 
   async function logout() {
-    const keycloak = $keycloak as any
+    const keycloak = $keycloak as KeycloakInstance | undefined
     authStore.clearSession()
     if (keycloak) {
       await keycloak.logout({
@@ -34,7 +42,7 @@ export function useAuth() {
   }
 
   async function register(accountType?: 'business' | 'private') {
-    const keycloak = $keycloak as any
+    const keycloak = $keycloak as KeycloakInstance | undefined
     if (keycloak) {
       await keycloak.register({
         redirectUri: `${window.location.origin}/auth/callback`,
@@ -44,7 +52,7 @@ export function useAuth() {
   }
 
   function refreshToken(): Promise<boolean> {
-    const keycloak = $keycloak as any
+    const keycloak = $keycloak as KeycloakInstance | undefined
     if (!keycloak) return Promise.resolve(false)
 
     return keycloak.updateToken(30).then((refreshed: boolean) => {

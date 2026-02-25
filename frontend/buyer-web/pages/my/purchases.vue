@@ -200,7 +200,7 @@
 import { useCartStore, type CartLot } from '~/stores/cart'
 
 const { t } = useI18n()
-const { isAuthenticated, requireAuth } = useAuth()
+const { requireAuth } = useAuth()
 const cartStore = useCartStore()
 
 const loading = ref(false)

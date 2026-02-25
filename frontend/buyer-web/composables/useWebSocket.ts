@@ -10,11 +10,13 @@ export type WebSocketEvent =
 
 export interface WebSocketMessage {
   event: WebSocketEvent
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any
   auctionId?: string
   timestamp: string
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventHandler = (data: any) => void
 
 export function useWebSocket() {
@@ -25,8 +27,8 @@ export function useWebSocket() {
   let heartbeatInterval: ReturnType<typeof setInterval> | null = null
   let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
   let reconnectAttempts = 0
-  const maxReconnectAttempts = 10
-  const baseReconnectDelay = 1000
+  const maxReconnectAttempts = 3
+  const baseReconnectDelay = 2000
 
   const isConnected = ref(false)
   const isReconnecting = ref(false)
@@ -103,7 +105,7 @@ export function useWebSocket() {
     isReconnecting.value = false
   }
 
-  function send(data: any) {
+  function send(data: Record<string, unknown>) {
     if (socket?.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(data))
     }

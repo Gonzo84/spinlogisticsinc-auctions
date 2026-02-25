@@ -13,6 +13,7 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
+import org.eclipse.microprofile.config.ConfigProvider
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
@@ -58,7 +59,9 @@ class ImageUploadConsumer @Inject constructor(
      */
     fun onStart(@Observes event: StartupEvent) {
         try {
-            val natsUrl = System.getProperty("nats.url") ?: "nats://localhost:4222"
+            val natsUrl = ConfigProvider.getConfig()
+                .getOptionalValue("nats.url", String::class.java)
+                .orElse("nats://localhost:4222")
             connection = io.nats.client.Nats.connect(natsUrl)
 
             val jetStream = connection!!.jetStream()

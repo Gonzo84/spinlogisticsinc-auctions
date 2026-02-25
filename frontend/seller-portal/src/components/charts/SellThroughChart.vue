@@ -72,13 +72,23 @@ const chartOptions: ChartOptions<'doughnut'> = {
 <template>
   <div class="relative">
     <div :style="{ height: height + 'px' }">
-      <Doughnut :data="chartData" :options="chartOptions" />
+      <Doughnut
+        :data="chartData"
+        :options="chartOptions"
+      />
     </div>
     <!-- Center label -->
-    <div class="pointer-events-none absolute inset-0 flex items-center justify-center" style="margin-bottom: 30px;">
+    <div
+      class="pointer-events-none absolute inset-0 flex items-center justify-center"
+      style="margin-bottom: 30px;"
+    >
       <div class="text-center">
-        <p class="text-3xl font-bold text-gray-900">{{ rate }}%</p>
-        <p class="text-xs text-gray-500">Sell-through</p>
+        <p class="text-3xl font-bold text-gray-900">
+          {{ rate }}%
+        </p>
+        <p class="text-xs text-gray-500">
+          Sell-through
+        </p>
       </div>
     </div>
   </div>

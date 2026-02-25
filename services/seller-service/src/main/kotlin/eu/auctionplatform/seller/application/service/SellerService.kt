@@ -76,7 +76,7 @@ class SellerService @Inject constructor(
         private const val SELECT_ANALYTICS_BY_SELLER = """
             SELECT COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.active_lots ELSE 0 END), 0) AS total_lots,
                    COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.total_bids ELSE 0 END), 0) AS total_bids,
-                   COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.hammer_sales ELSE 0 END), 0) AS total_revenue,
+                   COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.total_hammer_sales ELSE 0 END), 0) AS total_revenue,
                    COALESCE(MAX(m.sell_through_rate), 0) AS sell_through_rate,
                    COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.total_settled ELSE 0 END), 0) AS total_settled
               FROM app.seller_metrics m
@@ -99,7 +99,7 @@ class SellerService @Inject constructor(
         """
 
         private const val INIT_METRICS = """
-            INSERT INTO app.seller_metrics (seller_id, period, active_lots, total_bids, hammer_sales, pending_settlements, total_settled, sell_through_rate)
+            INSERT INTO app.seller_metrics (seller_id, period, active_lots, total_bids, total_hammer_sales, pending_settlements, total_settled, sell_through_rate)
             VALUES (?, 'ALL', 0, 0, 0, 0, 0, 0)
             ON CONFLICT (seller_id, period) DO NOTHING
         """

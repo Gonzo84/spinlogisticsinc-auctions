@@ -35,18 +35,31 @@ export function useBid() {
 
     try {
       const api = $api as typeof $fetch
-      const bid = await api<Bid>(`/auctions/${payload.auctionId}/bids`, {
+      const response = await api<Record<string, unknown>>(`/auctions/${payload.auctionId}/bids`, {
         method: 'POST',
         body: {
           amount: payload.amount,
         },
       })
 
+      // Unwrap ApiResponse wrapper and map to Bid type
+      const raw = (response?.data ?? response) as Record<string, unknown>
+      const bid: Bid = {
+        id: (raw.bidId ?? '') as string,
+        auctionId: (raw.auctionId ?? payload.auctionId) as string,
+        bidderId: '',
+        bidderLabel: 'You',
+        amount: (raw.newHighBid ?? raw.amount ?? payload.amount) as number,
+        isAutoBid: false,
+        timestamp: new Date().toISOString(),
+      }
+
       lastBid.value = bid
       auctionStore.addBid(bid)
       return bid
-    } catch (e: any) {
-      const message = e?.data?.message || e?.message || 'Failed to place bid'
+    } catch (e: unknown) {
+      const err = e as { data?: { message?: string }; message?: string }
+      const message = err?.data?.message || err?.message || 'Failed to place bid'
       error.value = message
       throw new Error(message)
     } finally {
@@ -73,8 +86,9 @@ export function useBid() {
 
       auctionStore.setAutoBid(config)
       return config
-    } catch (e: any) {
-      const message = e?.data?.message || e?.message || 'Failed to set auto-bid'
+    } catch (e: unknown) {
+      const err = e as { data?: { message?: string }; message?: string }
+      const message = err?.data?.message || err?.message || 'Failed to set auto-bid'
       error.value = message
       throw new Error(message)
     } finally {
@@ -97,8 +111,9 @@ export function useBid() {
       })
 
       auctionStore.setAutoBid(null)
-    } catch (e: any) {
-      const message = e?.data?.message || e?.message || 'Failed to cancel auto-bid'
+    } catch (e: unknown) {
+      const err = e as { data?: { message?: string }; message?: string }
+      const message = err?.data?.message || err?.message || 'Failed to cancel auto-bid'
       error.value = message
       throw new Error(message)
     } finally {

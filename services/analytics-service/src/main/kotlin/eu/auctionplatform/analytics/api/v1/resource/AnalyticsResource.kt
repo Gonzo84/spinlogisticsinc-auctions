@@ -54,7 +54,7 @@ class AnalyticsResource {
      */
     @GET
     @Path("/overview")
-    @RolesAllowed("admin", "moderator")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getOverview(): Response {
         logger.debug("GET /overview")
 
@@ -87,7 +87,7 @@ class AnalyticsResource {
      */
     @GET
     @Path("/auctions/{id}")
-    @RolesAllowed("admin", "moderator")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getAuctionMetrics(@PathParam("id") id: UUID): Response {
         logger.debug("GET /auctions/{}", id)
 
@@ -123,7 +123,7 @@ class AnalyticsResource {
      */
     @GET
     @Path("/revenue")
-    @RolesAllowed("admin", "moderator")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getRevenueReport(
         @QueryParam("from") from: String?,
         @QueryParam("to") to: String?
@@ -173,7 +173,7 @@ class AnalyticsResource {
      */
     @GET
     @Path("/growth")
-    @RolesAllowed("admin", "moderator")
+    @RolesAllowed("admin_ops", "admin_super")
     fun getUserGrowthReport(
         @QueryParam("from") from: String?,
         @QueryParam("to") to: String?

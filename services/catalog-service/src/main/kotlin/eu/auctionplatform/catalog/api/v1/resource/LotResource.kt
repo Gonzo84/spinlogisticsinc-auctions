@@ -139,7 +139,7 @@ class LotResource {
      * @return 201 Created with the new lot.
      */
     @POST
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun createLot(
         @HeaderParam("Authorization") authorization: String,
         request: CreateLotRequest
@@ -169,7 +169,7 @@ class LotResource {
      */
     @PUT
     @Path("/{id}")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun updateLot(
         @PathParam("id") id: UUID,
         @HeaderParam("Authorization") authorization: String,
@@ -193,7 +193,7 @@ class LotResource {
      */
     @POST
     @Path("/{id}/submit")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun submitForReview(
         @PathParam("id") id: UUID,
         @HeaderParam("Authorization") authorization: String
@@ -215,7 +215,7 @@ class LotResource {
      */
     @DELETE
     @Path("/{id}")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun withdrawLot(
         @PathParam("id") id: UUID,
         @HeaderParam("Authorization") authorization: String
@@ -237,7 +237,7 @@ class LotResource {
      */
     @POST
     @Path("/combine")
-    @RolesAllowed("user", "seller")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun combineLots(
         @HeaderParam("Authorization") authorization: String,
         request: CombineLotsRequest
@@ -265,7 +265,7 @@ class LotResource {
      */
     @POST
     @Path("/{id}/approve")
-    @RolesAllowed("admin", "moderator")
+    @RolesAllowed("admin_ops", "admin_super")
     fun approveLot(@PathParam("id") id: UUID): Response {
         val lot = lotService.approveLot(id)
 
@@ -282,7 +282,7 @@ class LotResource {
      */
     @POST
     @Path("/{id}/admin-withdraw")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun adminWithdrawLot(@PathParam("id") id: UUID): Response {
         val lot = lotService.withdrawLot(id, sellerId = null)
 

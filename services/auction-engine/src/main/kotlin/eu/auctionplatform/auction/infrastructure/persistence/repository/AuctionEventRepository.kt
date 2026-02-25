@@ -122,63 +122,50 @@ class AuctionEventRepository @Inject constructor(
     ): Boolean {
         if (events.isEmpty()) return true
 
+        // Use the JTA-managed connection (no manual commit/rollback).
+        // The calling @Transactional method handles the transaction boundary.
         dataSource.connection.use { conn ->
-            val originalAutoCommit = conn.autoCommit
-            conn.autoCommit = false
-            try {
-                // Check for version conflicts
-                conn.prepareStatement(CHECK_VERSION_CONFLICT).use { checkStmt ->
-                    checkStmt.setObject(1, aggregateId)
-                    checkStmt.setLong(2, expectedVersion + 1)
-                    checkStmt.executeQuery().use { rs ->
-                        rs.next()
-                        val conflictCount = rs.getInt(1)
-                        if (conflictCount > 0) {
-                            logger.warn(
-                                "Optimistic concurrency conflict for aggregate {} at expected version {}. " +
-                                    "Found {} events at or above that version.",
-                                aggregateId, expectedVersion, conflictCount
-                            )
-                            conn.rollback()
-                            return false
-                        }
+            // Check for version conflicts
+            conn.prepareStatement(CHECK_VERSION_CONFLICT).use { checkStmt ->
+                checkStmt.setObject(1, aggregateId)
+                checkStmt.setLong(2, expectedVersion + 1)
+                checkStmt.executeQuery().use { rs ->
+                    rs.next()
+                    val conflictCount = rs.getInt(1)
+                    if (conflictCount > 0) {
+                        logger.warn(
+                            "Optimistic concurrency conflict for aggregate {} at expected version {}. " +
+                                "Found {} events at or above that version.",
+                            aggregateId, expectedVersion, conflictCount
+                        )
+                        return false
                     }
                 }
-
-                // Insert all events in the batch
-                conn.prepareStatement(INSERT_EVENT).use { insertStmt ->
-                    for (event in events) {
-                        insertStmt.setObject(1, event.eventId)
-                        insertStmt.setObject(2, event.aggregateId)
-                        insertStmt.setString(3, event.aggregateType)
-                        insertStmt.setString(4, event.eventType)
-                        insertStmt.setString(5, event.eventData)
-                        insertStmt.setLong(6, event.version)
-                        insertStmt.setTimestamp(7, Timestamp.from(event.createdAt))
-                        insertStmt.setString(8, event.brand)
-                        insertStmt.setString(9, event.metadata)
-                        insertStmt.addBatch()
-                    }
-                    insertStmt.executeBatch()
-                }
-
-                conn.commit()
-                logger.debug(
-                    "Appended {} events to aggregate {} (versions {}..{})",
-                    events.size, aggregateId,
-                    events.first().version, events.last().version
-                )
-                return true
-            } catch (ex: Exception) {
-                conn.rollback()
-                logger.error(
-                    "Failed to append events to aggregate {}: {}",
-                    aggregateId, ex.message, ex
-                )
-                throw ex
-            } finally {
-                conn.autoCommit = originalAutoCommit
             }
+
+            // Insert all events in the batch
+            conn.prepareStatement(INSERT_EVENT).use { insertStmt ->
+                for (event in events) {
+                    insertStmt.setObject(1, event.eventId)
+                    insertStmt.setObject(2, event.aggregateId)
+                    insertStmt.setString(3, event.aggregateType)
+                    insertStmt.setString(4, event.eventType)
+                    insertStmt.setString(5, event.eventData)
+                    insertStmt.setLong(6, event.version)
+                    insertStmt.setTimestamp(7, Timestamp.from(event.createdAt))
+                    insertStmt.setString(8, event.brand)
+                    insertStmt.setString(9, event.metadata)
+                    insertStmt.addBatch()
+                }
+                insertStmt.executeBatch()
+            }
+
+            logger.debug(
+                "Appended {} events to aggregate {} (versions {}..{})",
+                events.size, aggregateId,
+                events.first().version, events.last().version
+            )
+            return true
         }
     }
 

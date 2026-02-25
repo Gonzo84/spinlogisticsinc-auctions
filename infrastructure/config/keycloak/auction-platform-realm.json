@@ -1070,7 +1070,7 @@
   ],
   "users": [
     {
-      "id": "user-buyer-test",
+      "id": "00000000-0000-0000-0000-000000000001",
       "username": "buyer@test.com",
       "email": "buyer@test.com",
       "firstName": "Test",
@@ -1099,7 +1099,7 @@
       ]
     },
     {
-      "id": "user-seller-test",
+      "id": "00000000-0000-0000-0000-000000000002",
       "username": "seller@test.com",
       "email": "seller@test.com",
       "firstName": "Test",
@@ -1126,7 +1126,7 @@
       ]
     },
     {
-      "id": "user-broker-test",
+      "id": "00000000-0000-0000-0000-000000000003",
       "username": "broker@test.com",
       "email": "broker@test.com",
       "firstName": "Test",
@@ -1151,7 +1151,7 @@
       ]
     },
     {
-      "id": "user-admin-test",
+      "id": "00000000-0000-0000-0000-000000000004",
       "username": "admin@test.com",
       "email": "admin@test.com",
       "firstName": "Test",
@@ -1176,7 +1176,7 @@
       ]
     },
     {
-      "id": "user-blocked-test",
+      "id": "00000000-0000-0000-0000-000000000006",
       "username": "blocked@test.com",
       "email": "blocked@test.com",
       "firstName": "Test",

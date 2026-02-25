@@ -33,6 +33,10 @@ quarkus:
     client-id: gateway-service
     credentials:
       secret: ${OIDC_SECRET:secret}
+    roles:
+      role-claim-path: realm_access/roles
+    token:
+      principal-claim: sub
 
   # ---------------------------------------------------------------------------
   # HTTP

@@ -1,7 +1,30 @@
 p, seller_verified, /api/v1/sellers/register, POST, allow
-p, seller_verified, /api/v1/sellers/me/*, GET, allow
+p, seller_verified, /api/v1/sellers/me/dashboard, GET, allow
+p, seller_verified, /api/v1/sellers/me/lots, GET, allow
+p, seller_verified, /api/v1/sellers/me/lots/*, GET, allow
 p, seller_verified, /api/v1/sellers/me/lots/*/accept-below-reserve, POST, allow
 p, seller_verified, /api/v1/sellers/me/lots/*/relist, POST, allow
-p, admin_ops, /api/v1/sellers/*, GET, allow
+p, seller_verified, /api/v1/sellers/me/settlements, GET, allow
+p, seller_verified, /api/v1/sellers/me/analytics, GET, allow
+p, seller_verified, /api/v1/sellers/me/co2-report, GET, allow
+p, seller_pending, /api/v1/sellers/register, POST, allow
+p, seller_pending, /api/v1/sellers/me/dashboard, GET, allow
+p, seller_pending, /api/v1/sellers/me/lots, GET, allow
+p, seller_pending, /api/v1/sellers/me/lots/*, GET, allow
+p, seller_pending, /api/v1/sellers/me/lots/*/accept-below-reserve, POST, allow
+p, seller_pending, /api/v1/sellers/me/lots/*/relist, POST, allow
+p, seller_pending, /api/v1/sellers/me/settlements, GET, allow
+p, seller_pending, /api/v1/sellers/me/analytics, GET, allow
+p, seller_pending, /api/v1/sellers/me/co2-report, GET, allow
+p, broker, /api/v1/sellers/register, POST, allow
+p, broker, /api/v1/sellers/me/dashboard, GET, allow
+p, broker, /api/v1/sellers/me/lots, GET, allow
+p, broker, /api/v1/sellers/me/lots/*, GET, allow
+p, broker, /api/v1/sellers/me/lots/*/accept-below-reserve, POST, allow
+p, broker, /api/v1/sellers/me/lots/*/relist, POST, allow
+p, broker, /api/v1/sellers/me/settlements, GET, allow
+p, broker, /api/v1/sellers/me/analytics, GET, allow
+p, broker, /api/v1/sellers/me/co2-report, GET, allow
+p, admin_ops, /api/v1/sellers/**, .*, allow
 p, admin_super, /api/v1/**, .*, allow
-g, admin_ops, admin_super
+g, admin_super, admin_ops

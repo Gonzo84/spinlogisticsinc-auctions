@@ -162,7 +162,7 @@ class Co2Resource {
      */
     @PUT
     @Path("/emission-factors/{id}")
-    @RolesAllowed("admin")
+    @RolesAllowed("admin_ops", "admin_super")
     fun updateEmissionFactor(
         @PathParam("id") id: UUID,
         request: UpdateEmissionFactorRequest

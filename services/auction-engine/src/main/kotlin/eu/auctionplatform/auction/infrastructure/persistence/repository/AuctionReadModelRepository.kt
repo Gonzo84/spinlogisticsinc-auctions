@@ -1,10 +1,10 @@
 package eu.auctionplatform.auction.infrastructure.persistence.repository
 
-import eu.auctionplatform.events.auction.AuctionClosedEvent
-import eu.auctionplatform.events.auction.AuctionExtendedEvent
-import eu.auctionplatform.events.auction.BidPlacedEvent
-import eu.auctionplatform.events.auction.LotAwardedEvent
-import eu.auctionplatform.events.auction.ReserveMetEvent
+import eu.auctionplatform.auction.domain.event.AuctionClosedEvent
+import eu.auctionplatform.auction.domain.event.AuctionExtendedEvent
+import eu.auctionplatform.auction.domain.event.BidPlacedEvent
+import eu.auctionplatform.auction.domain.event.LotAwardedEvent
+import eu.auctionplatform.auction.domain.event.ReserveMetEvent
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -112,8 +112,7 @@ class AuctionReadModelRepository @Inject constructor(
             UPDATE app.auction_read_model
                SET current_high_bid = ?,
                    current_high_bidder_id = ?,
-                   bid_count = ?,
-                   reserve_met = ?,
+                   bid_count = bid_count + 1,
                    updated_at = ?
              WHERE auction_id = ?
         """
@@ -240,16 +239,14 @@ class AuctionReadModelRepository @Inject constructor(
             is BidPlacedEvent -> {
                 dataSource.connection.use { conn ->
                     conn.prepareStatement(UPDATE_BID).use { stmt ->
-                        stmt.setBigDecimal(1, event.amount)
+                        stmt.setBigDecimal(1, event.bidAmount)
                         stmt.setObject(2, UUID.fromString(event.bidderId))
-                        stmt.setInt(3, event.bidCount)
-                        stmt.setBoolean(4, event.reserveMet)
-                        stmt.setTimestamp(5, Timestamp.from(now))
-                        stmt.setObject(6, UUID.fromString(event.auctionId))
+                        stmt.setTimestamp(3, Timestamp.from(now))
+                        stmt.setObject(4, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model for bid on auction {}", event.auctionId)
+                logger.debug("Updated read model for bid on auction {}", event.aggregateId)
             }
 
             is AuctionExtendedEvent -> {
@@ -258,11 +255,11 @@ class AuctionReadModelRepository @Inject constructor(
                         stmt.setTimestamp(1, Timestamp.from(event.newEndTime))
                         stmt.setInt(2, event.extensionCount)
                         stmt.setTimestamp(3, Timestamp.from(now))
-                        stmt.setObject(4, UUID.fromString(event.auctionId))
+                        stmt.setObject(4, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model extension for auction {}", event.auctionId)
+                logger.debug("Updated read model extension for auction {}", event.aggregateId)
             }
 
             is AuctionClosedEvent -> {
@@ -270,11 +267,11 @@ class AuctionReadModelRepository @Inject constructor(
                     conn.prepareStatement(UPDATE_STATUS).use { stmt ->
                         stmt.setString(1, "CLOSED")
                         stmt.setTimestamp(2, Timestamp.from(now))
-                        stmt.setObject(3, UUID.fromString(event.auctionId))
+                        stmt.setObject(3, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model status to CLOSED for auction {}", event.auctionId)
+                logger.debug("Updated read model status to CLOSED for auction {}", event.aggregateId)
             }
 
             is LotAwardedEvent -> {
@@ -282,22 +279,22 @@ class AuctionReadModelRepository @Inject constructor(
                     conn.prepareStatement(UPDATE_STATUS).use { stmt ->
                         stmt.setString(1, "AWARDED")
                         stmt.setTimestamp(2, Timestamp.from(now))
-                        stmt.setObject(3, UUID.fromString(event.auctionId))
+                        stmt.setObject(3, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model status to AWARDED for auction {}", event.auctionId)
+                logger.debug("Updated read model status to AWARDED for auction {}", event.aggregateId)
             }
 
             is ReserveMetEvent -> {
                 dataSource.connection.use { conn ->
                     conn.prepareStatement(UPDATE_RESERVE_MET).use { stmt ->
                         stmt.setTimestamp(1, Timestamp.from(now))
-                        stmt.setObject(2, UUID.fromString(event.auctionId))
+                        stmt.setObject(2, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model reserve met for auction {}", event.auctionId)
+                logger.debug("Updated read model reserve met for auction {}", event.aggregateId)
             }
 
             else -> {

@@ -79,7 +79,9 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
   <div>
     <div class="page-header">
       <div>
-        <h1 class="page-title">GDPR Requests</h1>
+        <h1 class="page-title">
+          GDPR Requests
+        </h1>
         <p class="mt-1 text-sm text-gray-500">
           Manage data export and erasure requests in compliance with GDPR regulations.
         </p>
@@ -94,11 +96,23 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
     <!-- Info banner -->
     <div class="card mb-6 border-blue-200 bg-blue-50">
       <div class="flex items-start gap-3">
-        <svg class="mt-0.5 h-5 w-5 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          class="mt-0.5 h-5 w-5 shrink-0 text-blue-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
         <div>
-          <p class="text-sm font-medium text-blue-800">GDPR Compliance Reminder</p>
+          <p class="text-sm font-medium text-blue-800">
+            GDPR Compliance Reminder
+          </p>
           <p class="mt-1 text-xs text-blue-700">
             Data export requests must be fulfilled within 30 days. Erasure requests require verification
             that no active auctions or pending payments exist before processing.
@@ -112,63 +126,153 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div class="flex-1">
           <label class="label">Request Type</label>
-          <select v-model="gdprFilters.type" class="select">
-            <option value="">All types</option>
-            <option value="export">Data Export</option>
-            <option value="erasure">Data Erasure</option>
+          <select
+            v-model="gdprFilters.type"
+            class="select"
+          >
+            <option value="">
+              All types
+            </option>
+            <option value="export">
+              Data Export
+            </option>
+            <option value="erasure">
+              Data Erasure
+            </option>
           </select>
         </div>
         <div class="flex-1">
           <label class="label">Status</label>
-          <select v-model="gdprFilters.status" class="select">
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="completed">Completed</option>
-            <option value="rejected">Rejected</option>
+          <select
+            v-model="gdprFilters.status"
+            class="select"
+          >
+            <option value="">
+              All statuses
+            </option>
+            <option value="pending">
+              Pending
+            </option>
+            <option value="processing">
+              Processing
+            </option>
+            <option value="completed">
+              Completed
+            </option>
+            <option value="rejected">
+              Rejected
+            </option>
           </select>
         </div>
-        <button class="btn-secondary" @click="clearFilters">Clear</button>
+        <button
+          class="btn-secondary"
+          @click="clearFilters"
+        >
+          Clear
+        </button>
       </div>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="py-12 text-center">
-      <svg class="mx-auto h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    <div
+      v-if="loading"
+      class="py-12 text-center"
+    >
+      <svg
+        class="mx-auto h-8 w-8 animate-spin text-primary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        />
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+        />
       </svg>
     </div>
 
     <!-- Empty -->
-    <div v-else-if="gdprRequests.length === 0" class="card py-12 text-center">
-      <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    <div
+      v-else-if="gdprRequests.length === 0"
+      class="card py-12 text-center"
+    >
+      <svg
+        class="mx-auto h-12 w-12 text-gray-300"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+        />
       </svg>
-      <h3 class="mt-4 text-lg font-medium text-gray-900">No GDPR requests</h3>
-      <p class="mt-1 text-sm text-gray-500">No pending data requests.</p>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">
+        No GDPR requests
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        No pending data requests.
+      </p>
     </div>
 
     <!-- Table -->
-    <div v-else class="table-container">
+    <div
+      v-else
+      class="table-container"
+    >
       <table class="w-full">
         <thead>
           <tr>
-            <th class="table-header">User</th>
-            <th class="table-header">Type</th>
-            <th class="table-header">Status</th>
-            <th class="table-header">Reason</th>
-            <th class="table-header">Requested</th>
-            <th class="table-header">Processed</th>
-            <th class="table-header text-right">Actions</th>
+            <th class="table-header">
+              User
+            </th>
+            <th class="table-header">
+              Type
+            </th>
+            <th class="table-header">
+              Status
+            </th>
+            <th class="table-header">
+              Reason
+            </th>
+            <th class="table-header">
+              Requested
+            </th>
+            <th class="table-header">
+              Processed
+            </th>
+            <th class="table-header text-right">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="request in gdprRequests" :key="request.id" class="table-row">
+          <tr
+            v-for="request in gdprRequests"
+            :key="request.id"
+            class="table-row"
+          >
             <td class="table-cell">
-              <router-link :to="`/users/${request.userId}`" class="hover:text-primary-600">
-                <p class="font-medium text-gray-900">{{ request.userName }}</p>
-                <p class="text-xs text-gray-500">{{ request.userEmail }}</p>
+              <router-link
+                :to="`/users/${request.userId}`"
+                class="hover:text-primary-600"
+              >
+                <p class="font-medium text-gray-900">
+                  {{ request.userName }}
+                </p>
+                <p class="text-xs text-gray-500">
+                  {{ request.userEmail }}
+                </p>
               </router-link>
             </td>
             <td class="table-cell">
@@ -189,16 +293,25 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
             <td class="table-cell text-gray-600">
               {{ request.reason || '--' }}
             </td>
-            <td class="table-cell text-gray-500">{{ formatDate(request.requestedAt) }}</td>
+            <td class="table-cell text-gray-500">
+              {{ formatDate(request.requestedAt) }}
+            </td>
             <td class="table-cell text-gray-500">
               <template v-if="request.processedAt">
                 {{ formatDate(request.processedAt) }}
-                <p class="text-xs text-gray-400">by {{ request.processedBy }}</p>
+                <p class="text-xs text-gray-400">
+                  by {{ request.processedBy }}
+                </p>
               </template>
-              <template v-else>--</template>
+              <template v-else>
+                --
+              </template>
             </td>
             <td class="table-cell text-right">
-              <div v-if="request.status === 'pending'" class="flex justify-end gap-1">
+              <div
+                v-if="request.status === 'pending'"
+                class="flex justify-end gap-1"
+              >
                 <button
                   class="btn-success btn-sm"
                   @click="handleApprove(request.id)"
@@ -226,11 +339,28 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
       </table>
 
       <!-- Pagination -->
-      <div v-if="totalPages() > 1" class="flex items-center justify-between border-t border-gray-200 px-4 py-3">
-        <p class="text-sm text-gray-500">{{ gdprTotalCount }} requests total</p>
+      <div
+        v-if="totalPages() > 1"
+        class="flex items-center justify-between border-t border-gray-200 px-4 py-3"
+      >
+        <p class="text-sm text-gray-500">
+          {{ gdprTotalCount }} requests total
+        </p>
         <div class="flex gap-1">
-          <button class="btn-secondary btn-sm" :disabled="gdprFilters.page <= 1" @click="goToPage(gdprFilters.page - 1)">Previous</button>
-          <button class="btn-secondary btn-sm" :disabled="gdprFilters.page >= totalPages()" @click="goToPage(gdprFilters.page + 1)">Next</button>
+          <button
+            class="btn-secondary btn-sm"
+            :disabled="gdprFilters.page <= 1"
+            @click="goToPage(gdprFilters.page - 1)"
+          >
+            Previous
+          </button>
+          <button
+            class="btn-secondary btn-sm"
+            :disabled="gdprFilters.page >= totalPages()"
+            @click="goToPage(gdprFilters.page + 1)"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

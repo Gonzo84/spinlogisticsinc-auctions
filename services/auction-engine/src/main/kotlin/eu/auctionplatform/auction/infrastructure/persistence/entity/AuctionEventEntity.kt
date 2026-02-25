@@ -1,5 +1,6 @@
 package eu.auctionplatform.auction.infrastructure.persistence.entity
 
+import eu.auctionplatform.auction.domain.event.*
 import eu.auctionplatform.commons.domain.DomainEvent
 import eu.auctionplatform.commons.util.JsonMapper
 import jakarta.persistence.Column
@@ -65,17 +66,32 @@ class AuctionEventEntity(
     /**
      * Deserialises the [eventData] JSON back into a [DomainEvent] instance.
      *
-     * The Jackson ObjectMapper is configured with type information so that
-     * the concrete event subclass (e.g. [BidPlacedEvent], [AuctionCreatedEvent])
-     * is correctly resolved from the JSON payload.
+     * Uses the [eventType] column as a discriminator to resolve the concrete
+     * event class for Jackson deserialization.
      *
      * @return The reconstituted domain event.
      */
     fun toDomainEvent(): DomainEvent {
-        return JsonMapper.instance.readValue(eventData, DomainEvent::class.java)
+        val eventClass = EVENT_TYPE_REGISTRY[eventType]
+            ?: throw IllegalStateException("Unknown event type: $eventType")
+        return JsonMapper.instance.readValue(eventData, eventClass)
     }
 
     companion object {
+        /** Maps event type discriminator strings to concrete Kotlin classes. */
+        private val EVENT_TYPE_REGISTRY: Map<String, Class<out DomainEvent>> = mapOf(
+            AuctionCreatedEvent.EVENT_TYPE to AuctionCreatedEvent::class.java,
+            AuctionExtendedEvent.EVENT_TYPE to AuctionExtendedEvent::class.java,
+            AuctionClosedEvent.EVENT_TYPE to AuctionClosedEvent::class.java,
+            AuctionCancelledEvent.EVENT_TYPE to AuctionCancelledEvent::class.java,
+            LotAwardedEvent.EVENT_TYPE to LotAwardedEvent::class.java,
+            BidPlacedEvent.EVENT_TYPE to BidPlacedEvent::class.java,
+            ProxyBidTriggeredEvent.EVENT_TYPE to ProxyBidTriggeredEvent::class.java,
+            BidRejectedEvent.EVENT_TYPE to BidRejectedEvent::class.java,
+            AutoBidSetEvent.EVENT_TYPE to AutoBidSetEvent::class.java,
+            AutoBidExhaustedEvent.EVENT_TYPE to AutoBidExhaustedEvent::class.java,
+            ReserveMetEvent.EVENT_TYPE to ReserveMetEvent::class.java,
+        )
 
         /**
          * Creates an [AuctionEventEntity] from a [DomainEvent].

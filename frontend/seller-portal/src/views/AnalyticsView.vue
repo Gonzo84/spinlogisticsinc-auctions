@@ -48,42 +48,90 @@ const revenueChartData = computed(() =>
   <div>
     <!-- Page header -->
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Analytics</h1>
-      <p class="mt-1 text-sm text-gray-500">Insights into your selling performance and trends.</p>
+      <h1 class="text-2xl font-bold text-gray-900">
+        Analytics
+      </h1>
+      <p class="mt-1 text-sm text-gray-500">
+        Insights into your selling performance and trends.
+      </p>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading && !overview" class="py-12 text-center">
-      <svg class="mx-auto h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    <div
+      v-if="loading && !overview"
+      class="py-12 text-center"
+    >
+      <svg
+        class="mx-auto h-8 w-8 animate-spin text-primary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        />
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+        />
       </svg>
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="card border-red-200 bg-red-50 text-center">
-      <p class="text-sm text-red-600">{{ error }}</p>
-      <button class="btn-secondary btn-sm mt-3" @click="fetchAll()">Retry</button>
+    <div
+      v-else-if="error"
+      class="card border-red-200 bg-red-50 text-center"
+    >
+      <p class="text-sm text-red-600">
+        {{ error }}
+      </p>
+      <button
+        class="btn-secondary btn-sm mt-3"
+        @click="fetchAll()"
+      >
+        Retry
+      </button>
     </div>
 
     <template v-else>
       <!-- Overview KPI Cards -->
       <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="kpi-card">
-          <p class="kpi-label">Total Revenue</p>
-          <p class="kpi-value text-2xl">{{ formatCurrency(overview?.totalRevenue ?? 0) }}</p>
+          <p class="kpi-label">
+            Total Revenue
+          </p>
+          <p class="kpi-value text-2xl">
+            {{ formatCurrency(overview?.totalRevenue ?? 0) }}
+          </p>
         </div>
         <div class="kpi-card">
-          <p class="kpi-label">Average Hammer Price</p>
-          <p class="kpi-value text-2xl">{{ formatCurrency(overview?.averageHammerPrice ?? 0) }}</p>
+          <p class="kpi-label">
+            Average Hammer Price
+          </p>
+          <p class="kpi-value text-2xl">
+            {{ formatCurrency(overview?.averageHammerPrice ?? 0) }}
+          </p>
         </div>
         <div class="kpi-card">
-          <p class="kpi-label">Total Bids Received</p>
-          <p class="kpi-value text-2xl">{{ overview?.totalBids ?? 0 }}</p>
+          <p class="kpi-label">
+            Total Bids Received
+          </p>
+          <p class="kpi-value text-2xl">
+            {{ overview?.totalBids ?? 0 }}
+          </p>
         </div>
         <div class="kpi-card">
-          <p class="kpi-label">Avg. Bids per Lot</p>
-          <p class="kpi-value text-2xl">{{ (overview?.averageBidsPerLot ?? 0).toFixed(1) }}</p>
+          <p class="kpi-label">
+            Avg. Bids per Lot
+          </p>
+          <p class="kpi-value text-2xl">
+            {{ (overview?.averageBidsPerLot ?? 0).toFixed(1) }}
+          </p>
         </div>
       </div>
 
@@ -91,7 +139,9 @@ const revenueChartData = computed(() =>
       <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Sell-Through Rate -->
         <div class="card">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900">Sell-Through Rate</h2>
+          <h2 class="mb-4 text-lg font-semibold text-gray-900">
+            Sell-Through Rate
+          </h2>
           <SellThroughChart
             v-if="sellThrough"
             :sold="sellThrough.totalSold"
@@ -100,19 +150,29 @@ const revenueChartData = computed(() =>
           />
           <div class="mt-3 grid grid-cols-2 gap-4 text-center">
             <div>
-              <p class="text-2xl font-bold text-green-600">{{ sellThrough?.totalSold ?? 0 }}</p>
-              <p class="text-xs text-gray-500">Sold</p>
+              <p class="text-2xl font-bold text-green-600">
+                {{ sellThrough?.totalSold ?? 0 }}
+              </p>
+              <p class="text-xs text-gray-500">
+                Sold
+              </p>
             </div>
             <div>
-              <p class="text-2xl font-bold text-gray-400">{{ (sellThrough?.totalListed ?? 0) - (sellThrough?.totalSold ?? 0) }}</p>
-              <p class="text-xs text-gray-500">Unsold</p>
+              <p class="text-2xl font-bold text-gray-400">
+                {{ (sellThrough?.totalListed ?? 0) - (sellThrough?.totalSold ?? 0) }}
+              </p>
+              <p class="text-xs text-gray-500">
+                Unsold
+              </p>
             </div>
           </div>
         </div>
 
         <!-- Monthly Revenue Chart -->
         <div class="card lg:col-span-2">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900">Monthly Revenue</h2>
+          <h2 class="mb-4 text-lg font-semibold text-gray-900">
+            Monthly Revenue
+          </h2>
           <RevenueChart
             :labels="revenueChartLabels"
             :data="revenueChartData"
@@ -125,7 +185,9 @@ const revenueChartData = computed(() =>
       <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Average Price by Category -->
         <div class="card">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900">Average Price by Category</h2>
+          <h2 class="mb-4 text-lg font-semibold text-gray-900">
+            Average Price by Category
+          </h2>
           <RevenueChart
             :labels="avgPriceChartLabels"
             :data="avgPriceChartData"
@@ -137,16 +199,28 @@ const revenueChartData = computed(() =>
 
         <!-- Category Breakdown Table -->
         <div class="card">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900">Category Breakdown</h2>
+          <h2 class="mb-4 text-lg font-semibold text-gray-900">
+            Category Breakdown
+          </h2>
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead>
                 <tr class="border-b border-gray-200">
-                  <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">Category</th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">Listed</th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">Sold</th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">STR</th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">Revenue</th>
+                  <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
+                    Category
+                  </th>
+                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
+                    Listed
+                  </th>
+                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
+                    Sold
+                  </th>
+                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
+                    STR
+                  </th>
+                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
+                    Revenue
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -155,9 +229,15 @@ const revenueChartData = computed(() =>
                   :key="cat.category"
                   class="hover:bg-gray-50"
                 >
-                  <td class="py-2.5 text-sm font-medium text-gray-900">{{ cat.category }}</td>
-                  <td class="py-2.5 text-right text-sm text-gray-600">{{ cat.lotsListed }}</td>
-                  <td class="py-2.5 text-right text-sm text-gray-600">{{ cat.lotsSold }}</td>
+                  <td class="py-2.5 text-sm font-medium text-gray-900">
+                    {{ cat.category }}
+                  </td>
+                  <td class="py-2.5 text-right text-sm text-gray-600">
+                    {{ cat.lotsListed }}
+                  </td>
+                  <td class="py-2.5 text-right text-sm text-gray-600">
+                    {{ cat.lotsSold }}
+                  </td>
                   <td class="py-2.5 text-right text-sm">
                     <span
                       :class="[
@@ -180,23 +260,45 @@ const revenueChartData = computed(() =>
 
       <!-- Price vs Estimate -->
       <div class="card">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900">Price vs. Estimate by Category</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900">
+          Price vs. Estimate by Category
+        </h2>
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead>
               <tr class="border-b border-gray-200">
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">Category</th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">Avg. Estimate</th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">Avg. Hammer Price</th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">Ratio</th>
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">Performance</th>
+                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
+                  Category
+                </th>
+                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
+                  Avg. Estimate
+                </th>
+                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
+                  Avg. Hammer Price
+                </th>
+                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
+                  Ratio
+                </th>
+                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
+                  Performance
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-for="item in priceVsEstimate" :key="item.category" class="hover:bg-gray-50">
-                <td class="py-2.5 text-sm font-medium text-gray-900">{{ item.category }}</td>
-                <td class="py-2.5 text-right text-sm text-gray-600">{{ formatCurrency(item.averageEstimate) }}</td>
-                <td class="py-2.5 text-right text-sm text-gray-900">{{ formatCurrency(item.averageHammerPrice) }}</td>
+              <tr
+                v-for="item in priceVsEstimate"
+                :key="item.category"
+                class="hover:bg-gray-50"
+              >
+                <td class="py-2.5 text-sm font-medium text-gray-900">
+                  {{ item.category }}
+                </td>
+                <td class="py-2.5 text-right text-sm text-gray-600">
+                  {{ formatCurrency(item.averageEstimate) }}
+                </td>
+                <td class="py-2.5 text-right text-sm text-gray-900">
+                  {{ formatCurrency(item.averageHammerPrice) }}
+                </td>
                 <td class="py-2.5 text-right text-sm font-medium">
                   <span :class="item.ratio >= 1 ? 'text-green-600' : 'text-red-600'">
                     {{ (item.ratio * 100).toFixed(0) }}%

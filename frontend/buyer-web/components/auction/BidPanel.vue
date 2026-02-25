@@ -17,7 +17,7 @@
           {{ $t('auction.closed') }}
         </span>
       </div>
-      <AuctionAuctionTimer :end-time="lot.endTime" @expired="onAuctionExpired" />
+      <AuctionTimer :end-time="lot.endTime" @expired="onAuctionExpired" />
     </div>
 
     <!-- Current Bid -->
@@ -247,7 +247,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const { isAuthenticated, login } = useAuth()
-const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, error: bidApiError, currentBid, minBidAmount, hasAutoBid, clearError } = useBid()
+const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, error: _bidApiError, currentBid, minBidAmount, hasAutoBid, clearError } = useBid()
 
 const bidAmount = ref<number | null>(null)
 const bidError = ref<string | null>(null)
@@ -298,8 +298,8 @@ async function handlePlaceBid() {
     setTimeout(() => {
       showSuccess.value = false
     }, 3000)
-  } catch (e: any) {
-    bidError.value = e.message
+  } catch (e: unknown) {
+    bidError.value = e instanceof Error ? e.message : String(e)
   }
 }
 
@@ -311,8 +311,8 @@ async function handleSetAutoBid() {
       auctionId: props.lot.id,
       maxAmount: autoBidMax.value,
     })
-  } catch (e: any) {
-    bidError.value = e.message
+  } catch (e: unknown) {
+    bidError.value = e instanceof Error ? e.message : String(e)
   }
 }
 
@@ -321,8 +321,8 @@ async function handleCancelAutoBid() {
     await cancelAutoBid(props.lot.id)
     autoBidEnabled.value = false
     autoBidMax.value = null
-  } catch (e: any) {
-    bidError.value = e.message
+  } catch (e: unknown) {
+    bidError.value = e instanceof Error ? e.message : String(e)
   }
 }
 

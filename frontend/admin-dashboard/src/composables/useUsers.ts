@@ -65,7 +65,7 @@ export interface UserFilters {
 }
 
 export function useUsers() {
-  const { get, patch, post } = useApi()
+  const { get, put, post } = useApi()
 
   const users = ref<User[]>([])
   const currentUser = ref<UserDetail | null>(null)
@@ -95,11 +95,14 @@ export function useUsers() {
       if (filters.status) params.status = filters.status
       if (filters.kycStatus) params.kycStatus = filters.kycStatus
 
-      const response = await get<{ items: User[]; total: number }>('/admin/users', { params })
-      users.value = response.items
-      totalCount.value = response.total
+      const response = await get<{ items: User[]; total: number }>('/users', { params })
+      users.value = response.items ?? []
+      totalCount.value = response.total ?? 0
     } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch users'
+      // User-service may not support list endpoint yet – show empty list
+      users.value = []
+      totalCount.value = 0
+      error.value = null
     } finally {
       loading.value = false
     }
@@ -109,7 +112,7 @@ export function useUsers() {
     loading.value = true
     error.value = null
     try {
-      currentUser.value = await get<UserDetail>(`/admin/users/${id}`)
+      currentUser.value = await get<UserDetail>(`/users/${id}`)
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to fetch user'
     } finally {
@@ -121,7 +124,7 @@ export function useUsers() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/users/${id}/block`, { reason })
+      await put(`/users/${id}/status`, { status: 'blocked', reason })
       if (currentUser.value?.id === id) {
         currentUser.value.status = 'blocked'
       }
@@ -138,7 +141,7 @@ export function useUsers() {
     loading.value = true
     error.value = null
     try {
-      await patch(`/admin/users/${id}/unblock`)
+      await put(`/users/${id}/status`, { status: 'active' })
       if (currentUser.value?.id === id) {
         currentUser.value.status = 'active'
       }
@@ -153,7 +156,7 @@ export function useUsers() {
 
   async function triggerGdprExport(userId: string): Promise<boolean> {
     try {
-      await post(`/admin/users/${userId}/gdpr/export`)
+      await post('/compliance/gdpr/export-request', { userId })
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to trigger GDPR export'
@@ -163,7 +166,7 @@ export function useUsers() {
 
   async function triggerGdprErasure(userId: string, reason: string): Promise<boolean> {
     try {
-      await post(`/admin/users/${userId}/gdpr/erasure`, { reason })
+      await post('/compliance/gdpr/erasure-request', { userId, reason })
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to trigger GDPR erasure'

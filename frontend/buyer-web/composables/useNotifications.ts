@@ -27,8 +27,8 @@ export function useNotifications() {
       notificationsStore.setNotifications(result.items)
       notificationsStore.setUnreadCount(result.unreadCount)
       return result.items
-    } catch (e: any) {
-      error.value = e?.message || 'Failed to load notifications'
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Failed to load notifications'
       return []
     } finally {
       loading.value = false
@@ -42,7 +42,7 @@ export function useNotifications() {
         method: 'POST',
       })
       notificationsStore.markAsRead(notificationId)
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to mark notification as read:', e)
     }
   }
@@ -54,7 +54,7 @@ export function useNotifications() {
         method: 'POST',
       })
       notificationsStore.markAllAsRead()
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to mark all notifications as read:', e)
     }
   }
@@ -67,7 +67,7 @@ export function useNotifications() {
         body: { token, platform: 'web' },
       })
       notificationsStore.setPushRegistered(true)
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to register push token:', e)
     }
   }
@@ -81,7 +81,7 @@ export function useNotifications() {
       notificationsStore.addNotification(data)
     })
 
-    ws.onOverbid((data: any) => {
+    ws.onOverbid((data: { lotTitle?: string; auctionId?: string; newBidAmount?: number }) => {
       const notification: Notification = {
         id: `overbid-${Date.now()}`,
         type: 'overbid',
