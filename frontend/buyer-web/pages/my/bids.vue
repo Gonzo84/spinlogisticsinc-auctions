@@ -87,8 +87,12 @@
 </template>
 
 <script setup lang="ts">
+import { formatCurrency } from '~/utils/format'
+import { unwrapApiResponse } from '~/utils/api-response'
+
+definePageMeta({ middleware: 'auth' })
+
 const { t } = useI18n()
-const { requireAuth } = useAuth()
 
 interface BidEntry {
   id: string
@@ -106,7 +110,6 @@ const bids = ref<BidEntry[]>([])
 const activeStatus = ref('all')
 
 onMounted(() => {
-  if (!requireAuth('/my/bids')) return
   fetchBids()
 })
 
@@ -133,24 +136,13 @@ function bidStatusClass(status: string): string {
   }
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
 async function fetchBids() {
   loading.value = true
   try {
     const { $api } = useNuxtApp()
     const api = $api as typeof $fetch
     const raw = await api<Record<string, unknown>>('/users/me/bids')
-    const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
-      ? raw.data as Record<string, unknown>
-      : raw as Record<string, unknown>
+    const data = unwrapApiResponse(raw)
     bids.value = (Array.isArray(data.items) ? data.items : []) as BidEntry[]
   } catch {
     bids.value = []

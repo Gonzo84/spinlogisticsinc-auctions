@@ -1,42 +1,5 @@
-export interface SearchFilters {
-  q?: string
-  category?: string
-  country?: string[]
-  priceMin?: number
-  priceMax?: number
-  distance?: number
-  reserveStatus?: string
-  sort?: string
-  page?: number
-  limit?: number
-}
-
-export interface SearchResult {
-  items: Record<string, unknown>[]
-  total: number
-  totalPages: number
-  page: number
-  aggregations?: SearchAggregations
-}
-
-export interface SearchAggregations {
-  categories: AggregationBucket[]
-  countries: AggregationBucket[]
-  priceRanges: AggregationBucket[]
-}
-
-export interface AggregationBucket {
-  key: string
-  label: string
-  count: number
-}
-
-export interface SearchSuggestion {
-  text: string
-  type: 'lot' | 'category' | 'brand'
-  id?: string
-  imageUrl?: string
-}
+import type { SearchFilters, SearchResult, SearchAggregations, SearchSuggestion } from '~/types/search'
+import { unwrapApiResponse } from '~/utils/api-response'
 
 export function useSearch() {
   const { $api } = useNuxtApp()
@@ -69,11 +32,7 @@ export function useSearch() {
       if (filters.limit) params.limit = filters.limit
 
       const raw = await api<Record<string, unknown>>('/search/lots', { params })
-
-      // Unwrap ApiResponse wrapper if present
-      const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
-        ? raw.data as Record<string, unknown>
-        : raw as Record<string, unknown>
+      const data = unwrapApiResponse(raw)
 
       const result: SearchResult = {
         items: (Array.isArray(data.items) ? data.items : []) as Record<string, unknown>[],
@@ -97,12 +56,10 @@ export function useSearch() {
   }
 
   function suggest(prefix: string) {
-    // Cancel previous request
     if (suggestAbortController) {
       suggestAbortController.abort()
     }
 
-    // Clear previous debounce
     if (suggestDebounceTimer) {
       clearTimeout(suggestDebounceTimer)
     }
@@ -112,7 +69,6 @@ export function useSearch() {
       return
     }
 
-    // Debounce 300ms
     suggestDebounceTimer = setTimeout(async () => {
       suggestAbortController = new AbortController()
 

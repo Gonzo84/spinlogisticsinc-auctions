@@ -7,6 +7,8 @@
     "logout": "Se déconnecter",
     "profile": "Profil",
     "myPurchases": "Mes achats",
+    "myBids": "Mes Ench\u00e8res",
+    "watchlist": "Liste de suivi",
     "notifications": "Notifications",
     "markAllRead": "Tout marquer comme lu",
     "noNotifications": "Aucune notification pour le moment"
@@ -126,6 +128,33 @@
     "relatedLots": "Lots similaires",
     "watchlist": "Ajouter aux favoris",
     "share": "Partager"
+  },
+  "bids": {
+    "title": "Mes Ench\u00e8res",
+    "subtitle": "Suivez toutes vos ench\u00e8res sur les ventes actives et pass\u00e9es",
+    "pageTitle": "Mes Ench\u00e8res",
+    "empty": "Aucune ench\u00e8re plac\u00e9e",
+    "emptyHint": "Parcourez les lots et placez des ench\u00e8res pour les suivre ici.",
+    "browseAuctions": "Parcourir les ventes",
+    "all": "Toutes",
+    "winning": "En t\u00eate",
+    "outbid": "Surench\u00e9ri",
+    "won": "Gagn\u00e9",
+    "lost": "Perdu",
+    "lotTitle": "Lot",
+    "yourBid": "Votre ench\u00e8re",
+    "currentBid": "Ench\u00e8re actuelle",
+    "status": "Statut",
+    "timeLeft": "Temps restant"
+  },
+  "watchlistPage": {
+    "title": "Ma Liste de Suivi",
+    "subtitle": "Lots que vous suivez",
+    "pageTitle": "Liste de suivi",
+    "empty": "Votre liste de suivi est vide",
+    "emptyHint": "Ajoutez des lots \u00e0 votre liste de suivi pour les suivre ici.",
+    "browseAuctions": "Parcourir les lots",
+    "remove": "Retirer"
   },
   "purchases": {
     "title": "Mes achats",
@@ -302,12 +331,27 @@
     "twitter": "Twitter",
     "youtube": "YouTube"
   },
+  "error": {
+    "backToHome": "Retour \u00e0 l'accueil",
+    "tryAgain": "R\u00e9essayer",
+    "notFoundTitle": "Page non trouv\u00e9e",
+    "notFoundDescription": "La page que vous recherchez n'existe pas ou a \u00e9t\u00e9 d\u00e9plac\u00e9e.",
+    "serverErrorTitle": "Une erreur est survenue",
+    "serverErrorDescription": "Une erreur inattendue s'est produite. Veuillez r\u00e9essayer plus tard."
+  },
   "common": {
     "loading": "Chargement...",
     "error": "Erreur",
     "back": "Retour",
     "next": "Suivant",
     "saving": "Enregistrement...",
-    "avoided": "évité"
+    "avoided": "évité",
+    "startingBid": "Enchère de départ",
+    "timeAgo": {
+      "justNow": "à l'instant",
+      "minutesAgo": "il y a {value}m",
+      "hoursAgo": "il y a {value}h",
+      "daysAgo": "il y a {value}j"
+    }
   }
 }

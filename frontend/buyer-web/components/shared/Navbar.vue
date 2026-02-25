@@ -242,7 +242,9 @@
 </template>
 
 <script setup lang="ts">
-const { locale, setLocale } = useI18n()
+import { formatTimeAgo as getTimeAgo } from '~/utils/format'
+
+const { t, locale, setLocale } = useI18n()
 const { isAuthenticated, user, fullName, initials, login, logout } = useAuth()
 const { unreadCount, hasUnread, recentNotifications, getNotifications, markAsRead, markAllAsRead } = useNotifications()
 
@@ -275,7 +277,7 @@ const currentLocaleFlag = computed(() => {
 })
 
 function switchLocale(code: string) {
-  setLocale(code)
+  setLocale(code as typeof locale.value)
   showLangDropdown.value = false
 }
 
@@ -303,17 +305,8 @@ function handleMarkAllRead() {
 }
 
 function formatTimeAgo(dateStr: string): string {
-  const now = Date.now()
-  const date = new Date(dateStr).getTime()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  if (hours < 24) return `${hours}h ago`
-  return `${days}d ago`
+  const { key, value } = getTimeAgo(dateStr)
+  return t(key, { value })
 }
 
 // Close dropdowns on outside click

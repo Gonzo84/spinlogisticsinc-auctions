@@ -61,13 +61,13 @@
       <div class="flex items-end justify-between gap-2 mt-auto">
         <div>
           <p class="text-[10px] text-gray-500 uppercase tracking-wide">{{ $t('auction.currentBid') }}</p>
-          <p class="text-lg font-bold text-primary leading-tight">{{ formatCurrency(lot.currentBid) }}</p>
+          <p class="text-lg font-bold text-primary leading-tight">{{ formatCurrency(lot.currentBid ?? 0) }}</p>
           <p class="text-[10px] text-gray-400 mt-0.5">
             {{ lot.bidCount }} {{ $t('auction.bids') }}
           </p>
         </div>
         <div class="shrink-0">
-          <AuctionTimer :end-time="lot.endTime" compact />
+          <AuctionTimer :end-time="lot.endTime ?? ''" compact />
         </div>
       </div>
     </div>
@@ -75,10 +75,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Auction } from '~/stores/auction'
+import type { Auction } from '~/types/auction'
+import { formatCurrency } from '~/utils/format'
+import { getCountryFlag } from '~/utils/constants'
 
 interface Props {
-  lot: Auction
+  lot: Partial<Auction> & { id: string }
   viewMode?: 'grid' | 'list'
 }
 
@@ -86,26 +88,5 @@ const props = withDefaults(defineProps<Props>(), {
   viewMode: 'grid',
 })
 
-const countryFlags: Record<string, string> = {
-  NL: '\uD83C\uDDF3\uD83C\uDDF1',
-  DE: '\uD83C\uDDE9\uD83C\uDDEA',
-  FR: '\uD83C\uDDEB\uD83C\uDDF7',
-  BE: '\uD83C\uDDE7\uD83C\uDDEA',
-  PL: '\uD83C\uDDF5\uD83C\uDDF1',
-  IT: '\uD83C\uDDEE\uD83C\uDDF9',
-  RO: '\uD83C\uDDF7\uD83C\uDDF4',
-  ES: '\uD83C\uDDEA\uD83C\uDDF8',
-  AT: '\uD83C\uDDE6\uD83C\uDDF9',
-}
-
-const countryFlag = computed(() => countryFlags[props.lot.country] || props.lot.country)
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+const countryFlag = computed(() => getCountryFlag(props.lot.country || ''))
 </script>

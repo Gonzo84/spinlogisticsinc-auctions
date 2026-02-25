@@ -7,6 +7,8 @@
     "logout": "Deconectare",
     "profile": "Profil",
     "myPurchases": "Achizițiile mele",
+    "myBids": "Ofertele Mele",
+    "watchlist": "Lista de urmărire",
     "notifications": "Notificări",
     "markAllRead": "Marchează toate ca citite",
     "noNotifications": "Nicio notificare deocamdată"
@@ -126,6 +128,33 @@
     "relatedLots": "Loturi similare",
     "watchlist": "Adăugați la favorite",
     "share": "Distribuiți"
+  },
+  "bids": {
+    "title": "Ofertele Mele",
+    "subtitle": "Urmăriți toate ofertele dvs. la licitațiile active și încheiate",
+    "pageTitle": "Ofertele Mele",
+    "empty": "Nicio ofertă plasată",
+    "emptyHint": "Răsfoiți loturile și plasați oferte pentru a le urmări aici.",
+    "browseAuctions": "Răsfoiți licitațiile",
+    "all": "Toate",
+    "winning": "Câștigătoare",
+    "outbid": "Depășită",
+    "won": "Câștigată",
+    "lost": "Pierdută",
+    "lotTitle": "Lot",
+    "yourBid": "Oferta dvs.",
+    "currentBid": "Oferta curentă",
+    "status": "Status",
+    "timeLeft": "Timp rămas"
+  },
+  "watchlistPage": {
+    "title": "Lista Mea de Urmărire",
+    "subtitle": "Loturi pe care le urmăriți",
+    "pageTitle": "Lista de urmărire",
+    "empty": "Lista dvs. de urmărire este goală",
+    "emptyHint": "Adăugați loturi la lista dvs. de urmărire pentru a le urmări aici.",
+    "browseAuctions": "Răsfoiți loturile",
+    "remove": "Eliminare"
   },
   "purchases": {
     "title": "Achizițiile mele",
@@ -302,12 +331,27 @@
     "twitter": "Twitter",
     "youtube": "YouTube"
   },
+  "error": {
+    "backToHome": "Înapoi la pagina principală",
+    "tryAgain": "Încercați din nou",
+    "notFoundTitle": "Pagina nu a fost găsită",
+    "notFoundDescription": "Pagina pe care o căutați nu există sau a fost mutată.",
+    "serverErrorTitle": "Ceva nu a funcționat",
+    "serverErrorDescription": "A apărut o eroare neașteptată. Vă rugăm să încercați din nou mai târziu."
+  },
   "common": {
     "loading": "Se încarcă...",
     "error": "Eroare",
     "back": "Înapoi",
     "next": "Următorul",
     "saving": "Se salvează...",
-    "avoided": "evitat"
+    "avoided": "evitat",
+    "startingBid": "Ofertă de pornire",
+    "timeAgo": {
+      "justNow": "chiar acum",
+      "minutesAgo": "acum {value}m",
+      "hoursAgo": "acum {value}h",
+      "daysAgo": "acum {value}z"
+    }
   }
 }

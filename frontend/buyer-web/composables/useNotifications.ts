@@ -1,5 +1,6 @@
 import { useNotificationsStore } from '~/stores/notifications'
-import type { Notification } from '~/stores/notifications'
+import type { Notification } from '~/types/notification'
+import { unwrapApiResponse } from '~/utils/api-response'
 
 export function useNotifications() {
   const { $api } = useNuxtApp()
@@ -24,11 +25,7 @@ export function useNotifications() {
         params: { page, limit: 20 },
       })
 
-      // Unwrap ApiResponse<PagedResponse<T>> wrapper
-      const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
-        ? raw.data as Record<string, unknown>
-        : raw
-
+      const data = unwrapApiResponse(raw)
       const items = (Array.isArray(data.items) ? data.items : []) as Notification[]
       const unreadCount = typeof data.unreadCount === 'number' ? data.unreadCount : 0
 

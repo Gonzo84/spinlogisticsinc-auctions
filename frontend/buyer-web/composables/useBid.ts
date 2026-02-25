@@ -1,15 +1,5 @@
 import { useAuctionStore } from '~/stores/auction'
-import type { Bid, AutoBidConfig } from '~/stores/auction'
-
-export interface PlaceBidPayload {
-  auctionId: string
-  amount: number
-}
-
-export interface AutoBidPayload {
-  auctionId: string
-  maxAmount: number
-}
+import type { Bid, AutoBidConfig, PlaceBidPayload, AutoBidPayload } from '~/types/auction'
 
 export function useBid() {
   const { $api } = useNuxtApp()
@@ -42,7 +32,6 @@ export function useBid() {
         },
       })
 
-      // Unwrap ApiResponse wrapper and map to Bid type
       const raw = (response?.data ?? response) as Record<string, unknown>
       const bid: Bid = {
         id: (raw.bidId ?? '') as string,

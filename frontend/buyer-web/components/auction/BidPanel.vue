@@ -238,7 +238,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Auction } from '~/stores/auction'
+import type { Auction } from '~/types/auction'
+import { formatCurrency } from '~/utils/format'
 
 interface Props {
   lot: Auction
@@ -246,6 +247,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const { t } = useI18n()
 const { isAuthenticated, login } = useAuth()
 const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, error: _bidApiError, currentBid, minBidAmount, hasAutoBid, clearError } = useBid()
 
@@ -270,21 +272,12 @@ function addIncrement(amount: number) {
   bidAmount.value = base + amount
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
 async function handlePlaceBid() {
   bidError.value = null
   clearError()
 
   if (!bidAmount.value || bidAmount.value < minBidAmount.value) {
-    bidError.value = `Minimum bid is ${formatCurrency(minBidAmount.value)}`
+    bidError.value = t('auction.minimumBid') + ': ' + formatCurrency(minBidAmount.value)
     return
   }
 

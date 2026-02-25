@@ -1,18 +1,5 @@
 import { defineStore } from 'pinia'
-
-export interface User {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  company?: string
-  vatNumber?: string
-  country?: string
-  phone?: string
-  accountType: 'business' | 'private'
-  roles: string[]
-  avatarUrl?: string
-}
+import type { User } from '~/types/user'
 
 export interface AuthState {
   user: User | null

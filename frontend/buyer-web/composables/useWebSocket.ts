@@ -7,6 +7,7 @@ export type WebSocketEvent =
   | 'overbid'
   | 'reserve_met'
   | 'notification'
+  | 'pong'
 
 export interface WebSocketMessage {
   event: WebSocketEvent

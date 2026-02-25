@@ -1,5 +1,6 @@
 import { useAuthStore } from '~/stores/auth'
-import type { User } from '~/stores/auth'
+import type { User } from '~/types/user'
+import { unwrapApiResponse } from '~/utils/api-response'
 
 interface KeycloakInstance {
   login(options?: { redirectUri?: string }): Promise<void>
@@ -76,11 +77,8 @@ export function useAuth() {
       method: 'PUT',
       body: data,
     })
-    // Unwrap ApiResponse wrapper if present
-    const updated = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
-      ? raw.data as User
-      : raw as unknown as User
-    authStore.updateUser(updated)
+    const unwrapped = unwrapApiResponse(raw)
+    authStore.updateUser(unwrapped as unknown as User)
   }
 
   function requireAuth(redirectTo?: string): boolean {

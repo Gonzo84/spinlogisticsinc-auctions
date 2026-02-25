@@ -173,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SearchFilters } from '~/composables/useSearch'
+import type { SearchFilters } from '~/types/search'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -183,7 +183,8 @@ const { search: performSearch } = useSearch()
 const showMobileFilters = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 const loading = ref(false)
-const lots = ref<Record<string, unknown>[]>([])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const lots = ref<any[]>([])
 const totalResults = ref(0)
 const totalPages = ref(0)
 const currentPage = ref(1)
@@ -308,5 +309,15 @@ watch(() => route.query, () => {
 
 useHead({
   title: computed(() => query.value ? t('search.titleWithQuery', { query: query.value }) : t('search.title')),
+})
+
+useSeoMeta({
+  description: computed(() => query.value
+    ? t('search.resultsFor', { query: query.value })
+    : t('search.browseAll')),
+  ogTitle: computed(() => query.value ? t('search.titleWithQuery', { query: query.value }) : t('search.title')),
+  ogDescription: computed(() => query.value
+    ? t('search.resultsFor', { query: query.value })
+    : t('search.browseAll')),
 })
 </script>

@@ -103,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SearchSuggestion } from '~/composables/useSearch'
+import type { SearchSuggestion } from '~/types/search'
 
 const router = useRouter()
 const route = useRoute()

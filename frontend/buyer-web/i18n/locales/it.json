@@ -7,6 +7,8 @@
     "logout": "Esci",
     "profile": "Profilo",
     "myPurchases": "I miei acquisti",
+    "myBids": "Le Mie Offerte",
+    "watchlist": "Lista Preferiti",
     "notifications": "Notifiche",
     "markAllRead": "Segna tutte come lette",
     "noNotifications": "Nessuna notifica al momento"
@@ -126,6 +128,33 @@
     "relatedLots": "Lotti correlati",
     "watchlist": "Aggiungi ai preferiti",
     "share": "Condividi"
+  },
+  "bids": {
+    "title": "Le Mie Offerte",
+    "subtitle": "Segui tutte le tue offerte nelle aste attive e passate",
+    "pageTitle": "Le Mie Offerte",
+    "empty": "Nessuna offerta effettuata",
+    "emptyHint": "Sfoglia i lotti e fai offerte per seguirli qui.",
+    "browseAuctions": "Sfoglia le aste",
+    "all": "Tutte",
+    "winning": "In vantaggio",
+    "outbid": "Superata",
+    "won": "Vinta",
+    "lost": "Persa",
+    "lotTitle": "Lotto",
+    "yourBid": "La tua offerta",
+    "currentBid": "Offerta attuale",
+    "status": "Stato",
+    "timeLeft": "Tempo rimanente"
+  },
+  "watchlistPage": {
+    "title": "La Mia Lista Preferiti",
+    "subtitle": "Lotti che stai seguendo",
+    "pageTitle": "Lista Preferiti",
+    "empty": "La tua lista preferiti è vuota",
+    "emptyHint": "Aggiungi lotti alla tua lista preferiti per seguirli qui.",
+    "browseAuctions": "Sfoglia i lotti",
+    "remove": "Rimuovi"
   },
   "purchases": {
     "title": "I miei acquisti",
@@ -302,12 +331,27 @@
     "twitter": "Twitter",
     "youtube": "YouTube"
   },
+  "error": {
+    "backToHome": "Torna alla Home",
+    "tryAgain": "Riprova",
+    "notFoundTitle": "Pagina non trovata",
+    "notFoundDescription": "La pagina che stai cercando non esiste o è stata spostata.",
+    "serverErrorTitle": "Qualcosa è andato storto",
+    "serverErrorDescription": "Si è verificato un errore imprevisto. Riprova più tardi."
+  },
   "common": {
     "loading": "Caricamento...",
     "error": "Errore",
     "back": "Indietro",
     "next": "Avanti",
     "saving": "Salvataggio...",
-    "avoided": "evitato"
+    "avoided": "evitato",
+    "startingBid": "Offerta iniziale",
+    "timeAgo": {
+      "justNow": "proprio ora",
+      "minutesAgo": "{value}m fa",
+      "hoursAgo": "{value}h fa",
+      "daysAgo": "{value}g fa"
+    }
   }
 }

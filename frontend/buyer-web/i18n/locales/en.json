@@ -331,12 +331,27 @@
     "twitter": "Twitter",
     "youtube": "YouTube"
   },
+  "error": {
+    "backToHome": "Back to Home",
+    "tryAgain": "Try Again",
+    "notFoundTitle": "Page Not Found",
+    "notFoundDescription": "The page you are looking for does not exist or has been moved.",
+    "serverErrorTitle": "Something Went Wrong",
+    "serverErrorDescription": "An unexpected error occurred. Please try again later."
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",
     "back": "Back",
     "next": "Next",
     "saving": "Saving...",
-    "avoided": "avoided"
+    "avoided": "avoided",
+    "startingBid": "Starting bid",
+    "timeAgo": {
+      "justNow": "just now",
+      "minutesAgo": "{value}m ago",
+      "hoursAgo": "{value}h ago",
+      "daysAgo": "{value}d ago"
+    }
   }
 }

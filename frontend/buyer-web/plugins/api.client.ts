@@ -2,8 +2,7 @@ import { useAuthStore } from '~/stores/auth'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const authStore = useAuthStore(nuxtApp.$pinia as any)
+  const authStore = useAuthStore(nuxtApp.$pinia as ReturnType<typeof import('pinia').createPinia>)
 
   const api = $fetch.create({
     baseURL: config.public.apiBaseUrl,

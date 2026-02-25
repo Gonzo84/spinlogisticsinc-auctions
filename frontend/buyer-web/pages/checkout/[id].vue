@@ -393,9 +393,12 @@
 </template>
 
 <script setup lang="ts">
+import { formatCurrency } from '~/utils/format'
+
+definePageMeta({ middleware: 'auth' })
+
 const { t } = useI18n()
 const route = useRoute()
-const { requireAuth } = useAuth()
 
 const orderId = computed(() => route.params.id as string)
 const loading = ref(false)
@@ -454,7 +457,6 @@ const steps = computed(() => [
 ])
 
 onMounted(async () => {
-  if (!requireAuth(`/checkout/${orderId.value}`)) return
   await fetchOrder()
 })
 
@@ -525,15 +527,6 @@ function prevStep() {
     currentStep.value--
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount)
 }
 
 useHead({

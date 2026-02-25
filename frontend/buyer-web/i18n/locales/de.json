@@ -7,6 +7,8 @@
     "logout": "Abmelden",
     "profile": "Profil",
     "myPurchases": "Meine Eink\u00e4ufe",
+    "myBids": "Meine Gebote",
+    "watchlist": "Merkliste",
     "notifications": "Benachrichtigungen",
     "markAllRead": "Alle als gelesen markieren",
     "noNotifications": "Noch keine Benachrichtigungen"
@@ -126,6 +128,33 @@
     "relatedLots": "Verwandte Lose",
     "watchlist": "Zur Merkliste hinzuf\u00fcgen",
     "share": "Teilen"
+  },
+  "bids": {
+    "title": "Meine Gebote",
+    "subtitle": "Verfolgen Sie alle Ihre Gebote bei aktiven und vergangenen Auktionen",
+    "pageTitle": "Meine Gebote",
+    "empty": "Noch keine Gebote abgegeben",
+    "emptyHint": "Durchsuchen Sie Lose und geben Sie Gebote ab, um sie hier zu verfolgen.",
+    "browseAuctions": "Auktionen durchsuchen",
+    "all": "Alle",
+    "winning": "F\u00fchrend",
+    "outbid": "\u00dcberboten",
+    "won": "Gewonnen",
+    "lost": "Verloren",
+    "lotTitle": "Los",
+    "yourBid": "Ihr Gebot",
+    "currentBid": "Aktuelles Gebot",
+    "status": "Status",
+    "timeLeft": "Verbleibende Zeit"
+  },
+  "watchlistPage": {
+    "title": "Meine Merkliste",
+    "subtitle": "Lose die Sie beobachten",
+    "pageTitle": "Merkliste",
+    "empty": "Ihre Merkliste ist leer",
+    "emptyHint": "F\u00fcgen Sie Lose zu Ihrer Merkliste hinzu, um sie hier zu verfolgen.",
+    "browseAuctions": "Lose durchsuchen",
+    "remove": "Entfernen"
   },
   "purchases": {
     "title": "Meine Eink\u00e4ufe",
@@ -302,12 +331,27 @@
     "twitter": "Twitter",
     "youtube": "YouTube"
   },
+  "error": {
+    "backToHome": "Zur\u00fcck zur Startseite",
+    "tryAgain": "Erneut versuchen",
+    "notFoundTitle": "Seite nicht gefunden",
+    "notFoundDescription": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    "serverErrorTitle": "Etwas ist schiefgelaufen",
+    "serverErrorDescription": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es sp\u00e4ter erneut."
+  },
   "common": {
     "loading": "Laden...",
     "error": "Fehler",
     "back": "Zur\u00fcck",
     "next": "Weiter",
     "saving": "Speichern...",
-    "avoided": "vermieden"
+    "avoided": "vermieden",
+    "startingBid": "Startgebot",
+    "timeAgo": {
+      "justNow": "gerade eben",
+      "minutesAgo": "{value}m her",
+      "hoursAgo": "{value}h her",
+      "daysAgo": "{value}T her"
+    }
   }
 }

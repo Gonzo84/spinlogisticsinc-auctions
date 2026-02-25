@@ -20,6 +20,7 @@ export default defineNuxtConfig({
       { code: 'ro', name: 'Rom\u00e2n\u0103', file: 'ro.json' },
     ],
     defaultLocale: 'en',
+    // @ts-expect-error lazy is valid but not in generated types for this i18n version
     lazy: true,
     strategy: 'prefix_except_default',
     detectBrowserLanguage: {

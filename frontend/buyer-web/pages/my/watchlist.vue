@@ -42,7 +42,7 @@
             <h3 class="font-semibold text-gray-900 line-clamp-2 mb-2">{{ lot.title }}</h3>
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-xs text-gray-500">Starting bid</p>
+                <p class="text-xs text-gray-500">{{ $t('common.startingBid') }}</p>
                 <p class="text-lg font-bold text-primary">{{ formatCurrency(lot.startingBid) }}</p>
               </div>
               <button
@@ -63,8 +63,12 @@
 </template>
 
 <script setup lang="ts">
+import { formatCurrency } from '~/utils/format'
+import { unwrapApiResponse } from '~/utils/api-response'
+
+definePageMeta({ middleware: 'auth' })
+
 const { t } = useI18n()
-const { requireAuth } = useAuth()
 
 interface WatchlistLot {
   id: string
@@ -78,18 +82,8 @@ const loading = ref(false)
 const watchlist = ref<WatchlistLot[]>([])
 
 onMounted(() => {
-  if (!requireAuth('/my/watchlist')) return
   fetchWatchlist()
 })
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
 
 function removeFromWatchlist(lotId: string) {
   watchlist.value = watchlist.value.filter((l) => l.id !== lotId)
@@ -101,9 +95,7 @@ async function fetchWatchlist() {
     const { $api } = useNuxtApp()
     const api = $api as typeof $fetch
     const raw = await api<Record<string, unknown>>('/users/me/watchlist')
-    const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
-      ? raw.data as Record<string, unknown>
-      : raw as Record<string, unknown>
+    const data = unwrapApiResponse(raw)
     watchlist.value = (Array.isArray(data.items) ? data.items : []) as WatchlistLot[]
   } catch {
     watchlist.value = []

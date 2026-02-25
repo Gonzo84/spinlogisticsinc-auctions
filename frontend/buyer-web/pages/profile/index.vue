@@ -249,8 +249,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ middleware: 'auth' })
+
 const { t } = useI18n()
-const { user, fullName, initials, updateProfile, requireAuth } = useAuth()
+const { user, fullName, initials, updateProfile } = useAuth()
 
 const saving = ref(false)
 const showSuccess = ref(false)
@@ -270,10 +272,6 @@ const notifPrefs = reactive({
   overbid: true,
   closing: true,
   push: false,
-})
-
-onMounted(() => {
-  if (!requireAuth('/profile')) return
 })
 
 watch(user, (newUser) => {

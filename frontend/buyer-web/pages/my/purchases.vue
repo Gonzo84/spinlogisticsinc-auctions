@@ -197,19 +197,21 @@
 </template>
 
 <script setup lang="ts">
-import { useCartStore, type CartLot } from '~/stores/cart'
+import { useCartStore } from '~/stores/cart'
+import type { CartLot } from '~/types/cart'
+import { formatCurrency } from '~/utils/format'
+import { unwrapApiResponse } from '~/utils/api-response'
+
+definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
-const { requireAuth } = useAuth()
 const cartStore = useCartStore()
 
 const loading = ref(false)
 const purchases = ref<CartLot[]>([])
 const activeStatus = ref('all')
 
-// Guard - require auth
 onMounted(() => {
-  if (!requireAuth('/my/purchases')) return
   fetchPurchases()
 })
 
@@ -286,25 +288,13 @@ function statusLabel(status: string): string {
   }
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
 async function fetchPurchases() {
   loading.value = true
   try {
     const { $api } = useNuxtApp()
     const api = $api as typeof $fetch
     const raw = await api<Record<string, unknown>>('/users/me/purchases')
-    // Unwrap ApiResponse wrapper if present
-    const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
-      ? raw.data as Record<string, unknown>
-      : raw
+    const data = unwrapApiResponse(raw)
     purchases.value = (Array.isArray(data.items) ? data.items : []) as CartLot[]
   } catch {
     purchases.value = []

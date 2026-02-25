@@ -7,6 +7,8 @@
     "logout": "Wyloguj się",
     "profile": "Profil",
     "myPurchases": "Moje zakupy",
+    "myBids": "Moje Oferty",
+    "watchlist": "Obserwowane",
     "notifications": "Powiadomienia",
     "markAllRead": "Oznacz wszystkie jako przeczytane",
     "noNotifications": "Brak powiadomień"
@@ -126,6 +128,33 @@
     "relatedLots": "Podobne loty",
     "watchlist": "Dodaj do obserwowanych",
     "share": "Udostępnij"
+  },
+  "bids": {
+    "title": "Moje Oferty",
+    "subtitle": "\u015aled\u017a wszystkie swoje oferty w aktywnych i zako\u0144czonych aukcjach",
+    "pageTitle": "Moje Oferty",
+    "empty": "Brak z\u0142o\u017conych ofert",
+    "emptyHint": "Przegl\u0105daj loty i sk\u0142adaj oferty, aby \u015bledzi\u0107 je tutaj.",
+    "browseAuctions": "Przegl\u0105daj aukcje",
+    "all": "Wszystkie",
+    "winning": "Wygrywaj\u0105ce",
+    "outbid": "Przebite",
+    "won": "Wygrane",
+    "lost": "Przegrane",
+    "lotTitle": "Lot",
+    "yourBid": "Twoja oferta",
+    "currentBid": "Aktualna oferta",
+    "status": "Status",
+    "timeLeft": "Pozosta\u0142y czas"
+  },
+  "watchlistPage": {
+    "title": "Moja Lista Obserwowanych",
+    "subtitle": "Loty kt\u00f3re obserwujesz",
+    "pageTitle": "Obserwowane",
+    "empty": "Twoja lista obserwowanych jest pusta",
+    "emptyHint": "Dodaj loty do listy obserwowanych, aby \u015bledzi\u0107 je tutaj.",
+    "browseAuctions": "Przegl\u0105daj loty",
+    "remove": "Usu\u0144"
   },
   "purchases": {
     "title": "Moje zakupy",
@@ -302,12 +331,27 @@
     "twitter": "Twitter",
     "youtube": "YouTube"
   },
+  "error": {
+    "backToHome": "Powrót na stronę główną",
+    "tryAgain": "Spróbuj ponownie",
+    "notFoundTitle": "Nie znaleziono strony",
+    "notFoundDescription": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+    "serverErrorTitle": "Coś poszło nie tak",
+    "serverErrorDescription": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie później."
+  },
   "common": {
     "loading": "Ładowanie...",
     "error": "Błąd",
     "back": "Wstecz",
     "next": "Dalej",
     "saving": "Zapisywanie...",
-    "avoided": "uniknięto"
+    "avoided": "uniknięto",
+    "startingBid": "Cena wywoławcza",
+    "timeAgo": {
+      "justNow": "właśnie teraz",
+      "minutesAgo": "{value}m temu",
+      "hoursAgo": "{value}g temu",
+      "daysAgo": "{value}d temu"
+    }
   }
 }

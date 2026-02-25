@@ -167,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SearchFilters } from '~/composables/useSearch'
+import type { SearchFilters } from '~/types/search'
 
 interface Props {
   filters: SearchFilters

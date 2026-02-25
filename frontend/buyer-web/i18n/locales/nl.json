@@ -9,7 +9,9 @@
     "myPurchases": "Mijn Aankopen",
     "notifications": "Meldingen",
     "markAllRead": "Alles als gelezen markeren",
-    "noNotifications": "Nog geen meldingen"
+    "noNotifications": "Nog geen meldingen",
+    "myBids": "Mijn Biedingen",
+    "watchlist": "Volglijst"
   },
   "home": {
     "pageTitle": "Veilingen Industri\u00eble Apparatuur",
@@ -126,6 +128,33 @@
     "relatedLots": "Gerelateerde Kavels",
     "watchlist": "Toevoegen aan volglijst",
     "share": "Delen"
+  },
+  "bids": {
+    "title": "Mijn Biedingen",
+    "subtitle": "Volg al uw biedingen bij actieve en afgelopen veilingen",
+    "pageTitle": "Mijn Biedingen",
+    "empty": "Nog geen biedingen geplaatst",
+    "emptyHint": "Blader door kavels en plaats biedingen om ze hier te volgen.",
+    "browseAuctions": "Veilingen Bekijken",
+    "all": "Alle",
+    "winning": "Winnend",
+    "outbid": "Overboden",
+    "won": "Gewonnen",
+    "lost": "Verloren",
+    "lotTitle": "Kavel",
+    "yourBid": "Uw bod",
+    "currentBid": "Huidig bod",
+    "status": "Status",
+    "timeLeft": "Resterende tijd"
+  },
+  "watchlistPage": {
+    "title": "Mijn Volglijst",
+    "subtitle": "Kavels die u volgt",
+    "pageTitle": "Volglijst",
+    "empty": "Uw volglijst is leeg",
+    "emptyHint": "Voeg kavels toe aan uw volglijst om ze hier te volgen.",
+    "browseAuctions": "Kavels Bekijken",
+    "remove": "Verwijderen"
   },
   "purchases": {
     "title": "Mijn Aankopen",
@@ -302,12 +331,27 @@
     "twitter": "Twitter",
     "youtube": "YouTube"
   },
+  "error": {
+    "backToHome": "Terug naar Home",
+    "tryAgain": "Opnieuw Proberen",
+    "notFoundTitle": "Pagina Niet Gevonden",
+    "notFoundDescription": "De pagina die u zoekt bestaat niet of is verplaatst.",
+    "serverErrorTitle": "Er Ging Iets Mis",
+    "serverErrorDescription": "Er is een onverwachte fout opgetreden. Probeer het later opnieuw."
+  },
   "common": {
     "loading": "Laden...",
     "error": "Fout",
     "back": "Terug",
     "next": "Volgende",
     "saving": "Opslaan...",
-    "avoided": "vermeden"
+    "avoided": "vermeden",
+    "startingBid": "Startbod",
+    "timeAgo": {
+      "justNow": "zojuist",
+      "minutesAgo": "{value}m geleden",
+      "hoursAgo": "{value}u geleden",
+      "daysAgo": "{value}d geleden"
+    }
   }
 }

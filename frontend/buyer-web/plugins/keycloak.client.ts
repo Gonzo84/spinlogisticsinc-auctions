@@ -76,7 +76,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     const storedToken = localStorage.getItem(TOKEN_KEY)
     const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
 
-    const initOptions: { pkceMethod: string; checkLoginIframe: boolean; token?: string; refreshToken?: string } = {
+    const initOptions: { pkceMethod: 'S256'; checkLoginIframe: boolean; token?: string; refreshToken?: string } = {
       pkceMethod: 'S256',
       checkLoginIframe: false,
     }
@@ -86,12 +86,15 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       initOptions.refreshToken = storedRefreshToken
     }
 
-    console.log('[keycloak] init starting, hasStoredTokens:', !!storedToken)
+    if (import.meta.dev) {
+      console.log('[keycloak] init starting, hasStoredTokens:', !!storedToken)
+    }
     const authenticated = await keycloak.init(initOptions)
-    console.log('[keycloak] init complete, authenticated:', authenticated)
+    if (import.meta.dev) {
+      console.log('[keycloak] init complete, authenticated:', authenticated)
+    }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const authStore = useAuthStore(nuxtApp.$pinia as any)
+    const authStore = useAuthStore(nuxtApp.$pinia as ReturnType<typeof import('pinia').createPinia>)
 
     if (authenticated) {
       // If we restored from storage, ensure tokens are still valid

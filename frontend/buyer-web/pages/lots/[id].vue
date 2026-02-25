@@ -297,7 +297,9 @@
 </template>
 
 <script setup lang="ts">
-import type { Auction } from '~/stores/auction'
+import type { Auction } from '~/types/auction'
+import { formatCurrency, formatDate } from '~/utils/format'
+import { getCountryFlag } from '~/utils/constants'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -327,32 +329,8 @@ onUnmounted(() => {
   }
 })
 
-const countryFlags: Record<string, string> = {
-  NL: '\ud83c\uddf3\ud83c\uddf1',
-  DE: '\ud83c\udde9\ud83c\uddea',
-  FR: '\ud83c\uddeb\ud83c\uddf7',
-  BE: '\ud83c\udde7\ud83c\uddea',
-  PL: '\ud83c\uddf5\ud83c\uddf1',
-  IT: '\ud83c\uddee\ud83c\uddf9',
-  RO: '\ud83c\uddf7\ud83c\uddf4',
-  ES: '\ud83c\uddea\ud83c\uddf8',
-  AT: '\ud83c\udde6\ud83c\uddf9',
-}
-
 function countryFlag(code: string): string {
-  return countryFlags[code] || code
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-  }).format(amount)
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString()
+  return getCountryFlag(code)
 }
 
 function openFullscreen() {
@@ -376,8 +354,13 @@ async function shareLot() {
 
 useHead({
   title: computed(() => lot.value?.title || t('lot.loading')),
-  meta: [
-    { name: 'description', content: computed(() => lot.value?.description?.substring(0, 160) || '') },
-  ],
+})
+
+useSeoMeta({
+  description: computed(() => lot.value?.description?.substring(0, 160) || ''),
+  ogTitle: computed(() => lot.value?.title || ''),
+  ogDescription: computed(() => lot.value?.description?.substring(0, 160) || ''),
+  ogType: 'website',
+  ogImage: computed(() => lot.value?.images?.[0]?.url || ''),
 })
 </script>
