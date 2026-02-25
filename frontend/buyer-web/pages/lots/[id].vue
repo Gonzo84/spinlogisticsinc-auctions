@@ -344,7 +344,7 @@ function countryFlag(code: string): string {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-EU', {
+  return new Intl.NumberFormat('en-IE', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,

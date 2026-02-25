@@ -103,6 +103,15 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         clearPersistedTokens()
       }
       setupAuthSession(authStore)
+
+      // Clean OIDC hash fragment and query params from URL after successful authentication
+      // Use setTimeout to ensure cleanup runs after keycloak-js finishes internal processing
+      setTimeout(() => {
+        if ((window.location.hash && (window.location.hash.includes('state=') || window.location.hash.includes('session_state='))) ||
+            (window.location.search && window.location.search.includes('code='))) {
+          window.history.replaceState(null, '', window.location.pathname)
+        }
+      }, 0)
     } else {
       clearPersistedTokens()
     }

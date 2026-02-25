@@ -77,7 +77,7 @@ export function useBid() {
 
     try {
       const api = $api as typeof $fetch
-      const config = await api<AutoBidConfig>(`/auctions/${payload.auctionId}/auto-bid`, {
+      const config = await api<AutoBidConfig>(`/auctions/${payload.auctionId}/auto-bids`, {
         method: 'POST',
         body: {
           maxAmount: payload.maxAmount,
@@ -106,7 +106,7 @@ export function useBid() {
 
     try {
       const api = $api as typeof $fetch
-      await api(`/auctions/${auctionId}/auto-bid`, {
+      await api(`/auctions/${auctionId}/auto-bids`, {
         method: 'DELETE',
       })
 

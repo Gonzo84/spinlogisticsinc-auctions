@@ -1,5 +1,6 @@
 package eu.auctionplatform.catalog.api.dto
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import eu.auctionplatform.catalog.domain.model.LotStatus
 import java.math.BigDecimal
 import java.time.Instant
@@ -23,7 +24,9 @@ data class CreateLotRequest(
     val locationAddress: String? = null,
     val locationCountry: String,
     val locationCity: String,
+    @JsonAlias("reservePriceAmount")
     val reservePrice: BigDecimal? = null,
+    @JsonAlias("startingBidAmount")
     val startingBid: BigDecimal = BigDecimal.ONE,
     val co2AvoidedKg: Double? = null,
     val pickupInfo: String? = null

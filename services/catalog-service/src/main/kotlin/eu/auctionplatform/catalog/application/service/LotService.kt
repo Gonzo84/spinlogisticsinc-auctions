@@ -5,6 +5,7 @@ import eu.auctionplatform.commons.exception.ForbiddenException
 import eu.auctionplatform.commons.exception.NotFoundException
 import eu.auctionplatform.commons.exception.ValidationException
 import eu.auctionplatform.commons.util.IdGenerator
+import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.catalog.api.dto.CombineLotsRequest
 import eu.auctionplatform.catalog.api.dto.CreateLotRequest
 import eu.auctionplatform.catalog.api.dto.LotListFilter
@@ -17,6 +18,7 @@ import eu.auctionplatform.catalog.infrastructure.persistence.repository.AuctionE
 import eu.auctionplatform.catalog.infrastructure.persistence.repository.CategoryRepository
 import eu.auctionplatform.catalog.infrastructure.persistence.repository.LotImageRepository
 import eu.auctionplatform.catalog.infrastructure.persistence.repository.LotRepository
+import io.nats.client.Connection
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
@@ -46,8 +48,42 @@ class LotService {
     @Inject
     lateinit var auctionEventRepository: AuctionEventRepository
 
+    @Inject
+    lateinit var natsConnection: Connection
+
     companion object {
         private val LOG: Logger = Logger.getLogger(LotService::class.java)
+    }
+
+    // -------------------------------------------------------------------------
+    // NATS event publishing
+    // -------------------------------------------------------------------------
+
+    private fun publishLotEvent(eventType: String, lot: Lot) {
+        try {
+            val subject = "catalog.lot.$eventType.${lot.brand}"
+            val payload = mapOf(
+                "lotId" to lot.id.toString(),
+                "title" to lot.title,
+                "description" to lot.description,
+                "categoryId" to lot.categoryId?.toString(),
+                "brand" to lot.brand,
+                "country" to lot.locationCountry,
+                "city" to lot.locationCity,
+                "startingBid" to lot.startingBid,
+                "reservePrice" to lot.reservePrice,
+                "status" to if (lot.status == LotStatus.APPROVED) "active" else lot.status.name.lowercase(),
+                "co2AvoidedKg" to lot.co2AvoidedKg,
+                "sellerId" to lot.sellerId.toString(),
+                "createdAt" to lot.createdAt.toString(),
+                "specifications" to lot.specifications
+            )
+            val json = JsonMapper.toJson(payload)
+            natsConnection.jetStream().publish(subject, json.toByteArray(Charsets.UTF_8))
+            LOG.infof("Published NATS event: %s for lot %s", subject, lot.id)
+        } catch (ex: Exception) {
+            LOG.warnf("Failed to publish NATS event for lot %s: %s", lot.id, ex.message)
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -99,6 +135,8 @@ class LotService {
 
         LOG.infof("Created lot: id=%s, seller=%s, brand=%s, title=%s",
             lot.id, sellerId, lot.brand, lot.title)
+
+        publishLotEvent("created", lot)
 
         return lot
     }
@@ -155,7 +193,10 @@ class LotService {
 
         LOG.infof("Updated lot: id=%s", lotId)
 
-        return entity.toDomain()
+        val updatedLot = entity.toDomain()
+        publishLotEvent("updated", updatedLot)
+
+        return updatedLot
     }
 
     // -------------------------------------------------------------------------
@@ -190,7 +231,10 @@ class LotService {
 
         LOG.infof("Lot submitted for review: id=%s", lotId)
 
-        return entity.toDomain()
+        val submittedLot = entity.toDomain()
+        publishLotEvent("status.changed", submittedLot)
+
+        return submittedLot
     }
 
     /**
@@ -220,7 +264,10 @@ class LotService {
 
         LOG.infof("Lot approved: id=%s", lotId)
 
-        return entity.toDomain()
+        val approvedLot = entity.toDomain()
+        publishLotEvent("status.changed", approvedLot)
+
+        return approvedLot
     }
 
     /**
@@ -255,7 +302,10 @@ class LotService {
 
         LOG.infof("Lot withdrawn: id=%s, by=%s", lotId, sellerId ?: "admin")
 
-        return entity.toDomain()
+        val withdrawnLot = entity.toDomain()
+        publishLotEvent("status.changed", withdrawnLot)
+
+        return withdrawnLot
     }
 
     // -------------------------------------------------------------------------

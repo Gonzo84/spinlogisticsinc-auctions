@@ -72,10 +72,14 @@ export function useAuth() {
 
   async function updateProfile(data: Partial<User>): Promise<void> {
     const api = $api as typeof $fetch
-    const updated = await api<User>('/users/me', {
-      method: 'PATCH',
+    const raw = await api<Record<string, unknown>>('/users/me', {
+      method: 'PUT',
       body: data,
     })
+    // Unwrap ApiResponse wrapper if present
+    const updated = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
+      ? raw.data as User
+      : raw as unknown as User
     authStore.updateUser(updated)
   }
 

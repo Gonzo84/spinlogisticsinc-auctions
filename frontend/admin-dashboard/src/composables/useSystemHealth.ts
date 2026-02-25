@@ -51,6 +51,82 @@ export interface SystemHealthOverview {
   lastUpdated: string
 }
 
+interface BackendComponentHealth {
+  status: string
+  details?: Record<string, any> | null
+}
+
+interface BackendHealthResponse {
+  status: string
+  service?: string
+  timestamp: string
+  checks: Record<string, BackendComponentHealth>
+}
+
+function mapStatus(s: string): ServiceStatus {
+  switch (s?.toUpperCase()) {
+    case 'UP': return 'healthy'
+    case 'DEGRADED': return 'degraded'
+    case 'DOWN': return 'down'
+    default: return 'unknown'
+  }
+}
+
+function transformHealthResponse(raw: BackendHealthResponse): SystemHealthOverview {
+  const checks = raw.checks || {}
+  const timestamp = raw.timestamp || new Date().toISOString()
+
+  const services: ServiceHealth[] = Object.entries(checks).map(([name, check]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    status: mapStatus(check.status),
+    uptime: 'N/A',
+    responseTimeMs: 0,
+    lastChecked: timestamp,
+    version: raw.service || 'gateway',
+    details: (check.details ?? {}) as Record<string, string | number | boolean>,
+  }))
+
+  const natsCheck = checks.nats
+  const nats: NatsStatus = {
+    connected: natsCheck?.status === 'UP',
+    serverUrl: (natsCheck?.details?.serverInfo as string) || 'nats://localhost:4222',
+    subjects: 0,
+    messagesPerSec: 0,
+    bytesPerSec: 0,
+    slowConsumers: 0,
+    pendingMessages: 0,
+  }
+
+  const dbCheck = checks.database
+  const databases: DatabasePool[] = [{
+    name: 'Gateway PostgreSQL',
+    status: mapStatus(dbCheck?.status ?? 'unknown'),
+    activeConnections: 0,
+    idleConnections: 0,
+    maxConnections: 20,
+    waitCount: 0,
+    avgQueryTimeMs: 0,
+  }]
+
+  const metrics: SystemMetrics = {
+    cpuUsagePercent: 0,
+    memoryUsageMb: 0,
+    memoryTotalMb: 1024,
+    diskUsagePercent: 0,
+    goroutines: 0,
+    gcPauseMs: 0,
+  }
+
+  return {
+    overallStatus: mapStatus(raw.status),
+    services,
+    nats,
+    databases,
+    metrics,
+    lastUpdated: timestamp,
+  }
+}
+
 export function useSystemHealth() {
   const { get } = useApi()
 
@@ -62,9 +138,10 @@ export function useSystemHealth() {
     loading.value = true
     error.value = null
     try {
-      health.value = await get<SystemHealthOverview>('/health')
-    } catch {
-      error.value = null
+      const raw = await get<BackendHealthResponse>('/health')
+      health.value = transformHealthResponse(raw)
+    } catch (err: any) {
+      error.value = err.response?.data?.message ?? 'Failed to fetch system health data'
     } finally {
       loading.value = false
     }

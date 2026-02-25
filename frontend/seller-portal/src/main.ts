@@ -13,6 +13,18 @@ const keycloak = new Keycloak({
 
 await keycloak.init({ onLoad: 'login-required', checkLoginIframe: false })
 
+// Clean up OIDC hash/query fragments left by Keycloak after login redirect
+// These interfere with Vue Router's createWebHistory() mode
+// Use 100ms delay to ensure keycloak-js has finished processing the fragment
+setTimeout(() => {
+  if (
+    (window.location.hash && (window.location.hash.includes('state=') || window.location.hash.includes('session_state='))) ||
+    (window.location.search && window.location.search.includes('code='))
+  ) {
+    window.history.replaceState(null, '', window.location.pathname)
+  }
+}, 100)
+
 const app = createApp(App)
 app.provide('keycloak', keycloak)
 app.use(createPinia())

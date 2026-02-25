@@ -94,7 +94,7 @@ const activeToasts = ref<OverbidToast[]>([])
 const { overbidNotifications, dismissNotification } = useNotifications()
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-EU', {
+  return new Intl.NumberFormat('en-IE', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,

@@ -51,7 +51,7 @@ function mapAuctionResponse(auction: Record<string, unknown>, lot?: Record<strin
     country: (lot?.locationCountry ?? auction.country ?? '') as string,
     location: lot ? `${lot.locationCity ?? ''}, ${lot.locationCountry ?? ''}`.replace(/^, |, $/, '') : (auction.location ?? '') as string,
     images: lotImages?.map((img: Record<string, unknown>) => ({ url: img.imageUrl as string, thumbnail: img.thumbnailUrl as string })) ?? auction.images as Auction['images'] ?? [],
-    currentBid: (auction.currentHighBid ?? auction.currentBid ?? 0) as number,
+    currentBid: (auction.currentHighBid ?? auction.currentBid ?? lot?.startingBid ?? auction.startingBid ?? 0) as number,
     startingPrice: (auction.startingBid ?? lot?.startingBid ?? auction.startingPrice ?? 0) as number,
     bidCount: (auction.bidCount ?? 0) as number,
     bidHistory: (auction.bidHistory ?? []) as Bid[],
@@ -84,19 +84,20 @@ export function useAuction() {
     error.value = null
     try {
       const api = $api as typeof $fetch
-      const auctionRaw = unwrapApiResponse(await api<Record<string, unknown>>(`/auctions/${id}`))
+      // Fetch lot from catalog-service (primary source of truth)
+      const lotRaw = unwrapApiResponse(await api<Record<string, unknown>>(`/lots/${id}`))
 
-      // Fetch lot catalog details if lotId is available
-      let lotData: Record<string, unknown> | null = null
-      if (auctionRaw.lotId) {
+      // Optionally fetch auction data if lot is assigned to an auction
+      let auctionData: Record<string, unknown> | null = null
+      if (lotRaw.auctionId) {
         try {
-          lotData = unwrapApiResponse(await api<Record<string, unknown>>(`/lots/${auctionRaw.lotId}`))
+          auctionData = unwrapApiResponse(await api<Record<string, unknown>>(`/auctions/${lotRaw.auctionId}`))
         } catch {
-          // Lot details optional - auction data alone is sufficient
+          // Auction data optional - lot data alone is sufficient
         }
       }
 
-      const auction = mapAuctionResponse(auctionRaw, lotData ?? undefined)
+      const auction = mapAuctionResponse(auctionData ?? lotRaw, lotRaw)
       auctionStore.setAuction(auction)
       return auction
     } catch (e: unknown) {

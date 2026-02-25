@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { useApi } from './useApi'
+import { useAuth } from './useAuth'
 
 export interface LotImage {
   id: string
@@ -97,6 +98,7 @@ export interface PaginatedResponse<T> {
 
 export function useLots() {
   const { get, post, put, del, loading, error } = useApi()
+  const { sellerId } = useAuth()
 
   const lots = ref<Lot[]>([])
   const currentLot = ref<Lot | null>(null)
@@ -126,6 +128,8 @@ export function useLots() {
     if (filters.search) params.search = filters.search
     if (filters.sortBy) params.sortBy = filters.sortBy
     if (filters.sortDir) params.sortDir = filters.sortDir
+    // Filter by current seller's ID so we only show their lots
+    if (sellerId.value) params.sellerId = sellerId.value
 
     // Use catalog-service endpoint; seller-service may not have synced yet
     const raw = await get<any>('/lots', params)
@@ -250,13 +254,29 @@ export function useLots() {
   }
 
   async function fetchStatusCounts(): Promise<Record<LotStatus, number>> {
+    // The /sellers/me/lots/status-counts endpoint doesn't exist.
+    // Instead, fetch all seller lots and compute counts locally.
     try {
-      const raw = await get<any>('/sellers/me/lots/status-counts')
-      const counts = raw?.data ?? raw
+      const params: Record<string, unknown> = { page: 0, pageSize: 1000 }
+      if (sellerId.value) params.sellerId = sellerId.value
+      const raw = await get<any>('/lots', params)
+      const response = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+      const allLots = (response.items ?? []) as any[]
+      const counts: Record<LotStatus, number> = {
+        draft: 0,
+        pending_review: 0,
+        active: 0,
+        sold: 0,
+        unsold: 0,
+        rejected: 0,
+      }
+      for (const lot of allLots) {
+        const s = (lot.status ?? 'draft').toLowerCase() as LotStatus
+        if (s in counts) counts[s]++
+      }
       statusCounts.value = counts
       return counts
     } catch {
-      // Clear the shared error ref -- status-counts is optional
       error.value = null
       return statusCounts.value
     }

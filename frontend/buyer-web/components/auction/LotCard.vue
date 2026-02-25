@@ -101,7 +101,7 @@ const countryFlags: Record<string, string> = {
 const countryFlag = computed(() => countryFlags[props.lot.country] || props.lot.country)
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-EU', {
+  return new Intl.NumberFormat('en-IE', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,

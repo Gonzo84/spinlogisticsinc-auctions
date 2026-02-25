@@ -38,14 +38,6 @@ export interface SettlementTotals {
   count: number
 }
 
-interface PaginatedResponse<T> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
-}
-
 export function useSettlements() {
   const { get, loading, error } = useApi()
 
@@ -77,13 +69,17 @@ export function useSettlements() {
     if (filters.dateTo) params.dateTo = filters.dateTo
 
     try {
-      const response = await get<PaginatedResponse<Settlement>>('/sellers/me/settlements', params)
-      settlements.value = response.items
+      const raw = await get<any>('/sellers/me/settlements', params)
+      // Unwrap ApiResponse wrapper ({data: T}) if present
+      const data = raw?.data && typeof raw.data === 'object' ? raw.data : raw
+      // seller-service returns a flat list, not paginated
+      const items = Array.isArray(data) ? data : (data?.items ?? [])
+      settlements.value = items
       pagination.value = {
-        total: response.total,
-        page: response.page,
-        pageSize: response.pageSize,
-        totalPages: response.totalPages,
+        total: items.length,
+        page: 1,
+        pageSize: items.length || 20,
+        totalPages: 1,
       }
     } catch {
       // Seller-service may not have settlements yet – show empty state
@@ -92,29 +88,42 @@ export function useSettlements() {
     }
   }
 
+  /**
+   * Compute settlement totals from the fetched settlements list.
+   * The /sellers/me/settlements/totals endpoint does not exist.
+   */
   async function fetchSettlementTotals(filters: SettlementFilter = {}): Promise<void> {
-    const params: Record<string, unknown> = {}
-    if (filters.status) params.status = filters.status
-    if (filters.dateFrom) params.dateFrom = filters.dateFrom
-    if (filters.dateTo) params.dateTo = filters.dateTo
+    // If settlements haven't been loaded yet, fetch them first
+    if (settlements.value.length === 0) {
+      await fetchSettlements(filters)
+    }
 
-    try {
-      totals.value = await get<SettlementTotals>('/sellers/me/settlements/totals', params)
-    } catch {
-      // Clear error – totals endpoint is optional
-      error.value = null
+    // Compute totals from the list
+    const items = settlements.value
+    totals.value = {
+      totalHammerPrice: items.reduce((sum, s) => sum + (s.hammerPrice ?? 0), 0),
+      totalCommission: items.reduce((sum, s) => sum + (s.commissionAmount ?? 0), 0),
+      totalNetAmount: items.reduce((sum, s) => sum + (s.netAmount ?? 0), 0),
+      currency: 'EUR',
+      count: items.length,
     }
   }
 
   async function downloadInvoice(settlementId: string): Promise<void> {
-    const { url } = await get<{ url: string }>(`/sellers/me/settlements/${settlementId}/invoice`)
-    window.open(url, '_blank')
+    try {
+      const { url } = await get<{ url: string }>(`/sellers/me/settlements/${settlementId}/invoice`)
+      window.open(url, '_blank')
+    } catch {
+      // Invoice download not available
+      error.value = null
+    }
   }
 
   async function fetchMonthlySettlements(): Promise<
     { month: string; amount: number; count: number }[]
   > {
-    return get('/sellers/me/settlements/monthly')
+    // Monthly settlements endpoint doesn't exist - return empty
+    return []
   }
 
   return {

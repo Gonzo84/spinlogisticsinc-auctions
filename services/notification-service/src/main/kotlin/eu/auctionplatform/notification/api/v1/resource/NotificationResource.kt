@@ -1,6 +1,5 @@
 package eu.auctionplatform.notification.api.v1.resource
 
-import eu.auctionplatform.commons.auth.userId
 import eu.auctionplatform.commons.dto.ApiResponse
 import eu.auctionplatform.commons.util.IdGenerator
 import eu.auctionplatform.notification.api.v1.dto.MarkAllReadResponse
@@ -20,15 +19,16 @@ import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.DefaultValue
 import jakarta.ws.rs.GET
-import jakarta.ws.rs.HeaderParam
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
+import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.SecurityContext
 import org.jboss.logging.Logger
 import java.util.UUID
 
@@ -79,11 +79,11 @@ class NotificationResource {
     @GET
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun listNotifications(
-        @HeaderParam("Authorization") authorization: String,
+        @Context securityContext: SecurityContext,
         @QueryParam("page") @DefaultValue("1") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
         val pagedResult = notificationService.getUserNotifications(userId, page, size)
 
         val responseItems = pagedResult.items.map { it.toResponse() }
@@ -109,9 +109,9 @@ class NotificationResource {
     @Path("/unread-count")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getUnreadCount(
-        @HeaderParam("Authorization") authorization: String
+        @Context securityContext: SecurityContext
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
         val count = notificationService.getUnreadCount(userId)
 
         return Response.ok(ApiResponse.ok(UnreadCountResponse(unreadCount = count))).build()
@@ -130,10 +130,10 @@ class NotificationResource {
     @Path("/{id}/read")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun markAsRead(
-        @HeaderParam("Authorization") authorization: String,
+        @Context securityContext: SecurityContext,
         @PathParam("id") id: UUID
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
         LOG.debugf("Mark as read: notificationId=%s, userId=%s", id, userId)
 
         notificationService.markAsRead(id)
@@ -153,9 +153,9 @@ class NotificationResource {
     @Path("/read-all")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun markAllAsRead(
-        @HeaderParam("Authorization") authorization: String
+        @Context securityContext: SecurityContext
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
         val count = notificationService.markAllAsRead(userId)
 
         return Response.ok(ApiResponse.ok(MarkAllReadResponse(markedCount = count))).build()
@@ -180,9 +180,9 @@ class NotificationResource {
     @Path("/preferences")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getPreferences(
-        @HeaderParam("Authorization") authorization: String
+        @Context securityContext: SecurityContext
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
         val preferences = preferenceService.getPreferences(userId)
         val response = preferences.map { it.toResponse() }
 
@@ -205,10 +205,10 @@ class NotificationResource {
     @Path("/preferences")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun updatePreferences(
-        @HeaderParam("Authorization") authorization: String,
+        @Context securityContext: SecurityContext,
         request: UpdatePreferencesRequest
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
 
         val domainPreferences = request.preferences.map { it.toDomain(userId) }
         val updated = preferenceService.updatePreferences(userId, domainPreferences)
@@ -237,10 +237,10 @@ class NotificationResource {
     @Path("/device-token")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun registerDeviceToken(
-        @HeaderParam("Authorization") authorization: String,
+        @Context securityContext: SecurityContext,
         request: RegisterDeviceTokenRequest
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
 
         val deviceToken = DeviceToken(
             id = IdGenerator.generateUUIDv7(),
@@ -276,10 +276,10 @@ class NotificationResource {
     @Path("/device-token/{id}")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun unregisterDeviceToken(
-        @HeaderParam("Authorization") authorization: String,
+        @Context securityContext: SecurityContext,
         @PathParam("id") id: UUID
     ): Response {
-        val userId = extractUserId(authorization)
+        val userId = extractUserId(securityContext)
         LOG.debugf("Unregister device token: id=%s, userId=%s", id, userId)
 
         val deactivated = deviceTokenRepository.deactivate(id)
@@ -298,14 +298,13 @@ class NotificationResource {
     // -------------------------------------------------------------------------
 
     /**
-     * Extracts the user UUID from the Authorization header.
+     * Extracts the user UUID from the SecurityContext principal.
      *
-     * The header is expected in the format "Bearer <JWT>". The `sub` claim
-     * is extracted from the JWT payload (signature verification is handled
-     * by Quarkus OIDC at the framework level).
+     * The principal name is set by Quarkus OIDC from the JWT `sub` claim.
      */
-    private fun extractUserId(authorization: String): UUID {
-        val token = authorization.removePrefix("Bearer ").trim()
-        return UUID.fromString(token.userId())
+    private fun extractUserId(securityContext: SecurityContext): UUID {
+        val principal = securityContext.userPrincipal?.name
+            ?: throw jakarta.ws.rs.ForbiddenException("User identity not available")
+        return UUID.fromString(principal)
     }
 }

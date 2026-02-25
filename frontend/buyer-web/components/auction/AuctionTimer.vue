@@ -20,7 +20,13 @@
       </span>
     </Transition>
 
-    <template v-if="isExpired">
+    <template v-if="!hasValidEndTime">
+      <span :class="compact ? 'text-xs' : 'text-sm'" class="font-medium text-gray-400">
+        --:--:--
+      </span>
+    </template>
+
+    <template v-else-if="isExpired">
       <span :class="compact ? 'text-xs' : 'text-sm'" class="font-medium text-gray-500">
         {{ $t('auction.ended') }}
       </span>
@@ -95,14 +101,21 @@ const now = ref(Date.now())
 const showExtendedFlash = ref(false)
 let intervalId: ReturnType<typeof setInterval> | null = null
 
-const endTimestamp = computed(() => new Date(props.endTime).getTime())
+const endTimestamp = computed(() => {
+  if (!props.endTime) return 0
+  const ts = new Date(props.endTime).getTime()
+  return isNaN(ts) ? 0 : ts
+})
+
+const hasValidEndTime = computed(() => endTimestamp.value > 0)
 
 const totalSeconds = computed(() => {
+  if (!hasValidEndTime.value) return 0
   const diff = endTimestamp.value - now.value
   return Math.max(0, Math.floor(diff / 1000))
 })
 
-const isExpired = computed(() => totalSeconds.value <= 0)
+const isExpired = computed(() => hasValidEndTime.value && totalSeconds.value <= 0)
 
 const days = computed(() => Math.floor(totalSeconds.value / 86400))
 const hours = computed(() => Math.floor((totalSeconds.value % 86400) / 3600))

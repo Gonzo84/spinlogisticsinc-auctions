@@ -204,6 +204,15 @@ class LotResource {
         return Response.ok(ApiResponse.ok(lot.toResponse())).build()
     }
 
+    /** PUT alias for [submitForReview]. */
+    @PUT
+    @Path("/{id}/submit")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun submitForReviewPut(
+        @PathParam("id") id: UUID,
+        @HeaderParam("Authorization") authorization: String
+    ): Response = submitForReview(id, authorization)
+
     /**
      * Withdraws a lot from the catalog.
      *
@@ -271,6 +280,12 @@ class LotResource {
 
         return Response.ok(ApiResponse.ok(lot.toResponse())).build()
     }
+
+    /** PUT alias for [approveLot]. */
+    @PUT
+    @Path("/{id}/approve")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun approveLotPut(@PathParam("id") id: UUID): Response = approveLot(id)
 
     /**
      * Withdraws a lot by admin (no ownership check).

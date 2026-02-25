@@ -48,7 +48,6 @@
           >
             <span>{{ category.icon }}</span>
             <span>{{ category.name }}</span>
-            <span class="text-xs text-gray-400">({{ category.count }})</span>
           </NuxtLink>
         </div>
       </div>
@@ -190,7 +189,6 @@
 
 <script setup lang="ts">
 const { t } = useI18n()
-const { listAuctions } = useAuction()
 
 const carouselIndex = ref(0)
 const selectedCountry = ref<string | null>(null)
@@ -209,27 +207,47 @@ const countries = [
 ]
 
 const categories = [
-  { slug: 'transport', icon: '\ud83d\ude9a', name: t('categories.transport'), count: 1240 },
-  { slug: 'agriculture', icon: '\ud83d\ude9c', name: t('categories.agriculture'), count: 890 },
-  { slug: 'construction', icon: '\ud83c\udfd7\ufe0f', name: t('categories.construction'), count: 1560 },
-  { slug: 'metalworking', icon: '\u2699\ufe0f', name: t('categories.metalworking'), count: 430 },
-  { slug: 'woodworking', icon: '\ud83e\udeb5', name: t('categories.woodworking'), count: 310 },
-  { slug: 'food-processing', icon: '\ud83c\udfed', name: t('categories.foodProcessing'), count: 220 },
-  { slug: 'electronics', icon: '\ud83d\udd0c', name: t('categories.electronics'), count: 670 },
-  { slug: 'warehouse', icon: '\ud83d\udce6', name: t('categories.warehouse'), count: 540 },
+  { slug: 'transport', icon: '\ud83d\ude9a', name: t('categories.transport') },
+  { slug: 'agriculture', icon: '\ud83d\ude9c', name: t('categories.agriculture') },
+  { slug: 'construction', icon: '\ud83c\udfd7\ufe0f', name: t('categories.construction') },
+  { slug: 'metalworking', icon: '\u2699\ufe0f', name: t('categories.metalworking') },
+  { slug: 'woodworking', icon: '\ud83e\udeb5', name: t('categories.woodworking') },
+  { slug: 'food-processing', icon: '\ud83c\udfed', name: t('categories.foodProcessing') },
+  { slug: 'electronics', icon: '\ud83d\udd0c', name: t('categories.electronics') },
+  { slug: 'warehouse', icon: '\ud83d\udce6', name: t('categories.warehouse') },
 ]
 
+// Fetch lots from catalog-service (primary) with auction-engine fallback
+async function fetchLotsFromCatalog(params: Record<string, string | number>) {
+  const { $api } = useNuxtApp()
+  const api = $api as typeof $fetch
+  try {
+    const raw = await api<Record<string, unknown>>('/lots', { params })
+    const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
+      ? raw.data as Record<string, unknown>
+      : raw as Record<string, unknown>
+    const items = Array.isArray(data.items) ? data.items as Record<string, unknown>[] : []
+    return items.map((lot) => ({
+      id: (lot.id ?? '') as string,
+      title: (lot.title ?? '') as string,
+      imageUrl: (lot.primaryImageUrl ?? '') as string,
+      currentBid: (lot.startingBid ?? 0) as number,
+      endTime: '',
+    }))
+  } catch {
+    return []
+  }
+}
+
 const { data: featuredAuctions } = await useAsyncData('featured-auctions', async () => {
-  const result = await listAuctions({ featured: true, limit: 9 })
-  return result.items ?? []
+  return await fetchLotsFromCatalog({ status: 'APPROVED', page: 0, pageSize: 9 })
 }, {
   default: () => [],
   server: false,
 })
 
 const { data: newLots } = await useAsyncData('new-lots', async () => {
-  const result = await listAuctions({ sort: 'newest', limit: 8 })
-  return result.items ?? []
+  return await fetchLotsFromCatalog({ status: 'APPROVED', page: 0, pageSize: 8 })
 }, {
   default: () => [],
   server: false,
@@ -250,7 +268,7 @@ function selectCountry(code: string) {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-EU', {
+  return new Intl.NumberFormat('en-IE', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,

@@ -69,6 +69,9 @@ abstract class NatsConsumer(
             durableName, filterSubject, streamName
         )
 
+        // Wait for the stream to be available (may be created by NatsStreamInitializer)
+        waitForStream()
+
         val jetStream = connection.jetStream()
 
         val consumerConfig = ConsumerConfiguration.builder()
@@ -110,6 +113,34 @@ abstract class NatsConsumer(
         running = false
         subscription?.drain(Duration.ofSeconds(10))
         logger.info("Stop requested for NATS consumer [{}]", durableName)
+    }
+
+    // ---------------------------------------------------------------------------
+    // Stream readiness check
+    // ---------------------------------------------------------------------------
+
+    private fun waitForStream(maxAttempts: Int = 10, delayMs: Long = 2000) {
+        val jsm = connection.jetStreamManagement()
+        for (attempt in 1..maxAttempts) {
+            try {
+                jsm.getStreamInfo(streamName)
+                logger.info("Stream '{}' is available", streamName)
+                return
+            } catch (_: Exception) {
+                if (attempt < maxAttempts) {
+                    logger.info(
+                        "Stream '{}' not yet available (attempt {}/{}), waiting {}ms...",
+                        streamName, attempt, maxAttempts, delayMs
+                    )
+                    Thread.sleep(delayMs)
+                } else {
+                    logger.warn(
+                        "Stream '{}' not available after {} attempts — consumer may fail to subscribe",
+                        streamName, maxAttempts
+                    )
+                }
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------

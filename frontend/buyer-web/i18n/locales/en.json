@@ -7,6 +7,8 @@
     "logout": "Log Out",
     "profile": "Profile",
     "myPurchases": "My Purchases",
+    "myBids": "My Bids",
+    "watchlist": "Watchlist",
     "notifications": "Notifications",
     "markAllRead": "Mark all read",
     "noNotifications": "No notifications yet"
@@ -126,6 +128,33 @@
     "relatedLots": "Related Lots",
     "watchlist": "Add to watchlist",
     "share": "Share"
+  },
+  "bids": {
+    "title": "My Bids",
+    "subtitle": "Track all your bids across active and past auctions",
+    "pageTitle": "My Bids",
+    "empty": "No bids placed yet",
+    "emptyHint": "Browse lots and place bids to track them here.",
+    "browseAuctions": "Browse Auctions",
+    "all": "All",
+    "winning": "Winning",
+    "outbid": "Outbid",
+    "won": "Won",
+    "lost": "Lost",
+    "lotTitle": "Lot",
+    "yourBid": "Your bid",
+    "currentBid": "Current bid",
+    "status": "Status",
+    "timeLeft": "Time left"
+  },
+  "watchlistPage": {
+    "title": "My Watchlist",
+    "subtitle": "Lots you are watching",
+    "pageTitle": "Watchlist",
+    "empty": "Your watchlist is empty",
+    "emptyHint": "Add lots to your watchlist to track them here.",
+    "browseAuctions": "Browse Lots",
+    "remove": "Remove"
   },
   "purchases": {
     "title": "My Purchases",

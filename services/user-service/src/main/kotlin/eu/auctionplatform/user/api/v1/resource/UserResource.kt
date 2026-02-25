@@ -1,5 +1,8 @@
 package eu.auctionplatform.user.api.v1.resource
 
+import eu.auctionplatform.commons.auth.email
+import eu.auctionplatform.commons.auth.familyName
+import eu.auctionplatform.commons.auth.givenName
 import eu.auctionplatform.commons.auth.userId
 import eu.auctionplatform.commons.dto.ApiResponse
 import eu.auctionplatform.user.api.dto.AddCompanyRequest
@@ -97,8 +100,7 @@ class UserResource {
     @Path("/me")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getMe(@HeaderParam("Authorization") authorization: String): Response {
-        val keycloakId = extractKeycloakId(authorization)
-        val user = userService.getUserByKeycloakId(keycloakId)
+        val user = resolveCurrentUser(authorization)
         val company = userService.getCompanyByUserId(user.id)
         val deposit = userService.getLatestDeposit(user.id)
 
@@ -127,8 +129,7 @@ class UserResource {
         @HeaderParam("Authorization") authorization: String,
         request: UpdateProfileRequest
     ): Response {
-        val keycloakId = extractKeycloakId(authorization)
-        val user = userService.getUserByKeycloakId(keycloakId)
+        val user = resolveCurrentUser(authorization)
         val updated = userService.updateProfile(user.id, request)
 
         return Response.ok(ApiResponse.ok(updated.toResponse())).build()
@@ -150,8 +151,7 @@ class UserResource {
         @HeaderParam("Authorization") authorization: String,
         request: AddCompanyRequest
     ): Response {
-        val keycloakId = extractKeycloakId(authorization)
-        val user = userService.getUserByKeycloakId(keycloakId)
+        val user = resolveCurrentUser(authorization)
         val company = userService.addCompany(user.id, request)
 
         return Response
@@ -172,8 +172,7 @@ class UserResource {
     @Path("/me/deposit")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun getDeposit(@HeaderParam("Authorization") authorization: String): Response {
-        val keycloakId = extractKeycloakId(authorization)
-        val user = userService.getUserByKeycloakId(keycloakId)
+        val user = resolveCurrentUser(authorization)
         val deposit = userService.getLatestDeposit(user.id)
 
         return if (deposit != null) {
@@ -199,8 +198,7 @@ class UserResource {
         @HeaderParam("Authorization") authorization: String,
         request: InitiateDepositRequest
     ): Response {
-        val keycloakId = extractKeycloakId(authorization)
-        val user = userService.getUserByKeycloakId(keycloakId)
+        val user = resolveCurrentUser(authorization)
         val deposit = userService.initiateDeposit(user.id, request)
 
         return Response
@@ -223,11 +221,73 @@ class UserResource {
     fun requestDepositRefund(
         @HeaderParam("Authorization") authorization: String
     ): Response {
-        val keycloakId = extractKeycloakId(authorization)
-        val user = userService.getUserByKeycloakId(keycloakId)
+        val user = resolveCurrentUser(authorization)
         val deposit = userService.requestDepositRefund(user.id)
 
         return Response.ok(ApiResponse.ok(deposit.toResponse())).build()
+    }
+
+    /**
+     * Returns the authenticated user's purchases (won auction lots).
+     *
+     * **GET /api/v1/users/me/purchases**
+     *
+     * @param authorization The Bearer token.
+     * @return 200 OK with paginated purchase list (empty until auction-engine integration).
+     */
+    @GET
+    @Path("/me/purchases")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun getMyPurchases(@HeaderParam("Authorization") authorization: String): Response {
+        val pagedResponse = eu.auctionplatform.commons.dto.PagedResponse(
+            items = emptyList<Any>(),
+            total = 0,
+            page = 1,
+            pageSize = 20
+        )
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    /**
+     * Returns the authenticated user's bid history.
+     *
+     * **GET /api/v1/users/me/bids**
+     *
+     * @param authorization The Bearer token.
+     * @return 200 OK with paginated bid list (empty until auction-engine integration).
+     */
+    @GET
+    @Path("/me/bids")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun getMyBids(@HeaderParam("Authorization") authorization: String): Response {
+        val pagedResponse = eu.auctionplatform.commons.dto.PagedResponse(
+            items = emptyList<Any>(),
+            total = 0,
+            page = 1,
+            pageSize = 20
+        )
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    /**
+     * Returns the authenticated user's watchlist.
+     *
+     * **GET /api/v1/users/me/watchlist**
+     *
+     * @param authorization The Bearer token.
+     * @return 200 OK with paginated watchlist (empty until watchlist feature integration).
+     */
+    @GET
+    @Path("/me/watchlist")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun getMyWatchlist(@HeaderParam("Authorization") authorization: String): Response {
+        val pagedResponse = eu.auctionplatform.commons.dto.PagedResponse(
+            items = emptyList<Any>(),
+            total = 0,
+            page = 1,
+            pageSize = 20
+        )
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
     }
 
     // -------------------------------------------------------------------------
@@ -297,5 +357,19 @@ class UserResource {
     private fun extractKeycloakId(authorization: String): String {
         val token = authorization.removePrefix("Bearer ").trim()
         return token.userId()
+    }
+
+    /**
+     * Resolves the current user from the JWT, auto-creating a user profile
+     * if one does not yet exist. This ensures first-time Keycloak users
+     * automatically get a user-service record.
+     */
+    private fun resolveCurrentUser(authorization: String): eu.auctionplatform.user.domain.model.User {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val keycloakId = token.userId()
+        val email = token.email()
+        val firstName = token.givenName()
+        val lastName = token.familyName()
+        return userService.getOrCreateUser(keycloakId, email, firstName, lastName)
     }
 }

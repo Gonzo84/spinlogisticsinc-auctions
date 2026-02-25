@@ -57,6 +57,8 @@
             </Transition>
           </div>
 
+          <!-- Auth-dependent actions (client-only to prevent SSR hydration mismatch) -->
+          <ClientOnly>
           <!-- Notifications Bell -->
           <div v-if="isAuthenticated" class="relative" ref="notifDropdownRef">
             <button
@@ -159,6 +161,26 @@
                   <p class="text-xs text-gray-500 truncate">{{ user?.email }}</p>
                 </div>
                 <NuxtLink
+                  to="/my/bids"
+                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  @click="showUserDropdown = false"
+                >
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  {{ $t('nav.myBids') }}
+                </NuxtLink>
+                <NuxtLink
+                  to="/my/watchlist"
+                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  @click="showUserDropdown = false"
+                >
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  {{ $t('nav.watchlist') }}
+                </NuxtLink>
+                <NuxtLink
                   to="/my/purchases"
                   class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   @click="showUserDropdown = false"
@@ -207,6 +229,7 @@
               {{ $t('nav.register') }}
             </NuxtLink>
           </template>
+          </ClientOnly>
         </div>
       </div>
 

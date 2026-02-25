@@ -3,6 +3,11 @@ package eu.auctionplatform.search.infrastructure.elasticsearch
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import co.elastic.clients.json.jackson.JacksonJsonpMapper
 import co.elastic.clients.transport.rest_client.RestClientTransport
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Produces
 import jakarta.inject.Singleton
@@ -51,7 +56,13 @@ class ElasticsearchClientProducer {
             }
             .build()
 
-        val transport = RestClientTransport(restClient, JacksonJsonpMapper())
+        val objectMapper = ObjectMapper()
+            .registerModule(KotlinModule.Builder().build())
+            .registerModule(JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
+        val transport = RestClientTransport(restClient, JacksonJsonpMapper(objectMapper))
         return ElasticsearchClient(transport)
     }
 }

@@ -148,6 +148,51 @@ class UserService {
     }
 
     /**
+     * Retrieves a user by their Keycloak ID, auto-creating the user profile
+     * on first access using claims extracted from the JWT token.
+     *
+     * This ensures that any Keycloak-authenticated user automatically gets
+     * a user-service profile without requiring a separate registration step.
+     *
+     * @param keycloakId The `sub` claim from the JWT.
+     * @param email      The `email` claim from the JWT.
+     * @param firstName  The `given_name` claim from the JWT.
+     * @param lastName   The `family_name` claim from the JWT.
+     * @return The existing or newly created [User] domain model.
+     */
+    @Transactional
+    fun getOrCreateUser(keycloakId: String, email: String, firstName: String, lastName: String): User {
+        val existing = userRepository.findByKeycloakId(keycloakId)
+        if (existing != null) {
+            return existing.toDomain()
+        }
+
+        LOG.infof("Auto-registering user on first access: keycloakId=%s, email=%s", keycloakId, email)
+
+        val user = User(
+            id = IdGenerator.generateUUIDv7(),
+            keycloakId = keycloakId,
+            accountType = AccountType.PRIVATE,
+            email = email.ifEmpty { "$keycloakId@placeholder.local" },
+            firstName = firstName.ifEmpty { "User" },
+            lastName = lastName.ifEmpty { keycloakId.take(8) },
+            language = "en",
+            currency = "EUR",
+            status = UserStatus.ACTIVE,
+            depositStatus = DepositStatus.NONE,
+            createdAt = Instant.now(),
+            updatedAt = Instant.now()
+        )
+
+        val entity = UserEntity.fromDomain(user)
+        userRepository.persist(entity)
+
+        LOG.infof("Auto-registered user: id=%s, email=%s", user.id, user.email)
+
+        return user
+    }
+
+    /**
      * Retrieves the company profile for a given user.
      *
      * @param userId The user's UUID.

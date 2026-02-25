@@ -38,6 +38,22 @@ private fun String.decodeClaims(): Map<String, Any> {
 fun String.userId(): String =
     decodeClaims()["sub"]?.toString().orEmpty()
 
+/** Extracts the `email` claim from the JWT. */
+fun String.email(): String =
+    decodeClaims()["email"]?.toString().orEmpty()
+
+/** Extracts the `given_name` (first name) claim from the JWT. */
+fun String.givenName(): String =
+    decodeClaims()["given_name"]?.toString().orEmpty()
+
+/** Extracts the `family_name` (last name) claim from the JWT. */
+fun String.familyName(): String =
+    decodeClaims()["family_name"]?.toString().orEmpty()
+
+/** Extracts the `preferred_username` claim from the JWT. */
+fun String.preferredUsername(): String =
+    decodeClaims()["preferred_username"]?.toString().orEmpty()
+
 /** Extracts the `account_type` custom claim (e.g. "buyer", "seller", "admin"). */
 fun String.accountType(): String =
     decodeClaims()["account_type"]?.toString().orEmpty()

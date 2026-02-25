@@ -39,8 +39,8 @@ import java.time.Instant
  * @property currency        ISO 4217 currency code for bid amounts.
  */
 data class LotDocument(
-    val id: String,
-    val title: String,
+    val id: String = "",
+    val title: String = "",
     val description: String? = null,
     val categoryId: String? = null,
     val categoryPath: List<String> = emptyList(),
@@ -70,8 +70,8 @@ data class LotDocument(
  * @property lon Longitude in decimal degrees.
  */
 data class GeoPoint(
-    val lat: Double,
-    val lon: Double
+    val lat: Double = 0.0,
+    val lon: Double = 0.0
 )
 
 /**
@@ -82,7 +82,7 @@ data class GeoPoint(
  * @property isPrimary    Whether this is the primary / hero image for the lot.
  */
 data class LotImage(
-    val url: String,
+    val url: String = "",
     val thumbnailUrl: String? = null,
     val isPrimary: Boolean = false
 )

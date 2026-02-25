@@ -65,10 +65,23 @@ export function useSearch() {
       if (filters.distance) params.distance = filters.distance
       if (filters.reserveStatus) params.reserveStatus = filters.reserveStatus
       if (filters.sort) params.sort = filters.sort
-      if (filters.page) params.page = filters.page
+      if (filters.page) params.page = filters.page - 1
       if (filters.limit) params.limit = filters.limit
 
-      const result = await api<SearchResult>('/search/lots', { params })
+      const raw = await api<Record<string, unknown>>('/search/lots', { params })
+
+      // Unwrap ApiResponse wrapper if present
+      const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
+        ? raw.data as Record<string, unknown>
+        : raw as Record<string, unknown>
+
+      const result: SearchResult = {
+        items: (Array.isArray(data.items) ? data.items : []) as Record<string, unknown>[],
+        total: (typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : 0),
+        totalPages: (typeof data.totalPages === 'number' ? data.totalPages : 0),
+        page: (typeof data.page === 'number' ? data.page : 1),
+        aggregations: data.aggregations as SearchAggregations | undefined,
+      }
 
       if (result.aggregations) {
         aggregations.value = result.aggregations

@@ -20,13 +20,21 @@ export function useNotifications() {
 
     try {
       const api = $api as typeof $fetch
-      const result = await api<{ items: Notification[]; unreadCount: number }>('/notifications', {
+      const raw = await api<Record<string, unknown>>('/notifications', {
         params: { page, limit: 20 },
       })
 
-      notificationsStore.setNotifications(result.items)
-      notificationsStore.setUnreadCount(result.unreadCount)
-      return result.items
+      // Unwrap ApiResponse<PagedResponse<T>> wrapper
+      const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
+        ? raw.data as Record<string, unknown>
+        : raw
+
+      const items = (Array.isArray(data.items) ? data.items : []) as Notification[]
+      const unreadCount = typeof data.unreadCount === 'number' ? data.unreadCount : 0
+
+      notificationsStore.setNotifications(items)
+      notificationsStore.setUnreadCount(unreadCount)
+      return items
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : 'Failed to load notifications'
       return []
@@ -39,7 +47,7 @@ export function useNotifications() {
     try {
       const api = $api as typeof $fetch
       await api(`/notifications/${notificationId}/read`, {
-        method: 'POST',
+        method: 'PUT',
       })
       notificationsStore.markAsRead(notificationId)
     } catch (e: unknown) {
@@ -51,7 +59,7 @@ export function useNotifications() {
     try {
       const api = $api as typeof $fetch
       await api('/notifications/read-all', {
-        method: 'POST',
+        method: 'PUT',
       })
       notificationsStore.markAllAsRead()
     } catch (e: unknown) {
@@ -62,7 +70,7 @@ export function useNotifications() {
   async function registerPushToken(token: string): Promise<void> {
     try {
       const api = $api as typeof $fetch
-      await api('/notifications/push-token', {
+      await api('/notifications/device-token', {
         method: 'POST',
         body: { token, platform: 'web' },
       })

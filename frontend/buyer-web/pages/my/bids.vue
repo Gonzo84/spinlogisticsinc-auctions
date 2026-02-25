@@ -1,0 +1,165 @@
+<template>
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">{{ $t('bids.title') }}</h1>
+      <p class="text-gray-500 text-sm mt-1">{{ $t('bids.subtitle') }}</p>
+    </div>
+
+    <!-- Status Filters -->
+    <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+      <button
+        v-for="status in statusFilters"
+        :key="status.value"
+        class="px-4 py-2 rounded-full text-sm font-medium border whitespace-nowrap transition-colors"
+        :class="activeStatus === status.value
+          ? 'bg-primary text-white border-primary'
+          : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'"
+        @click="activeStatus = status.value"
+      >
+        {{ status.label }}
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="space-y-4">
+      <div v-for="i in 3" :key="i" class="bg-white border rounded-xl p-6 animate-pulse">
+        <div class="flex gap-4">
+          <div class="w-20 h-20 bg-gray-200 rounded-lg" />
+          <div class="flex-1">
+            <div class="h-4 bg-gray-200 rounded w-2/3 mb-2" />
+            <div class="h-3 bg-gray-200 rounded w-1/3 mb-3" />
+            <div class="h-6 bg-gray-200 rounded w-1/4" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="filteredBids.length === 0" class="text-center py-16">
+      <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">{{ $t('bids.empty') }}</h3>
+      <p class="text-gray-500 mb-6">{{ $t('bids.emptyHint') }}</p>
+      <NuxtLink to="/search" class="px-6 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary-800 transition-colors">
+        {{ $t('bids.browseAuctions') }}
+      </NuxtLink>
+    </div>
+
+    <!-- Bids List -->
+    <div v-else class="space-y-4">
+      <div
+        v-for="bid in filteredBids"
+        :key="bid.id"
+        class="bg-white border rounded-xl p-4 hover:shadow-sm transition-shadow"
+      >
+        <div class="flex items-center gap-4">
+          <NuxtLink :to="`/lots/${bid.lotId}`" class="shrink-0">
+            <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden">
+              <img v-if="bid.imageUrl" :src="bid.imageUrl" :alt="bid.title" class="w-full h-full object-cover" loading="lazy">
+            </div>
+          </NuxtLink>
+          <div class="flex-1 min-w-0">
+            <NuxtLink :to="`/lots/${bid.lotId}`" class="hover:text-primary transition-colors">
+              <h3 class="font-semibold text-gray-900 line-clamp-1">{{ bid.title }}</h3>
+            </NuxtLink>
+            <div class="flex items-center gap-4 mt-1 text-sm">
+              <div>
+                <span class="text-gray-500">{{ $t('bids.yourBid') }}:</span>
+                <span class="font-bold text-gray-900 ml-1">{{ formatCurrency(bid.amount) }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500">{{ $t('bids.currentBid') }}:</span>
+                <span class="font-bold text-primary ml-1">{{ formatCurrency(bid.currentBid) }}</span>
+              </div>
+            </div>
+          </div>
+          <span
+            class="px-3 py-1 rounded-full text-xs font-semibold"
+            :class="bidStatusClass(bid.status)"
+          >
+            {{ bid.status }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+const { t } = useI18n()
+const { requireAuth } = useAuth()
+
+interface BidEntry {
+  id: string
+  lotId: string
+  title: string
+  imageUrl?: string
+  amount: number
+  currentBid: number
+  status: string
+  createdAt: string
+}
+
+const loading = ref(false)
+const bids = ref<BidEntry[]>([])
+const activeStatus = ref('all')
+
+onMounted(() => {
+  if (!requireAuth('/my/bids')) return
+  fetchBids()
+})
+
+const statusFilters = computed(() => [
+  { value: 'all', label: t('bids.all') },
+  { value: 'winning', label: t('bids.winning') },
+  { value: 'outbid', label: t('bids.outbid') },
+  { value: 'won', label: t('bids.won') },
+  { value: 'lost', label: t('bids.lost') },
+])
+
+const filteredBids = computed(() => {
+  if (activeStatus.value === 'all') return bids.value
+  return bids.value.filter((b) => b.status === activeStatus.value)
+})
+
+function bidStatusClass(status: string): string {
+  switch (status) {
+    case 'winning': return 'bg-secondary-50 text-secondary'
+    case 'outbid': return 'bg-accent-50 text-accent'
+    case 'won': return 'bg-secondary-50 text-secondary-700'
+    case 'lost': return 'bg-gray-100 text-gray-600'
+    default: return 'bg-gray-100 text-gray-600'
+  }
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+async function fetchBids() {
+  loading.value = true
+  try {
+    const { $api } = useNuxtApp()
+    const api = $api as typeof $fetch
+    const raw = await api<Record<string, unknown>>('/users/me/bids')
+    const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
+      ? raw.data as Record<string, unknown>
+      : raw as Record<string, unknown>
+    bids.value = (Array.isArray(data.items) ? data.items : []) as BidEntry[]
+  } catch {
+    bids.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+useHead({
+  title: t('bids.pageTitle'),
+})
+</script>

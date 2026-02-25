@@ -287,7 +287,7 @@ function statusLabel(status: string): string {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-EU', {
+  return new Intl.NumberFormat('en-IE', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,
@@ -300,8 +300,12 @@ async function fetchPurchases() {
   try {
     const { $api } = useNuxtApp()
     const api = $api as typeof $fetch
-    const result = await api<{ items: CartLot[] }>('/users/me/purchases')
-    purchases.value = result.items
+    const raw = await api<Record<string, unknown>>('/users/me/purchases')
+    // Unwrap ApiResponse wrapper if present
+    const data = (raw && typeof raw === 'object' && 'data' in raw && raw.data && typeof raw.data === 'object')
+      ? raw.data as Record<string, unknown>
+      : raw
+    purchases.value = (Array.isArray(data.items) ? data.items : []) as CartLot[]
   } catch {
     purchases.value = []
   } finally {

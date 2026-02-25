@@ -64,6 +64,10 @@ data class NatsConfig(
 
         val connection = Nats.connect(options)
         logger.info("NATS connection established (status={})", connection.status)
+
+        // Initialize JetStream streams so publishers and consumers can work immediately
+        NatsStreamInitializer.initializeStreams(connection)
+
         return connection
     }
 }

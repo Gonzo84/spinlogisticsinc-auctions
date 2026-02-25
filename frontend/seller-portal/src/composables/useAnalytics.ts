@@ -46,6 +46,13 @@ export interface AnalyticsOverview {
   currency: string
 }
 
+/**
+ * Seller-service has a single analytics endpoint: GET /sellers/me/analytics
+ * returning: { totalLots, totalSold, sellThroughRate, averageHammerPrice,
+ *              totalRevenue, totalCommissionPaid, topCategories[], monthlyRevenue[] }
+ *
+ * We map this single response to the various refs that the UI views expect.
+ */
 export function useAnalytics() {
   const { get, loading, error } = useApi()
 
@@ -56,59 +63,85 @@ export function useAnalytics() {
   const monthlyRevenue = ref<MonthlyRevenue[]>([])
   const buyerDemographics = ref<BuyerDemographic[]>([])
 
-  async function fetchOverview(): Promise<void> {
+  async function fetchAnalytics(): Promise<void> {
     try {
-      overview.value = await get<AnalyticsOverview>('/sellers/me/analytics/overview')
-      sellThrough.value = overview.value.sellThrough
+      const raw = await get<any>('/sellers/me/analytics')
+      // Unwrap ApiResponse wrapper if present
+      const data = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+
+      // Map to overview
+      const totalLots = data.totalLots ?? 0
+      const totalSold = data.totalSold ?? 0
+      const sellThroughRate = data.sellThroughRate ?? 0
+      const avgHammerPrice = data.averageHammerPrice ?? 0
+      const totalRev = data.totalRevenue ?? 0
+
+      overview.value = {
+        sellThrough: {
+          totalListed: totalLots,
+          totalSold: totalSold,
+          rate: sellThroughRate,
+        },
+        totalRevenue: totalRev,
+        averageHammerPrice: avgHammerPrice,
+        totalBids: 0, // Not available from seller-service analytics
+        averageBidsPerLot: 0,
+        currency: 'EUR',
+      }
+
+      sellThrough.value = {
+        totalListed: totalLots,
+        totalSold: totalSold,
+        rate: sellThroughRate,
+      }
+
+      // Map topCategories to categoryPerformance
+      const cats = data.topCategories ?? []
+      categoryPerformance.value = cats.map((c: any) => ({
+        category: c.category ?? 'Unknown',
+        lotsListed: c.lotCount ?? 0,
+        lotsSold: c.lotCount ?? 0,
+        revenue: c.revenue ?? 0,
+        sellThroughRate: 100,
+        averagePrice: c.lotCount > 0 ? (c.revenue ?? 0) / c.lotCount : 0,
+      }))
+
+      // Map monthlyRevenue
+      const months = data.monthlyRevenue ?? []
+      monthlyRevenue.value = months.map((m: any) => ({
+        month: m.month ?? '',
+        revenue: m.revenue ?? 0,
+        lotsSold: m.lotsSold ?? 0,
+      }))
     } catch {
+      // Analytics endpoint is optional – clear error and show zeros
       error.value = null
     }
+  }
+
+  // Individual fetch functions all delegate to the single endpoint
+  async function fetchOverview(): Promise<void> {
+    if (!overview.value) await fetchAnalytics()
   }
 
   async function fetchPriceVsEstimate(): Promise<void> {
-    try {
-      priceVsEstimate.value = await get<PriceVsEstimate[]>('/sellers/me/analytics/price-vs-estimate')
-    } catch {
-      error.value = null
-    }
+    // Not available from seller-service – keep empty
   }
 
   async function fetchCategoryPerformance(): Promise<void> {
-    try {
-      categoryPerformance.value = await get<CategoryPerformance[]>(
-        '/sellers/me/analytics/category-performance',
-      )
-    } catch {
-      error.value = null
-    }
+    if (categoryPerformance.value.length === 0) await fetchAnalytics()
   }
 
-  async function fetchMonthlyRevenue(months: number = 12): Promise<void> {
-    try {
-      monthlyRevenue.value = await get<MonthlyRevenue[]>('/sellers/me/analytics/monthly-revenue', {
-        months,
-      })
-    } catch {
-      error.value = null
-    }
+  async function fetchMonthlyRevenue(_months: number = 12): Promise<void> {
+    if (monthlyRevenue.value.length === 0) await fetchAnalytics()
   }
 
   async function fetchBuyerDemographics(): Promise<void> {
-    try {
-      buyerDemographics.value = await get<BuyerDemographic[]>('/sellers/me/analytics/buyer-demographics')
-    } catch {
-      error.value = null
-    }
+    // Not available from seller-service – keep empty
   }
 
   async function fetchAll(): Promise<void> {
-    await Promise.all([
-      fetchOverview(),
-      fetchPriceVsEstimate(),
-      fetchCategoryPerformance(),
-      fetchMonthlyRevenue(),
-      fetchBuyerDemographics(),
-    ])
+    await fetchAnalytics()
   }
 
   return {

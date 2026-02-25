@@ -27,25 +27,34 @@ export function useWebSocket() {
   let heartbeatInterval: ReturnType<typeof setInterval> | null = null
   let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
   let reconnectAttempts = 0
-  const maxReconnectAttempts = 3
-  const baseReconnectDelay = 2000
+  const maxReconnectAttempts = 1
+  const baseReconnectDelay = 5000
 
   const isConnected = ref(false)
   const isReconnecting = ref(false)
 
   const eventHandlers = new Map<WebSocketEvent, Set<EventHandler>>()
 
-  function getWebSocketUrl(): string {
+  let currentAuctionId: string | null = null
+
+  function getWebSocketUrl(auctionId?: string): string {
     const base = config.public.wsBaseUrl
     const token = authStore.token
-    return token ? `${base}?token=${token}` : base
+    // Backend expects /ws/auctions/{auctionId} path, not a generic /ws
+    const path = auctionId ? `${base}/auctions/${auctionId}` : base
+    return token ? `${path}?token=${token}` : path
   }
 
-  function connect() {
+  function connect(auctionId?: string) {
     if (socket?.readyState === WebSocket.OPEN) return
+    if (!authStore.token) return
+    if (auctionId) currentAuctionId = auctionId
+    // Backend requires auctionId in the WebSocket path — skip if none provided
+    const effectiveAuctionId = auctionId || currentAuctionId
+    if (!effectiveAuctionId) return
 
     try {
-      socket = new WebSocket(getWebSocketUrl())
+      socket = new WebSocket(getWebSocketUrl(effectiveAuctionId))
 
       socket.onopen = () => {
         isConnected.value = true
@@ -65,7 +74,7 @@ export function useWebSocket() {
             handlers.forEach((handler) => handler(message.data))
           }
         } catch {
-          console.error('Failed to parse WebSocket message')
+          // Silently ignore malformed messages
         }
       }
 
@@ -79,11 +88,10 @@ export function useWebSocket() {
       }
 
       socket.onerror = () => {
-        console.error('WebSocket error')
+        // Silently handle - onclose will fire and handle reconnect
       }
     } catch {
-      console.error('Failed to create WebSocket connection')
-      scheduleReconnect()
+      // WebSocket endpoint not available - fail silently
     }
   }
 

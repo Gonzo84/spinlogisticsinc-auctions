@@ -16,7 +16,7 @@ p, buyer_pending_kyc, /ws/**, GET, allow
 p, seller_verified, /api/v1/**, GET, allow
 p, seller_verified, /api/v1/lots, POST, allow
 p, seller_verified, /api/v1/lots/*, PUT|DELETE, allow
-p, seller_verified, /api/v1/lots/*/submit, POST, allow
+p, seller_verified, /api/v1/lots/*/submit, POST|PUT, allow
 p, seller_verified, /api/v1/sellers/**, GET|POST, allow
 p, seller_verified, /api/v1/payments/**, GET, allow
 p, seller_verified, /api/v1/media/**, GET|POST|PUT|DELETE, allow
@@ -33,7 +33,7 @@ p, broker, /api/v1/**, GET, allow
 p, broker, /api/v1/brokers/**, GET|POST, allow
 p, broker, /api/v1/lots, POST, allow
 p, broker, /api/v1/lots/*, PUT, allow
-p, broker, /api/v1/lots/*/submit, POST, allow
+p, broker, /api/v1/lots/*/submit, POST|PUT, allow
 p, broker, /api/v1/media/**, GET|POST|PUT|DELETE, allow
 p, broker, /api/v1/notifications/**, GET|PUT|POST|DELETE, allow
 p, broker, /api/v1/users/me, GET|PUT, allow
