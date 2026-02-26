@@ -288,6 +288,27 @@ class LotResource {
     fun approveLotPut(@PathParam("id") id: UUID): Response = approveLot(id)
 
     /**
+     * Assigns an approved lot to an auction, transitioning it to ACTIVE.
+     *
+     * **POST /api/v1/lots/{id}/assign-auction**
+     *
+     * @param id      The lot identifier.
+     * @param request The auction assignment payload.
+     * @return 200 OK with the updated lot.
+     */
+    @POST
+    @Path("/{id}/assign-auction")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun assignToAuction(
+        @PathParam("id") id: UUID,
+        request: AssignToAuctionRequest
+    ): Response {
+        val lot = lotService.assignToAuction(id, request.auctionId)
+
+        return Response.ok(ApiResponse.ok(lot.toResponse())).build()
+    }
+
+    /**
      * Withdraws a lot by admin (no ownership check).
      *
      * **POST /api/v1/lots/{id}/admin-withdraw**

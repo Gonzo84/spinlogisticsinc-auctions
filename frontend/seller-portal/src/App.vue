@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import ConfirmDialog from 'primevue/confirmdialog'
 import SidebarNav from '@/components/layout/SidebarNav.vue'
 import TopBar from '@/components/layout/TopBar.vue'
 
@@ -21,6 +22,7 @@ function closeMobileSidebar() {
 
 <template>
   <div class="flex h-screen overflow-hidden bg-gray-50">
+    <ConfirmDialog />
     <!-- Mobile sidebar overlay -->
     <div
       v-if="mobileSidebarOpen"

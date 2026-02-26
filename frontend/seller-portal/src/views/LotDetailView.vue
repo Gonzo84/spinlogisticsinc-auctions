@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useConfirm } from 'primevue/useconfirm'
 import { useLots, type Lot, type LotBid } from '@/composables/useLots'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 
 const route = useRoute()
 const router = useRouter()
+const confirm = useConfirm()
 const { currentLot, lotBids, loading, error, fetchLot, fetchLotBids, submitForReview, deleteLot } = useLots()
 
 const lotId = computed(() => route.params.id as string)
@@ -73,18 +75,33 @@ const bidChartData = computed(() => {
   return lotBids.value.slice(-20).map((b) => b.amount)
 })
 
-async function handleSubmitForReview() {
-  if (lot.value && confirm('Submit this lot for review?')) {
-    await submitForReview(lot.value.id)
-    await fetchLot(lotId.value)
-  }
+function handleSubmitForReview() {
+  if (!lot.value) return
+  confirm.require({
+    message: 'Submit this lot for review?',
+    header: 'Confirm Submission',
+    acceptLabel: 'Submit',
+    rejectLabel: 'Cancel',
+    accept: async () => {
+      await submitForReview(lot.value!.id)
+      await fetchLot(lotId.value)
+    },
+  })
 }
 
-async function handleDelete() {
-  if (lot.value && confirm(`Delete "${lot.value.title}"? This cannot be undone.`)) {
-    await deleteLot(lot.value.id)
-    router.push({ name: 'lots' })
-  }
+function handleDelete() {
+  if (!lot.value) return
+  confirm.require({
+    message: `Delete "${lot.value.title}"? This cannot be undone.`,
+    header: 'Confirm Delete',
+    acceptClass: 'p-button-danger',
+    acceptLabel: 'Delete',
+    rejectLabel: 'Cancel',
+    accept: async () => {
+      await deleteLot(lot.value!.id)
+      router.push({ name: 'lots' })
+    },
+  })
 }
 
 function selectImage(index: number) {

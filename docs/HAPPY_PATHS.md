@@ -70,10 +70,10 @@ Verified happy path flows for every platform role, tested end-to-end via browser
 
 ### 1.5 Place a Bid
 
-1. On a lot detail page, enter a bid amount in the bid panel
+1. On a lot detail page for an ACTIVE lot (with an auction assigned), enter a bid amount in the bid panel
 2. Click "Place Bid"
 3. **Verify:** Bid confirmation shown
-4. **Note:** Bid placement currently fails at the auction-engine level due to Jackson deserialization issue with event sourcing (known issue). The frontend flow up to the API call is functional.
+4. **Prerequisite:** An auction must have been created for the lot via Admin Dashboard (step 3.3b)
 
 ### 1.6 Navigation Pages
 
@@ -219,10 +219,23 @@ Verified happy path flows for every platform role, tested end-to-end via browser
 6. **Verify:** Lot removed from pending queue
 7. **Verify:** Lot status changes to "APPROVED" in catalog-service
 
+### 3.3b Create Auction for Approved Lot
+
+1. Navigate to "Auctions" in sidebar
+2. Click "Create Auction" button
+3. **Verify:** Lot selector dropdown shows approved lots
+4. Select an approved lot from the dropdown
+5. **Verify:** Lot details displayed (title, brand, starting bid, location)
+6. Set start time to now (or near-future)
+7. Set end time to 1 hour from now
+8. Click "Create Auction"
+9. **Verify:** Success — redirected to auctions list
+10. **Verify:** Via API: `GET /api/v1/lots/{id}` shows `status: ACTIVE` and `auctionId` set
+
 ### 3.4 Auction Management
 
 1. Navigate to "Auctions" in sidebar
-2. **Verify:** Page loads with list of auctions (may be empty)
+2. **Verify:** Page loads with list of auctions (including the one just created)
 3. **Verify:** Table columns: Title/ID, Status, Start Date, End Date, Lot Count, Total Bids
 4. **Verify:** Filter controls for status, brand, date range
 5. **Verify:** "Create Auction" button available
@@ -342,20 +355,16 @@ Seller submits for review (PENDING_REVIEW)
     ↓
 Admin approves lot (APPROVED)
     ↓
-Lot assigned to auction (ACTIVE) ← requires auction creation
+Admin creates auction + assigns lot (ACTIVE) — step 3.3b
     ↓
-Buyer places bids ← currently blocked by event sourcing bug
+Buyer places bids — step 1.5
     ↓
 Auction closes → highest bidder wins (SOLD)
     ↓
 Payment processed → Seller receives settlement
 ```
 
-**Tested and verified steps:** Seller create → Seller submit → Admin approve
-
-**Known blockers for remaining steps:**
-- Auction event sourcing: Jackson cannot deserialize abstract `DomainEvent` type (bid placement fails at auction-engine)
-- NATS JetStream streams not auto-created (some cross-service event consumers fail)
+**Tested and verified steps:** Seller create → Seller submit → Admin approve → Admin create auction → Buyer places bid
 
 ---
 
@@ -363,8 +372,6 @@ Payment processed → Seller receives settlement
 
 | Issue | Impact | Status |
 |-------|--------|--------|
-| Event sourcing deserialization | Bids cannot be placed | Open |
-| NATS JetStream streams not auto-created | Cross-service events may fail | Open |
 | Casbin filter disabled | Authorization policies use incompatible patterns | Open |
 | User-service has no list endpoint | Admin can't list all users | Open |
 | Broker frontend missing | Broker must use API directly | Open |

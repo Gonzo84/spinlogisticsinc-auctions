@@ -18,13 +18,13 @@ export interface Auction {
 }
 
 export interface AuctionCreatePayload {
-  title: string
+  lotId: string
   brand: string
-  description: string
-  country: string
-  buyerPremiumPercent: number
-  startDate: string
-  endDate: string
+  startTime: string
+  endTime: string
+  startingBid: number
+  currency: string
+  sellerId: string
 }
 
 export interface AuctionLot {
@@ -133,7 +133,38 @@ export function useAuctions() {
     loading.value = true
     error.value = null
     try {
-      const auction = await post<Auction>('/auctions', payload)
+      const raw = await post<any>('/auctions', payload)
+      // Extract auction ID from response (may be wrapped in ApiResponse)
+      const auctionData = raw?.data ?? raw
+      const auctionId = auctionData?.auctionId ?? auctionData?.id ?? ''
+
+      const auction: Auction = {
+        id: auctionId,
+        title: `Auction ${String(auctionId).substring(0, 8)}`,
+        brand: auctionData?.brand ?? payload.brand,
+        description: '',
+        country: '',
+        buyerPremiumPercent: 0,
+        startDate: auctionData?.startTime ?? payload.startTime,
+        endDate: auctionData?.endTime ?? payload.endTime,
+        status: (auctionData?.status ?? 'scheduled').toLowerCase(),
+        lotCount: 1,
+        totalBids: 0,
+        createdAt: auctionData?.createdAt ?? '',
+        updatedAt: auctionData?.updatedAt ?? '',
+      }
+
+      // Assign the lot to this auction in catalog-service (transitions lot to ACTIVE).
+      // This is a separate step — if it fails, the auction was still created successfully.
+      if (auctionId && payload.lotId) {
+        try {
+          await post(`/lots/${payload.lotId}/assign-auction`, { auctionId })
+        } catch (assignErr: any) {
+          error.value = 'Auction created but lot assignment failed. Assign the lot manually.'
+          return auction
+        }
+      }
+
       return auction
     } catch (err: any) {
       error.value = err.response?.data?.message ?? 'Failed to create auction'

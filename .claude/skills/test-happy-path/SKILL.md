@@ -2,7 +2,7 @@
 name: test-happy-path
 description: Run happy path tests for a given role (buyer/seller/admin/broker/all) using Chrome DevTools MCP, following HAPPY_PATHS.md
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Happy Path Testing Skill
@@ -50,7 +50,7 @@ If a required service is **not running** after `/run-full-stack`, report it and 
 
 Create the screenshots output directory:
 ```bash
-mkdir -p docs/test-screenshots
+mkdir -p tests/test-screenshots
 ```
 
 ---
@@ -75,8 +75,8 @@ For **each step** in the happy path:
    - Take a page snapshot via `take_snapshot` — check for expected elements
    - Check console for errors via `list_console_messages` (filter types: `["error", "warn"]`)
    - Check network for failed requests via `list_network_requests` — look for 4xx/5xx status codes
-   - Take a screenshot via `take_screenshot` and save to: `docs/test-screenshots/<role>-<step>-<short-name>.png`
-     - Example: `docs/test-screenshots/buyer-1.1-landing-page.png`
+   - Take a screenshot via `take_screenshot` and save to: `tests/test-screenshots/<role>-<step>-<short-name>.png`
+     - Example: `tests/test-screenshots/buyer-1.1-landing-page.png`
 
 3. **Record the result** for each step: **PASS**, **FAIL**, **PARTIAL**, or **SKIP**
    - **PASS**: All verify checkpoints met, no console errors, no network failures
@@ -96,7 +96,7 @@ Follow HAPPY_PATHS.md Section 1, steps 1.1 through 1.7:
 | 1.2 | Authentication | Click Login → Keycloak → enter credentials → verify redirect back, navbar shows user menu |
 | 1.3 | Browse & Search | Use search bar → verify results page, lot cards, filters |
 | 1.4 | View Lot Detail | Click a lot card → verify detail page fields, bid panel |
-| 1.5 | Place a Bid | Enter bid amount, click Place Bid → verify confirmation (may fail due to auction-engine) |
+| 1.5 | Place a Bid | Enter bid amount on an ACTIVE lot, click Place Bid → verify confirmation |
 | 1.6 | Navigation Pages | Visit My Bids, Watchlist, Profile from user menu |
 | 1.7 | Logout | Click avatar → Logout → verify redirect, Login button reappears |
 
@@ -131,7 +131,8 @@ Follow HAPPY_PATHS.md Section 3, steps 3.1 through 3.10:
 | 3.1 | Authentication | Navigate to localhost:5175 → Keycloak login → verify dashboard |
 | 3.2 | Dashboard Overview | Verify sidebar navigation links |
 | 3.3 | Lot Approval | Navigate to Lot Approval → approve a pending lot → verify status change |
-| 3.4 | Auction Management | Navigate to Auctions → verify table, filters, Create Auction button |
+| 3.3b | Create Auction | Navigate to Auctions → Create Auction → select approved lot → set times → submit → verify lot becomes ACTIVE |
+| 3.4 | Auction Management | Navigate to Auctions → verify table with created auction, filters, Create Auction button |
 | 3.5 | User Management | Navigate to Users → verify page loads |
 | 3.6 | Payment Management | Navigate to Payments → verify page loads |
 | 3.7 | Fraud Detection | Navigate to Fraud Detection → verify table and filters |
@@ -170,7 +171,7 @@ Verify HTTP status codes and response shapes match HAPPY_PATHS.md expectations.
 
 ## Step 5: Compile Bug Report
 
-For **each failure or partial pass**, create a bug entry with the following format (matching existing reports in `docs/`):
+For **each failure or partial pass**, create a bug entry with the following format (matching existing reports in `tests/`):
 
 ### Bug Entry Template
 
@@ -197,7 +198,7 @@ For **each failure or partial pass**, create a bug entry with the following form
 
 ## Step 6: Write the Report
 
-Write the report to: `docs/<role>-happy-path-report-<YYYY-MM-DD>.md`
+Write the report to: `tests/<role>-happy-path-report-<YYYY-MM-DD>.md`
 
 Use today's date. For `all` mode, write one report per role.
 
@@ -272,7 +273,7 @@ Use today's date. For `all` mode, write one report per role.
 
 ## Screenshots
 
-All test screenshots saved to: `docs/test-screenshots/`
+All test screenshots saved to: `tests/test-screenshots/`
 
 | File | Description |
 |------|-------------|

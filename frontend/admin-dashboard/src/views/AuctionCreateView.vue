@@ -1,52 +1,120 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuctions, type AuctionCreatePayload } from '@/composables/useAuctions'
+import { useApi } from '@/composables/useApi'
 
 const router = useRouter()
 const { createAuction, loading, error } = useAuctions()
+const { get } = useApi()
 
-const form = reactive<AuctionCreatePayload>({
-  title: '',
-  brand: '',
-  description: '',
-  country: '',
-  buyerPremiumPercent: 15,
-  startDate: '',
-  endDate: '',
+interface ApprovedLot {
+  id: string
+  title: string
+  brand: string
+  sellerId: string
+  startingBid: number
+  locationCountry: string
+  locationCity: string
+}
+
+const approvedLots = ref<ApprovedLot[]>([])
+const lotsLoading = ref(false)
+const selectedLotId = ref('')
+const selectedLot = ref<ApprovedLot | null>(null)
+
+const PLATFORM_BRANDS = [
+  { code: 'troostwijk', label: 'Troostwijk' },
+  { code: 'surplex', label: 'Surplex' },
+  { code: 'industrial-auctions', label: 'Industrial Auctions' },
+  { code: 'custom', label: 'Custom' },
+]
+
+const form = reactive({
+  startTime: '',
+  endTime: '',
+  currency: 'EUR',
+  brand: 'troostwijk',
 })
 
 const errors = ref<Record<string, string>>({})
 
-const countries = [
-  'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic',
-  'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece',
-  'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
-  'Malta', 'Netherlands', 'Poland', 'Portugal', 'Romania', 'Slovakia',
-  'Slovenia', 'Spain', 'Sweden',
-]
+onMounted(async () => {
+  await fetchApprovedLots()
+})
+
+async function fetchApprovedLots() {
+  lotsLoading.value = true
+  try {
+    const raw = await get<any>('/lots', { params: { status: 'APPROVED', pageSize: 100 } })
+    const data = raw?.data ?? raw
+    const items = data?.items ?? []
+    approvedLots.value = items.map((lot: any) => ({
+      id: lot.id ?? '',
+      title: lot.title ?? '',
+      brand: lot.brand ?? '',
+      sellerId: lot.sellerId ?? '',
+      startingBid: lot.startingBid ?? 1,
+      locationCountry: lot.locationCountry ?? '',
+      locationCity: lot.locationCity ?? '',
+    }))
+  } catch {
+    approvedLots.value = []
+  } finally {
+    lotsLoading.value = false
+  }
+}
+
+async function onLotSelected() {
+  const summary = approvedLots.value.find(l => l.id === selectedLotId.value)
+  if (!summary) {
+    selectedLot.value = null
+    return
+  }
+  // Fetch full lot detail to get sellerId (not included in summary response)
+  try {
+    const raw = await get<any>(`/lots/${summary.id}`)
+    const lot = raw?.data ?? raw
+    selectedLot.value = {
+      id: lot.id ?? summary.id,
+      title: lot.title ?? summary.title,
+      brand: lot.brand ?? summary.brand,
+      sellerId: lot.sellerId ?? '',
+      startingBid: lot.startingBid ?? summary.startingBid,
+      locationCountry: lot.locationCountry ?? summary.locationCountry,
+      locationCity: lot.locationCity ?? summary.locationCity,
+    }
+  } catch {
+    // Fallback to summary data if detail fetch fails
+    selectedLot.value = { ...summary }
+  }
+}
 
 function validate(): boolean {
   errors.value = {}
-  if (!form.title.trim()) errors.value.title = 'Title is required'
-  if (!form.brand.trim()) errors.value.brand = 'Brand is required'
-  if (!form.description.trim()) errors.value.description = 'Description is required'
-  if (!form.country) errors.value.country = 'Country is required'
-  if (form.buyerPremiumPercent < 0 || form.buyerPremiumPercent > 30) {
-    errors.value.buyerPremiumPercent = 'Buyer premium must be between 0% and 30%'
-  }
-  if (!form.startDate) errors.value.startDate = 'Start date is required'
-  if (!form.endDate) errors.value.endDate = 'End date is required'
-  if (form.startDate && form.endDate && new Date(form.startDate) >= new Date(form.endDate)) {
-    errors.value.endDate = 'End date must be after start date'
+  if (!selectedLotId.value) errors.value.lot = 'Please select an approved lot'
+  if (!form.startTime) errors.value.startTime = 'Start time is required'
+  if (!form.endTime) errors.value.endTime = 'End time is required'
+  if (form.startTime && form.endTime && new Date(form.startTime) >= new Date(form.endTime)) {
+    errors.value.endTime = 'End time must be after start time'
   }
   return Object.keys(errors.value).length === 0
 }
 
 async function handleSubmit() {
-  if (!validate()) return
+  if (!validate() || !selectedLot.value) return
 
-  const auction = await createAuction(form)
+  const payload: AuctionCreatePayload = {
+    lotId: selectedLot.value.id,
+    brand: form.brand,
+    startTime: new Date(form.startTime).toISOString(),
+    endTime: new Date(form.endTime).toISOString(),
+    startingBid: selectedLot.value.startingBid,
+    currency: form.currency,
+    sellerId: selectedLot.value.sellerId,
+  }
+
+  const auction = await createAuction(payload)
   if (auction) {
     router.push({ name: 'auctions' })
   }
@@ -104,28 +172,128 @@ function handleCancel() {
       >
         <div class="card">
           <h2 class="section-title">
-            Auction Details
+            Select Approved Lot
           </h2>
           <div class="space-y-4">
             <div>
               <label
                 class="label"
-                for="title"
-              >Auction Title *</label>
-              <input
-                id="title"
-                v-model="form.title"
-                type="text"
-                class="input"
-                :class="errors.title && 'border-red-300'"
-                placeholder="e.g., Industrial Equipment Auction - March 2026"
+                for="lot"
+              >Approved Lot *</label>
+              <select
+                id="lot"
+                v-model="selectedLotId"
+                class="select"
+                :class="errors.lot && 'border-red-300'"
+                @change="onLotSelected"
               >
+                <option value="">
+                  {{ lotsLoading ? 'Loading lots...' : 'Select an approved lot' }}
+                </option>
+                <option
+                  v-for="lot in approvedLots"
+                  :key="lot.id"
+                  :value="lot.id"
+                >
+                  {{ lot.title }} ({{ lot.brand }} - {{ lot.locationCity }}, {{ lot.locationCountry }})
+                </option>
+              </select>
               <p
-                v-if="errors.title"
+                v-if="errors.lot"
                 class="mt-1 text-sm text-red-600"
               >
-                {{ errors.title }}
+                {{ errors.lot }}
               </p>
+              <p
+                v-if="approvedLots.length === 0 && !lotsLoading"
+                class="mt-1 text-sm text-yellow-600"
+              >
+                No approved lots available. Approve a lot first in Lot Approval.
+              </p>
+            </div>
+
+            <!-- Lot info display when selected -->
+            <div
+              v-if="selectedLot"
+              class="rounded-lg border border-gray-200 bg-gray-50 p-4"
+            >
+              <h3 class="text-sm font-medium text-gray-700">
+                Lot Details
+              </h3>
+              <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <dt class="text-gray-500">
+                  Title
+                </dt>
+                <dd class="text-gray-900">
+                  {{ selectedLot.title }}
+                </dd>
+                <dt class="text-gray-500">
+                  Brand
+                </dt>
+                <dd class="text-gray-900">
+                  {{ selectedLot.brand }}
+                </dd>
+                <dt class="text-gray-500">
+                  Starting Bid
+                </dt>
+                <dd class="text-gray-900">
+                  EUR {{ selectedLot.startingBid }}
+                </dd>
+                <dt class="text-gray-500">
+                  Location
+                </dt>
+                <dd class="text-gray-900">
+                  {{ selectedLot.locationCity }}, {{ selectedLot.locationCountry }}
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">
+            Auction Schedule
+          </h2>
+          <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  class="label"
+                  for="startTime"
+                >Start Date & Time *</label>
+                <input
+                  id="startTime"
+                  v-model="form.startTime"
+                  type="datetime-local"
+                  class="input"
+                  :class="errors.startTime && 'border-red-300'"
+                >
+                <p
+                  v-if="errors.startTime"
+                  class="mt-1 text-sm text-red-600"
+                >
+                  {{ errors.startTime }}
+                </p>
+              </div>
+              <div>
+                <label
+                  class="label"
+                  for="endTime"
+                >End Date & Time *</label>
+                <input
+                  id="endTime"
+                  v-model="form.endTime"
+                  type="datetime-local"
+                  class="input"
+                  :class="errors.endTime && 'border-red-300'"
+                >
+                <p
+                  v-if="errors.endTime"
+                  class="mt-1 text-sm text-red-600"
+                >
+                  {{ errors.endTime }}
+                </p>
+              </div>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -133,148 +301,41 @@ function handleCancel() {
                 <label
                   class="label"
                   for="brand"
-                >Brand / Organizer *</label>
-                <input
+                >Platform Brand *</label>
+                <select
                   id="brand"
                   v-model="form.brand"
-                  type="text"
-                  class="input"
-                  :class="errors.brand && 'border-red-300'"
-                  placeholder="e.g., TradEx"
-                >
-                <p
-                  v-if="errors.brand"
-                  class="mt-1 text-sm text-red-600"
-                >
-                  {{ errors.brand }}
-                </p>
-              </div>
-              <div>
-                <label
-                  class="label"
-                  for="country"
-                >Country *</label>
-                <select
-                  id="country"
-                  v-model="form.country"
                   class="select"
-                  :class="errors.country && 'border-red-300'"
                 >
-                  <option value="">
-                    Select country
-                  </option>
                   <option
-                    v-for="c in countries"
-                    :key="c"
-                    :value="c"
+                    v-for="b in PLATFORM_BRANDS"
+                    :key="b.code"
+                    :value="b.code"
                   >
-                    {{ c }}
+                    {{ b.label }}
                   </option>
                 </select>
-                <p
-                  v-if="errors.country"
-                  class="mt-1 text-sm text-red-600"
-                >
-                  {{ errors.country }}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <label
-                class="label"
-                for="description"
-              >Description *</label>
-              <textarea
-                id="description"
-                v-model="form.description"
-                rows="4"
-                class="input resize-y"
-                :class="errors.description && 'border-red-300'"
-                placeholder="Description of the auction..."
-              />
-              <p
-                v-if="errors.description"
-                class="mt-1 text-sm text-red-600"
-              >
-                {{ errors.description }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2 class="section-title">
-            Schedule & Pricing
-          </h2>
-          <div class="space-y-4">
-            <div>
-              <label
-                class="label"
-                for="premium"
-              >Buyer Premium (%)</label>
-              <input
-                id="premium"
-                v-model.number="form.buyerPremiumPercent"
-                type="number"
-                min="0"
-                max="30"
-                step="0.5"
-                class="input w-32"
-                :class="errors.buyerPremiumPercent && 'border-red-300'"
-              >
-              <p
-                v-if="errors.buyerPremiumPercent"
-                class="mt-1 text-sm text-red-600"
-              >
-                {{ errors.buyerPremiumPercent }}
-              </p>
-              <p
-                v-else
-                class="mt-1 text-xs text-gray-400"
-              >
-                Commission charged to buyers on top of the hammer price.
-              </p>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label
-                  class="label"
-                  for="startDate"
-                >Start Date & Time *</label>
-                <input
-                  id="startDate"
-                  v-model="form.startDate"
-                  type="datetime-local"
-                  class="input"
-                  :class="errors.startDate && 'border-red-300'"
-                >
-                <p
-                  v-if="errors.startDate"
-                  class="mt-1 text-sm text-red-600"
-                >
-                  {{ errors.startDate }}
-                </p>
               </div>
               <div>
                 <label
                   class="label"
-                  for="endDate"
-                >End Date & Time *</label>
-                <input
-                  id="endDate"
-                  v-model="form.endDate"
-                  type="datetime-local"
-                  class="input"
-                  :class="errors.endDate && 'border-red-300'"
+                  for="currency"
+                >Currency</label>
+                <select
+                  id="currency"
+                  v-model="form.currency"
+                  class="select"
                 >
-                <p
-                  v-if="errors.endDate"
-                  class="mt-1 text-sm text-red-600"
-                >
-                  {{ errors.endDate }}
-                </p>
+                  <option value="EUR">
+                    EUR
+                  </option>
+                  <option value="USD">
+                    USD
+                  </option>
+                  <option value="GBP">
+                    GBP
+                  </option>
+                </select>
               </div>
             </div>
           </div>
@@ -291,7 +352,7 @@ function handleCancel() {
           <button
             type="submit"
             class="btn-primary"
-            :disabled="loading"
+            :disabled="loading || !selectedLotId"
           >
             <svg
               v-if="loading"

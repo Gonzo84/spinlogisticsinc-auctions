@@ -2,7 +2,7 @@
 name: kill-all
 description: Stop and remove all project-related services, stop frontend and kill testing browser
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Kill All — Stop Everything
@@ -28,16 +28,11 @@ echo "Docker containers stopped and removed (volumes deleted)"
 ```
 
 ### 2. Frontend dev servers
-Kill all Node/npm/nuxt/vite processes related to the three frontends (buyer-web, seller-portal, admin-dashboard):
+Kill all frontend dev server processes by port. Do NOT use `pkill -f` with path patterns — it matches the bash process itself and causes exit code 144.
 ```bash
-pkill -f "frontend/buyer-web" 2>/dev/null; \
-pkill -f "frontend/seller-portal" 2>/dev/null; \
-pkill -f "frontend/admin-dashboard" 2>/dev/null; \
-pkill -f "nuxi" 2>/dev/null; \
-# Kill any node process running on frontend dev ports (3000, 5174, 5175)
 for port in 3000 3001 3002 5174 5175 5176 5177; do
   pid=$(lsof -ti :$port 2>/dev/null)
-  [ -n "$pid" ] && kill -9 $pid 2>/dev/null
+  if [ -n "$pid" ]; then kill -9 $pid 2>/dev/null && echo "Killed PID $pid on port $port"; fi
 done; \
 echo "Frontend dev servers killed"
 ```

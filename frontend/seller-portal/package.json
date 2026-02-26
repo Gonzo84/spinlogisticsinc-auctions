@@ -9,11 +9,13 @@
     "lint": "eslint . --ext .vue,.ts,.tsx"
   },
   "dependencies": {
+    "@primeuix/themes": "^2.0.3",
     "@vueuse/core": "^11.0.0",
     "axios": "^1.7.0",
     "chart.js": "^4.4.0",
     "keycloak-js": "^26.0.0",
     "pinia": "^2.2.0",
+    "primevue": "^4.5.4",
     "vue": "^3.5.0",
     "vue-chartjs": "^5.3.0",
     "vue-router": "^4.4.0"

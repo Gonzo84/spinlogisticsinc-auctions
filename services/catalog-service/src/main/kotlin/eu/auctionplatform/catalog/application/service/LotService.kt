@@ -271,6 +271,39 @@ class LotService {
     }
 
     /**
+     * Assigns an approved lot to an auction, transitioning it to ACTIVE status.
+     *
+     * @param lotId     The lot identifier.
+     * @param auctionId The auction event identifier.
+     * @return The updated [Lot] domain model.
+     * @throws NotFoundException if the lot does not exist.
+     * @throws ConflictException if the lot is not in APPROVED status.
+     */
+    @Transactional
+    fun assignToAuction(lotId: UUID, auctionId: UUID): Lot {
+        val entity = findLotEntityOrThrow(lotId)
+
+        if (entity.status != LotStatus.APPROVED) {
+            throw ConflictException(
+                code = "INVALID_LOT_STATUS",
+                message = "Lot '$lotId' must be in APPROVED status to assign to an auction (current: ${entity.status})."
+            )
+        }
+
+        entity.auctionId = auctionId
+        entity.status = LotStatus.ACTIVE
+        entity.updatedAt = Instant.now()
+        lotRepository.persist(entity)
+
+        LOG.infof("Lot assigned to auction: lotId=%s, auctionId=%s", lotId, auctionId)
+
+        val assignedLot = entity.toDomain()
+        publishLotEvent("status.changed", assignedLot)
+
+        return assignedLot
+    }
+
+    /**
      * Withdraws a lot from the catalog.
      *
      * The lot can be withdrawn from any non-terminal state. Once withdrawn,

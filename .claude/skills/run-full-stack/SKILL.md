@@ -2,7 +2,7 @@
 name: run-full-stack
 description: Start Docker infrastructure + backend services + all frontends
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Run Full Stack

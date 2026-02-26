@@ -1,5 +1,8 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import PrimeVue from 'primevue/config'
+import ConfirmationService from 'primevue/confirmationservice'
+import Aura from '@primeuix/themes/aura'
 import Keycloak from 'keycloak-js'
 import App from './App.vue'
 import router from './router'
@@ -28,5 +31,7 @@ setTimeout(() => {
 const app = createApp(App)
 app.provide('keycloak', keycloak)
 app.use(createPinia())
+app.use(PrimeVue, { theme: { preset: Aura } })
+app.use(ConfirmationService)
 app.use(router)
 app.mount('#app')
