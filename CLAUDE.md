@@ -32,8 +32,8 @@ npm run typecheck                                   # TypeScript check (Nuxt onl
 ### Infrastructure (Docker Compose)
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d      # Start all infra services
-docker compose -f docker-compose.dev.yml down -v     # Tear down with volumes
+docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env up -d   # Start all infra services
+docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env down -v  # Tear down with volumes
 ```
 
 ## Architecture Overview

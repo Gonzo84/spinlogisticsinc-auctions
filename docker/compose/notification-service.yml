@@ -7,7 +7,7 @@ services:
     build:
       context: ../../services/notification-service
       dockerfile: ../../infrastructure/docker/Dockerfile.service
-    container_name: notification-service
+    container_name: ${PROJECT_NAME}-notification-service
     environment:
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/auction_notifications
       QUARKUS_DATASOURCE_USERNAME: dev
@@ -21,11 +21,6 @@ services:
       QUARKUS_MAILER_MOCK: "false"
     ports:
       - "8085:8085"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8085/q/health/ready || exit 1"]
       interval: 15s
@@ -33,8 +28,8 @@ services:
       retries: 10
       start_period: 45s
     networks:
-      - auction-network
+      - platform-network
 
 networks:
-  auction-network:
-    name: auction-network
+  platform-network:
+    name: ${PROJECT_NAME}-network

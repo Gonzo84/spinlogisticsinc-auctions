@@ -1,0 +1,10 @@
+name: ${PROJECT_NAME}
+
+include:
+  - path: docker-compose-infrastructure.yaml
+  - path:
+      - docker-compose-services.yaml
+      - services-dependencies.yaml
+networks:
+  platform-network:
+    name: ${PROJECT_NAME}-network

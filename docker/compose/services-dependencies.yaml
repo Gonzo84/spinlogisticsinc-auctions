@@ -1,0 +1,109 @@
+# =============================================================================
+# Service Dependencies on Infrastructure
+# =============================================================================
+# This file is merged with docker-compose-services.yaml to add depends_on
+# when running the full stack. Kept separate so services can run standalone.
+# =============================================================================
+
+services:
+
+  auction-engine:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  catalog-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  user-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  payment-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  notification-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  media-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      minio:
+        condition: service_healthy
+
+  search-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+
+  seller-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  broker-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  compliance-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  co2-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  analytics-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  gateway-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+networks:
+  platform-network:
+    name: ${PROJECT_NAME}-network

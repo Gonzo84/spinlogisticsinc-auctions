@@ -6,7 +6,7 @@ services:
   # --- PostgreSQL -------------------------------------------------------------
   postgres:
     image: postgres:16
-    container_name: auction-postgres
+    container_name: ${PROJECT_NAME}-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: dev
@@ -16,19 +16,19 @@ services:
       - "5432:5432"
     volumes:
       - ../../infrastructure/docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dev -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - auction-network
+      - platform-network
 
   # --- NATS with JetStream ----------------------------------------------------
   nats:
     image: nats:2.10-alpine
-    container_name: auction-nats
+    container_name: ${PROJECT_NAME}-nats
     restart: unless-stopped
     command: >
       --jetstream
@@ -38,19 +38,19 @@ services:
       - "4222:4222"
       - "8222:8222"
     volumes:
-      - nats_data:/data
+      - nats-data:/data
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3
     networks:
-      - auction-network
+      - platform-network
 
   # --- Keycloak ---------------------------------------------------------------
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    container_name: auction-keycloak
+    container_name: ${PROJECT_NAME}-keycloak
     restart: unless-stopped
     command: start-dev --import-realm
     environment:
@@ -79,12 +79,12 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - auction-network
+      - platform-network
 
   # --- Redis ------------------------------------------------------------------
   redis:
     image: redis:7
-    container_name: auction-redis
+    container_name: ${PROJECT_NAME}-redis
     restart: unless-stopped
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
@@ -95,12 +95,12 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      - auction-network
+      - platform-network
 
   # --- MinIO (S3-compatible) --------------------------------------------------
   minio:
     image: minio/minio
-    container_name: auction-minio
+    container_name: ${PROJECT_NAME}-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -110,19 +110,19 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_data:/data
+      - minio-data:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 3
     networks:
-      - auction-network
+      - platform-network
 
   # --- MinIO bucket initialization --------------------------------------------
   minio-init:
     image: minio/mc
-    container_name: auction-minio-init
+    container_name: ${PROJECT_NAME}-minio-init
     depends_on:
       minio:
         condition: service_healthy
@@ -142,12 +142,12 @@ services:
       echo 'MinIO buckets created.';
       "
     networks:
-      - auction-network
+      - platform-network
 
   # --- Elasticsearch ----------------------------------------------------------
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-    container_name: auction-elasticsearch
+    container_name: ${PROJECT_NAME}-elasticsearch
     restart: unless-stopped
     environment:
       discovery.type: single-node
@@ -156,31 +156,31 @@ services:
     ports:
       - "9200:9200"
     volumes:
-      - es_data:/usr/share/elasticsearch/data
+      - es-data:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
     networks:
-      - auction-network
+      - platform-network
 
   # --- Prometheus -------------------------------------------------------------
   prometheus:
     image: prom/prometheus
-    container_name: auction-prometheus
+    container_name: ${PROJECT_NAME}-prometheus
     restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
       - ../../infrastructure/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
-      - auction-network
+      - platform-network
 
   # --- Grafana ----------------------------------------------------------------
   grafana:
     image: grafana/grafana:latest
-    container_name: auction-grafana
+    container_name: ${PROJECT_NAME}-grafana
     restart: unless-stopped
     ports:
       - "3333:3000"
@@ -189,14 +189,14 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - ../../infrastructure/config/grafana/provisioning:/etc/grafana/provisioning
-      - grafana_data:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
     networks:
-      - auction-network
+      - platform-network
 
   # --- OpenTelemetry Collector ------------------------------------------------
   otel-collector:
     image: otel/opentelemetry-collector-contrib
-    container_name: auction-otel-collector
+    container_name: ${PROJECT_NAME}-otel-collector
     restart: unless-stopped
     ports:
       - "4317:4317"
@@ -204,27 +204,27 @@ services:
     volumes:
       - ../../infrastructure/config/otel/collector-config.yml:/etc/otelcol-contrib/config.yaml
     networks:
-      - auction-network
+      - platform-network
 
   # --- MailHog (dev email testing) --------------------------------------------
   mailhog:
     image: mailhog/mailhog
-    container_name: auction-mailhog
+    container_name: ${PROJECT_NAME}-mailhog
     restart: unless-stopped
     ports:
       - "1025:1025"
       - "8025:8025"
     networks:
-      - auction-network
+      - platform-network
 
 volumes:
-  postgres_data:
-  nats_data:
-  minio_data:
-  es_data:
-  grafana_data:
+  postgres-data:
+  nats-data:
+  minio-data:
+  es-data:
+  grafana-data:
 
 networks:
-  auction-network:
-    name: auction-network
+  platform-network:
+    name: ${PROJECT_NAME}-network
     driver: bridge

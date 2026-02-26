@@ -97,8 +97,8 @@ eu-auction-platform/
 │   └── auction-platform/        # Helm chart with multi-env values
 ├── .github/
 │   └── workflows/ci.yml         # 7-stage CI/CD pipeline
-├── docker-compose.dev.yml       # Infrastructure-only (dev)
-├── docker-compose-full.yaml     # Full stack: infra + all 13 backend services
+├── docker/compose/docker-compose-infrastructure.yaml  # Infrastructure-only (dev)
+├── docker/compose/docker-compose-full.yaml            # Full stack: infra + all 13 services
 ├── start-platform.sh            # One-command: build + start everything
 ├── build.gradle.kts             # Root Gradle build
 ├── settings.gradle.kts          # Multi-project includes
@@ -129,7 +129,7 @@ This builds all JARs with Gradle, then starts 24 Docker containers (11 infrastru
 #### 1. Start Infrastructure Only
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env up -d
 ```
 
 This starts:
@@ -154,7 +154,7 @@ This starts:
 ./gradlew quarkusBuild -x test --parallel
 
 # Start everything in Docker
-docker compose -f docker-compose-full.yaml up -d --build
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d --build
 ```
 
 #### 3. Run a Single Backend Service (Dev Mode)
@@ -256,22 +256,18 @@ npm run typecheck    # TypeScript type checking
 ```bash
 # --- Full Stack (infrastructure + all 13 backends) ---
 ./start-platform.sh                                         # One-command build + start
-docker compose -f docker-compose-full.yaml up -d --build    # Start (builds images)
-docker compose -f docker-compose-full.yaml down             # Stop all
-docker compose -f docker-compose-full.yaml down -v          # Stop + wipe data
-docker compose -f docker-compose-full.yaml logs -f          # Follow all logs
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d --build    # Start (builds images)
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env down             # Stop all
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env down -v          # Stop + wipe data
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env logs -f          # Follow all logs
 
 # --- Infrastructure Only ---
-docker compose -f docker-compose.dev.yml up -d              # Start infra
-docker compose -f docker-compose.dev.yml down               # Stop infra
-
-# --- Individual Services (modular compose files) ---
-docker compose -f docker/compose/infrastructure.yml up -d   # Start infra only
-docker compose -f docker/compose/auction-engine.yml up -d   # Start single service
+docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env up -d   # Start infra
+docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env down    # Stop infra
 
 # --- Logs ---
-docker compose -f docker-compose-full.yaml logs -f auction-engine
-docker compose -f docker-compose-full.yaml logs -f gateway-service
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env logs -f auction-engine
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env logs -f gateway-service
 ```
 
 ### Modular Docker Compose Structure

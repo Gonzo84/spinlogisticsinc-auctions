@@ -1,0 +1,20 @@
+name: ${PROJECT_NAME}
+
+include:
+  - path: auction-engine.yml
+  - path: catalog-service.yml
+  - path: user-service.yml
+  - path: payment-service.yml
+  - path: notification-service.yml
+  - path: media-service.yml
+  - path: search-service.yml
+  - path: seller-service.yml
+  - path: broker-service.yml
+  - path: compliance-service.yml
+  - path: co2-service.yml
+  - path: analytics-service.yml
+  - path: gateway-service.yml
+
+networks:
+  platform-network:
+    name: ${PROJECT_NAME}-network

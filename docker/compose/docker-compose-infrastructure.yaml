@@ -1,0 +1,22 @@
+# =============================================================================
+# Infrastructure Only (for local development with quarkusDev)
+# =============================================================================
+#
+# Usage:
+#   docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env up -d
+#   docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env down -v
+#
+# Application services run via Gradle quarkusDev on the host.
+#
+# To run the full stack (infra + all 13 services) use:
+#   docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d
+# =============================================================================
+
+name: ${PROJECT_NAME}
+
+include:
+  - path: infrastructure.yml
+
+networks:
+  platform-network:
+    name: ${PROJECT_NAME}-network

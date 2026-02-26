@@ -19,16 +19,16 @@ echo "[1/3] Building all backend services..."
 # Step 2: Start infrastructure
 echo ""
 echo "[2/3] Starting infrastructure services..."
-docker compose -f docker-compose-full.yaml up -d postgres nats redis keycloak minio minio-init elasticsearch otel-collector prometheus grafana mailhog
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d postgres nats redis keycloak minio minio-init elasticsearch otel-collector prometheus grafana mailhog
 
 echo "    Waiting for infrastructure to be healthy..."
-docker compose -f docker-compose-full.yaml up -d --wait postgres nats redis minio elasticsearch 2>/dev/null || true
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d --wait postgres nats redis minio elasticsearch 2>/dev/null || true
 sleep 10
 
 # Step 3: Start all backend services
 echo ""
 echo "[3/3] Starting all backend services..."
-docker compose -f docker-compose-full.yaml up -d --build
+docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d --build
 
 echo ""
 echo "=========================================="
@@ -61,7 +61,7 @@ echo "   analytics-service       http://localhost:8090"
 echo "   compliance-service      http://localhost:8091"
 echo "   co2-service             http://localhost:8092"
 echo ""
-echo " Monitor logs:  docker compose -f docker-compose-full.yaml logs -f"
-echo " Stop all:      docker compose -f docker-compose-full.yaml down"
-echo " Stop + clean:  docker compose -f docker-compose-full.yaml down -v"
+echo " Monitor logs:  docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env logs -f"
+echo " Stop all:      docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env down"
+echo " Stop + clean:  docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env down -v"
 echo ""

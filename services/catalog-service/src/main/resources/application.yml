@@ -7,7 +7,7 @@ quarkus:
     name: catalog-service
 
   # ---------------------------------------------------------------------------
-  # Dev Services – disabled; infrastructure provided by docker-compose.dev.yml
+  # Dev Services – disabled; infrastructure provided by docker-compose-infrastructure.yaml
   # ---------------------------------------------------------------------------
   devservices:
     enabled: false

@@ -27,9 +27,11 @@ Store the list of roles to test. For each role, you will produce a separate repo
 
 ---
 
-## Step 2: Pre-flight Health Checks
+## Step 2: Pre-flight — Start the Full Stack
 
-Before testing, verify the required services are running. Use **Bash curl** to check each URL:
+Use the `/run-full-stack` skill to start all infrastructure, backend services, and frontends. This ensures everything is running before testing.
+
+Then verify the required services are reachable. Use **Bash curl** to check each URL:
 
 | Component | URL | Required For |
 |-----------|-----|--------------|
@@ -44,7 +46,7 @@ Before testing, verify the required services are running. Use **Bash curl** to c
 curl -sf -o /dev/null -w "%{http_code}" http://localhost:3000
 ```
 
-If a required service is **not running**, report it and **skip that role** (mark all steps as SKIP with reason "Service not running"). Continue with other roles.
+If a required service is **not running** after `/run-full-stack`, report it and **skip that role** (mark all steps as SKIP with reason "Service not running"). Continue with other roles.
 
 Create the screenshots output directory:
 ```bash
@@ -277,6 +279,12 @@ All test screenshots saved to: `docs/test-screenshots/`
 | `<role>-<step>-<name>.png` | <description> |
 | ... | ... |
 ```
+
+---
+
+## Step 7: Teardown
+
+Use the `/kill-all` skill to stop and remove all services, kill frontend dev servers, and close any Chrome DevTools browser. Do **not** pass the `volumes` argument — volumes should persist for future test runs.
 
 ---
 
