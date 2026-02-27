@@ -129,6 +129,8 @@ data class LotImageResponse(
  */
 data class LotSummaryResponse(
     val id: UUID,
+    val sellerId: UUID,
+    val categoryId: UUID?,
     val title: String,
     val brand: String,
     val locationCountry: String,

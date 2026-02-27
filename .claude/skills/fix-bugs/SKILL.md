@@ -12,15 +12,43 @@ Iterate through all bug reports in `tests/`, oldest first. For each report: fix 
 
 ---
 
-## Step 1: Clean Slate — Kill Everything
+## Step 1: Clean Slate — Kill Frontend and Browser Only
 
-Call `/kill-all` to stop all services, frontends, and browser. This ensures a fresh, unpolluted state before making code changes.
+Kill any running frontend dev servers and close browser pages. Do NOT tear down Docker backend services — they should stay running for API verification during fixes.
+
+```bash
+# Kill frontend dev servers by port
+for port in 3000 3001 3002 5174 5175 5176 5177; do
+  pid=$(lsof -ti :$port 2>/dev/null)
+  if [ -n "$pid" ]; then kill -9 $pid 2>/dev/null && echo "Killed PID $pid on port $port"; fi
+done
+echo "Frontend dev servers killed"
+```
+
+Close any open Chrome DevTools MCP browser pages:
+1. Call `mcp__chrome-devtools__list_pages` — if connected, close all pages except the last, then navigate the last to `about:blank`
+2. If not connected, skip (no browser to clean up)
+
+**Do NOT call `/kill-all`** — this would tear down Docker backend services that may be needed for API verification. Do NOT call `/run-full-stack` — the fix skill does not need frontends or browser.
 
 ---
 
-## Step 2: Start the Full Stack
+## Step 2: Ensure Docker Backend Services Are Running
 
-Call `/run-full-stack` to start all infrastructure, backend services, and frontends. Having the stack running allows you to verify fixes against the live application and inspect API responses during debugging.
+Check if Docker backend services are running. If not, start them:
+```bash
+running=$(docker ps --filter "name=auction-platform" --format "{{.Names}}" 2>/dev/null | wc -l)
+if [ "$running" -lt 10 ]; then
+  echo "Backend services not running, starting..."
+  cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform && \
+  docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env up -d && \
+  docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d --build
+else
+  echo "Backend services already running ($running containers)"
+fi
+```
+
+Do NOT start frontend dev servers — the fix skill only reads/edits code and verifies builds.
 
 ---
 
@@ -120,7 +148,7 @@ If more reports remain, **loop back to Step 4a** with the next (oldest) report. 
 
 ## Step 5: Final Cleanup
 
-Call `/kill-all` to ensure a completely clean state with the new code.
+Do NOT call `/kill-all` — leave Docker backend services running for the next test phase. Only ensure no stale frontend processes or browser pages remain.
 
 Verify the `tests/` folder has no remaining report files:
 ```bash
@@ -139,3 +167,7 @@ Report the total number of reports processed and bugs fixed.
 - **If a fix requires a database migration**, create a new Flyway migration file with the next version number in sequence.
 - **If a fix is unclear**, read more context from the codebase before implementing. Check related files, tests, and API contracts.
 - **Track progress** using the task list — mark each bug as in_progress when starting and completed when done.
+
+### Context Management
+- When running as a subagent (called from test-fix-loop via Task tool), write a summary of all fixes to `tests/.fix-summary.md` before completing. This allows the parent loop to read the summary without needing the full conversation context.
+- Keep file reads targeted — only read the specific sections of files that need fixing, not entire large files unless necessary.

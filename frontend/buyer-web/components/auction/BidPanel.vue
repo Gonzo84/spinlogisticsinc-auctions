@@ -25,7 +25,7 @@
       <div class="flex items-center justify-between mb-1">
         <span class="text-sm text-gray-500">{{ $t('auction.currentBid') }}</span>
         <span class="text-sm text-gray-500">
-          {{ lot.bidCount }} {{ $t('auction.bids') }}
+          {{ bidCount }} {{ $t('auction.bids') }}
         </span>
       </div>
       <p class="text-3xl font-bold text-primary">{{ formatCurrency(currentBid) }}</p>
@@ -142,7 +142,7 @@
         </span>
       </button>
 
-      <!-- Success message -->
+      <!-- Success message (inline) -->
       <Transition
         enter-active-class="transition ease-out duration-200"
         enter-from-class="opacity-0 -translate-y-2"
@@ -161,6 +161,28 @@
           {{ $t('auction.bidPlaced') }}
         </div>
       </Transition>
+
+      <!-- Toast notification (fixed position, always visible) -->
+      <Teleport to="body">
+        <Transition
+          enter-active-class="transition ease-out duration-300"
+          enter-from-class="transform -translate-y-full opacity-0"
+          enter-to-class="transform translate-y-0 opacity-100"
+          leave-active-class="transition ease-in duration-200"
+          leave-from-class="transform translate-y-0 opacity-100"
+          leave-to-class="transform -translate-y-full opacity-0"
+        >
+          <div
+            v-if="showSuccess"
+            class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 bg-secondary-600 text-white rounded-xl shadow-xl"
+          >
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span class="font-semibold">{{ $t('auction.bidPlaced') }}</span>
+          </div>
+        </Transition>
+      </Teleport>
 
       <!-- Auto-Bid Section -->
       <div class="border-t pt-4">
@@ -250,6 +272,9 @@ const props = defineProps<Props>()
 const { t } = useI18n()
 const { isAuthenticated, login } = useAuth()
 const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, error: _bidApiError, currentBid, minBidAmount, hasAutoBid, clearError } = useBid()
+const auctionStore = useAuctionStore()
+
+const bidCount = computed(() => auctionStore.bidCount)
 
 const bidAmount = ref<number | null>(null)
 const bidError = ref<string | null>(null)

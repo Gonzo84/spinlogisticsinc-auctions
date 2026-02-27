@@ -96,6 +96,14 @@ fun String.groups(): List<String> =
 fun String.brandAccess(): List<String> =
     (decodeClaims()["brand_access"] as? List<String>).orEmpty()
 
+/** Extracts the `company` custom claim (company name from Keycloak user attributes). */
+fun String.company(): String =
+    decodeClaims()["company"]?.toString().orEmpty()
+
+/** Extracts the `country` custom claim (ISO 3166-1 alpha-2 code from Keycloak user attributes). */
+fun String.country(): String =
+    decodeClaims()["country"]?.toString().orEmpty()
+
 /** Extracts the `preferred_language` claim (BCP-47 tag, e.g. "en", "de", "nl"). */
 fun String.preferredLanguage(): String =
     decodeClaims()["preferred_language"]?.toString() ?: "en"

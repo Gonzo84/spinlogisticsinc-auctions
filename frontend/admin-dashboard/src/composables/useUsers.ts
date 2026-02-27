@@ -95,7 +95,9 @@ export function useUsers() {
       if (filters.status) params.status = filters.status
       if (filters.kycStatus) params.kycStatus = filters.kycStatus
 
-      const response = await get<{ items: User[]; total: number }>('/users', { params })
+      const raw = await get<any>('/users', { params })
+      // Unwrap ApiResponse wrapper: { data: { items: [...], total: N } }
+      const response = raw?.data && typeof raw.data === 'object' ? raw.data : raw
       users.value = response.items ?? []
       totalCount.value = response.total ?? 0
     } catch (err: any) {

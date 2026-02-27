@@ -48,7 +48,19 @@ export function useAuth() {
   }
 
   async function logout() {
-    await keycloak.logout({ redirectUri: window.location.origin })
+    const redirectUri = window.location.origin
+    try {
+      // Clear any locally stored tokens
+      localStorage.removeItem('kc_token')
+      localStorage.removeItem('kc_refresh_token')
+      // keycloak.logout() redirects to Keycloak's end_session_endpoint,
+      // which terminates the server-side SSO session and then redirects back
+      await keycloak.logout({ redirectUri })
+    } catch {
+      // Fallback: if keycloak.logout() fails, manually redirect to the OIDC logout endpoint
+      const logoutUrl = `${keycloak.authServerUrl}/realms/${keycloak.realm}/protocol/openid-connect/logout?client_id=seller-portal&post_logout_redirect_uri=${encodeURIComponent(redirectUri)}`
+      window.location.href = logoutUrl
+    }
   }
 
   function hasRole(role: string): boolean {

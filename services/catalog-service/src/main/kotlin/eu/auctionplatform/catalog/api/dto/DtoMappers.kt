@@ -40,6 +40,8 @@ fun Lot.toResponse(images: List<LotImage> = emptyList()): LotResponse = LotRespo
 /** Converts a [Lot] domain model to a [LotSummaryResponse] DTO. */
 fun Lot.toSummaryResponse(primaryImageUrl: String? = null): LotSummaryResponse = LotSummaryResponse(
     id = id,
+    sellerId = sellerId,
+    categoryId = categoryId,
     title = title,
     brand = brand,
     locationCountry = locationCountry,

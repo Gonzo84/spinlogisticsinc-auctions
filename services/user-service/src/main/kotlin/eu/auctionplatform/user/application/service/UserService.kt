@@ -391,6 +391,25 @@ class UserService {
         return depositEntity.toDomain()
     }
 
+    /**
+     * Lists users with optional search and filter parameters.
+     *
+     * @param search   Optional search text (matches first name, last name, or email).
+     * @param status   Optional status filter.
+     * @param page     0-based page number.
+     * @param pageSize Number of items per page.
+     * @return A pair of (list of users, total count).
+     */
+    fun listUsers(
+        search: String?,
+        status: UserStatus?,
+        page: Int,
+        pageSize: Int
+    ): Pair<List<User>, Long> {
+        val (entities, total) = userRepository.searchUsers(search, status, page, pageSize)
+        return Pair(entities.map { it.toDomain() }, total)
+    }
+
     // -------------------------------------------------------------------------
     // Admin operations
     // -------------------------------------------------------------------------

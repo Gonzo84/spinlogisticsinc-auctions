@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Code Conventions:** See [CONVENTIONS.md](./CONVENTIONS.md) for mandatory code style, patterns, and constraints. All agents MUST read and follow that file when generating or modifying code.
+
 ## Build & Development Commands
 
 ### Backend (Kotlin/Quarkus - Gradle)
@@ -52,23 +54,23 @@ docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file d
 - **Object Storage:** MinIO (S3-compatible)
 - **Observability:** OpenTelemetry + Prometheus + Grafana + JSON structured logging
 
-### Microservices (ports in dev mode)
+### Microservices (ports in Docker Compose)
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| auction-engine | 8080 | Event-sourced bidding core (anti-sniping, proxy bidding, CQRS) |
-| catalog-service | 8081 | Lot & category management |
-| user-service | 8082 | User profiles, KYC |
-| payment-service | 8083 | Adyen integration, PSD2 SCA, EU VAT |
-| notification-service | 8084 | Email & push notifications |
-| media-service | 8085 | Image uploads via MinIO |
-| search-service | 8086 | Elasticsearch full-text search |
-| seller-service | 8087 | Seller dashboard, settlements |
-| broker-service | 8088 | Lead management, lot intake |
-| compliance-service | 8089 | GDPR, AML, DSA, audit logs |
-| co2-service | 8090 | Emission calculations |
-| analytics-service | 8091 | Platform metrics, reporting |
-| gateway-service | 8092 | API gateway, WebSocket hub, rate limiting |
+| gateway-service | 8080 | API gateway, WebSocket hub, rate limiting |
+| auction-engine | 8081 | Event-sourced bidding core (anti-sniping, proxy bidding, CQRS) |
+| catalog-service | 8082 | Lot & category management |
+| user-service | 8083 | User profiles, KYC |
+| payment-service | 8084 | Adyen integration, PSD2 SCA, EU VAT |
+| notification-service | 8085 | Email & push notifications |
+| media-service | 8086 | Image uploads via MinIO |
+| search-service | 8087 | Elasticsearch full-text search |
+| seller-service | 8088 | Seller dashboard, settlements |
+| broker-service | 8089 | Lead management, lot intake |
+| analytics-service | 8090 | Platform metrics, reporting |
+| compliance-service | 8091 | GDPR, AML, DSA, audit logs |
+| co2-service | 8092 | Emission calculations |
 
 ### Service Code Organization (Hexagonal Architecture)
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import { useLots, type Lot, type LotBid } from '@/composables/useLots'
@@ -8,19 +8,45 @@ import RevenueChart from '@/components/charts/RevenueChart.vue'
 const route = useRoute()
 const router = useRouter()
 const confirm = useConfirm()
-const { currentLot, lotBids, loading, error, fetchLot, fetchLotBids, submitForReview, deleteLot } = useLots()
+const { currentLot, lotBids, loading, error, fetchLot, fetchLotBids, submitForReview, deleteLot, fetchCategories, categories } = useLots()
 
 const lotId = computed(() => route.params.id as string)
 const selectedImageIndex = ref(0)
 
+// Resolve category UUID to human-readable name whenever lot data changes
+function resolveCategoryName() {
+  if (currentLot.value && categories.value.length > 0) {
+    const categoryValue = currentLot.value.category
+    // Only resolve if the category looks like a UUID (not already a name)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryValue)
+    if (isUuid) {
+      const cat = categories.value.find((c) => c.id === categoryValue)
+      if (cat) {
+        currentLot.value = { ...currentLot.value, category: cat.name }
+      }
+    }
+  }
+}
+
+// Watch for lot changes and re-resolve category name
+watch(() => currentLot.value?.category, () => {
+  resolveCategoryName()
+})
+
 onMounted(async () => {
-  await fetchLot(lotId.value)
-  // Bids fetch is optional – the lot may not have an auction yet
-  try {
-    await fetchLotBids(lotId.value)
-  } catch {
-    // Clear the shared error ref so it doesn't hide the lot detail
-    error.value = null
+  const lotData = await fetchLot(lotId.value)
+  // Fetch categories and resolve UUID to name
+  await fetchCategories()
+  resolveCategoryName()
+  // Only fetch bids if the lot has an associated auction (active/sold status or has auctionStart)
+  const hasAuction = lotData.status === 'active' || lotData.status === 'sold' || lotData.auctionStart
+  if (hasAuction) {
+    try {
+      await fetchLotBids(lotId.value)
+    } catch {
+      // Clear the shared error ref so it doesn't hide the lot detail
+      error.value = null
+    }
   }
 })
 
@@ -75,13 +101,20 @@ const bidChartData = computed(() => {
   return lotBids.value.slice(-20).map((b) => b.amount)
 })
 
-function handleSubmitForReview() {
+async function handleSubmitForReview() {
   if (!lot.value) return
   confirm.require({
     message: 'Submit this lot for review?',
     header: 'Confirm Submission',
     acceptLabel: 'Submit',
     rejectLabel: 'Cancel',
+    acceptProps: {
+      severity: 'success',
+    },
+    rejectProps: {
+      severity: 'secondary',
+      outlined: true,
+    },
     accept: async () => {
       await submitForReview(lot.value!.id)
       await fetchLot(lotId.value)

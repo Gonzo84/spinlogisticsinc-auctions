@@ -4,14 +4,29 @@ import { useAuthStore } from '~/stores/auth'
 const TOKEN_KEY = 'kc_token'
 const REFRESH_TOKEN_KEY = 'kc_refresh_token'
 
+/**
+ * Check if a JWT is expired by decoding its exp claim.
+ * Returns true if expired or malformed (safe default: don't use bad tokens).
+ */
+function isJwtExpired(token: string, bufferSeconds = 30): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return typeof payload.exp !== 'number' || payload.exp < Math.ceil(Date.now() / 1000) + bufferSeconds
+  } catch {
+    return true
+  }
+}
+
 export default defineNuxtPlugin(async (nuxtApp) => {
   const config = useRuntimeConfig()
 
-  const keycloak = new Keycloak({
+  const keycloakConfig = {
     url: config.public.keycloakUrl,
     realm: config.public.keycloakRealm,
     clientId: config.public.keycloakClientId,
-  })
+  }
+
+  let keycloak = new Keycloak(keycloakConfig)
 
   let tokenRefreshInterval: ReturnType<typeof setInterval> | null = null
 
@@ -72,24 +87,64 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   }
 
   try {
-    // Restore persisted tokens if available
+    // Token restoration strategy:
+    //
+    // 1. Decode the stored refresh token's `exp` claim BEFORE passing to init().
+    //    If expired → discard (avoids a pointless 400 Bad Request from Keycloak).
+    //    If valid → pass to init() for instant session restoration.
+    //
+    // 2. If stored tokens are rejected server-side (revoked, session killed),
+    //    catch the error, create a fresh Keycloak instance (init() can only be
+    //    called once per instance), and initialize unauthenticated.
+    //
+    // 3. No silentCheckSsoRedirectUri — the iframe SSO mechanism is incompatible
+    //    with Nuxt 3's X-Frame-Options headers in dev. Buyer-web's primary mode is
+    //    anonymous browsing, so SSO auto-login is not needed; users click "Log In".
+
     const storedToken = localStorage.getItem(TOKEN_KEY)
     const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
 
-    const initOptions: { pkceMethod: 'S256'; checkLoginIframe: boolean; token?: string; refreshToken?: string } = {
-      pkceMethod: 'S256',
+    const baseInitOptions = {
+      pkceMethod: 'S256' as const,
       checkLoginIframe: false,
     }
 
-    if (storedToken && storedRefreshToken) {
-      initOptions.token = storedToken
-      initOptions.refreshToken = storedRefreshToken
+    let authenticated = false
+
+    if (storedToken && storedRefreshToken && !isJwtExpired(storedRefreshToken)) {
+      // Refresh token is still valid — use stored tokens for instant auth
+      if (import.meta.dev) {
+        console.log('[keycloak] init with stored tokens (refresh token valid)')
+      }
+      try {
+        authenticated = await keycloak.init({
+          ...baseInitOptions,
+          token: storedToken,
+          refreshToken: storedRefreshToken,
+        })
+      } catch {
+        // Tokens rejected server-side (revoked/session killed) — fresh start
+        if (import.meta.dev) {
+          console.warn('[keycloak] stored tokens rejected server-side, reinitializing')
+        }
+        clearPersistedTokens()
+        keycloak = new Keycloak(keycloakConfig)
+        authenticated = await keycloak.init(baseInitOptions)
+      }
+    } else {
+      // No usable tokens — start unauthenticated (anonymous browsing)
+      if (storedToken || storedRefreshToken) {
+        if (import.meta.dev) {
+          console.log('[keycloak] stored tokens expired, cleared')
+        }
+        clearPersistedTokens()
+      }
+      if (import.meta.dev) {
+        console.log('[keycloak] init unauthenticated')
+      }
+      authenticated = await keycloak.init(baseInitOptions)
     }
 
-    if (import.meta.dev) {
-      console.log('[keycloak] init starting, hasStoredTokens:', !!storedToken)
-    }
-    const authenticated = await keycloak.init(initOptions)
     if (import.meta.dev) {
       console.log('[keycloak] init complete, authenticated:', authenticated)
     }
@@ -97,18 +152,16 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     const authStore = useAuthStore(nuxtApp.$pinia as ReturnType<typeof import('pinia').createPinia>)
 
     if (authenticated) {
-      // If we restored from storage, ensure tokens are still valid
+      // Ensure tokens are fresh after restoration
       try {
         await keycloak.updateToken(30)
         persistTokens()
       } catch {
-        // Tokens expired, clear them
         clearPersistedTokens()
       }
       setupAuthSession(authStore)
 
       // Clean OIDC hash fragment and query params from URL after successful authentication
-      // Use setTimeout to ensure cleanup runs after keycloak-js finishes internal processing
       setTimeout(() => {
         if ((window.location.hash && (window.location.hash.includes('state=') || window.location.hash.includes('session_state='))) ||
             (window.location.search && window.location.search.includes('code='))) {

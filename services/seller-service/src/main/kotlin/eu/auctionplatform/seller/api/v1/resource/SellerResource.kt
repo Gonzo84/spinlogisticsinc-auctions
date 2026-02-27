@@ -1,5 +1,8 @@
 package eu.auctionplatform.seller.api.v1.resource
 
+import eu.auctionplatform.commons.auth.company
+import eu.auctionplatform.commons.auth.country
+import eu.auctionplatform.commons.auth.email
 import eu.auctionplatform.commons.auth.userId
 import eu.auctionplatform.commons.dto.ApiResponse
 import eu.auctionplatform.seller.api.v1.dto.Co2ReportResponse
@@ -358,18 +361,16 @@ class SellerResource {
     /**
      * Resolves the seller profile ID from the authenticated user's JWT token.
      *
-     * Looks up the seller profile by the user ID extracted from the token.
-     *
-     * @throws eu.auctionplatform.commons.exception.NotFoundException if no seller
-     *         profile exists for the user.
+     * Auto-creates a seller profile if one does not yet exist, using JWT claims
+     * for company name and country (mirrors user-service's auto-registration).
      */
     private fun resolveSellerIdFromToken(authorization: String): UUID {
-        val userId = extractUserId(authorization)
-        val profile = sellerProfileRepository.findByUserId(userId)
-            ?: throw eu.auctionplatform.commons.exception.NotFoundException(
-                code = "SELLER_NOT_FOUND",
-                message = "No seller profile found for user $userId"
-            )
+        val token = authorization.removePrefix("Bearer ").trim()
+        val userId = UUID.fromString(token.userId())
+        val companyName = token.company()
+        val country = token.country()
+        val email = token.email()
+        val profile = sellerService.getOrCreateSeller(userId, companyName, country, email)
         return profile.id
     }
 

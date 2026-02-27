@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 
 const props = defineProps<{
   collapsed: boolean
@@ -11,6 +12,12 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const { logout } = useAuth()
+
+function handleLogout() {
+  emit('navigate')
+  logout()
+}
 
 interface NavItem {
   name: string
@@ -39,8 +46,8 @@ function handleClick() {
 </script>
 
 <template>
-  <nav class="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
-    <ul class="space-y-1">
+  <nav class="flex flex-col flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
+    <ul class="space-y-1 flex-1">
       <li
         v-for="item in navItems"
         :key="item.path"
@@ -165,5 +172,35 @@ function handleClick() {
         </router-link>
       </li>
     </ul>
+
+    <!-- Logout button -->
+    <div class="border-t border-gray-200 pt-3 mt-2">
+      <button
+        :class="[
+          'sidebar-link w-full text-red-600 hover:bg-red-50 hover:text-red-700',
+          collapsed && 'justify-center px-2',
+        ]"
+        :title="collapsed ? 'Sign out' : undefined"
+        @click="handleLogout"
+      >
+        <svg
+          class="h-5 w-5 shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+          />
+        </svg>
+        <span
+          v-if="!collapsed"
+          class="truncate"
+        >Sign out</span>
+      </button>
+    </div>
   </nav>
 </template>

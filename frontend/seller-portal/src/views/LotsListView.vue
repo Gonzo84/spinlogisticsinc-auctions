@@ -14,6 +14,8 @@ const {
   fetchStatusCounts,
   deleteLot,
   submitForReview,
+  fetchCategories,
+  categories,
 } = useLots()
 
 const activeTab = ref<LotStatus | 'all'>('all')
@@ -60,8 +62,18 @@ watch(searchQuery, () => {
 })
 
 onMounted(async () => {
-  await Promise.all([fetchStatusCounts(), loadLots()])
+  await Promise.all([fetchStatusCounts(), loadLots(), fetchCategories()])
 })
+
+/** Resolve a category UUID to its human-readable name */
+function getCategoryName(category: string): string {
+  if (!category) return '--'
+  // If it's already a name (not a UUID), return as-is
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(category)
+  if (!isUuid) return category
+  const cat = categories.value.find((c) => c.id === category)
+  return cat?.name ?? category
+}
 
 function formatCurrency(value: number | null): string {
   if (value === null) return '--'
@@ -406,7 +418,7 @@ function goToPage(page: number) {
               </router-link>
             </td>
             <td class="px-4 py-3 text-sm text-gray-600">
-              {{ lot.category }}
+              {{ getCategoryName(lot.category) }}
             </td>
             <td class="px-4 py-3">
               <span :class="getStatusBadge(lot.status)">{{ getStatusLabel(lot.status) }}</span>

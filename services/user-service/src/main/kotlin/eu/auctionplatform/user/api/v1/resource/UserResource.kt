@@ -5,6 +5,7 @@ import eu.auctionplatform.commons.auth.familyName
 import eu.auctionplatform.commons.auth.givenName
 import eu.auctionplatform.commons.auth.userId
 import eu.auctionplatform.commons.dto.ApiResponse
+import eu.auctionplatform.commons.dto.PagedResponse
 import eu.auctionplatform.user.api.dto.AddCompanyRequest
 import eu.auctionplatform.user.api.dto.InitiateDepositRequest
 import eu.auctionplatform.user.api.dto.RegisterUserRequest
@@ -27,8 +28,10 @@ import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
+import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import eu.auctionplatform.user.domain.model.UserStatus
 import org.jboss.logging.Logger
 import java.util.UUID
 
@@ -293,6 +296,98 @@ class UserResource {
     // -------------------------------------------------------------------------
     // Admin endpoints
     // -------------------------------------------------------------------------
+
+    /**
+     * Lists users with optional search and filter parameters (admin only).
+     *
+     * **GET /api/v1/users?search=&status=&page=1&pageSize=20**
+     *
+     * @param search   Optional search text (matches first name, last name, or email).
+     * @param status   Optional status filter (e.g., ACTIVE, BLOCKED).
+     * @param page     Page number (1-based, defaults to 1).
+     * @param pageSize Items per page (defaults to 20).
+     * @return 200 OK with paginated user list.
+     */
+    @GET
+    @RolesAllowed("admin_ops", "admin_super")
+    fun listUsers(
+        @QueryParam("search") search: String?,
+        @QueryParam("status") status: String?,
+        @QueryParam("page") page: Int?,
+        @QueryParam("pageSize") pageSize: Int?
+    ): Response {
+        val pageNum = (page ?: 1).coerceAtLeast(1)
+        val size = (pageSize ?: 20).coerceIn(1, 100)
+
+        val userStatus = status?.let {
+            try {
+                UserStatus.valueOf(it.uppercase())
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        }
+
+        val (users, total) = userService.listUsers(
+            search = search,
+            status = userStatus,
+            page = pageNum - 1, // Convert to 0-based for repository
+            pageSize = size
+        )
+
+        val pagedResponse = PagedResponse(
+            items = users.map { user ->
+                val company = userService.getCompanyByUserId(user.id)
+                mapOf(
+                    "id" to user.id,
+                    "keycloakId" to user.keycloakId,
+                    "email" to user.email,
+                    "firstName" to user.firstName,
+                    "lastName" to user.lastName,
+                    "fullName" to user.fullName,
+                    "companyName" to (company?.companyName ?: ""),
+                    "accountType" to user.accountType.name.lowercase(),
+                    "status" to user.status.name.lowercase(),
+                    "kycStatus" to "not_started",
+                    "depositStatus" to user.depositStatus.name.lowercase(),
+                    "registeredAt" to user.createdAt.toString(),
+                    "lastLoginAt" to user.updatedAt.toString()
+                )
+            },
+            total = total,
+            page = pageNum,
+            pageSize = size
+        )
+
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    /**
+     * Retrieves a user by their Keycloak subject identifier (admin/moderator only).
+     *
+     * This endpoint is used by the admin dashboard to resolve seller names
+     * from the Keycloak UUID stored in catalog lots.
+     *
+     * **GET /api/v1/users/by-keycloak-id/{keycloakId}**
+     *
+     * @param keycloakId The Keycloak `sub` claim UUID.
+     * @return 200 OK with the user profile.
+     */
+    @GET
+    @Path("/by-keycloak-id/{keycloakId}")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun getUserByKeycloakId(@PathParam("keycloakId") keycloakId: String): Response {
+        val user = userService.getUserByKeycloakId(keycloakId)
+        val company = userService.getCompanyByUserId(user.id)
+        val deposit = userService.getLatestDeposit(user.id)
+
+        val profile = UserProfileResponse(
+            user = user.toResponse(),
+            company = company?.toResponse(),
+            deposit = deposit?.toResponse()
+        )
+
+        return Response.ok(ApiResponse.ok(profile)).build()
+    }
 
     /**
      * Retrieves any user by their internal identifier (admin/moderator only).

@@ -492,6 +492,7 @@ function handleSubmit() {
         type="submit"
         class="btn-primary"
         :disabled="isSubmitting"
+        @click.prevent="handleSubmit"
       >
         <svg
           v-if="isSubmitting"

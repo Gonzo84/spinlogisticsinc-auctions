@@ -131,6 +131,8 @@
           <div v-if="isAuthenticated" class="relative" ref="userDropdownRef">
             <button
               class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              :aria-expanded="showUserDropdown"
+              aria-haspopup="true"
               @click="showUserDropdown = !showUserDropdown"
             >
               <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary text-sm font-bold">
@@ -153,7 +155,9 @@
               leave-to-class="transform opacity-0 scale-95"
             >
               <div
-                v-if="showUserDropdown"
+                v-show="showUserDropdown"
+                :aria-hidden="!showUserDropdown"
+                role="menu"
                 class="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border py-1 z-50"
               >
                 <div class="px-4 py-3 border-b">

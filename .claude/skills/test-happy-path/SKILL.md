@@ -63,6 +63,14 @@ Read the file `HAPPY_PATHS.md` at the project root. This is the single source of
 
 ## Step 4: Execute Tests Per Role
 
+### Context Management (CRITICAL)
+
+To prevent context window overflow during long test runs:
+- **Save snapshots to files** using the `filePath` parameter on `take_snapshot` — do NOT let them render inline
+- **Save screenshots to files** using the `filePath` parameter on `take_screenshot`
+- **Only read snapshot files when needed** (e.g., to find a specific element UID) — don't read full snapshots for every step
+- **Keep console/network checks brief** — use `pageSize: 10` to limit results, only fetch full details for errors
+
 ### General Testing Protocol
 
 For **each step** in the happy path:
@@ -72,10 +80,10 @@ For **each step** in the happy path:
    - Broker: Use Bash curl commands as specified in HAPPY_PATHS.md Section 4
 
 2. **At every "Verify" checkpoint:**
-   - Take a page snapshot via `take_snapshot` — check for expected elements
+   - Take a page snapshot via `take_snapshot` with `filePath: "tests/test-screenshots/<role>-<step>-snapshot.txt"` — then Read the file to check for expected elements. This keeps raw snapshot data out of the conversation context.
    - Check console for errors via `list_console_messages` (filter types: `["error", "warn"]`)
    - Check network for failed requests via `list_network_requests` — look for 4xx/5xx status codes
-   - Take a screenshot via `take_screenshot` and save to: `tests/test-screenshots/<role>-<step>-<short-name>.png`
+   - Take a screenshot via `take_screenshot` with `filePath: "tests/test-screenshots/<role>-<step>-<short-name>.png"`
      - Example: `tests/test-screenshots/buyer-1.1-landing-page.png`
 
 3. **Record the result** for each step: **PASS**, **FAIL**, **PARTIAL**, or **SKIP**
@@ -106,19 +114,19 @@ Follow HAPPY_PATHS.md Section 1, steps 1.1 through 1.7:
 
 Follow HAPPY_PATHS.md Section 2, steps 2.1 through 2.11:
 
-| Step | Name | Actions |
-|------|------|---------|
-| 2.1 | Authentication | Navigate to localhost:5174 → Keycloak login → verify dashboard |
-| 2.2 | Dashboard | Verify KPI cards, recent activity, quick actions, status overview |
-| 2.3 | Create a New Lot | Fill lot form (Title: "Caterpillar D6 Bulldozer 2019", Brand: "Caterpillar", Starting Bid: 45000, etc.) → verify success |
-| 2.4 | Submit for Review | Click Submit for Review → verify status changes to PENDING_REVIEW |
-| 2.5 | My Lots Page | Verify paginated list, lot details, pagination |
-| 2.6 | Edit a Lot | Edit a field, save → verify changes reflected |
-| 2.7 | Settlements | Navigate to Settlements → verify page loads |
-| 2.8 | Analytics | Navigate to Analytics → verify page loads |
-| 2.9 | CO2 Report | Navigate to CO2 Report → verify page loads |
-| 2.10 | Profile | Navigate to Profile → verify form tabs |
-| 2.11 | Logout | Logout → verify session ended |
+| Step | Name | Actions                                                                                                                                                                                                    |
+|------|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2.1 | Authentication | Navigate to localhost:5174 → Keycloak login → verify dashboard                                                                                                                                             |
+| 2.2 | Dashboard | Verify KPI cards, recent activity, quick actions, status overview                                                                                                                                          |
+| 2.3 | Create a New Lot | Fill lot form with a random industryc machine, for example:(Title: "Caterpillar D6 Bulldozer 2019", Brand: "Caterpillar", Starting Bid: 45000, etc.), but try to be as random as possible → verify success |
+| 2.4 | Submit for Review | Click Submit for Review → verify status changes to PENDING_REVIEW                                                                                                                                          |
+| 2.5 | My Lots Page | Verify paginated list, lot details, pagination                                                                                                                                                             |
+| 2.6 | Edit a Lot | Edit a field, save → verify changes reflected                                                                                                                                                              |
+| 2.7 | Settlements | Navigate to Settlements → verify page loads                                                                                                                                                                |
+| 2.8 | Analytics | Navigate to Analytics → verify page loads                                                                                                                                                                  |
+| 2.9 | CO2 Report | Navigate to CO2 Report → verify page loads                                                                                                                                                                 |
+| 2.10 | Profile | Navigate to Profile → verify form tabs                                                                                                                                                                     |
+| 2.11 | Logout | Logout → verify session ended                                                                                                                                                                              |
 
 ### 4c: Admin Happy Path (Browser — http://localhost:5175)
 
@@ -285,6 +293,16 @@ All test screenshots saved to: `tests/test-screenshots/`
 
 ## Step 7: Teardown
 
+**CRITICAL: Close browser pages BEFORE killing processes.** This prevents stale browser windows from persisting after the subagent finishes.
+
+### 7a: Close all Chrome DevTools MCP browser pages
+1. Call `mcp__chrome-devtools__list_pages` to get all open pages
+2. For each page (except the last one), call `mcp__chrome-devtools__close_page` with its pageId
+3. For the last remaining page, call `mcp__chrome-devtools__navigate_page` with `type: "url"` and `url: "about:blank"`
+
+This ensures the MCP server's state is clean and no stale pages remain.
+
+### 7b: Kill all services
 Use the `/kill-all` skill to stop and remove all services, kill frontend dev servers, and close any Chrome DevTools browser. Do **not** pass the `volumes` argument — volumes should persist for future test runs.
 
 ---

@@ -52,15 +52,24 @@ echo "Quarkus dev services killed"
 ```
 
 ### 4. Chrome DevTools MCP browser
-If a Chrome DevTools MCP-controlled browser is open, close all its pages and kill it:
-- First try: use `mcp__chrome-devtools__list_pages` to check if browser is connected, then close pages
-- Then kill any headless/remote-debugging Chrome processes:
+Close all browser pages via MCP first (this is the reliable method), then kill processes as fallback.
+
+**Step 4a — Close pages via MCP (MUST do this first):**
+1. Call `mcp__chrome-devtools__list_pages` to get all open pages
+2. For each page (except the last one — MCP won't close the last page), call `mcp__chrome-devtools__close_page` with its pageId
+3. For the last remaining page, navigate it to `about:blank` using `mcp__chrome-devtools__navigate_page` so it's clean
+
+If `list_pages` fails (browser not connected), skip to 4b.
+
+**Step 4b — Kill Chrome processes (fallback):**
 ```bash
 pkill -f "remote-debugging" 2>/dev/null; \
 pkill -f "chrome.*--remote-debugging-port" 2>/dev/null; \
 pkill -f "chromium.*--remote-debugging-port" 2>/dev/null; \
 echo "Chrome DevTools browser killed"
 ```
+
+**IMPORTANT:** Always attempt Step 4a before 4b. Killing Chrome without closing MCP pages leaves the MCP server in a stale state where it thinks pages still exist.
 
 ## Execution strategy
 Run steps 1–4 in **parallel** using separate Bash tool calls. Report results when all complete.

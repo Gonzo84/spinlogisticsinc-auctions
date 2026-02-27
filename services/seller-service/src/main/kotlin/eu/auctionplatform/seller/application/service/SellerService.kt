@@ -165,6 +165,37 @@ class SellerService @Inject constructor(
     }
 
     // -------------------------------------------------------------------------
+    // Auto-registration (get-or-create)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Retrieves the seller profile for the given user, auto-creating one if it
+     * does not yet exist. Mirrors user-service's getOrCreateUser() pattern.
+     */
+    fun getOrCreateSeller(userId: UUID, companyName: String, country: String, email: String): SellerProfile {
+        sellerProfileRepository.findByUserId(userId)?.let { return it }
+
+        val resolvedCompanyName = companyName.ifBlank {
+            email.substringBefore("@").replaceFirstChar { c -> c.uppercase() }
+        }
+        val resolvedCountry = country.ifBlank { "NL" }.take(2).uppercase()
+
+        val profile = SellerProfile(
+            userId = userId,
+            companyName = resolvedCompanyName,
+            country = resolvedCountry,
+            status = SellerStatus.VERIFIED,
+            createdAt = Instant.now()
+        )
+
+        val saved = sellerProfileRepository.save(profile)
+        initMetrics(saved.id)
+
+        logger.info("Auto-created seller profile {} for user {} (company={})", saved.id, userId, resolvedCompanyName)
+        return saved
+    }
+
+    // -------------------------------------------------------------------------
     // Dashboard
     // -------------------------------------------------------------------------
 

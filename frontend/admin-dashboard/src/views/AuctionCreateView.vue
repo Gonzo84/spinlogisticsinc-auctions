@@ -195,7 +195,7 @@ function handleCancel() {
                   :key="lot.id"
                   :value="lot.id"
                 >
-                  {{ lot.title }} ({{ lot.brand }} - {{ lot.locationCity }}, {{ lot.locationCountry }})
+                  {{ lot.title }} ({{ lot.brand }} - {{ lot.locationCity }}, {{ lot.locationCountry }}) [{{ lot.id.slice(-8) }}]
                 </option>
               </select>
               <p

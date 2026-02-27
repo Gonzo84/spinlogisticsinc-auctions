@@ -23,8 +23,8 @@ export function useAuth() {
     const clientRoles = keycloak.tokenParsed?.resource_access?.['admin-dashboard']?.roles ?? []
     return [...realmRoles, ...clientRoles]
   })
-  const isAdmin = computed(() => roles.value.includes('admin') || roles.value.includes('platform-admin'))
-  const isSuperAdmin = computed(() => roles.value.includes('super-admin'))
+  const isAdmin = computed(() => roles.value.includes('admin_ops') || roles.value.includes('admin_super'))
+  const isSuperAdmin = computed(() => roles.value.includes('admin_super'))
 
   async function refreshToken(): Promise<string> {
     try {
@@ -41,7 +41,16 @@ export function useAuth() {
   }
 
   function logout() {
-    keycloak.logout({ redirectUri: window.location.origin })
+    localStorage.removeItem('kc_token')
+    localStorage.removeItem('kc_refresh_token')
+    try {
+      keycloak.logout({ redirectUri: window.location.origin })
+    } catch {
+      // Fallback: manually redirect to OIDC logout endpoint
+      const redirectUri = window.location.origin
+      const logoutUrl = `${keycloak.authServerUrl}/realms/${keycloak.realm}/protocol/openid-connect/logout?client_id=admin-dashboard&post_logout_redirect_uri=${encodeURIComponent(redirectUri)}`
+      window.location.href = logoutUrl
+    }
   }
 
   function hasRole(role: string): boolean {

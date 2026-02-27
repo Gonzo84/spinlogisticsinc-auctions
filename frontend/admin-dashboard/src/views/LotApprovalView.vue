@@ -27,6 +27,11 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const expandedLotId = ref<string | null>(null)
 
+// Cache for seller name lookups to avoid repeated API calls
+const sellerNameCache = new Map<string, string>()
+// Cache for category name lookups
+const categoryNameCache = new Map<string, string>()
+
 // Rejection dialog
 const showRejectDialog = ref(false)
 const rejectingLotId = ref<string | null>(null)
@@ -35,6 +40,43 @@ const rejectReason = ref('')
 onMounted(() => {
   fetchPendingLots()
 })
+
+async function fetchCategories() {
+  if (categoryNameCache.size > 0) return
+  try {
+    const raw = await get<any>('/categories')
+    const categories = raw?.data ?? raw
+    if (Array.isArray(categories)) {
+      for (const cat of categories) {
+        categoryNameCache.set(cat.id, cat.name ?? cat.slug ?? cat.id)
+      }
+    }
+  } catch {
+    // Silently fail — category names will remain as UUIDs
+  }
+}
+
+function resolveCategoryName(categoryId: string): string {
+  return categoryNameCache.get(categoryId) ?? categoryId
+}
+
+async function resolveSellerName(sellerId: string): Promise<string> {
+  if (!sellerId) return 'Unknown'
+  if (sellerNameCache.has(sellerId)) return sellerNameCache.get(sellerId)!
+  try {
+    // sellerId from catalog is a Keycloak UUID, not a user-service internal ID
+    const raw = await get<any>(`/users/by-keycloak-id/${sellerId}`)
+    const userData = raw?.data ?? raw
+    const user = userData?.user ?? userData
+    const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.fullName || user?.email || sellerId
+    sellerNameCache.set(sellerId, name)
+    return name
+  } catch {
+    // If user lookup fails, fall back to showing the sellerId
+    sellerNameCache.set(sellerId, sellerId)
+    return sellerId
+  }
+}
 
 async function fetchPendingLots() {
   loading.value = true
@@ -61,6 +103,19 @@ async function fetchPendingLots() {
       primaryImage: lot.primaryImageUrl ?? lot.primaryImage ?? null,
       specifications: lot.specifications ?? {},
       submittedAt: lot.updatedAt ?? lot.createdAt ?? new Date().toISOString(),
+    }))
+
+    // Resolve seller names and category names in parallel
+    const uniqueSellerIds = [...new Set(pendingLots.value.map((l) => l.sellerId).filter(Boolean))]
+    await Promise.all([
+      ...uniqueSellerIds.map((id) => resolveSellerName(id)),
+      fetchCategories(),
+    ])
+    // Update lot entries with resolved names
+    pendingLots.value = pendingLots.value.map((lot) => ({
+      ...lot,
+      sellerName: sellerNameCache.get(lot.sellerId) ?? lot.sellerName,
+      category: resolveCategoryName(lot.category),
     }))
   } catch (err: any) {
     error.value = err.response?.data?.message ?? 'Failed to fetch pending lots'

@@ -105,7 +105,6 @@
 <script setup lang="ts">
 import type { SearchSuggestion } from '~/types/search'
 
-const router = useRouter()
 const route = useRoute()
 const { suggest, suggestions, loading: searchLoading, clearSuggestions } = useSearch()
 
@@ -125,12 +124,18 @@ function handleInput() {
 }
 
 function handleSearch() {
+  // If a suggestion is highlighted, select it instead
+  if (highlightedIndex.value >= 0 && highlightedIndex.value < suggestions.value.length) {
+    selectSuggestion(suggestions.value[highlightedIndex.value])
+    return
+  }
+
   if (!query.value.trim()) return
 
   closeDropdown()
   clearSuggestions()
 
-  router.push({
+  navigateTo({
     path: '/search',
     query: { q: query.value.trim() },
   })
@@ -141,9 +146,9 @@ function selectSuggestion(suggestion: SearchSuggestion) {
   clearSuggestions()
 
   if (suggestion.type === 'lot' && suggestion.id) {
-    router.push(`/lots/${suggestion.id}`)
+    navigateTo(`/lots/${suggestion.id}`)
   } else if (suggestion.type === 'category') {
-    router.push({
+    navigateTo({
       path: '/search',
       query: { category: suggestion.text.toLowerCase() },
     })

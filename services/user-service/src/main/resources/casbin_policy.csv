@@ -23,6 +23,7 @@ p, admin_ops, /api/v1/users/me/company, POST|PUT, allow
 p, admin_ops, /api/v1/users/me/deposit, GET|POST, allow
 p, admin_ops, /api/v1/users/me/deposit/refund, POST, allow
 p, admin_ops, /api/v1/users/*, GET, allow
+p, admin_ops, /api/v1/users/by-keycloak-id/*, GET, allow
 p, admin_ops, /api/v1/users/*/status, PUT, allow
 p, admin_ops, /api/v1/users/*/kyc, GET, allow
 p, admin_ops, /api/v1/users/*/kyc/verify, POST, allow
