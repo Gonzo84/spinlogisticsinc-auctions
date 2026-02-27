@@ -147,7 +147,11 @@ class LotIntakeRepository @Inject constructor(
         stmt.setObject(1, intake.id)
         stmt.setObject(2, intake.brokerId)
         stmt.setObject(3, intake.sellerId)
-        stmt.setObject(4, intake.leadId)
+        if (intake.leadId != null) {
+            stmt.setObject(4, intake.leadId)
+        } else {
+            stmt.setNull(4, Types.OTHER)
+        }
         stmt.setString(5, intake.title)
         stmt.setObject(6, intake.categoryId)
         stmt.setString(7, intake.description)
@@ -191,7 +195,7 @@ class LotIntakeRepository @Inject constructor(
             id = getObject("id", UUID::class.java),
             brokerId = getObject("broker_id", UUID::class.java),
             sellerId = getObject("seller_id", UUID::class.java),
-            leadId = getObject("lead_id", UUID::class.java),
+            leadId = getObject("lead_id")?.let { it as? UUID ?: UUID.fromString(it.toString()) },
             title = getString("title"),
             categoryId = getObject("category_id", UUID::class.java),
             description = getString("description"),

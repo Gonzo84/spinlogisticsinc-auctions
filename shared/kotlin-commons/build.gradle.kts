@@ -20,6 +20,9 @@ dependencies {
     compileOnly("jakarta.inject:jakarta.inject-api:2.0.1")
     compileOnly("org.eclipse.microprofile.config:microprofile-config-api:3.1")
 
+    // Quarkus Jackson (for ObjectMapperCustomizer interface)
+    compileOnly("io.quarkus:quarkus-jackson:3.30.6")
+
     // Logging
     implementation("org.slf4j:slf4j-api:2.0.16")
 

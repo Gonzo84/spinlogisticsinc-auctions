@@ -15,7 +15,7 @@ data class LotIntake(
     val id: UUID,
     val brokerId: UUID,
     val sellerId: UUID,
-    val leadId: UUID,
+    val leadId: UUID?,
     val title: String,
     val categoryId: UUID,
     val description: String?,

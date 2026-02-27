@@ -111,8 +111,8 @@ class BrokerService {
     ): List<LotIntake> {
         logger.info("Bulk lot intake: broker={}, seller={}, count={}", brokerId, sellerId, lots.size)
 
-        // Validate all referenced lead IDs exist before processing
-        val uniqueLeadIds = lots.map { it.leadId }.distinct()
+        // Validate all referenced lead IDs exist before processing (skip nulls for standalone intakes)
+        val uniqueLeadIds = lots.mapNotNull { it.leadId }.distinct()
         val invalidLeadIds = uniqueLeadIds.filter { leadRepository.findById(it) == null }
         if (invalidLeadIds.isNotEmpty()) {
             throw ValidationException(
@@ -208,7 +208,7 @@ class BrokerService {
  * Input data for creating a single lot intake within a bulk operation.
  */
 data class LotIntakeInput(
-    val leadId: UUID,
+    val leadId: UUID? = null,
     val title: String,
     val categoryId: UUID,
     val description: String? = null,

@@ -3,6 +3,7 @@ package eu.auctionplatform.broker.api.v1.resource
 import eu.auctionplatform.broker.api.v1.dto.BrokerDashboardResponse
 import eu.auctionplatform.broker.api.v1.dto.BulkLotIntakeRequest
 import eu.auctionplatform.broker.api.v1.dto.LeadResponse
+import eu.auctionplatform.broker.api.v1.dto.LotIntakeRequest
 import eu.auctionplatform.broker.api.v1.dto.LotIntakeResponse
 import eu.auctionplatform.broker.api.v1.dto.VisitScheduleRequest
 import eu.auctionplatform.broker.application.service.BrokerService
@@ -103,41 +104,60 @@ class BrokerResource {
     // -------------------------------------------------------------------------
 
     /**
-     * Performs a bulk lot intake operation for the authenticated broker.
+     * Submits a single lot intake for the authenticated broker.
      *
      * **POST /api/v1/brokers/lots/intake**
+     *
+     * Accepts a single [LotIntakeRequest] without requiring a wrapping object.
+     * The broker is used as both the broker and seller (self-intake).
+     * The `leadId` field is optional — when omitted, the lot is created
+     * without a lead reference (standalone intake).
+     *
+     * @param authorization The Bearer token.
+     * @param request       The lot intake payload.
+     * @return 201 Created with the created lot intake.
+     */
+    @POST
+    @Path("/lots/intake")
+    @RolesAllowed("broker", "admin_ops", "admin_super")
+    fun singleLotIntake(
+        @HeaderParam("Authorization") authorization: String,
+        request: LotIntakeRequest
+    ): Response {
+        val brokerId = extractBrokerId(authorization)
+        logger.info("POST /lots/intake (single) for broker={}, title={}", brokerId, request.title)
+
+        val input = request.toInput()
+        val intakes = brokerService.bulkLotIntake(brokerId, brokerId, listOf(input))
+        val response = intakes.first().toResponse()
+
+        return Response
+            .status(Response.Status.CREATED)
+            .entity(ApiResponse.ok(response))
+            .build()
+    }
+
+    /**
+     * Performs a bulk lot intake operation for the authenticated broker.
+     *
+     * **POST /api/v1/brokers/lots/bulk-intake**
      *
      * @param authorization The Bearer token.
      * @param request       The bulk intake payload containing seller ID and lot details.
      * @return 201 Created with the list of created lot intakes.
      */
     @POST
-    @Path("/lots/intake")
+    @Path("/lots/bulk-intake")
     @RolesAllowed("broker", "admin_ops", "admin_super")
     fun bulkLotIntake(
         @HeaderParam("Authorization") authorization: String,
         request: BulkLotIntakeRequest
     ): Response {
         val brokerId = extractBrokerId(authorization)
-        logger.info("POST /lots/intake for broker={}, seller={}, count={}",
+        logger.info("POST /lots/bulk-intake for broker={}, seller={}, count={}",
             brokerId, request.sellerId, request.lots.size)
 
-        val inputs = request.lots.map { lotReq ->
-            LotIntakeInput(
-                leadId = lotReq.leadId,
-                title = lotReq.title,
-                categoryId = lotReq.categoryId,
-                description = lotReq.description,
-                specifications = lotReq.specifications,
-                reservePrice = lotReq.reservePrice,
-                locationAddress = lotReq.locationAddress,
-                locationCountry = lotReq.locationCountry,
-                locationLat = lotReq.locationLat,
-                locationLng = lotReq.locationLng,
-                imageKeys = lotReq.imageKeys
-            )
-        }
-
+        val inputs = request.lots.map { it.toInput() }
         val intakes = brokerService.bulkLotIntake(brokerId, request.sellerId, inputs)
         val response = intakes.map { it.toResponse() }
 
@@ -188,6 +208,20 @@ class BrokerResource {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private fun LotIntakeRequest.toInput(): LotIntakeInput = LotIntakeInput(
+        leadId = leadId,
+        title = title,
+        categoryId = categoryId,
+        description = description,
+        specifications = specifications,
+        reservePrice = reservePrice ?: startingBid,
+        locationAddress = resolvedAddress(),
+        locationCountry = resolvedCountry(),
+        locationLat = locationLat,
+        locationLng = locationLng,
+        imageKeys = imageKeys
+    )
 
     private fun extractBrokerId(authorization: String): UUID {
         val token = authorization.removePrefix("Bearer ").trim()

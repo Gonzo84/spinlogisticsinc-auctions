@@ -155,9 +155,9 @@
               leave-to-class="transform opacity-0 scale-95"
             >
               <div
-                v-show="showUserDropdown"
-                :aria-hidden="!showUserDropdown"
+                v-if="showUserDropdown"
                 role="menu"
+                aria-label="User menu"
                 class="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border py-1 z-50"
               >
                 <div class="px-4 py-3 border-b">
@@ -166,6 +166,7 @@
                 </div>
                 <NuxtLink
                   to="/my/bids"
+                  role="menuitem"
                   class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   @click="showUserDropdown = false"
                 >
@@ -176,6 +177,7 @@
                 </NuxtLink>
                 <NuxtLink
                   to="/my/watchlist"
+                  role="menuitem"
                   class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   @click="showUserDropdown = false"
                 >
@@ -186,6 +188,7 @@
                 </NuxtLink>
                 <NuxtLink
                   to="/my/purchases"
+                  role="menuitem"
                   class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   @click="showUserDropdown = false"
                 >
@@ -196,6 +199,7 @@
                 </NuxtLink>
                 <NuxtLink
                   to="/profile"
+                  role="menuitem"
                   class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   @click="showUserDropdown = false"
                 >
@@ -204,8 +208,9 @@
                   </svg>
                   {{ $t('nav.profile') }}
                 </NuxtLink>
-                <div class="border-t my-1" />
+                <div class="border-t my-1" role="separator" />
                 <button
+                  role="menuitem"
                   class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-warning hover:bg-gray-50 transition-colors"
                   @click="handleLogout"
                 >

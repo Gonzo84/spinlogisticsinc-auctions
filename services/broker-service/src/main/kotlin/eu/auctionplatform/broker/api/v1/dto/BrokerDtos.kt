@@ -19,20 +19,36 @@ data class VisitScheduleRequest(
 
 /**
  * Request payload for a single lot within a bulk intake operation.
+ *
+ * [leadId] is optional — if omitted, the lot intake is created without
+ * a lead reference (standalone intake).
+ *
+ * Accepts both [locationAddress] and its alias `locationCity`. When
+ * only `locationCity` is provided, it is used as [locationAddress].
  */
 data class LotIntakeRequest(
-    val leadId: UUID,
+    val leadId: UUID? = null,
     val title: String,
     val categoryId: UUID,
     val description: String? = null,
     val specifications: Map<String, Any>? = null,
     val reservePrice: BigDecimal? = null,
-    val locationAddress: String,
-    val locationCountry: String,
+    val startingBid: BigDecimal? = null,
+    val brand: String? = null,
+    val locationAddress: String? = null,
+    val locationCity: String? = null,
+    val locationCountry: String? = null,
+    val country: String? = null,
     val locationLat: Double? = null,
     val locationLng: Double? = null,
     val imageKeys: List<String> = emptyList()
-)
+) {
+    /** Resolved location address: prefers [locationAddress], falls back to [locationCity]. */
+    fun resolvedAddress(): String = locationAddress ?: locationCity ?: ""
+
+    /** Resolved country code: prefers [locationCountry], falls back to [country]. */
+    fun resolvedCountry(): String = locationCountry ?: country ?: ""
+}
 
 /**
  * Wrapper request for bulk lot intake containing the seller identifier
@@ -72,7 +88,7 @@ data class LotIntakeResponse(
     val id: UUID,
     val brokerId: UUID,
     val sellerId: UUID,
-    val leadId: UUID,
+    val leadId: UUID?,
     val title: String,
     val categoryId: UUID,
     val description: String?,

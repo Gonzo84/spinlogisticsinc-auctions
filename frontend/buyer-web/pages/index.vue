@@ -97,13 +97,17 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
 }
 
 const { data: featuredAuctions } = await useAsyncData('featured-auctions', async () => {
-  return await fetchLotsFromCatalog({ status: 'APPROVED', page: 0, pageSize: 9 })
+  return await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 9 })
 }, {
   default: () => [],
 })
 
 const { data: newLots } = await useAsyncData('new-lots', async () => {
-  return await fetchLotsFromCatalog({ status: 'APPROVED', page: 0, pageSize: 8 })
+  // Show both ACTIVE lots (with auctions) and APPROVED lots (newly listed, awaiting auction)
+  const activeLots = await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 8 })
+  const approvedLots = await fetchLotsFromCatalog({ status: 'APPROVED', page: 0, pageSize: 8 })
+  // Merge and take the 8 newest by combining both lists
+  return [...activeLots, ...approvedLots].slice(0, 8)
 }, {
   default: () => [],
 })
