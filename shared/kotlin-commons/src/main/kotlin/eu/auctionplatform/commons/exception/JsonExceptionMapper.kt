@@ -5,7 +5,7 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.ext.ExceptionMapper
 import jakarta.ws.rs.ext.Provider
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 /**
  * JAX-RS exception mapper for Jackson [JsonProcessingException].
@@ -20,11 +20,11 @@ import org.slf4j.LoggerFactory
 class JsonExceptionMapper : ExceptionMapper<JsonProcessingException> {
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(JsonExceptionMapper::class.java)
+        private val LOG: Logger = Logger.getLogger(JsonExceptionMapper::class.java)
     }
 
     override fun toResponse(exception: JsonProcessingException): Response {
-        LOG.debug("JSON deserialization error: {}", exception.originalMessage)
+        LOG.debugf("JSON deserialization error: %s", exception.originalMessage)
 
         val body = mapOf(
             "status" to 400,

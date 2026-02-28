@@ -8,7 +8,7 @@ import eu.auctionplatform.auction.domain.event.ReserveMetEvent
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -54,9 +54,8 @@ class AuctionReadModelRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionReadModelRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionReadModelRepository::class.java)
         private const val SELECT_COLUMNS = """
             auction_id, lot_id, brand, status, start_time, end_time,
             original_end_time, starting_bid, current_high_bid,
@@ -221,7 +220,7 @@ class AuctionReadModelRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Saved read model for auction {}", readModel.auctionId)
+        LOG.debugf("Saved read model for auction %s", readModel.auctionId)
     }
 
     /**
@@ -246,7 +245,7 @@ class AuctionReadModelRepository @Inject constructor(
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model for bid on auction {}", event.aggregateId)
+                LOG.debugf("Updated read model for bid on auction %s", event.aggregateId)
             }
 
             is AuctionExtendedEvent -> {
@@ -259,7 +258,7 @@ class AuctionReadModelRepository @Inject constructor(
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model extension for auction {}", event.aggregateId)
+                LOG.debugf("Updated read model extension for auction %s", event.aggregateId)
             }
 
             is AuctionClosedEvent -> {
@@ -271,7 +270,7 @@ class AuctionReadModelRepository @Inject constructor(
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model status to CLOSED for auction {}", event.aggregateId)
+                LOG.debugf("Updated read model status to CLOSED for auction %s", event.aggregateId)
             }
 
             is LotAwardedEvent -> {
@@ -283,7 +282,7 @@ class AuctionReadModelRepository @Inject constructor(
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model status to AWARDED for auction {}", event.aggregateId)
+                LOG.debugf("Updated read model status to AWARDED for auction %s", event.aggregateId)
             }
 
             is ReserveMetEvent -> {
@@ -294,11 +293,11 @@ class AuctionReadModelRepository @Inject constructor(
                         stmt.executeUpdate()
                     }
                 }
-                logger.debug("Updated read model reserve met for auction {}", event.aggregateId)
+                LOG.debugf("Updated read model reserve met for auction %s", event.aggregateId)
             }
 
             else -> {
-                logger.trace("Ignoring event type {} for read model projection", event::class.simpleName)
+                LOG.tracef("Ignoring event type %s for read model projection", event::class.simpleName)
             }
         }
     }

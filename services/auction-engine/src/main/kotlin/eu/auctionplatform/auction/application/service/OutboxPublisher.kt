@@ -8,7 +8,7 @@ import io.nats.client.impl.NatsMessage
 import io.quarkus.scheduler.Scheduled
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 
 /**
@@ -42,9 +42,8 @@ class OutboxPublisher @Inject constructor(
     private val natsConnection: Connection
 ) {
 
-    private val logger = LoggerFactory.getLogger(OutboxPublisher::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(OutboxPublisher::class.java)
         /** Maximum number of publish retries before moving to the dead letter queue. */
         private const val MAX_RETRIES = 10
 
@@ -76,7 +75,7 @@ class OutboxPublisher @Inject constructor(
             return
         }
 
-        logger.debug("Processing {} pending outbox entries", pendingEntries.size)
+        LOG.debugf("Processing %d pending outbox entries", pendingEntries.size)
 
         val now = Instant.now()
 
@@ -88,8 +87,8 @@ class OutboxPublisher @Inject constructor(
                 val backoffMs = calculateBackoff(entry.retryCount)
                 val eligibleAfter = entry.createdAt.plusMillis(backoffMs)
                 if (now.isBefore(eligibleAfter)) {
-                    logger.debug(
-                        "Skipping outbox entry {} (retryCount={}, eligible after {})",
+                    LOG.debugf(
+                        "Skipping outbox entry %s (retryCount=%d, eligible after %s)",
                         entryId, entry.retryCount, eligibleAfter
                     )
                     continue
@@ -119,22 +118,23 @@ class OutboxPublisher @Inject constructor(
                 natsConnection.jetStream().publish(message)
                 outboxRepository.markAsPublished(entryId)
 
-                logger.debug(
-                    "Published outbox entry {} (eventType={}, subject={})",
+                LOG.debugf(
+                    "Published outbox entry %s (eventType=%s, subject=%s)",
                     entryId, entry.eventType, entry.natsSubject
                 )
             } catch (ex: Exception) {
                 val newRetryCount = entry.retryCount + 1
 
-                logger.error(
-                    "Failed to publish outbox entry {} (eventType={}, retryCount={}/{}): {}",
-                    entryId, entry.eventType, newRetryCount, MAX_RETRIES, ex.message, ex
+                LOG.errorf(
+                    ex,
+                    "Failed to publish outbox entry %s (eventType=%s, retryCount=%d/%d): %s",
+                    entryId, entry.eventType, newRetryCount, MAX_RETRIES, ex.message
                 )
 
                 if (newRetryCount >= MAX_RETRIES) {
-                    logger.error(
-                        "OUTBOX DLQ: Entry {} exceeded max retries ({}) -- moving to dead letter queue. " +
-                            "Event type: {}, subject: {}, aggregate: {}. Manual intervention required.",
+                    LOG.errorf(
+                        "OUTBOX DLQ: Entry %s exceeded max retries (%d) -- moving to dead letter queue. " +
+                            "Event type: %s, subject: %s, aggregate: %s. Manual intervention required.",
                         entryId, MAX_RETRIES, entry.eventType, entry.natsSubject, entry.aggregateId
                     )
                     outboxRepository.moveToDeadLetterQueue(entryId)

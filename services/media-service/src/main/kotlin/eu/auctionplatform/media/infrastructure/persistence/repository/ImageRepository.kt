@@ -5,7 +5,7 @@ import eu.auctionplatform.media.domain.model.MediaImage
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -22,9 +22,9 @@ class ImageRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(ImageRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(ImageRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, lot_id, object_key, original_url, processed_url, thumbnail_url,
             display_order, is_primary, status, content_type, file_size, created_at
@@ -116,7 +116,7 @@ class ImageRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Saved image {} for lot {}", image.id, image.lotId)
+        LOG.debugf("Saved image %s for lot %s", image.id, image.lotId)
         return image
     }
 

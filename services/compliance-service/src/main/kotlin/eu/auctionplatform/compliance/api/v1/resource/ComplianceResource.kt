@@ -26,7 +26,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
@@ -55,7 +55,7 @@ class ComplianceResource {
     lateinit var auditService: AuditService
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ComplianceResource::class.java)
+        private val LOG: Logger = Logger.getLogger(ComplianceResource::class.java)
     }
 
     // -----------------------------------------------------------------------
@@ -71,7 +71,7 @@ class ComplianceResource {
     @Path("/gdpr/export-request")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun requestExport(request: ExportRequest): Response {
-        logger.info("GDPR export request from userId={}", request.userId)
+        LOG.infof("GDPR export request from userId=%s", request.userId)
 
         val gdprRequest = gdprService.requestExport(request.userId)
 
@@ -90,7 +90,7 @@ class ComplianceResource {
     @Path("/gdpr/erasure-request")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun requestErasure(request: ErasureRequest): Response {
-        logger.info("GDPR erasure request from userId={}", request.userId)
+        LOG.infof("GDPR erasure request from userId=%s", request.userId)
 
         val gdprRequest = gdprService.requestErasure(request.userId, request.reason)
 
@@ -142,7 +142,7 @@ class ComplianceResource {
     @Path("/aml/screening")
     @RolesAllowed("admin_ops", "admin_super")
     fun triggerScreening(request: AmlScreeningRequest): Response {
-        logger.info("AML screening triggered for userId={}", request.userId)
+        LOG.infof("AML screening triggered for userId=%s", request.userId)
 
         val screening = amlService.triggerScreening(request.userId)
 
@@ -179,7 +179,7 @@ class ComplianceResource {
     @Path("/dsa/content-report")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun reportContent(request: ContentReportRequest): Response {
-        logger.info("DSA content report from reporterId={}, lotId={}", request.reporterId, request.lotId)
+        LOG.infof("DSA content report from reporterId=%s, lotId=%s", request.reporterId, request.lotId)
 
         val report = dsaService.reportContent(request.reporterId, request.lotId, request.reason)
 

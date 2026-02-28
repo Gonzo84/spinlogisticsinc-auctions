@@ -3,6 +3,9 @@ plugins {
     kotlin("plugin.allopen") version "2.3.0" apply false
     kotlin("plugin.noarg") version "2.3.0" apply false
     id("io.quarkus") apply false
+    // detekt: waiting for stable 2.0 release (1.23.x is incompatible with Kotlin 2.3.0)
+    // Config ready at config/detekt/detekt.yml — re-enable with:
+    //   id("dev.detekt") version "2.0.0"
 }
 
 val quarkusPlatformGroupId: String by project

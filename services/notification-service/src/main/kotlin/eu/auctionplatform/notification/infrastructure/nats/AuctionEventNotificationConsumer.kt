@@ -10,7 +10,7 @@ import io.nats.client.Message
 import io.quarkus.runtime.Startup
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -36,9 +36,9 @@ class AuctionEventNotificationConsumer @Inject constructor(
     private val notificationService: NotificationService
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionEventNotificationConsumer::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionEventNotificationConsumer::class.java)
+
         private const val STREAM_NAME = "AUCTION"
         private const val DURABLE_NAME = "notification-auction-consumer"
 
@@ -56,7 +56,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
      */
     @jakarta.annotation.PostConstruct
     fun init() {
-        logger.info("Starting auction event notification consumers")
+        LOG.info("Starting auction event notification consumers")
 
         executor.submit { createBidPlacedConsumer().start() }
         executor.submit { createBidProxyConsumer().start() }
@@ -65,7 +65,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
 
     @jakarta.annotation.PreDestroy
     fun shutdown() {
-        logger.info("Shutting down auction event notification consumers")
+        LOG.info("Shutting down auction event notification consumers")
         executor.shutdownNow()
     }
 
@@ -144,7 +144,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
             data = bidConfirmData
         )
 
-        logger.debug("Sent BID_CONFIRMED to bidder={} for auction={}", bidderId, aggregateId)
+        LOG.debugf("Sent BID_CONFIRMED to bidder=%s for auction=%s", bidderId, aggregateId)
 
         // Notify the previous high bidder that they've been outbid
         if (!previousHighBidderId.isNullOrBlank() && previousHighBidderId != bidderId) {
@@ -159,8 +159,8 @@ class AuctionEventNotificationConsumer @Inject constructor(
                 data = overbidData
             )
 
-            logger.debug(
-                "Sent OVERBID to previousBidder={} for auction={}",
+            LOG.debugf(
+                "Sent OVERBID to previousBidder=%s for auction=%s",
                 previousHighBidderId, aggregateId
             )
         }
@@ -196,7 +196,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
             data = data
         )
 
-        logger.debug("Sent AUTO_BID_TRIGGERED to bidder={} for auction={}", bidderId, aggregateId)
+        LOG.debugf("Sent AUTO_BID_TRIGGERED to bidder=%s for auction=%s", bidderId, aggregateId)
     }
 
     /**
@@ -216,8 +216,8 @@ class AuctionEventNotificationConsumer @Inject constructor(
         val finalBidCurrency = payload["finalBidCurrency"]?.toString() ?: "EUR"
 
         if (winnerId.isNullOrBlank() || !reserveMet) {
-            logger.debug(
-                "Auction {} closed without a winner or reserve not met (winnerId={}, reserveMet={})",
+            LOG.debugf(
+                "Auction %s closed without a winner or reserve not met (winnerId=%s, reserveMet=%s)",
                 aggregateId, winnerId, reserveMet
             )
             return
@@ -235,7 +235,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
             data = data
         )
 
-        logger.debug("Sent AUCTION_WON to winner={} for auction={}", winnerId, aggregateId)
+        LOG.debugf("Sent AUCTION_WON to winner=%s for auction=%s", winnerId, aggregateId)
     }
 
     // -----------------------------------------------------------------------
@@ -248,9 +248,9 @@ class AuctionEventNotificationConsumer @Inject constructor(
             val json = String(message.data, Charsets.UTF_8)
             JsonMapper.instance.readValue(json, Map::class.java) as Map<String, Any>
         } catch (ex: Exception) {
-            logger.error(
-                "Failed to parse message payload on subject {}: {}",
-                message.subject, ex.message, ex
+            LOG.errorf(ex,
+                "Failed to parse message payload on subject %s: %s",
+                message.subject, ex.message
             )
             null
         }

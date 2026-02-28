@@ -5,7 +5,7 @@ import eu.auctionplatform.broker.domain.model.LeadStatus
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -21,9 +21,9 @@ class LeadRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(LeadRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(LeadRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, seller_id, broker_id, company_name, contact_name,
             contact_email, contact_phone, status, notes,
@@ -115,7 +115,7 @@ class LeadRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted lead: id={}, broker={}", lead.id, lead.brokerId)
+        LOG.debugf("Inserted lead: id=%s, broker=%s", lead.id, lead.brokerId)
     }
 
     /**
@@ -135,11 +135,11 @@ class LeadRepository @Inject constructor(
                 stmt.setObject(4, id)
                 val rowsUpdated = stmt.executeUpdate()
                 if (rowsUpdated == 0) {
-                    logger.warn("No lead found to update: id={}", id)
+                    LOG.warnf("No lead found to update: id=%s", id)
                 }
             }
         }
-        logger.debug("Updated lead status: id={}, status={}", id, status)
+        LOG.debugf("Updated lead status: id=%s, status=%s", id, status)
     }
 
     // -----------------------------------------------------------------------

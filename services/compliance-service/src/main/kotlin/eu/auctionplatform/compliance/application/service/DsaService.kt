@@ -7,7 +7,7 @@ import eu.auctionplatform.compliance.domain.model.ContentReportStatus
 import eu.auctionplatform.compliance.infrastructure.persistence.repository.ContentReportRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -47,7 +47,7 @@ class DsaService {
     lateinit var contentReportRepository: ContentReportRepository
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DsaService::class.java)
+        private val LOG: Logger = Logger.getLogger(DsaService::class.java)
     }
 
     /**
@@ -73,8 +73,8 @@ class DsaService {
 
         contentReportRepository.insert(report)
 
-        logger.info(
-            "Content report filed: id={}, reporterId={}, lotId={}, reason={}",
+        LOG.infof(
+            "Content report filed: id=%s, reporterId=%s, lotId=%s, reason=%s",
             report.id, reporterId, lotId, reason.take(80)
         )
 
@@ -119,8 +119,8 @@ class DsaService {
         val totalReports = contentReportRepository.countInRange(periodStart, periodEnd)
         val statusBreakdown = contentReportRepository.countByStatusInRange(periodStart, periodEnd)
 
-        logger.info(
-            "DSA transparency report generated: period={} to {}, totalReports={}",
+        LOG.infof(
+            "DSA transparency report generated: period=%s to %s, totalReports=%s",
             periodStart, periodEnd, totalReports
         )
 

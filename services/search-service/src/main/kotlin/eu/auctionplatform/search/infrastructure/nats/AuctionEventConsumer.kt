@@ -11,7 +11,7 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Singleton
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -50,11 +50,11 @@ class AuctionEventConsumer @Inject constructor(
     batchSize = 50
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionEventConsumer::class.java)
-
     private var consumerThread: Thread? = null
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionEventConsumer::class.java)
+
         /** Durable consumer name -- persists across restarts. */
         const val DURABLE_NAME: String = "search-auction-consumer"
 
@@ -83,7 +83,7 @@ class AuctionEventConsumer @Inject constructor(
      * Starts the consumer loop in a dedicated daemon thread on application startup.
      */
     fun onStart(@Observes event: StartupEvent) {
-        logger.info("Starting AuctionEventConsumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Starting AuctionEventConsumer [durable=%s]", DURABLE_NAME)
         consumerThread = Thread({
             start()
         }, "auction-event-consumer").apply {
@@ -96,7 +96,7 @@ class AuctionEventConsumer @Inject constructor(
      * Signals the consumer loop to stop gracefully on application shutdown.
      */
     fun onStop(@Observes event: ShutdownEvent) {
-        logger.info("Stopping AuctionEventConsumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Stopping AuctionEventConsumer [durable=%s]", DURABLE_NAME)
         stop()
         consumerThread?.interrupt()
     }
@@ -119,7 +119,7 @@ class AuctionEventConsumer @Inject constructor(
         val subject = message.subject
         val payload = String(message.data, Charsets.UTF_8)
 
-        logger.debug("Received auction event on subject [{}], payload size={} bytes",
+        LOG.debugf("Received auction event on subject [%s], payload size=%s bytes",
             subject, message.data.size)
 
         try {
@@ -128,10 +128,10 @@ class AuctionEventConsumer @Inject constructor(
                 subject.startsWith(SUBJECT_LOT_CLOSED) -> handleLotClosed(payload)
                 subject.startsWith(SUBJECT_LOT_EXTENDED) -> handleLotExtended(payload)
                 subject.startsWith(SUBJECT_CO2_CALCULATED) -> handleCo2Calculated(payload)
-                else -> logger.debug("Ignoring unrelated subject [{}] on auction stream", subject)
+                else -> LOG.debugf("Ignoring unrelated subject [%s] on auction stream", subject)
             }
         } catch (ex: Exception) {
-            logger.error("Failed to process auction event on [{}]: {}", subject, ex.message, ex)
+            LOG.errorf(ex, "Failed to process auction event on [%s]: %s", subject, ex.message)
             throw ex // re-throw so the base class handles nak/dead-letter
         }
     }
@@ -157,7 +157,7 @@ class AuctionEventConsumer @Inject constructor(
         val lotId = extractLotId(node)
         val bidAmount = node.requiredDecimal("bidAmount")
 
-        logger.info("Updating bid for lot [id={}], newBid={}", lotId, bidAmount)
+        LOG.infof("Updating bid for lot [id=%s], newBid=%s", lotId, bidAmount)
 
         // Attempt to read current bid count and increment
         val currentDoc = lotIndexService.getDocument(lotId)
@@ -172,7 +172,7 @@ class AuctionEventConsumer @Inject constructor(
         node.optionalText("reserveStatus")?.let { updates["reserveStatus"] = it }
 
         lotIndexService.updateDocument(lotId, updates)
-        logger.info("Successfully updated bid for lot [id={}], bidCount={}", lotId, newBidCount)
+        LOG.infof("Successfully updated bid for lot [id=%s], bidCount=%s", lotId, newBidCount)
     }
 
     /**
@@ -189,7 +189,7 @@ class AuctionEventConsumer @Inject constructor(
         val node = JsonMapper.instance.readTree(payload)
         val lotId = extractLotId(node)
 
-        logger.info("Closing and archiving lot [id={}]", lotId)
+        LOG.infof("Closing and archiving lot [id=%s]", lotId)
 
         // Update final state before archiving
         val updates = mutableMapOf<String, Any?>("status" to "closed")
@@ -204,12 +204,12 @@ class AuctionEventConsumer @Inject constructor(
         try {
             lotIndexService.updateDocument(lotId, updates)
         } catch (ex: Exception) {
-            logger.warn("Could not update lot [id={}] before archiving: {}", lotId, ex.message)
+            LOG.warnf("Could not update lot [id=%s] before archiving: %s", lotId, ex.message)
         }
 
         // Move from active to archive index
         lotIndexService.archiveDocument(lotId)
-        logger.info("Successfully archived lot [id={}]", lotId)
+        LOG.infof("Successfully archived lot [id=%s]", lotId)
     }
 
     /**
@@ -227,12 +227,12 @@ class AuctionEventConsumer @Inject constructor(
         val lotId = extractLotId(node)
         val newEndTime = node.requiredText("newEndTime")
 
-        logger.info("Extending auction end time for lot [id={}] to [{}]", lotId, newEndTime)
+        LOG.infof("Extending auction end time for lot [id=%s] to [%s]", lotId, newEndTime)
 
         lotIndexService.updateDocument(lotId, mapOf(
             "auctionEndTime" to newEndTime
         ))
-        logger.info("Successfully extended auction for lot [id={}]", lotId)
+        LOG.infof("Successfully extended auction for lot [id=%s]", lotId)
     }
 
     /**
@@ -251,12 +251,12 @@ class AuctionEventConsumer @Inject constructor(
         val co2AvoidedKg = node.get("co2AvoidedKg")?.floatValue()
             ?: throw IllegalArgumentException("Required field 'co2AvoidedKg' missing from CO2 event")
 
-        logger.info("Updating CO2 avoided for lot [id={}] to {} kg", lotId, co2AvoidedKg)
+        LOG.infof("Updating CO2 avoided for lot [id=%s] to %s kg", lotId, co2AvoidedKg)
 
         lotIndexService.updateDocument(lotId, mapOf(
             "co2AvoidedKg" to co2AvoidedKg
         ))
-        logger.info("Successfully updated CO2 for lot [id={}]", lotId)
+        LOG.infof("Successfully updated CO2 for lot [id=%s]", lotId)
     }
 
     // -------------------------------------------------------------------------

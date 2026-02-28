@@ -2,7 +2,7 @@ package eu.auctionplatform.notification.infrastructure.push
 
 import eu.auctionplatform.notification.domain.model.DeviceToken
 import jakarta.enterprise.context.ApplicationScoped
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 /**
  * Sends push notifications to user devices.
@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory
 @ApplicationScoped
 class PushNotificationSender {
 
-    private val logger = LoggerFactory.getLogger(PushNotificationSender::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(PushNotificationSender::class.java)
+    }
 
     /**
      * Sends a push notification to one or more device tokens.
@@ -37,7 +39,7 @@ class PushNotificationSender {
         deepLink: String? = null
     ): PushResult {
         if (deviceTokens.isEmpty()) {
-            logger.debug("No device tokens provided -- skipping push notification")
+            LOG.debug("No device tokens provided -- skipping push notification")
             return PushResult(sent = 0, failed = 0)
         }
 
@@ -49,16 +51,16 @@ class PushNotificationSender {
                 sendToDevice(token, title, body, data, deepLink)
                 sent++
             } catch (ex: Exception) {
-                logger.error(
-                    "Failed to send push to device: tokenId={}, platform={}, error={}",
-                    token.id, token.platform, ex.message, ex
+                LOG.errorf(
+                    ex, "Failed to send push to device: tokenId=%s, platform=%s, error=%s",
+                    token.id, token.platform, ex.message
                 )
                 failed++
             }
         }
 
-        logger.info(
-            "Push notification batch complete: title='{}', sent={}, failed={}, totalTokens={}",
+        LOG.infof(
+            "Push notification batch complete: title='%s', sent=%s, failed=%s, totalTokens=%s",
             title, sent, failed, deviceTokens.size
         )
 
@@ -80,8 +82,8 @@ class PushNotificationSender {
         deepLink: String?
     ) {
         // Placeholder: log the push notification request
-        logger.info(
-            "PUSH [{}] -> tokenId={}, platform={}, title='{}', body='{}', deepLink={}",
+        LOG.infof(
+            "PUSH [%s] -> tokenId=%s, platform=%s, title='%s', body='%s', deepLink=%s",
             if (deepLink != null) "deep-link" else "standard",
             deviceToken.id,
             deviceToken.platform,

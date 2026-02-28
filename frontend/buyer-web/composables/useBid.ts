@@ -11,6 +11,7 @@ export function useBid() {
   const lastBid = ref<Bid | null>(null)
 
   const currentBid = computed(() => auctionStore.currentBid)
+  const bidCount = computed(() => auctionStore.bidCount)
   const minBidAmount = computed(() => auctionStore.minBidAmount)
   const hasAutoBid = computed(() => auctionStore.hasAutoBid)
   const autoBidConfig = computed(() => auctionStore.autoBidConfig)
@@ -119,6 +120,7 @@ export function useBid() {
     error: readonly(error),
     lastBid: readonly(lastBid),
     currentBid,
+    bidCount,
     minBidAmount,
     hasAutoBid,
     autoBidConfig,

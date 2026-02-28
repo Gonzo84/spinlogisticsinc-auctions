@@ -30,4 +30,13 @@ interface DomainEvent {
 
     /** Monotonically increasing version within the aggregate's event stream. */
     val version: Long
+
+    /**
+     * Optional trace / audit context propagated through NATS message headers.
+     *
+     * Keys typically include `traceId`, `userId`, `userAgent`, `sourceIp`.
+     * Defaults to `null` for backward compatibility with existing implementations.
+     */
+    val metadata: Map<String, String>?
+        get() = null
 }

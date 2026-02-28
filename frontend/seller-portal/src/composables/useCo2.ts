@@ -1,36 +1,15 @@
-import { ref } from 'vue'
+import { ref, readonly } from 'vue'
 import { useApi } from './useApi'
+import type {
+  Co2Summary,
+  Co2LotBreakdown,
+  Co2CategoryBreakdown,
+  Co2MonthlyTrend,
+  ApiResponse,
+  RawCo2Response,
+} from '@/types'
 
-export interface Co2Summary {
-  totalCo2AvoidedKg: number
-  totalLotsContributed: number
-  equivalentTreesPlanted: number
-  equivalentCarKmAvoided: number
-  currency: string
-}
-
-export interface Co2LotBreakdown {
-  lotId: string
-  lotTitle: string
-  category: string
-  co2AvoidedKg: number
-  calculationBasis: string
-  soldAt: string
-  hammerPrice: number
-}
-
-export interface Co2CategoryBreakdown {
-  category: string
-  co2AvoidedKg: number
-  lotCount: number
-  percentage: number
-}
-
-export interface Co2MonthlyTrend {
-  month: string
-  co2AvoidedKg: number
-  lotCount: number
-}
+export type { Co2Summary, Co2LotBreakdown, Co2CategoryBreakdown, Co2MonthlyTrend }
 
 /**
  * Seller-service has: GET /sellers/me/co2-report
@@ -50,11 +29,20 @@ export function useCo2() {
   const categoryBreakdown = ref<Co2CategoryBreakdown[]>([])
   const monthlyTrend = ref<Co2MonthlyTrend[]>([])
 
+  /** Unwrap ApiResponse wrapper if present, returning the inner data. */
+  function unwrapApiResponse<T>(raw: unknown): T {
+    const obj = raw as Record<string, unknown> | null
+    if (obj?.data && typeof obj.data === 'object' && !Array.isArray(obj.data)) {
+      return obj.data as T
+    }
+    return raw as T
+  }
+
   async function fetchSummary(): Promise<void> {
     try {
-      const raw = await get<any>('/sellers/me/co2-report')
+      const raw = await get<ApiResponse<RawCo2Response> | RawCo2Response>('/sellers/me/co2-report')
       // Unwrap ApiResponse wrapper if present
-      const data = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+      const data = unwrapApiResponse<RawCo2Response>(raw)
 
       summary.value = {
         totalCo2AvoidedKg: data.totalCo2SavedKg ?? 0,
@@ -64,7 +52,7 @@ export function useCo2() {
         currency: 'EUR',
       }
     } catch {
-      // CO2 report not available yet – show empty state
+      // CO2 report not available yet -- show empty state
       error.value = null
       summary.value = {
         totalCo2AvoidedKg: 0,
@@ -77,19 +65,19 @@ export function useCo2() {
   }
 
   async function fetchLotBreakdown(): Promise<void> {
-    // Per-lot CO2 data not available from seller-service – keep empty
+    // Per-lot CO2 data not available from seller-service -- keep empty
   }
 
   async function fetchCategoryBreakdown(): Promise<void> {
-    // Category breakdown not available from seller-service – keep empty
+    // Category breakdown not available from seller-service -- keep empty
   }
 
   async function fetchMonthlyTrend(): Promise<void> {
-    // Monthly trend not available from seller-service – keep empty
+    // Monthly trend not available from seller-service -- keep empty
   }
 
   async function downloadReport(_format: 'pdf' | 'csv' = 'pdf'): Promise<void> {
-    // Report download not available – no-op
+    // Report download not available -- no-op
   }
 
   async function fetchAll(): Promise<void> {
@@ -97,10 +85,10 @@ export function useCo2() {
   }
 
   return {
-    summary,
-    lotBreakdown,
-    categoryBreakdown,
-    monthlyTrend,
+    summary: readonly(summary),
+    lotBreakdown: readonly(lotBreakdown),
+    categoryBreakdown: readonly(categoryBreakdown),
+    monthlyTrend: readonly(monthlyTrend),
     loading,
     error,
     fetchSummary,

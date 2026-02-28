@@ -6,7 +6,7 @@ import eu.auctionplatform.payment.infrastructure.persistence.repository.PaymentR
 import io.quarkus.scheduler.Scheduled
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -51,9 +51,9 @@ class NonPaymentService @Inject constructor(
     private val paymentRepository: PaymentRepository
 ) {
 
-    private val logger = LoggerFactory.getLogger(NonPaymentService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(NonPaymentService::class.java)
+
         /** Forfeit rate: 25% of total amount. */
         val FORFEIT_RATE: BigDecimal = BigDecimal("0.25")
     }
@@ -73,21 +73,21 @@ class NonPaymentService @Inject constructor(
             return
         }
 
-        logger.info("Found {} overdue payment(s) to process", overduePayments.size)
+        LOG.infof("Found %s overdue payment(s) to process", overduePayments.size)
 
         for (payment in overduePayments) {
             try {
                 val result = applyPenalty(payment.id)
                 if (result != null) {
-                    logger.info(
-                        "Applied non-payment penalty to payment {} (buyer={}, forfeit={})",
+                    LOG.infof(
+                        "Applied non-payment penalty to payment %s (buyer=%s, forfeit=%s)",
                         result.paymentId, result.buyerId, result.forfeitAmount
                     )
                 }
             } catch (ex: Exception) {
-                logger.error(
-                    "Failed to apply penalty for payment {}: {}",
-                    payment.id, ex.message, ex
+                LOG.errorf(
+                    ex, "Failed to apply penalty for payment %s: %s",
+                    payment.id, ex.message
                 )
             }
         }
@@ -109,20 +109,20 @@ class NonPaymentService @Inject constructor(
     fun applyPenalty(paymentId: UUID): PenaltyResult? {
         val payment = paymentRepository.findById(paymentId)
         if (payment == null) {
-            logger.warn("Cannot apply penalty: payment {} not found", paymentId)
+            LOG.warnf("Cannot apply penalty: payment %s not found", paymentId)
             return null
         }
 
         if (payment.status != PaymentStatus.PENDING) {
-            logger.warn(
-                "Cannot apply penalty: payment {} is in status {} (expected PENDING)",
+            LOG.warnf(
+                "Cannot apply penalty: payment %s is in status %s (expected PENDING)",
                 paymentId, payment.status
             )
             return null
         }
 
-        logger.info(
-            "Applying non-payment penalty to payment {} (buyer={}, lot={}, total={})",
+        LOG.infof(
+            "Applying non-payment penalty to payment %s (buyer=%s, lot=%s, total=%s)",
             paymentId, payment.buyerId, payment.lotId, payment.totalAmount
         )
 
@@ -145,8 +145,8 @@ class NonPaymentService @Inject constructor(
         //   EventBus.publish("payment.lot.relist-requested", LotRelistRequestedEvent(...))
         val lotRelisted = requestLotRelist(payment.lotId, payment.auctionId, paymentId)
 
-        logger.info(
-            "Non-payment penalty applied: payment={}, forfeit={}, blocked={}, relisted={}",
+        LOG.infof(
+            "Non-payment penalty applied: payment=%s, forfeit=%s, blocked=%s, relisted=%s",
             paymentId, forfeitAmount, userBlocked, lotRelisted
         )
 
@@ -172,8 +172,8 @@ class NonPaymentService @Inject constructor(
      * @return true if the block request was sent successfully.
      */
     private fun blockBuyer(buyerId: UUID, paymentId: UUID, forfeitAmount: BigDecimal): Boolean {
-        logger.info(
-            "Requesting buyer block: buyerId={}, paymentId={}, forfeit={}",
+        LOG.infof(
+            "Requesting buyer block: buyerId=%s, paymentId=%s, forfeit=%s",
             buyerId, paymentId, forfeitAmount
         )
         // TODO: Publish NonPaymentPenaltyEvent to NATS via outbox
@@ -189,8 +189,8 @@ class NonPaymentService @Inject constructor(
      * @return true if the relist request was sent successfully.
      */
     private fun requestLotRelist(lotId: UUID, auctionId: UUID, paymentId: UUID): Boolean {
-        logger.info(
-            "Requesting lot relist: lotId={}, auctionId={}, paymentId={}",
+        LOG.infof(
+            "Requesting lot relist: lotId=%s, auctionId=%s, paymentId=%s",
             lotId, auctionId, paymentId
         )
         // TODO: Publish LotRelistRequestedEvent to NATS via outbox

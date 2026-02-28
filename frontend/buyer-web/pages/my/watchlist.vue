@@ -63,20 +63,13 @@
 </template>
 
 <script setup lang="ts">
+import type { WatchlistLot } from '~/types/auction'
 import { formatCurrency } from '~/utils/format'
 import { unwrapApiResponse } from '~/utils/api-response'
 
 definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
-
-interface WatchlistLot {
-  id: string
-  title: string
-  imageUrl?: string
-  startingBid: number
-  location?: string
-}
 
 const loading = ref(false)
 const watchlist = ref<WatchlistLot[]>([])

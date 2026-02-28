@@ -18,7 +18,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.LocalDate
 import java.util.UUID
 
@@ -38,7 +38,7 @@ class AnalyticsResource {
     lateinit var analyticsService: AnalyticsService
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AnalyticsResource::class.java)
+        private val LOG: Logger = Logger.getLogger(AnalyticsResource::class.java)
     }
 
     // -------------------------------------------------------------------------
@@ -56,7 +56,7 @@ class AnalyticsResource {
     @Path("/overview")
     @RolesAllowed("admin_ops", "admin_super")
     fun getOverview(): Response {
-        logger.debug("GET /overview")
+        LOG.debug("GET /overview")
 
         val metrics = analyticsService.getPlatformOverview()
 
@@ -89,7 +89,7 @@ class AnalyticsResource {
     @Path("/auctions/{id}")
     @RolesAllowed("admin_ops", "admin_super")
     fun getAuctionMetrics(@PathParam("id") id: UUID): Response {
-        logger.debug("GET /auctions/{}", id)
+        LOG.debugf("GET /auctions/%s", id)
 
         val metrics = analyticsService.getAuctionMetrics(id)
 
@@ -131,7 +131,7 @@ class AnalyticsResource {
         val toDate = to?.let { LocalDate.parse(it) } ?: LocalDate.now()
         val fromDate = from?.let { LocalDate.parse(it) } ?: toDate.minusDays(30)
 
-        logger.debug("GET /revenue from={} to={}", fromDate, toDate)
+        LOG.debugf("GET /revenue from=%s to=%s", fromDate, toDate)
 
         val entries = analyticsService.getRevenueReport(fromDate, toDate)
 
@@ -181,7 +181,7 @@ class AnalyticsResource {
         val toDate = to?.let { LocalDate.parse(it) } ?: LocalDate.now()
         val fromDate = from?.let { LocalDate.parse(it) } ?: toDate.minusDays(30)
 
-        logger.debug("GET /growth from={} to={}", fromDate, toDate)
+        LOG.debugf("GET /growth from=%s to=%s", fromDate, toDate)
 
         val entries = analyticsService.getUserGrowthReport(fromDate, toDate)
 

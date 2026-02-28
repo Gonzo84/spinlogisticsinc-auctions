@@ -21,7 +21,7 @@ import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
@@ -43,7 +43,7 @@ class Co2Resource {
     lateinit var co2CalculationRepository: Co2CalculationRepository
 
     companion object {
-        private val logger = LoggerFactory.getLogger(Co2Resource::class.java)
+        private val LOG: Logger = Logger.getLogger(Co2Resource::class.java)
     }
 
     // -------------------------------------------------------------------------
@@ -62,7 +62,7 @@ class Co2Resource {
     @Path("/lots/{lotId}")
     @PermitAll
     fun getLotCo2(@PathParam("lotId") lotId: UUID): Response {
-        logger.debug("GET /lots/{} CO2 calculation", lotId)
+        LOG.debugf("GET /lots/%s CO2 calculation", lotId)
 
         val calculation = co2CalculationRepository.findByLotId(lotId)
             ?: throw NotFoundException(
@@ -88,7 +88,7 @@ class Co2Resource {
     @Path("/summary")
     @PermitAll
     fun getPlatformSummary(): Response {
-        logger.debug("GET /summary platform CO2")
+        LOG.debug("GET /summary platform CO2")
 
         val summary = co2CalculationService.getPlatformSummary()
 
@@ -114,7 +114,7 @@ class Co2Resource {
     @Path("/sellers/{sellerId}")
     @PermitAll
     fun getSellerSummary(@PathParam("sellerId") sellerId: UUID): Response {
-        logger.debug("GET /sellers/{} CO2 summary", sellerId)
+        LOG.debugf("GET /sellers/%s CO2 summary", sellerId)
 
         val summary = co2CalculationService.getSellerSummary(sellerId)
 
@@ -143,7 +143,7 @@ class Co2Resource {
     @Path("/emission-factors")
     @PermitAll
     fun getEmissionFactors(): Response {
-        logger.debug("GET /emission-factors")
+        LOG.debug("GET /emission-factors")
 
         val factors = co2CalculationService.getAllEmissionFactors()
         val response = factors.map { it.toResponse() }
@@ -167,7 +167,7 @@ class Co2Resource {
         @PathParam("id") id: UUID,
         request: UpdateEmissionFactorRequest
     ): Response {
-        logger.info("PUT /emission-factors/{}", id)
+        LOG.infof("PUT /emission-factors/%s", id)
 
         val existing = co2CalculationService.getEmissionFactor(id)
             ?: throw NotFoundException(

@@ -4,7 +4,7 @@ import eu.auctionplatform.notification.domain.model.DeviceToken
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.util.UUID
@@ -20,9 +20,9 @@ class DeviceTokenRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(DeviceTokenRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(DeviceTokenRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, user_id, platform, token, active, created_at
         """
@@ -144,8 +144,8 @@ class DeviceTokenRepository @Inject constructor(
             }
         }
 
-        logger.debug(
-            "Upserted device token: id={}, userId={}, platform={}",
+        LOG.debugf(
+            "Upserted device token: id=%s, userId=%s, platform=%s",
             deviceToken.id, deviceToken.userId, deviceToken.platform
         )
     }
@@ -162,7 +162,7 @@ class DeviceTokenRepository @Inject constructor(
                 stmt.setObject(1, id)
                 val updated = stmt.executeUpdate()
                 if (updated > 0) {
-                    logger.debug("Deactivated device token: id={}", id)
+                    LOG.debugf("Deactivated device token: id=%s", id)
                 }
                 return updated > 0
             }

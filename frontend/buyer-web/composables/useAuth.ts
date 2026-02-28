@@ -26,9 +26,23 @@ export function useAuth() {
   async function login(redirectUri?: string) {
     const keycloak = $keycloak as KeycloakInstance | undefined
     if (keycloak) {
-      await keycloak.login({
-        redirectUri: redirectUri || window.location.href,
-      })
+      try {
+        await keycloak.login({
+          redirectUri: redirectUri || window.location.href,
+        })
+      } catch {
+        // If login() fails (e.g., adapter not fully initialised after logout),
+        // fall back to a manual redirect to the Keycloak auth endpoint.
+        const config = useRuntimeConfig()
+        const authUrl = `${config.public.keycloakUrl}/realms/${config.public.keycloakRealm}/protocol/openid-connect/auth`
+        const params = new URLSearchParams({
+          client_id: config.public.keycloakClientId as string,
+          redirect_uri: redirectUri || window.location.href,
+          response_type: 'code',
+          scope: 'openid',
+        })
+        window.location.href = `${authUrl}?${params.toString()}`
+      }
     }
   }
 

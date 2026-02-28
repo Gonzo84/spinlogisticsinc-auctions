@@ -23,7 +23,7 @@ import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 
 /**
@@ -45,7 +45,7 @@ class BrokerResource {
     lateinit var brokerService: BrokerService
 
     companion object {
-        private val logger = LoggerFactory.getLogger(BrokerResource::class.java)
+        private val LOG: Logger = Logger.getLogger(BrokerResource::class.java)
     }
 
     // -------------------------------------------------------------------------
@@ -65,7 +65,7 @@ class BrokerResource {
     @RolesAllowed("broker", "admin_ops", "admin_super")
     fun getLeads(@HeaderParam("Authorization") authorization: String): Response {
         val brokerId = extractBrokerId(authorization)
-        logger.info("GET /leads for broker={}", brokerId)
+        LOG.infof("GET /leads for broker=%s", brokerId)
 
         val leads = brokerService.getLeads(brokerId)
         val response = leads.map { it.toResponse() }
@@ -92,7 +92,7 @@ class BrokerResource {
         request: VisitScheduleRequest
     ): Response {
         val brokerId = extractBrokerId(authorization)
-        logger.info("POST /leads/{}/visit for broker={}, date={}", id, brokerId, request.scheduledDate)
+        LOG.infof("POST /leads/%s/visit for broker=%s, date=%s", id, brokerId, request.scheduledDate)
 
         val updatedLead = brokerService.scheduleVisit(id, request.scheduledDate)
 
@@ -125,7 +125,7 @@ class BrokerResource {
         request: LotIntakeRequest
     ): Response {
         val brokerId = extractBrokerId(authorization)
-        logger.info("POST /lots/intake (single) for broker={}, title={}", brokerId, request.title)
+        LOG.infof("POST /lots/intake (single) for broker=%s, title=%s", brokerId, request.title)
 
         val input = request.toInput()
         val intakes = brokerService.bulkLotIntake(brokerId, brokerId, listOf(input))
@@ -154,7 +154,7 @@ class BrokerResource {
         request: BulkLotIntakeRequest
     ): Response {
         val brokerId = extractBrokerId(authorization)
-        logger.info("POST /lots/bulk-intake for broker={}, seller={}, count={}",
+        LOG.infof("POST /lots/bulk-intake for broker=%s, seller=%s, count=%s",
             brokerId, request.sellerId, request.lots.size)
 
         val inputs = request.lots.map { it.toInput() }
@@ -184,7 +184,7 @@ class BrokerResource {
     @RolesAllowed("broker", "admin_ops", "admin_super")
     fun getDashboard(@HeaderParam("Authorization") authorization: String): Response {
         val brokerId = extractBrokerId(authorization)
-        logger.info("GET /me/dashboard for broker={}", brokerId)
+        LOG.infof("GET /me/dashboard for broker=%s", brokerId)
 
         val dashboard = brokerService.getDashboard(brokerId)
 

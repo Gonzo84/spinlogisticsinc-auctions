@@ -5,7 +5,7 @@ import eu.auctionplatform.compliance.domain.model.ContentReportStatus
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.util.UUID
@@ -20,9 +20,8 @@ class ContentReportRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(ContentReportRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(ContentReportRepository::class.java)
         private const val SELECT_COLUMNS = """
             id, reporter_id, lot_id, reason, status, created_at, resolved_at
         """
@@ -91,7 +90,7 @@ class ContentReportRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted content report: id={}, lotId={}", report.id, report.lotId)
+        LOG.debugf("Inserted content report: id=%s, lotId=%s", report.id, report.lotId)
     }
 
     /**
@@ -182,7 +181,7 @@ class ContentReportRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Updated content report status: id={}, status={}", id, status)
+        LOG.debugf("Updated content report status: id=%s, status=%s", id, status)
     }
 
     /**

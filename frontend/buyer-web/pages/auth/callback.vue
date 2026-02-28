@@ -42,12 +42,9 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth'
-
 const { t } = useI18n()
 const route = useRoute()
-const { login } = useAuth()
-const authStore = useAuthStore()
+const { login, isAuthenticated } = useAuth()
 
 const processing = ref(true)
 const error = ref<string | null>(null)
@@ -66,7 +63,7 @@ onMounted(async () => {
     // Wait for keycloak to be ready
     await new Promise<void>((resolve) => {
       const checkAuth = () => {
-        if (authStore.isAuthenticated) {
+        if (isAuthenticated.value) {
           resolve()
         } else if (keycloak.authenticated) {
           resolve()
@@ -83,7 +80,7 @@ onMounted(async () => {
       checkAuth()
     })
 
-    if (authStore.isAuthenticated) {
+    if (isAuthenticated.value) {
       // Redirect to the original page or default
       const redirectTo = (route.query.redirect as string) || '/my/purchases'
       navigateTo(redirectTo)

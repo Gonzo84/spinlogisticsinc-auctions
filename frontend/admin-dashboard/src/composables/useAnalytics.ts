@@ -1,45 +1,20 @@
-import { ref } from 'vue'
+import { ref, readonly } from 'vue'
 import { useApi } from './useApi'
+import type {
+  PlatformOverview,
+  MonthlyRevenue,
+  RegistrationTrend,
+  CategoryPopularity,
+  DailyBidVolume,
+} from '@/types/analytics'
 
-export interface PlatformOverview {
-  totalRevenue: number
-  totalAuctions: number
-  totalLotsSold: number
-  totalRegisteredUsers: number
-  totalBids: number
-  averageHammerPrice: number
-  sellThroughRate: number
-  currency: string
-}
-
-export interface MonthlyRevenue {
-  month: string
-  revenue: number
-  commission: number
-  lotsSold: number
-}
-
-export interface RegistrationTrend {
-  month: string
-  buyers: number
-  sellers: number
-  total: number
-}
-
-export interface CategoryPopularity {
-  category: string
-  lotCount: number
-  bidCount: number
-  revenue: number
-  sellThroughRate: number
-  avgPrice: number
-}
-
-export interface DailyBidVolume {
-  date: string
-  bids: number
-  uniqueBidders: number
-}
+export type {
+  PlatformOverview,
+  MonthlyRevenue,
+  RegistrationTrend,
+  CategoryPopularity,
+  DailyBidVolume,
+} from '@/types/analytics'
 
 export function useAnalytics() {
   const { get } = useApi()
@@ -124,8 +99,8 @@ export function useAnalytics() {
     registrationTrends,
     categoryPopularity,
     dailyBidVolume,
-    loading,
-    error,
+    loading: readonly(loading),
+    error: readonly(error),
     fetchOverview,
     fetchMonthlyRevenue,
     fetchRegistrationTrends,

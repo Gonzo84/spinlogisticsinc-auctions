@@ -5,7 +5,7 @@ import eu.auctionplatform.compliance.domain.model.AmlScreeningStatus
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.util.UUID
@@ -20,9 +20,8 @@ class AmlScreeningRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(AmlScreeningRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(AmlScreeningRepository::class.java)
         private const val SELECT_COLUMNS = """
             id, user_id, provider, status, check_id, completed_at, risk_level
         """
@@ -71,7 +70,7 @@ class AmlScreeningRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted AML screening: id={}, userId={}", screening.id, screening.userId)
+        LOG.debugf("Inserted AML screening: id=%s, userId=%s", screening.id, screening.userId)
     }
 
     /**
@@ -130,7 +129,7 @@ class AmlScreeningRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Updated AML screening: id={}, status={}", screening.id, screening.status)
+        LOG.debugf("Updated AML screening: id=%s, status=%s", screening.id, screening.status)
     }
 
     // -----------------------------------------------------------------------

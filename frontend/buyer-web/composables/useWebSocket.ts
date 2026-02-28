@@ -1,4 +1,6 @@
 import { useAuthStore } from '~/stores/auth'
+import type { Bid } from '~/types/auction'
+import type { Notification } from '~/types/notification'
 
 export type WebSocketEvent =
   | 'bid_placed'
@@ -11,14 +13,37 @@ export type WebSocketEvent =
 
 export interface WebSocketMessage {
   event: WebSocketEvent
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any
+  data: unknown
   auctionId?: string
   timestamp: string
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type EventHandler = (data: any) => void
+interface BidPlacedData {
+  bid: Bid
+  auctionId: string
+}
+
+interface AuctionExtendedData {
+  auctionId: string
+  newEndTime: string
+}
+
+interface AuctionClosedData {
+  auctionId: string
+}
+
+interface OverbidData {
+  lotTitle?: string
+  auctionId?: string
+  newBidAmount?: number
+}
+
+interface ReserveMetData {
+  auctionId: string
+}
+
+// Internal handler type uses unknown; callers narrow via typed on* methods
+type InternalHandler = (data: unknown) => void
 
 export function useWebSocket() {
   const config = useRuntimeConfig()
@@ -34,7 +59,7 @@ export function useWebSocket() {
   const isConnected = ref(false)
   const isReconnecting = ref(false)
 
-  const eventHandlers = new Map<WebSocketEvent, Set<EventHandler>>()
+  const eventHandlers = new Map<WebSocketEvent, Set<InternalHandler>>()
 
   let currentAuctionId: string | null = null
 
@@ -66,7 +91,7 @@ export function useWebSocket() {
 
       socket.onmessage = (event: MessageEvent) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data)
+          const message = JSON.parse(event.data as string) as WebSocketMessage
 
           if (message.event === 'pong') return
 
@@ -158,43 +183,44 @@ export function useWebSocket() {
     }, delay)
   }
 
-  function onBidPlaced(handler: EventHandler) {
-    addHandler('bid_placed', handler)
+  function onBidPlaced(handler: (data: BidPlacedData) => void) {
+    addHandler('bid_placed', handler as InternalHandler)
   }
 
-  function onAuctionExtended(handler: EventHandler) {
-    addHandler('auction_extended', handler)
+  function onAuctionExtended(handler: (data: AuctionExtendedData) => void) {
+    addHandler('auction_extended', handler as InternalHandler)
   }
 
-  function onAuctionClosed(handler: EventHandler) {
-    addHandler('auction_closed', handler)
+  function onAuctionClosed(handler: (data: AuctionClosedData) => void) {
+    addHandler('auction_closed', handler as InternalHandler)
   }
 
-  function onOverbid(handler: EventHandler) {
-    addHandler('overbid', handler)
+  function onOverbid(handler: (data: OverbidData) => void) {
+    addHandler('overbid', handler as InternalHandler)
   }
 
-  function onReserveMet(handler: EventHandler) {
-    addHandler('reserve_met', handler)
+  function onReserveMet(handler: (data: ReserveMetData) => void) {
+    addHandler('reserve_met', handler as InternalHandler)
   }
 
-  function onNotification(handler: EventHandler) {
-    addHandler('notification', handler)
+  function onNotification(handler: (data: Notification) => void) {
+    addHandler('notification', handler as InternalHandler)
   }
 
-  function addHandler(event: WebSocketEvent, handler: EventHandler) {
+  function addHandler(event: WebSocketEvent, handler: InternalHandler) {
     if (!eventHandlers.has(event)) {
       eventHandlers.set(event, new Set())
     }
     eventHandlers.get(event)!.add(handler)
   }
 
-  function removeHandler(event: WebSocketEvent, handler: EventHandler) {
+  function removeHandler(event: WebSocketEvent, handler: InternalHandler) {
     eventHandlers.get(event)?.delete(handler)
   }
 
-  function off(event: WebSocketEvent, handler: EventHandler) {
-    removeHandler(event, handler)
+  // Handler reference removal — accepts the original typed handler for reference equality
+  function off<T>(event: WebSocketEvent, handler: (data: T) => void) {
+    removeHandler(event, handler as unknown as InternalHandler)
   }
 
   onBeforeUnmount(() => {

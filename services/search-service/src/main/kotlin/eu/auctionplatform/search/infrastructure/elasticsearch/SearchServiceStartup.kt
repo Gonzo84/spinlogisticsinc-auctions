@@ -4,7 +4,7 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 /**
  * Initializes Elasticsearch indices on application startup.
@@ -18,15 +18,17 @@ class SearchServiceStartup @Inject constructor(
     private val lotIndexService: LotIndexService
 ) {
 
-    private val logger = LoggerFactory.getLogger(SearchServiceStartup::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(SearchServiceStartup::class.java)
+    }
 
     fun onApplicationStart(@Observes event: StartupEvent) {
-        logger.info("Initializing Elasticsearch indices for search service")
+        LOG.info("Initializing Elasticsearch indices for search service")
         try {
             lotIndexService.createIndexIfNotExists()
-            logger.info("Elasticsearch indices initialized successfully")
+            LOG.info("Elasticsearch indices initialized successfully")
         } catch (ex: Exception) {
-            logger.error("Failed to initialize Elasticsearch indices: {}", ex.message, ex)
+            LOG.errorf(ex, "Failed to initialize Elasticsearch indices: %s", ex.message)
         }
     }
 }

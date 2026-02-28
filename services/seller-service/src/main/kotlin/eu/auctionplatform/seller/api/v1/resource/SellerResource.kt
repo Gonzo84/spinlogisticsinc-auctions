@@ -28,7 +28,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 
 /**
@@ -49,7 +49,9 @@ class SellerResource {
     @Inject
     lateinit var sellerProfileRepository: SellerProfileRepository
 
-    private val logger = LoggerFactory.getLogger(SellerResource::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(SellerResource::class.java)
+    }
 
     // -------------------------------------------------------------------------
     // Registration

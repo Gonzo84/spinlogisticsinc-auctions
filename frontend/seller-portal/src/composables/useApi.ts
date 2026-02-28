@@ -1,6 +1,10 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosError } from 'axios'
-import { inject, ref } from 'vue'
+import { inject, ref, readonly } from 'vue'
 import type Keycloak from 'keycloak-js'
+
+interface ApiErrorData {
+  message?: string
+}
 
 let apiInstance: AxiosInstance | null = null
 
@@ -33,7 +37,7 @@ export function useApi() {
         }
         return config
       },
-      (err) => Promise.reject(err),
+      (err: unknown) => Promise.reject(err),
     )
 
     // Response interceptor: handle errors
@@ -48,44 +52,48 @@ export function useApi() {
     )
   }
 
-  async function request<T>(config: AxiosRequestConfig): Promise<T> {
+  async function request<T = unknown>(config: AxiosRequestConfig): Promise<T> {
     loading.value = true
     error.value = null
     try {
       const response = await apiInstance!.request<T>(config)
       return response.data
     } catch (err: unknown) {
-      const axiosErr = err as AxiosError<{ message?: string }>
-      error.value = axiosErr.response?.data?.message ?? axiosErr.message ?? 'An error occurred'
+      if (axios.isAxiosError(err)) {
+        const axiosErr = err as AxiosError<ApiErrorData>
+        error.value = axiosErr.response?.data?.message ?? axiosErr.message ?? 'An error occurred'
+      } else {
+        error.value = err instanceof Error ? err.message : 'An error occurred'
+      }
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+  async function get<T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> {
     return request<T>({ method: 'GET', url, params })
   }
 
-  async function post<T>(url: string, data?: unknown): Promise<T> {
+  async function post<T = unknown>(url: string, data?: unknown): Promise<T> {
     return request<T>({ method: 'POST', url, data })
   }
 
-  async function put<T>(url: string, data?: unknown): Promise<T> {
+  async function put<T = unknown>(url: string, data?: unknown): Promise<T> {
     return request<T>({ method: 'PUT', url, data })
   }
 
-  async function patch<T>(url: string, data?: unknown): Promise<T> {
+  async function patch<T = unknown>(url: string, data?: unknown): Promise<T> {
     return request<T>({ method: 'PATCH', url, data })
   }
 
-  async function del<T>(url: string): Promise<T> {
+  async function del<T = unknown>(url: string): Promise<T> {
     return request<T>({ method: 'DELETE', url })
   }
 
   return {
     api: apiInstance!,
-    loading,
+    loading: readonly(loading),
     error,
     get,
     post,

@@ -8,7 +8,7 @@ import io.nats.client.JetStream
 import io.nats.client.api.PublishAck
 import io.nats.client.impl.Headers
 import io.nats.client.impl.NatsMessage
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Duration
 
 /**
@@ -26,7 +26,9 @@ class NatsPublisher(
     private val retryDelay: Duration = Duration.ofMillis(500)
 ) : EventPublisher {
 
-    private val logger = LoggerFactory.getLogger(NatsPublisher::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(NatsPublisher::class.java)
+    }
     private val jetStream: JetStream = connection.jetStream()
 
     // ---------------------------------------------------------------------------
@@ -47,15 +49,15 @@ class NatsPublisher(
         for (attempt in 1..maxRetries) {
             try {
                 val ack: PublishAck = jetStream.publish(message)
-                logger.debug(
-                    "Published event {} to subject {} (stream={}, seq={})",
+                LOG.debugf(
+                    "Published event %s to subject %s (stream=%s, seq=%s)",
                     event.eventId, subject, ack.stream, ack.seqno
                 )
                 return
             } catch (ex: Exception) {
                 lastException = ex
-                logger.warn(
-                    "Publish attempt {}/{} failed for event {} on subject {}: {}",
+                LOG.warnf(
+                    "Publish attempt %s/%s failed for event %s on subject %s: %s",
                     attempt, maxRetries, event.eventId, subject, ex.message
                 )
                 if (attempt < maxRetries) {
@@ -82,13 +84,13 @@ class NatsPublisher(
         val future = jetStream.publishAsync(message)
         future.whenComplete { ack, throwable ->
             if (throwable != null) {
-                logger.error(
-                    "Async publish failed for event {} on subject {}: {}",
-                    event.eventId, subject, throwable.message, throwable
+                LOG.errorf(
+                    throwable, "Async publish failed for event %s on subject %s: %s",
+                    event.eventId, subject, throwable.message
                 )
             } else {
-                logger.debug(
-                    "Async published event {} to subject {} (stream={}, seq={})",
+                LOG.debugf(
+                    "Async published event %s to subject %s (stream=%s, seq=%s)",
                     event.eventId, subject, ack.stream, ack.seqno
                 )
             }
@@ -109,6 +111,10 @@ class NatsPublisher(
         headers.add("aggregate-id", event.aggregateId)
         headers.add("aggregate-type", event.aggregateType)
         headers.add("brand", event.brand)
+
+        // Propagate trace context if available
+        event.metadata?.get("traceId")?.let { headers.add("trace-id", it) }
+        event.metadata?.get("userId")?.let { headers.add("user-id", it) }
 
         return NatsMessage.builder()
             .subject(subject)

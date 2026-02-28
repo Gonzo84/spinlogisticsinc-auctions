@@ -11,7 +11,7 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Singleton
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 // =============================================================================
 // Bid Event Forwarder – NATS-to-WebSocket bridge for auction events
@@ -46,11 +46,11 @@ class BidEventForwarder @Inject constructor(
     batchSize = 50
 ) {
 
-    private val logger = LoggerFactory.getLogger(BidEventForwarder::class.java)
-
     private var consumerThread: Thread? = null
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(BidEventForwarder::class.java)
+
         /** Durable consumer name -- persists across restarts. */
         const val DURABLE_NAME: String = "gateway-auction-consumer"
 
@@ -69,7 +69,7 @@ class BidEventForwarder @Inject constructor(
      * Starts the consumer loop in a dedicated daemon thread on application startup.
      */
     fun onStart(@Observes event: StartupEvent) {
-        logger.info("Starting BidEventForwarder [durable={}]", DURABLE_NAME)
+        LOG.infof("Starting BidEventForwarder [durable=%s]", DURABLE_NAME)
         consumerThread = Thread({
             start()
         }, "bid-event-forwarder").apply {
@@ -82,7 +82,7 @@ class BidEventForwarder @Inject constructor(
      * Signals the consumer loop to stop gracefully on application shutdown.
      */
     fun onStop(@Observes event: ShutdownEvent) {
-        logger.info("Stopping BidEventForwarder [durable={}]", DURABLE_NAME)
+        LOG.infof("Stopping BidEventForwarder [durable=%s]", DURABLE_NAME)
         stop()
         consumerThread?.interrupt()
     }
@@ -104,8 +104,8 @@ class BidEventForwarder @Inject constructor(
         val subject = message.subject
         val payload = String(message.data, Charsets.UTF_8)
 
-        logger.debug(
-            "Received auction event on subject [{}], payload size={} bytes",
+        LOG.debugf(
+            "Received auction event on subject [%s], payload size=%s bytes",
             subject, message.data.size
         )
 
@@ -124,12 +124,13 @@ class BidEventForwarder @Inject constructor(
                     forwardLotAwarded(payload)
 
                 else ->
-                    logger.debug("Ignoring non-forwardable auction subject [{}]", subject)
+                    LOG.debugf("Ignoring non-forwardable auction subject [%s]", subject)
             }
         } catch (ex: Exception) {
-            logger.error(
-                "Failed to forward auction event on [{}]: {}",
-                subject, ex.message, ex
+            LOG.errorf(
+                ex,
+                "Failed to forward auction event on [%s]: %s",
+                subject, ex.message
             )
             throw ex // re-throw so the base class handles nak/dead-letter
         }
@@ -165,7 +166,7 @@ class BidEventForwarder @Inject constructor(
         ))
 
         webSocketHub.broadcast(auctionId, wsMessage)
-        logger.debug("Forwarded bid_placed to auction [{}]", auctionId)
+        LOG.debugf("Forwarded bid_placed to auction [%s]", auctionId)
     }
 
     /**
@@ -192,7 +193,7 @@ class BidEventForwarder @Inject constructor(
         ))
 
         webSocketHub.broadcast(auctionId, wsMessage)
-        logger.debug("Forwarded lot_extended to auction [{}]", auctionId)
+        LOG.debugf("Forwarded lot_extended to auction [%s]", auctionId)
     }
 
     /**
@@ -220,7 +221,7 @@ class BidEventForwarder @Inject constructor(
         ))
 
         webSocketHub.broadcast(auctionId, wsMessage)
-        logger.debug("Forwarded lot_closed to auction [{}]", auctionId)
+        LOG.debugf("Forwarded lot_closed to auction [%s]", auctionId)
     }
 
     /**
@@ -243,7 +244,7 @@ class BidEventForwarder @Inject constructor(
         ))
 
         webSocketHub.broadcast(auctionId, wsMessage)
-        logger.debug("Forwarded lot_awarded to auction [{}]", auctionId)
+        LOG.debugf("Forwarded lot_awarded to auction [%s]", auctionId)
     }
 
     // -------------------------------------------------------------------------
@@ -259,7 +260,7 @@ class BidEventForwarder @Inject constructor(
             ?: node.path("aggregateId").asText(null)
 
         if (auctionId.isNullOrBlank()) {
-            logger.warn("Auction event missing auctionId/aggregateId -- cannot forward")
+            LOG.warn("Auction event missing auctionId/aggregateId -- cannot forward")
             return null
         }
 

@@ -10,7 +10,7 @@ import io.nats.client.Message
 import io.quarkus.runtime.Startup
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -35,9 +35,9 @@ class PaymentEventNotificationConsumer @Inject constructor(
     private val notificationService: NotificationService
 ) {
 
-    private val logger = LoggerFactory.getLogger(PaymentEventNotificationConsumer::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(PaymentEventNotificationConsumer::class.java)
+
         private const val STREAM_NAME = "PAYMENT"
         private const val DURABLE_NAME = "notification-payment-consumer"
 
@@ -52,7 +52,7 @@ class PaymentEventNotificationConsumer @Inject constructor(
      */
     @jakarta.annotation.PostConstruct
     fun init() {
-        logger.info("Starting payment event notification consumers")
+        LOG.info("Starting payment event notification consumers")
 
         executor.submit { createCheckoutCompletedConsumer().start() }
         executor.submit { createSettlementReadyConsumer().start() }
@@ -60,7 +60,7 @@ class PaymentEventNotificationConsumer @Inject constructor(
 
     @jakarta.annotation.PreDestroy
     fun shutdown() {
-        logger.info("Shutting down payment event notification consumers")
+        LOG.info("Shutting down payment event notification consumers")
         executor.shutdownNow()
     }
 
@@ -127,8 +127,8 @@ class PaymentEventNotificationConsumer @Inject constructor(
             data = data
         )
 
-        logger.debug(
-            "Sent PAYMENT_RECEIVED to buyer={} for order={} (amount={} {})",
+        LOG.debugf(
+            "Sent PAYMENT_RECEIVED to buyer=%s for order=%s (amount=%s %s)",
             buyerId, orderId, totalAmount, currency
         )
     }
@@ -160,8 +160,8 @@ class PaymentEventNotificationConsumer @Inject constructor(
             data = data
         )
 
-        logger.debug(
-            "Sent SETTLEMENT_PAID to seller={} for settlement={} (amount={} {})",
+        LOG.debugf(
+            "Sent SETTLEMENT_PAID to seller=%s for settlement=%s (amount=%s %s)",
             sellerId, settlementId, settlementAmount, currency
         )
     }
@@ -176,9 +176,9 @@ class PaymentEventNotificationConsumer @Inject constructor(
             val json = String(message.data, Charsets.UTF_8)
             JsonMapper.instance.readValue(json, Map::class.java) as Map<String, Any>
         } catch (ex: Exception) {
-            logger.error(
-                "Failed to parse payment event payload on subject {}: {}",
-                message.subject, ex.message, ex
+            LOG.errorf(ex,
+                "Failed to parse payment event payload on subject %s: %s",
+                message.subject, ex.message
             )
             null
         }

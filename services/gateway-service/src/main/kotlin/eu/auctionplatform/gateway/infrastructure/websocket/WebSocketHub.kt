@@ -2,7 +2,7 @@ package eu.auctionplatform.gateway.infrastructure.websocket
 
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.websocket.Session
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 // =============================================================================
@@ -21,7 +21,9 @@ import java.util.concurrent.ConcurrentHashMap
 @ApplicationScoped
 class WebSocketHub {
 
-    private val logger = LoggerFactory.getLogger(WebSocketHub::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(WebSocketHub::class.java)
+    }
 
     /** userId -> set of active sessions for that user. */
     private val userSessions = ConcurrentHashMap<String, MutableSet<Session>>()
@@ -58,9 +60,9 @@ class WebSocketHub {
             ConcurrentHashMap.newKeySet()
         }.add(session)
 
-        logger.info(
-            "WebSocket session registered [sessionId={}, userId={}, auctionId={}]. " +
-                "Active: users={}, auctions={}, total sessions={}",
+        LOG.infof(
+            "WebSocket session registered [sessionId=%s, userId=%s, auctionId=%s]. " +
+                "Active: users=%s, auctions=%s, total sessions=%s",
             sessionId, userId, auctionId,
             userSessions.size, auctionSessions.size, sessionMetadata.size
         )
@@ -90,9 +92,9 @@ class WebSocketHub {
             }
         }
 
-        logger.info(
-            "WebSocket session unregistered [sessionId={}, userId={}, auctionId={}]. " +
-                "Active: users={}, auctions={}, total sessions={}",
+        LOG.infof(
+            "WebSocket session unregistered [sessionId=%s, userId=%s, auctionId=%s]. " +
+                "Active: users=%s, auctions=%s, total sessions=%s",
             sessionId, metadata.userId, metadata.auctionId,
             userSessions.size, auctionSessions.size, sessionMetadata.size
         )
@@ -111,12 +113,12 @@ class WebSocketHub {
     fun broadcast(auctionId: String, message: String) {
         val sessions = auctionSessions[auctionId]
         if (sessions.isNullOrEmpty()) {
-            logger.debug("No active sessions for auction [{}] -- skipping broadcast", auctionId)
+            LOG.debugf("No active sessions for auction [%s] -- skipping broadcast", auctionId)
             return
         }
 
-        logger.debug(
-            "Broadcasting to {} sessions for auction [{}], message size={} chars",
+        LOG.debugf(
+            "Broadcasting to %s sessions for auction [%s], message size=%s chars",
             sessions.size, auctionId, message.length
         )
 
@@ -129,8 +131,8 @@ class WebSocketHub {
                     stale.add(session)
                 }
             } catch (ex: Exception) {
-                logger.warn(
-                    "Failed to send message to session [{}]: {}",
+                LOG.warnf(
+                    "Failed to send message to session [%s]: %s",
                     session.id, ex.message
                 )
                 stale.add(session)
@@ -151,7 +153,7 @@ class WebSocketHub {
     fun sendToUser(userId: String, message: String) {
         val sessions = userSessions[userId]
         if (sessions.isNullOrEmpty()) {
-            logger.debug("No active sessions for user [{}] -- skipping send", userId)
+            LOG.debugf("No active sessions for user [%s] -- skipping send", userId)
             return
         }
 
@@ -164,8 +166,8 @@ class WebSocketHub {
                     stale.add(session)
                 }
             } catch (ex: Exception) {
-                logger.warn(
-                    "Failed to send message to session [{}] for user [{}]: {}",
+                LOG.warnf(
+                    "Failed to send message to session [%s] for user [%s]: %s",
                     session.id, userId, ex.message
                 )
                 stale.add(session)

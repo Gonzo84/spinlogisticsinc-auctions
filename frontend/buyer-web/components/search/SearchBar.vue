@@ -1,38 +1,41 @@
 <template>
   <div class="relative" ref="containerRef">
-    <div class="relative">
-      <svg
-        class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-      <input
-        ref="inputRef"
-        v-model="query"
-        type="text"
-        :placeholder="$t('search.placeholder')"
-        class="w-full pl-10 pr-10 py-2.5 bg-gray-100 border border-transparent rounded-xl text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-        autocomplete="off"
-        @input="handleInput"
-        @focus="showDropdown = true"
-        @keydown.enter="handleSearch"
-        @keydown.down.prevent="navigateSuggestion(1)"
-        @keydown.up.prevent="navigateSuggestion(-1)"
-        @keydown.escape="closeDropdown"
-      >
-      <button
-        v-if="query"
-        class="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
-        @click="clearQuery"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <form @submit.prevent="handleSearch">
+      <div class="relative">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-      </button>
-    </div>
+        <input
+          ref="inputRef"
+          v-model="query"
+          type="text"
+          :placeholder="$t('search.placeholder')"
+          class="w-full pl-10 pr-10 py-2.5 bg-gray-100 border border-transparent rounded-xl text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+          autocomplete="off"
+          @input="handleInput"
+          @focus="showDropdown = true"
+          @keydown.enter.prevent="handleSearch"
+          @keydown.down.prevent="navigateSuggestion(1)"
+          @keydown.up.prevent="navigateSuggestion(-1)"
+          @keydown.escape="closeDropdown"
+        >
+        <button
+          v-if="query"
+          type="button"
+          class="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
+          @click="clearQuery"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </form>
 
     <!-- Autocomplete Dropdown -->
     <Transition

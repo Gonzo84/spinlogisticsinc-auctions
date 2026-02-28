@@ -62,7 +62,12 @@ quarkus:
   log:
     level: INFO
     console:
-      json: true
+      json:
+        enabled: ${LOG_JSON:false}
+      format: "%d{HH:mm:ss} %-5p traceId=%X{traceId} spanId=%X{spanId} [%c{2.}] %s%e%n"
+    category:
+      "eu.auctionplatform":
+        level: ${LOG_LEVEL:DEBUG}
 
   # ---------------------------------------------------------------------------
   # Metrics – Prometheus
@@ -75,11 +80,14 @@ quarkus:
   # ---------------------------------------------------------------------------
   # OpenTelemetry
   # ---------------------------------------------------------------------------
-  opentelemetry:
-    tracer:
-      exporter:
-        otlp:
-          endpoint: http://localhost:4317
+  otel:
+    enabled: ${OTEL_ENABLED:true}
+    exporter:
+      otlp:
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+    resource:
+      attributes:
+        - service.name=${quarkus.application.name}
 
   # ---------------------------------------------------------------------------
   # Health
@@ -129,11 +137,10 @@ adyen:
       password: dev
     oidc:
       auth-server-url: http://localhost:8180/realms/auction-platform
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: http://localhost:4317
+    otel:
+      exporter:
+        otlp:
+          endpoint: http://localhost:4317
   adyen:
     environment: TEST
     api-key: ${ADYEN_API_KEY:test-api-key}
@@ -159,11 +166,10 @@ adyen:
     http:
       cors:
         origins: ${CORS_ORIGINS:https://staging.auction-platform.eu}
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-staging:4222}
   adyen:
@@ -192,11 +198,10 @@ adyen:
     http:
       cors:
         origins: ${CORS_ORIGINS:https://auction-platform.eu}
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-prod:4222}
   adyen:

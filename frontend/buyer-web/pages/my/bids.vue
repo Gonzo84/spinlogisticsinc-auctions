@@ -87,23 +87,13 @@
 </template>
 
 <script setup lang="ts">
+import type { BidEntry } from '~/types/auction'
 import { formatCurrency } from '~/utils/format'
 import { unwrapApiResponse } from '~/utils/api-response'
 
 definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
-
-interface BidEntry {
-  id: string
-  lotId: string
-  title: string
-  imageUrl?: string
-  amount: number
-  currentBid: number
-  status: string
-  createdAt: string
-}
 
 const loading = ref(false)
 const bids = ref<BidEntry[]>([])

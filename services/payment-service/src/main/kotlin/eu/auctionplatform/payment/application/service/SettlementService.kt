@@ -8,7 +8,7 @@ import eu.auctionplatform.payment.infrastructure.persistence.repository.PaymentR
 import eu.auctionplatform.payment.infrastructure.persistence.repository.SettlementRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -38,9 +38,9 @@ class SettlementService @Inject constructor(
     private val paymentRepository: PaymentRepository
 ) {
 
-    private val logger = LoggerFactory.getLogger(SettlementService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(SettlementService::class.java)
+
         /** Default platform commission rate (10% of hammer price). */
         val DEFAULT_COMMISSION_RATE: BigDecimal = BigDecimal("0.10")
     }
@@ -59,13 +59,13 @@ class SettlementService @Inject constructor(
     fun createSettlement(paymentId: UUID): Settlement? {
         val payment = paymentRepository.findById(paymentId)
         if (payment == null) {
-            logger.warn("Cannot create settlement: payment {} not found", paymentId)
+            LOG.warnf("Cannot create settlement: payment %s not found", paymentId)
             return null
         }
 
         if (payment.status != PaymentStatus.COMPLETED) {
-            logger.warn(
-                "Cannot create settlement: payment {} is in status {}, expected COMPLETED",
+            LOG.warnf(
+                "Cannot create settlement: payment %s is in status %s, expected COMPLETED",
                 paymentId, payment.status
             )
             return null
@@ -74,7 +74,7 @@ class SettlementService @Inject constructor(
         // Check if settlement already exists for this payment
         val existing = settlementRepository.findByPaymentId(paymentId)
         if (existing != null) {
-            logger.warn("Settlement already exists for payment {}: {}", paymentId, existing.id)
+            LOG.warnf("Settlement already exists for payment %s: %s", paymentId, existing.id)
             return existing
         }
 
@@ -103,8 +103,8 @@ class SettlementService @Inject constructor(
 
         settlementRepository.save(settlement)
 
-        logger.info(
-            "Created settlement {} for seller {} (net={}, commission={}, payment={})",
+        LOG.infof(
+            "Created settlement %s for seller %s (net=%s, commission=%s, payment=%s)",
             settlement.id, sellerId, netAmount, commission, paymentId
         )
 
@@ -124,7 +124,7 @@ class SettlementService @Inject constructor(
     fun processSettlement(settlementId: UUID): Settlement? {
         val settlement = settlementRepository.findById(settlementId)
         if (settlement == null) {
-            logger.warn("Cannot process settlement: {} not found", settlementId)
+            LOG.warnf("Cannot process settlement: %s not found", settlementId)
             return null
         }
 
@@ -132,8 +132,8 @@ class SettlementService @Inject constructor(
             "Settlement $settlementId is in status ${settlement.status}, expected PENDING"
         }
 
-        logger.info(
-            "Processing settlement {} for seller {} (net={} EUR)",
+        LOG.infof(
+            "Processing settlement %s for seller %s (net=%s EUR)",
             settlementId, settlement.sellerId, settlement.netAmount
         )
 
@@ -153,8 +153,8 @@ class SettlementService @Inject constructor(
             bankReference = bankReference
         )
 
-        logger.info(
-            "Settlement {} paid to seller {} (bankRef={})",
+        LOG.infof(
+            "Settlement %s paid to seller %s (bankRef=%s)",
             settlementId, settlement.sellerId, bankReference
         )
 

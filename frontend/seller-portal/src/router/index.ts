@@ -69,7 +69,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  const title = to.meta.title as string | undefined
+  const title = to.meta.title
   document.title = title ? `${title} - Seller Portal` : 'Seller Portal'
   next()
 })

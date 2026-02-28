@@ -10,7 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import net.coobird.thumbnailator.Thumbnails
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.core.sync.RequestBody
@@ -64,9 +64,9 @@ class ImageProcessingService @Inject constructor(
     private val thumbnailsBucket: String
 ) {
 
-    private val logger = LoggerFactory.getLogger(ImageProcessingService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(ImageProcessingService::class.java)
+
         /** Thumbnail widths in pixels. */
         val THUMBNAIL_SIZES = listOf(200, 400, 800)
         private const val WEBP_OUTPUT_FORMAT = "png" // Thumbnailator does not natively support WebP; use PNG as fallback
@@ -94,16 +94,16 @@ class ImageProcessingService @Inject constructor(
     fun processImage(imageId: UUID) {
         val image = imageRepository.findById(imageId)
         if (image == null) {
-            logger.warn("Image {} not found -- skipping processing", imageId)
+            LOG.warnf("Image %s not found -- skipping processing", imageId)
             return
         }
 
         if (image.status == ImageStatus.READY) {
-            logger.info("Image {} already processed -- skipping", imageId)
+            LOG.infof("Image %s already processed -- skipping", imageId)
             return
         }
 
-        logger.info("Starting image processing pipeline for image {} (lot={})", imageId, image.lotId)
+        LOG.infof("Starting image processing pipeline for image %s (lot=%s)", imageId, image.lotId)
 
         // Transition to PROCESSING
         imageRepository.updateStatus(imageId, ImageStatus.PROCESSING)
@@ -140,8 +140,8 @@ class ImageProcessingService @Inject constructor(
             // Step 7: Update database with URLs and READY status
             imageRepository.updateUrls(imageId, originalUrl, processedUrl, thumbnailUrl, ImageStatus.READY)
 
-            logger.info(
-                "Image processing complete for image {} (lot={}). Generated {} thumbnails.",
+            LOG.infof(
+                "Image processing complete for image %s (lot=%s). Generated %s thumbnails.",
                 imageId, image.lotId, THUMBNAIL_SIZES.size
             )
 
@@ -149,7 +149,7 @@ class ImageProcessingService @Inject constructor(
             publishProcessedEvent(image)
 
         } catch (ex: Exception) {
-            logger.error("Image processing failed for image {}: {}", imageId, ex.message, ex)
+            LOG.errorf(ex, "Image processing failed for image %s: %s", imageId, ex.message)
             imageRepository.updateStatus(imageId, ImageStatus.FAILED)
         }
     }
@@ -233,11 +233,11 @@ class ImageProcessingService @Inject constructor(
                 "timestamp" to java.time.Instant.now().toString()
             )
             val json = JsonMapper.toJson(eventPayload)
-            logger.debug("Publishing image processed event: {}", json)
+            LOG.debugf("Publishing image processed event: %s", json)
             // In a full implementation this would use NatsPublisher.
             // The event is available for outbox-based delivery as well.
         } catch (ex: Exception) {
-            logger.warn("Failed to publish image processed event for image {}: {}", image.id, ex.message)
+            LOG.warnf("Failed to publish image processed event for image %s: %s", image.id, ex.message)
         }
     }
 }

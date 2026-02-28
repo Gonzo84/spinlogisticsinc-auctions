@@ -16,8 +16,8 @@ const keycloak = new Keycloak({
 
 try {
   await keycloak.init({ onLoad: 'login-required', pkceMethod: 'S256', checkLoginIframe: false })
-} catch (error) {
-  console.error('[keycloak] Initialization failed:', error)
+} catch (initError: unknown) {
+  console.error('[keycloak] Initialization failed:', initError)
   document.body.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">
       <div style="text-align:center;max-width:400px">
@@ -26,7 +26,7 @@ try {
         <button onclick="location.reload()" style="margin-top:16px;padding:8px 24px;background:#4f46e5;color:white;border:none;border-radius:6px;cursor:pointer">Retry</button>
       </div>
     </div>`
-  throw error
+  throw initError
 }
 
 // Clean up OIDC hash/query fragments left by Keycloak after login redirect

@@ -5,7 +5,7 @@ import eu.auctionplatform.payment.domain.model.InvoiceType
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -22,9 +22,9 @@ class InvoiceRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(InvoiceRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(InvoiceRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, payment_id, invoice_number, type, pdf_url, issued_at
         """
@@ -89,7 +89,7 @@ class InvoiceRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Saved invoice {} (number={}, type={})",
+        LOG.debugf("Saved invoice %s (number=%s, type=%s)",
             invoice.id, invoice.invoiceNumber, invoice.type)
     }
 
@@ -206,7 +206,7 @@ class InvoiceRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Updated PDF URL for invoice {}", id)
+        LOG.debugf("Updated PDF URL for invoice %s", id)
     }
 
     /**
@@ -221,7 +221,7 @@ class InvoiceRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Deleted invoice {}", id)
+        LOG.debugf("Deleted invoice %s", id)
     }
 
     // -----------------------------------------------------------------------

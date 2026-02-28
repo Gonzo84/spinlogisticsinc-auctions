@@ -22,10 +22,13 @@ p, admin_ops, /api/v1/users/me, GET|PUT, allow
 p, admin_ops, /api/v1/users/me/company, POST|PUT, allow
 p, admin_ops, /api/v1/users/me/deposit, GET|POST, allow
 p, admin_ops, /api/v1/users/me/deposit/refund, POST, allow
-p, admin_ops, /api/v1/users/*, GET, allow
-p, admin_ops, /api/v1/users/by-keycloak-id/*, GET, allow
-p, admin_ops, /api/v1/users/*/status, PUT, allow
-p, admin_ops, /api/v1/users/*/kyc, GET, allow
-p, admin_ops, /api/v1/users/*/kyc/verify, POST, allow
-p, admin_super, /api/v1/**, .*, allow
+p, admin_ops, /api/v1/users/:id, GET, allow
+p, admin_ops, /api/v1/users/by-keycloak-id/:id, GET, allow
+p, admin_ops, /api/v1/users/:id/status, PUT, allow
+p, admin_ops, /api/v1/users/:id/kyc, GET, allow
+p, admin_ops, /api/v1/users/:id/kyc/verify, POST, allow
+p, admin_super, /api/v1/:r, .*, allow
+p, admin_super, /api/v1/:r/:id, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub/:action, .*, allow
 g, admin_super, admin_ops

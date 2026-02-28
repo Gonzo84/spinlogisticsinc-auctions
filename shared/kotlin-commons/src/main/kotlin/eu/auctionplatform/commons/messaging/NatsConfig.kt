@@ -3,7 +3,7 @@ package eu.auctionplatform.commons.messaging
 import io.nats.client.Connection
 import io.nats.client.Nats
 import io.nats.client.Options
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Duration
 
 /**
@@ -27,7 +27,9 @@ data class NatsConfig(
     val connectionTimeout: Duration = Duration.ofSeconds(5)
 ) {
 
-    private val logger = LoggerFactory.getLogger(NatsConfig::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(NatsConfig::class.java)
+    }
 
     /**
      * Creates and returns a connected [Connection] using the configured parameters.
@@ -36,7 +38,7 @@ data class NatsConfig(
      * observability, and an error listener that logs unexpected errors.
      */
     fun connect(): Connection {
-        logger.info("Connecting to NATS at {} (maxReconnects={}, reconnectWait={})",
+        LOG.infof("Connecting to NATS at %s (maxReconnects=%s, reconnectWait=%s)",
             url, maxReconnects, reconnectWait)
 
         val options = Options.Builder()
@@ -45,25 +47,25 @@ data class NatsConfig(
             .reconnectWait(reconnectWait)
             .connectionTimeout(connectionTimeout)
             .connectionListener { conn, type ->
-                logger.info("NATS connection event: {} (server={})", type, conn.serverInfo?.host)
+                LOG.infof("NATS connection event: %s (server=%s)", type, conn.serverInfo?.host)
             }
             .errorListener(object : io.nats.client.ErrorListener {
                 override fun errorOccurred(conn: Connection, error: String) {
-                    logger.error("NATS error: {}", error)
+                    LOG.errorf("NATS error: %s", error)
                 }
 
                 override fun exceptionOccurred(conn: Connection, exp: Exception) {
-                    logger.error("NATS exception", exp)
+                    LOG.errorf(exp, "NATS exception")
                 }
 
                 override fun slowConsumerDetected(conn: Connection, consumer: io.nats.client.Consumer) {
-                    logger.warn("NATS slow consumer detected on connection {}", conn.serverInfo?.host)
+                    LOG.warnf("NATS slow consumer detected on connection %s", conn.serverInfo?.host)
                 }
             })
             .build()
 
         val connection = Nats.connect(options)
-        logger.info("NATS connection established (status={})", connection.status)
+        LOG.infof("NATS connection established (status=%s)", connection.status)
 
         // Initialize JetStream streams so publishers and consumers can work immediately
         NatsStreamInitializer.initializeStreams(connection)

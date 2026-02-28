@@ -1,9 +1,14 @@
-p, buyer_active, /api/v1/co2/lots/*, GET, allow
+p, buyer_active, /api/v1/co2/lots/:id, GET, allow
 p, buyer_active, /api/v1/co2/summary, GET, allow
-p, seller_verified, /api/v1/co2/lots/*, GET, allow
-p, seller_verified, /api/v1/co2/sellers/*, GET, allow
+p, seller_verified, /api/v1/co2/lots/:id, GET, allow
+p, seller_verified, /api/v1/co2/sellers/:id, GET, allow
 p, seller_verified, /api/v1/co2/summary, GET, allow
-p, admin_ops, /api/v1/co2/**, GET, allow
-p, admin_ops, /api/v1/co2/emission-factors/*, PUT, allow
-p, admin_super, /api/v1/**, .*, allow
+p, admin_ops, /api/v1/co2/:r, GET, allow
+p, admin_ops, /api/v1/co2/:r/:id, GET, allow
+p, admin_ops, /api/v1/co2/:r/:id/:sub, GET, allow
+p, admin_ops, /api/v1/co2/emission-factors/:id, PUT, allow
+p, admin_super, /api/v1/:r, .*, allow
+p, admin_super, /api/v1/:r/:id, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub/:action, .*, allow
 g, admin_super, admin_ops

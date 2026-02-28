@@ -16,7 +16,7 @@ import eu.auctionplatform.notification.infrastructure.persistence.repository.Not
 import eu.auctionplatform.notification.infrastructure.push.PushNotificationSender
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
@@ -42,9 +42,9 @@ class NotificationService @Inject constructor(
     private val pushNotificationSender: PushNotificationSender
 ) {
 
-    private val logger = LoggerFactory.getLogger(NotificationService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(NotificationService::class.java)
+
         /**
          * Maps each notification type to a template name and default subject.
          */
@@ -133,8 +133,8 @@ class NotificationService @Inject constructor(
             ?: TemplateConfig(templateName = type.name.lowercase(), defaultSubject = type.description)
         val locale = data["language"]?.toString() ?: "en"
 
-        logger.info(
-            "Sending notification: userId={}, type={}, channels={}, locale={}",
+        LOG.infof(
+            "Sending notification: userId=%s, type=%s, channels=%s, locale=%s",
             userId, type, channels, locale
         )
 
@@ -160,9 +160,9 @@ class NotificationService @Inject constructor(
                     sentAt = Instant.now()
                 )
             } catch (ex: Exception) {
-                logger.error(
-                    "Failed to send notification: userId={}, type={}, channel={}: {}",
-                    userId, type, channel, ex.message, ex
+                LOG.errorf(
+                    ex, "Failed to send notification: userId=%s, type=%s, channel=%s: %s",
+                    userId, type, channel, ex.message
                 )
                 // The notification was inserted with PENDING status; update to FAILED
                 // Note: if the insert itself failed, this is a no-op since there's no record.
@@ -174,7 +174,7 @@ class NotificationService @Inject constructor(
                             sentAt = null
                         )
                     } catch (updateEx: Exception) {
-                        logger.error("Failed to mark notification {} as FAILED: {}", n.id, updateEx.message, updateEx)
+                        LOG.errorf(updateEx, "Failed to mark notification %s as FAILED: %s", n.id, updateEx.message)
                     }
                 }
             }
@@ -210,7 +210,7 @@ class NotificationService @Inject constructor(
 
         notificationRepository.markAsRead(notificationId)
 
-        logger.debug("Marked notification as read: id={}", notificationId)
+        LOG.debugf("Marked notification as read: id=%s", notificationId)
     }
 
     /**
@@ -221,7 +221,7 @@ class NotificationService @Inject constructor(
      */
     fun markAllAsRead(userId: UUID): Int {
         val count = notificationRepository.markAllAsRead(userId)
-        logger.debug("Marked {} notifications as read for user={}", count, userId)
+        LOG.debugf("Marked %s notifications as read for user=%s", count, userId)
         return count
     }
 
@@ -315,15 +315,15 @@ class NotificationService @Inject constructor(
             NotificationChannel.IN_APP -> {
                 // In-app notifications are "delivered" immediately upon insertion;
                 // the client polls or receives them via WebSocket.
-                logger.debug(
-                    "In-app notification stored: id={}, userId={}, type={}",
+                LOG.debugf(
+                    "In-app notification stored: id=%s, userId=%s, type=%s",
                     notification.id, notification.userId, notification.type
                 )
             }
             NotificationChannel.SMS -> {
                 // SMS delivery is not yet implemented.
-                logger.warn(
-                    "SMS delivery not implemented -- skipping notification: id={}, userId={}",
+                LOG.warnf(
+                    "SMS delivery not implemented -- skipping notification: id=%s, userId=%s",
                     notification.id, notification.userId
                 )
             }
@@ -343,8 +343,8 @@ class NotificationService @Inject constructor(
     ) {
         val recipientEmail = data["email"]?.toString()
         if (recipientEmail.isNullOrBlank()) {
-            logger.warn(
-                "No email address in template data for notification: id={}, userId={}, type={}. " +
+            LOG.warnf(
+                "No email address in template data for notification: id=%s, userId=%s, type=%s. " +
                     "Email delivery skipped.",
                 notification.id, notification.userId, notification.type
             )
@@ -368,8 +368,8 @@ class NotificationService @Inject constructor(
     private fun dispatchPush(notification: Notification, data: Map<String, Any>) {
         val tokens = deviceTokenRepository.findActiveByUserId(notification.userId)
         if (tokens.isEmpty()) {
-            logger.debug(
-                "No active device tokens for user={} -- skipping push for notification={}",
+            LOG.debugf(
+                "No active device tokens for user=%s -- skipping push for notification=%s",
                 notification.userId, notification.id
             )
             return

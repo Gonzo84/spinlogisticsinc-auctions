@@ -38,7 +38,7 @@ export function useApi() {
     apiInstance.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401 && keycloakRef) {
+        if (axios.isAxiosError(error) && error.response?.status === 401 && keycloakRef) {
           keycloakRef.logout({ redirectUri: window.location.origin })
         }
         return Promise.reject(error)
@@ -46,27 +46,27 @@ export function useApi() {
     )
   }
 
-  async function get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async function get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await apiInstance!.get(url, config)
     return response.data
   }
 
-  async function post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async function post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await apiInstance!.post(url, data, config)
     return response.data
   }
 
-  async function put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async function put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await apiInstance!.put(url, data, config)
     return response.data
   }
 
-  async function patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async function patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await apiInstance!.patch(url, data, config)
     return response.data
   }
 
-  async function del<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async function del<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await apiInstance!.delete(url, config)
     return response.data
   }

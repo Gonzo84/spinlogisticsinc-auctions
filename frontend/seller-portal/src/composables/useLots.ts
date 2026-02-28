@@ -1,100 +1,20 @@
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import { useApi } from './useApi'
 import { useAuth } from './useAuth'
+import type {
+  Lot,
+  LotBid,
+  LotFormData,
+  LotStatus,
+  LotsFilter,
+  Category,
+  LotImage,
+  RawLotData,
+  ApiResponse,
+  PagedResponse,
+} from '@/types'
 
-export interface LotImage {
-  id: string
-  url: string
-  thumbnailUrl: string
-  isPrimary: boolean
-  sortOrder: number
-}
-
-export interface LotBid {
-  id: string
-  bidderId: string
-  bidderAlias: string
-  amount: number
-  currency: string
-  timestamp: string
-}
-
-export interface Lot {
-  id: string
-  title: string
-  description: string
-  category: string
-  categoryPath: string[]
-  specifications: Record<string, string>
-  startingBid: number
-  reservePrice: number | null
-  currentBid: number | null
-  bidCount: number
-  viewerCount: number
-  currency: string
-  status: 'draft' | 'pending_review' | 'active' | 'sold' | 'unsold' | 'rejected'
-  location: {
-    address: string
-    city: string
-    country: string
-    lat: number
-    lng: number
-  }
-  images: LotImage[]
-  auctionStart: string | null
-  auctionEnd: string | null
-  hammerPrice: number | null
-  createdAt: string
-  updatedAt: string
-}
-
-export interface Category {
-  id: string
-  parentId: string | null
-  name: string
-  slug: string
-  icon: string
-  level: number
-  sortOrder: number
-  active: boolean
-}
-
-export interface LotFormData {
-  brand: string
-  title: string
-  description: string
-  categoryId: string
-  specifications: Record<string, string>
-  startingBid: number
-  reservePrice: number | null
-  location: {
-    address: string
-    city: string
-    country: string
-    lat: number
-    lng: number
-  }
-  imageIds: string[]
-}
-
-export type LotStatus = 'draft' | 'pending_review' | 'active' | 'sold' | 'unsold' | 'rejected'
-
-export interface LotsFilter {
-  status?: LotStatus
-  page?: number
-  pageSize?: number
-  search?: string
-  sortBy?: string
-  sortDir?: 'asc' | 'desc'
-}
-
-export interface PaginatedResponse<T> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
-}
+export type { Lot, LotBid, LotFormData, LotStatus, LotsFilter, Category, LotImage }
 
 export function useLots() {
   const { get, post, put, del, loading, error } = useApi()
@@ -132,9 +52,9 @@ export function useLots() {
     if (sellerId.value) params.sellerId = sellerId.value
 
     // Use catalog-service endpoint; seller-service may not have synced yet
-    const raw = await get<any>('/lots', params)
+    const raw = await get<ApiResponse<PagedResponse<RawLotData>> | PagedResponse<RawLotData>>('/lots', params)
     // Unwrap ApiResponse wrapper ({data: T, meta}) if present
-    const response = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    const response = unwrapApiResponse<PagedResponse<RawLotData>>(raw)
     lots.value = (response.items ?? []).map(normalizeLot)
     pagination.value = {
       total: response.total ?? 0,
@@ -144,17 +64,32 @@ export function useLots() {
     }
   }
 
+  /** Unwrap ApiResponse wrapper if present, returning the inner data. */
+  function unwrapApiResponse<T>(raw: unknown): T {
+    const obj = raw as Record<string, unknown> | null
+    if (obj?.data && typeof obj.data === 'object') {
+      return obj.data as T
+    }
+    return raw as T
+  }
+
   /** Normalize backend flat fields into the nested structure the UI expects */
-  function normalizeLot(data: any): Lot {
+  function normalizeLot(data: RawLotData): Lot {
     return {
-      ...data,
+      id: data.id ?? '',
+      brand: data.brand ?? '',
+      title: data.title ?? '',
+      description: data.description ?? '',
       category: data.category ?? data.categoryId ?? '',
+      categoryPath: data.categoryPath ?? [],
       specifications: data.specifications ?? {},
+      startingBid: data.startingBid ?? 0,
+      reservePrice: data.reservePrice ?? null,
       currentBid: data.currentBid ?? null,
       bidCount: data.bidCount ?? 0,
       viewerCount: data.viewerCount ?? 0,
       currency: data.currency ?? 'EUR',
-      status: (data.status ?? 'draft').toLowerCase(),
+      status: ((data.status ?? 'draft').toLowerCase()) as LotStatus,
       location: data.location ?? {
         address: data.locationAddress ?? '',
         city: data.locationCity ?? '',
@@ -166,13 +101,15 @@ export function useLots() {
       auctionStart: data.auctionStart ?? null,
       auctionEnd: data.auctionEnd ?? null,
       hammerPrice: data.hammerPrice ?? null,
+      createdAt: data.createdAt ?? '',
+      updatedAt: data.updatedAt ?? '',
     }
   }
 
   async function fetchLot(id: string): Promise<Lot> {
     // Use catalog-service endpoint for lot details (seller-service may not have synced yet)
-    const raw = await get<any>(`/lots/${id}`)
-    const data = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    const raw = await get<ApiResponse<RawLotData> | RawLotData>(`/lots/${id}`)
+    const data = unwrapApiResponse<RawLotData>(raw)
     const lot = normalizeLot(data)
     currentLot.value = lot
     return lot
@@ -188,8 +125,8 @@ export function useLots() {
 
   async function fetchCategories(): Promise<Category[]> {
     try {
-      const raw = await get<any>('/categories')
-      const data = raw?.data ?? raw
+      const raw = await get<ApiResponse<Category[]> | Category[]>('/categories')
+      const data = unwrapApiResponse<Category[] | { items?: Category[] }>(raw)
       categories.value = Array.isArray(data) ? data : (data?.items ?? [])
       return categories.value
     } catch {
@@ -199,7 +136,7 @@ export function useLots() {
   }
 
   /** Transform frontend LotFormData into the flat structure the backend expects */
-  function toBackendPayload(data: LotFormData | Partial<LotFormData>) {
+  function toBackendPayload(data: LotFormData | Partial<LotFormData>): Record<string, unknown> {
     return {
       brand: data.brand ?? '',
       title: data.title,
@@ -217,14 +154,14 @@ export function useLots() {
   }
 
   async function createLot(data: LotFormData): Promise<Lot> {
-    const raw = await post<any>('/lots', toBackendPayload(data))
-    const lot = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    const raw = await post<ApiResponse<RawLotData> | RawLotData>('/lots', toBackendPayload(data))
+    const lot = normalizeLot(unwrapApiResponse<RawLotData>(raw))
     return lot
   }
 
   async function updateLot(id: string, data: Partial<LotFormData>): Promise<Lot> {
-    const raw = await put<any>(`/lots/${id}`, toBackendPayload(data))
-    const lot = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    const raw = await put<ApiResponse<RawLotData> | RawLotData>(`/lots/${id}`, toBackendPayload(data))
+    const lot = normalizeLot(unwrapApiResponse<RawLotData>(raw))
     currentLot.value = lot
     return lot
   }
@@ -235,7 +172,8 @@ export function useLots() {
   }
 
   async function submitForReview(id: string): Promise<Lot> {
-    const lot = await post<Lot>(`/lots/${id}/submit`)
+    const raw = await post<ApiResponse<RawLotData> | RawLotData>(`/lots/${id}/submit`)
+    const lot = normalizeLot(unwrapApiResponse<RawLotData>(raw))
     if (currentLot.value?.id === id) currentLot.value = lot
     const idx = lots.value.findIndex((l) => l.id === id)
     if (idx !== -1) lots.value[idx] = lot
@@ -259,9 +197,9 @@ export function useLots() {
     try {
       const params: Record<string, unknown> = { page: 0, pageSize: 1000 }
       if (sellerId.value) params.sellerId = sellerId.value
-      const raw = await get<any>('/lots', params)
-      const response = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
-      const allLots = (response.items ?? []) as any[]
+      const raw = await get<ApiResponse<PagedResponse<RawLotData>> | PagedResponse<RawLotData>>('/lots', params)
+      const response = unwrapApiResponse<PagedResponse<RawLotData>>(raw)
+      const allLots = response.items ?? []
       const counts: Record<LotStatus, number> = {
         draft: 0,
         pending_review: 0,
@@ -271,7 +209,7 @@ export function useLots() {
         rejected: 0,
       }
       for (const lot of allLots) {
-        const s = (lot.status ?? 'draft').toLowerCase() as LotStatus
+        const s = ((lot.status ?? 'draft').toLowerCase()) as LotStatus
         if (s in counts) counts[s]++
       }
       statusCounts.value = counts
@@ -292,9 +230,9 @@ export function useLots() {
   return {
     lots,
     currentLot,
-    pagination,
+    pagination: readonly(pagination),
     lotBids,
-    statusCounts,
+    statusCounts: readonly(statusCounts),
     categories,
     activeLots,
     draftLots,

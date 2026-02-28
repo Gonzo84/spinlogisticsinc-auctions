@@ -62,7 +62,12 @@ quarkus:
   log:
     level: INFO
     console:
-      json: true
+      json:
+        enabled: ${LOG_JSON:false}
+      format: "%d{HH:mm:ss} %-5p traceId=%X{traceId} spanId=%X{spanId} [%c{2.}] %s%e%n"
+    category:
+      "eu.auctionplatform":
+        level: ${LOG_LEVEL:DEBUG}
 
   # ---------------------------------------------------------------------------
   # Redis (rate limiting, session cache)
@@ -91,11 +96,14 @@ quarkus:
   # ---------------------------------------------------------------------------
   # OpenTelemetry
   # ---------------------------------------------------------------------------
-  opentelemetry:
-    tracer:
-      exporter:
-        otlp:
-          endpoint: http://localhost:4317
+  otel:
+    enabled: ${OTEL_ENABLED:true}
+    exporter:
+      otlp:
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+    resource:
+      attributes:
+        - service.name=${quarkus.application.name}
 
   # ---------------------------------------------------------------------------
   # Health
@@ -182,11 +190,10 @@ gateway:
       auth-server-url: http://localhost:8180/realms/auction-platform
     redis:
       hosts: redis://localhost:6379
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: http://localhost:4317
+    otel:
+      exporter:
+        otlp:
+          endpoint: http://localhost:4317
   webhook:
     adyen:
       hmac-key: dev-hmac-key
@@ -217,11 +224,10 @@ gateway:
         origins: ${CORS_ORIGINS:https://staging.auction-platform.eu}
     redis:
       hosts: ${REDIS_URL:redis://redis-staging:6379}
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-staging:4222}
   rate-limit:
@@ -253,11 +259,10 @@ gateway:
     redis:
       hosts: ${REDIS_URL:redis://redis-prod:6379}
       max-pool-size: 32
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-prod:4222}
   rate-limit:

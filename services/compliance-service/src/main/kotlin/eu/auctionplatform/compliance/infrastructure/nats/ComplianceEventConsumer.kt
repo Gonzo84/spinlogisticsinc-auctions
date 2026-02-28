@@ -9,7 +9,7 @@ import io.nats.client.Connection
 import io.nats.client.Message
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
@@ -41,7 +41,9 @@ class ComplianceEventConsumer @Inject constructor(
     batchSize = 25,
 ) {
 
-    private val logger = LoggerFactory.getLogger(ComplianceEventConsumer::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(ComplianceEventConsumer::class.java)
+    }
 
     /**
      * Set of subject prefixes that are considered significant for audit logging.
@@ -80,12 +82,12 @@ class ComplianceEventConsumer @Inject constructor(
 
             auditLogRepository.insert(entry)
 
-            logger.debug(
-                "Audit log entry created from event: subject={}, action={}, entityType={}",
+            LOG.debugf(
+                "Audit log entry created from event: subject=%s, action=%s, entityType=%s",
                 subject, entry.action, entry.entityType
             )
         } catch (ex: Exception) {
-            logger.error("Failed to process audit event on subject {}: {}", subject, ex.message, ex)
+            LOG.errorf(ex, "Failed to process audit event on subject %s: %s", subject, ex.message)
             throw ex
         }
     }

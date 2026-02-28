@@ -14,7 +14,7 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.ConfigProvider
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ExecutorService
@@ -35,8 +35,6 @@ class ImageUploadConsumer @Inject constructor(
     private val imageProcessingService: ImageProcessingService
 ) {
 
-    private val logger = LoggerFactory.getLogger(ImageUploadConsumer::class.java)
-
     private var connection: Connection? = null
     private var subscription: JetStreamSubscription? = null
     private var executor: ExecutorService? = null
@@ -45,6 +43,8 @@ class ImageUploadConsumer @Inject constructor(
     private var running = false
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(ImageUploadConsumer::class.java)
+
         private const val STREAM_NAME = "MEDIA"
         private const val DURABLE_NAME = "media-image-upload-consumer"
         private const val BATCH_SIZE = 10
@@ -85,9 +85,9 @@ class ImageUploadConsumer @Inject constructor(
 
             executor!!.submit { consumeLoop() }
 
-            logger.info("ImageUploadConsumer started (stream={}, subject={})", STREAM_NAME, NatsSubjects.MEDIA_IMAGE_UPLOADED)
+            LOG.infof("ImageUploadConsumer started (stream=%s, subject=%s)", STREAM_NAME, NatsSubjects.MEDIA_IMAGE_UPLOADED)
         } catch (ex: Exception) {
-            logger.error("Failed to start ImageUploadConsumer: {}", ex.message, ex)
+            LOG.errorf(ex, "Failed to start ImageUploadConsumer: %s", ex.message)
         }
     }
 
@@ -100,9 +100,9 @@ class ImageUploadConsumer @Inject constructor(
             subscription?.drain(Duration.ofSeconds(10))
             connection?.close()
             executor?.shutdownNow()
-            logger.info("ImageUploadConsumer stopped")
+            LOG.info("ImageUploadConsumer stopped")
         } catch (ex: Exception) {
-            logger.warn("Error during ImageUploadConsumer shutdown: {}", ex.message)
+            LOG.warnf("Error during ImageUploadConsumer shutdown: %s", ex.message)
         }
     }
 
@@ -121,7 +121,7 @@ class ImageUploadConsumer @Inject constructor(
                 Thread.currentThread().interrupt()
                 running = false
             } catch (ex: Exception) {
-                logger.error("Error in ImageUploadConsumer loop: {}", ex.message, ex)
+                LOG.errorf(ex, "Error in ImageUploadConsumer loop: %s", ex.message)
             }
         }
     }
@@ -135,7 +135,7 @@ class ImageUploadConsumer @Inject constructor(
     private fun processMessage(message: Message) {
         try {
             val payload = String(message.data, Charsets.UTF_8)
-            logger.debug("Received image upload event: {}", payload)
+            LOG.debugf("Received image upload event: %s", payload)
 
             val eventData = JsonMapper.fromJson<Map<String, Any>>(payload)
             val imageId = eventData["imageId"]?.toString()
@@ -144,9 +144,9 @@ class ImageUploadConsumer @Inject constructor(
             imageProcessingService.processImage(UUID.fromString(imageId))
 
             message.ack()
-            logger.info("Successfully processed image upload event for imageId={}", imageId)
+            LOG.infof("Successfully processed image upload event for imageId=%s", imageId)
         } catch (ex: Exception) {
-            logger.error("Failed to process image upload event: {}", ex.message, ex)
+            LOG.errorf(ex, "Failed to process image upload event: %s", ex.message)
             message.nak()
         }
     }

@@ -7,7 +7,7 @@ import io.nats.client.PullSubscribeOptions
 import io.nats.client.api.ConsumerConfiguration
 import io.nats.client.impl.Headers
 import io.nats.client.impl.NatsMessage
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Duration
 
 /**
@@ -41,7 +41,9 @@ abstract class NatsConsumer(
     protected val pollTimeout: Duration = Duration.ofSeconds(5)
 ) {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(NatsConsumer::class.java)
+    }
 
     @Volatile
     private var running: Boolean = false
@@ -64,8 +66,8 @@ abstract class NatsConsumer(
      * Call [stop] from another thread to break the loop gracefully.
      */
     fun start() {
-        logger.info(
-            "Starting NATS consumer [durable={}, filter={}, stream={}]",
+        LOG.infof(
+            "Starting NATS consumer [durable=%s, filter=%s, stream=%s]",
             durableName, filterSubject, streamName
         )
 
@@ -96,14 +98,14 @@ abstract class NatsConsumer(
                 }
             } catch (ex: InterruptedException) {
                 Thread.currentThread().interrupt()
-                logger.info("Consumer [{}] interrupted -- stopping", durableName)
+                LOG.infof("Consumer [%s] interrupted -- stopping", durableName)
                 running = false
             } catch (ex: Exception) {
-                logger.error("Unexpected error in consumer [{}]: {}", durableName, ex.message, ex)
+                LOG.errorf(ex, "Unexpected error in consumer [%s]: %s", durableName, ex.message)
             }
         }
 
-        logger.info("NATS consumer [{}] stopped", durableName)
+        LOG.infof("NATS consumer [%s] stopped", durableName)
     }
 
     /**
@@ -112,35 +114,57 @@ abstract class NatsConsumer(
     fun stop() {
         running = false
         subscription?.drain(Duration.ofSeconds(10))
-        logger.info("Stop requested for NATS consumer [{}]", durableName)
+        LOG.infof("Stop requested for NATS consumer [%s]", durableName)
+    }
+
+    // ---------------------------------------------------------------------------
+    // Trace context extraction
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Extracts trace context (traceId, userId) from NATS message headers.
+     *
+     * Consumers can call this in [handleMessage] to restore distributed trace
+     * context for logging, MDC, or OpenTelemetry propagation.
+     */
+    protected fun extractTraceContext(message: Message): Map<String, String> {
+        val headers = message.headers ?: return emptyMap()
+        return buildMap {
+            headers.getFirst("trace-id")?.let { put("traceId", it) }
+            headers.getFirst("user-id")?.let { put("userId", it) }
+        }
     }
 
     // ---------------------------------------------------------------------------
     // Stream readiness check
     // ---------------------------------------------------------------------------
 
-    private fun waitForStream(maxAttempts: Int = 10, delayMs: Long = 2000) {
-        val jsm = connection.jetStreamManagement()
+    /**
+     * Waits for the JetStream stream to become available using exponential backoff.
+     *
+     * Starts with a 2-second delay and doubles on each retry, capped at 30 seconds.
+     * Throws [IllegalStateException] if the stream is still unavailable after
+     * [maxAttempts], which prevents the consumer from silently running without
+     * a valid subscription.
+     */
+    protected fun waitForStream(streamName: String = this.streamName, maxAttempts: Int = 10) {
+        var delay = 2000L // Start at 2 seconds
+        val maxDelay = 30000L
         for (attempt in 1..maxAttempts) {
             try {
-                jsm.getStreamInfo(streamName)
-                logger.info("Stream '{}' is available", streamName)
+                connection.jetStreamManagement().getStreamInfo(streamName)
+                LOG.infof("Stream '%s' is available (attempt %s)", streamName, attempt)
                 return
-            } catch (_: Exception) {
-                if (attempt < maxAttempts) {
-                    logger.info(
-                        "Stream '{}' not yet available (attempt {}/{}), waiting {}ms...",
-                        streamName, attempt, maxAttempts, delayMs
-                    )
-                    Thread.sleep(delayMs)
-                } else {
-                    logger.warn(
-                        "Stream '{}' not available after {} attempts — consumer may fail to subscribe",
-                        streamName, maxAttempts
-                    )
-                }
+            } catch (e: Exception) {
+                LOG.warnf(
+                    "Stream '%s' not available (attempt %s/%s), retrying in %sms",
+                    streamName, attempt, maxAttempts, delay
+                )
+                Thread.sleep(delay)
+                delay = (delay * 2).coerceAtMost(maxDelay)
             }
         }
+        throw IllegalStateException("Stream '$streamName' not available after $maxAttempts attempts")
     }
 
     // ---------------------------------------------------------------------------
@@ -155,9 +179,9 @@ abstract class NatsConsumer(
             val metadata = message.metaData()
             val deliveryCount = metadata?.deliveredCount() ?: 0
 
-            logger.error(
-                "Error processing message on subject {} (delivery #{}): {}",
-                message.subject, deliveryCount, ex.message, ex
+            LOG.errorf(
+                ex, "Error processing message on subject %s (delivery #%s): %s",
+                message.subject, deliveryCount, ex.message
             )
 
             if (deliveryCount >= maxRedeliveries) {
@@ -172,8 +196,8 @@ abstract class NatsConsumer(
     private fun sendToDeadLetterQueue(message: Message, cause: Exception) {
         val dlqSubject = deadLetterSubject
         if (dlqSubject == null) {
-            logger.warn(
-                "No dead-letter subject configured -- dropping message on {} after {} attempts",
+            LOG.warnf(
+                "No dead-letter subject configured -- dropping message on %s after %s attempts",
                 message.subject, maxRedeliveries
             )
             return
@@ -192,14 +216,14 @@ abstract class NatsConsumer(
                 .build()
 
             connection.publish(dlqMessage)
-            logger.warn(
-                "Message forwarded to dead-letter subject {} (original={})",
+            LOG.warnf(
+                "Message forwarded to dead-letter subject %s (original=%s)",
                 dlqSubject, message.subject
             )
         } catch (dlqEx: Exception) {
-            logger.error(
-                "Failed to send message to dead-letter subject {}: {}",
-                dlqSubject, dlqEx.message, dlqEx
+            LOG.errorf(
+                dlqEx, "Failed to send message to dead-letter subject %s: %s",
+                dlqSubject, dlqEx.message
             )
         }
     }

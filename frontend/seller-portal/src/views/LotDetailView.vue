@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
-import { useLots, type Lot, type LotBid } from '@/composables/useLots'
+import { useLots } from '@/composables/useLots'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 
 const route = useRoute()

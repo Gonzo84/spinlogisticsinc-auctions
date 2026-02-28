@@ -12,7 +12,7 @@ import jakarta.websocket.OnOpen
 import jakarta.websocket.Session
 import jakarta.websocket.server.PathParam
 import jakarta.websocket.server.ServerEndpoint
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -42,8 +42,6 @@ class AuctionWebSocketEndpoint @Inject constructor(
     private val webSocketHub: WebSocketHub
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionWebSocketEndpoint::class.java)
-
     /** Scheduler for periodic heartbeat messages. */
     private val heartbeatScheduler: ScheduledExecutorService =
         Executors.newSingleThreadScheduledExecutor { runnable ->
@@ -54,6 +52,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
     private val heartbeatTasks = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionWebSocketEndpoint::class.java)
+
         /** Heartbeat interval in seconds. */
         const val HEARTBEAT_INTERVAL_SECONDS: Long = 30
 
@@ -77,8 +77,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
         val token = extractToken(session)
 
         if (token.isNullOrBlank()) {
-            logger.warn(
-                "WebSocket connection rejected: missing or empty JWT token [sessionId={}, auctionId={}]",
+            LOG.warnf(
+                "WebSocket connection rejected: missing or empty JWT token [sessionId=%s, auctionId=%s]",
                 session.id, auctionId
             )
             closeSession(session, CloseReason.CloseCodes.VIOLATED_POLICY, "Missing authentication token")
@@ -88,8 +88,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
         val userId = try {
             token.userId()
         } catch (ex: Exception) {
-            logger.warn(
-                "WebSocket connection rejected: invalid JWT token [sessionId={}, auctionId={}]: {}",
+            LOG.warnf(
+                "WebSocket connection rejected: invalid JWT token [sessionId=%s, auctionId=%s]: %s",
                 session.id, auctionId, ex.message
             )
             closeSession(session, CloseReason.CloseCodes.VIOLATED_POLICY, "Invalid authentication token")
@@ -97,8 +97,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
         }
 
         if (userId.isBlank()) {
-            logger.warn(
-                "WebSocket connection rejected: JWT token has no subject [sessionId={}, auctionId={}]",
+            LOG.warnf(
+                "WebSocket connection rejected: JWT token has no subject [sessionId=%s, auctionId=%s]",
                 session.id, auctionId
             )
             closeSession(session, CloseReason.CloseCodes.VIOLATED_POLICY, "Token missing user identity")
@@ -121,8 +121,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
         // Start heartbeat
         startHeartbeat(session, auctionId)
 
-        logger.info(
-            "WebSocket session opened [sessionId={}, userId={}, auctionId={}]",
+        LOG.infof(
+            "WebSocket session opened [sessionId=%s, userId=%s, auctionId=%s]",
             session.id, userId, auctionId
         )
     }
@@ -138,8 +138,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
         stopHeartbeat(session)
         webSocketHub.unregister(session)
 
-        logger.info(
-            "WebSocket session closed [sessionId={}, auctionId={}, reason={} ({})]",
+        LOG.infof(
+            "WebSocket session closed [sessionId=%s, auctionId=%s, reason=%s (%s)]",
             session.id, auctionId, closeReason.reasonPhrase, closeReason.closeCode
         )
     }
@@ -151,9 +151,10 @@ class AuctionWebSocketEndpoint @Inject constructor(
      */
     @OnError
     fun onError(session: Session, @PathParam("auctionId") auctionId: String, throwable: Throwable) {
-        logger.error(
-            "WebSocket error [sessionId={}, auctionId={}]: {}",
-            session.id, auctionId, throwable.message, throwable
+        LOG.errorf(
+            throwable,
+            "WebSocket error [sessionId=%s, auctionId=%s]: %s",
+            session.id, auctionId, throwable.message
         )
         stopHeartbeat(session)
         webSocketHub.unregister(session)
@@ -168,8 +169,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
      */
     @OnMessage
     fun onMessage(session: Session, message: String, @PathParam("auctionId") auctionId: String) {
-        logger.debug(
-            "Received client message [sessionId={}, auctionId={}]: {}",
+        LOG.debugf(
+            "Received client message [sessionId=%s, auctionId=%s]: %s",
             session.id, auctionId, message.take(200)
         )
 
@@ -209,8 +210,8 @@ class AuctionWebSocketEndpoint @Inject constructor(
                         stopHeartbeat(session)
                     }
                 } catch (ex: Exception) {
-                    logger.warn(
-                        "Heartbeat failed for session [{}]: {}",
+                    LOG.warnf(
+                        "Heartbeat failed for session [%s]: %s",
                         session.id, ex.message
                     )
                     stopHeartbeat(session)
@@ -255,7 +256,7 @@ class AuctionWebSocketEndpoint @Inject constructor(
         try {
             session.close(CloseReason(closeCode, reason))
         } catch (ex: Exception) {
-            logger.warn("Error closing session [{}]: {}", session.id, ex.message)
+            LOG.warnf("Error closing session [%s]: %s", session.id, ex.message)
         }
     }
 }

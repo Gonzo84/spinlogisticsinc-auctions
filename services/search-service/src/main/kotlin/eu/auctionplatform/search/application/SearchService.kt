@@ -16,7 +16,7 @@ import eu.auctionplatform.search.infrastructure.elasticsearch.LotIndexService
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -162,9 +162,9 @@ class SearchService @Inject constructor(
     private val lotIndexService: LotIndexService
 ) {
 
-    private val logger = LoggerFactory.getLogger(SearchService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(SearchService::class.java)
+
         /** Default number of suggestions returned by autocomplete. */
         private const val DEFAULT_SUGGEST_LIMIT = 10
 
@@ -196,7 +196,7 @@ class SearchService @Inject constructor(
         val from = query.page * safeSize
         val indexName = lotIndexService.activeIndexName
 
-        logger.debug("Executing search: q=[{}], category=[{}], country=[{}], page={}, size={}",
+        LOG.debugf("Executing search: q=[%s], category=[%s], country=[%s], page=%s, size=%s",
             query.q, query.categoryId, query.country, query.page, safeSize)
 
         val response = esClient.search({ s ->
@@ -216,7 +216,7 @@ class SearchService @Inject constructor(
         }
         val totalCount = response.hits().total()?.value() ?: 0L
 
-        logger.debug("Search returned {} items (total={})", items.size, totalCount)
+        LOG.debugf("Search returned %s items (total=%s)", items.size, totalCount)
         return SearchResult(items = items, totalCount = totalCount)
     }
 
@@ -241,7 +241,7 @@ class SearchService @Inject constructor(
         val safeLimit = limit.coerceIn(1, 50)
         val indexName = lotIndexService.activeIndexName
 
-        logger.debug("Autocomplete: prefix=[{}], limit={}", prefix, safeLimit)
+        LOG.debugf("Autocomplete: prefix=[%s], limit=%s", prefix, safeLimit)
 
         val response = esClient.search({ s ->
             s.index(indexName)
@@ -283,7 +283,7 @@ class SearchService @Inject constructor(
             )
         }
 
-        logger.debug("Autocomplete returned {} suggestions for prefix [{}]", suggestions.size, prefix)
+        LOG.debugf("Autocomplete returned %s suggestions for prefix [%s]", suggestions.size, prefix)
         return suggestions
     }
 
@@ -301,7 +301,7 @@ class SearchService @Inject constructor(
     fun aggregations(query: SearchQuery): AggregationResult {
         val indexName = lotIndexService.activeIndexName
 
-        logger.debug("Computing aggregations for query: q=[{}], category=[{}]", query.q, query.categoryId)
+        LOG.debugf("Computing aggregations for query: q=[%s], category=[%s]", query.q, query.categoryId)
 
         val response = esClient.search({ s ->
             s.index(indexName)
@@ -333,7 +333,7 @@ class SearchService @Inject constructor(
         val countries = extractTermBuckets(response, "countries")
         val priceRanges = extractRangeBuckets(response, "price_ranges")
 
-        logger.debug("Aggregations: {} categories, {} countries, {} price ranges",
+        LOG.debugf("Aggregations: %s categories, %s countries, %s price ranges",
             categories.size, countries.size, priceRanges.size)
 
         return AggregationResult(
@@ -361,7 +361,7 @@ class SearchService @Inject constructor(
     fun nearby(lat: Double, lng: Double, radiusKm: Int, category: String?): SearchResult {
         val indexName = lotIndexService.activeIndexName
 
-        logger.debug("Nearby search: lat={}, lng={}, radius={}km, category=[{}]",
+        LOG.debugf("Nearby search: lat=%s, lng=%s, radius=%skm, category=[%s]",
             lat, lng, radiusKm, category)
 
         val response = esClient.search({ s ->
@@ -402,7 +402,7 @@ class SearchService @Inject constructor(
         }
         val totalCount = response.hits().total()?.value() ?: 0L
 
-        logger.debug("Nearby search returned {} items within {}km", items.size, radiusKm)
+        LOG.debugf("Nearby search returned %s items within %skm", items.size, radiusKm)
         return SearchResult(items = items, totalCount = totalCount)
     }
 

@@ -8,7 +8,7 @@ import eu.auctionplatform.payment.infrastructure.persistence.repository.InvoiceR
 import eu.auctionplatform.payment.infrastructure.persistence.repository.PaymentRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -43,9 +43,9 @@ class CheckoutService @Inject constructor(
     private val settlementService: SettlementService
 ) {
 
-    private val logger = LoggerFactory.getLogger(CheckoutService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(CheckoutService::class.java)
+
         /** Default buyer premium rate (15%). */
         val DEFAULT_BUYER_PREMIUM_RATE: BigDecimal = BigDecimal("0.15")
 
@@ -72,7 +72,7 @@ class CheckoutService @Inject constructor(
         buyerId: UUID,
         lotDetails: List<LotCheckoutDetail>
     ): List<Payment> {
-        logger.info("Initiating checkout for buyer {} with {} lot(s)", buyerId, lotDetails.size)
+        LOG.infof("Initiating checkout for buyer %s with %s lot(s)", buyerId, lotDetails.size)
 
         val now = Instant.now()
         val dueDate = now.plusSeconds(PAYMENT_DUE_DAYS * 24 * 60 * 60)
@@ -122,8 +122,8 @@ class CheckoutService @Inject constructor(
 
             paymentRepository.save(payment)
 
-            logger.info(
-                "Created payment {} for lot {} (total={} {}, vat={}, scheme={})",
+            LOG.infof(
+                "Created payment %s for lot %s (total=%s %s, vat=%s, scheme=%s)",
                 payment.id, lot.lotId, totalAmount, lot.currency,
                 vatResult.vatAmount, vatResult.vatScheme
             )
@@ -154,8 +154,8 @@ class CheckoutService @Inject constructor(
             "Payment $paymentId is in status ${payment.status}, expected PENDING"
         }
 
-        logger.info(
-            "Processing payment {} via {} (amount={} {})",
+        LOG.infof(
+            "Processing payment %s via %s (amount=%s %s)",
             paymentId, paymentMethod, payment.totalAmount, payment.currency
         )
 
@@ -184,8 +184,8 @@ class CheckoutService @Inject constructor(
      * @return true if the webhook was processed successfully, false otherwise.
      */
     fun handlePaymentWebhook(webhookData: PaymentWebhookData): Boolean {
-        logger.info(
-            "Processing payment webhook: pspReference={}, eventCode={}, success={}",
+        LOG.infof(
+            "Processing payment webhook: pspReference=%s, eventCode=%s, success=%s",
             webhookData.pspReference, webhookData.eventCode, webhookData.success
         )
 
@@ -193,14 +193,14 @@ class CheckoutService @Inject constructor(
             try {
                 paymentRepository.findById(UUID.fromString(ref))
             } catch (e: IllegalArgumentException) {
-                logger.warn("Invalid merchant reference in webhook: {}", ref)
+                LOG.warnf("Invalid merchant reference in webhook: %s", ref)
                 null
             }
         }
 
         if (payment == null) {
-            logger.warn(
-                "Payment not found for webhook pspReference={}, merchantReference={}",
+            LOG.warnf(
+                "Payment not found for webhook pspReference=%s, merchantReference=%s",
                 webhookData.pspReference, webhookData.merchantReference
             )
             return false
@@ -211,7 +211,7 @@ class CheckoutService @Inject constructor(
             "CANCELLATION" -> handleCancellation(payment, webhookData)
             "REFUND" -> handleRefund(payment, webhookData)
             else -> {
-                logger.warn("Unhandled webhook event code: {}", webhookData.eventCode)
+                LOG.warnf("Unhandled webhook event code: %s", webhookData.eventCode)
                 true // Acknowledge but do not process
             }
         }
@@ -224,7 +224,7 @@ class CheckoutService @Inject constructor(
     private fun handleAuthorisation(payment: Payment, webhookData: PaymentWebhookData): Boolean {
         // BUG-12: Guard against duplicate webhooks for already-finalized payments
         if (payment.status == PaymentStatus.COMPLETED || payment.status == PaymentStatus.FAILED) {
-            logger.warn("Ignoring duplicate webhook for already-finalized payment {} (status={})", payment.id, payment.status)
+            LOG.warnf("Ignoring duplicate webhook for already-finalized payment %s (status=%s)", payment.id, payment.status)
             return true
         }
 
@@ -237,27 +237,27 @@ class CheckoutService @Inject constructor(
                 paidAt = now
             )
 
-            logger.info("Payment {} completed successfully (psp={})", payment.id, webhookData.pspReference)
+            LOG.infof("Payment %s completed successfully (psp=%s)", payment.id, webhookData.pspReference)
 
             // Generate invoices — failure should not prevent settlement creation
             try {
                 generateInvoices(payment)
             } catch (e: Exception) {
-                logger.error("Failed to generate invoices for payment {}: {}", payment.id, e.message, e)
+                LOG.errorf(e, "Failed to generate invoices for payment %s: %s", payment.id, e.message)
             }
 
             // Create settlement for the seller — failure should not affect payment status
             try {
                 settlementService.createSettlement(payment.id)
             } catch (e: Exception) {
-                logger.error("Failed to create settlement for payment {}: {}", payment.id, e.message, e)
+                LOG.errorf(e, "Failed to create settlement for payment %s: %s", payment.id, e.message)
             }
 
             return true
         } else {
             paymentRepository.updateStatus(payment.id, PaymentStatus.FAILED)
-            logger.warn(
-                "Payment {} failed: reason={} (psp={})",
+            LOG.warnf(
+                "Payment %s failed: reason=%s (psp=%s)",
                 payment.id, webhookData.reason, webhookData.pspReference
             )
             return true
@@ -266,14 +266,14 @@ class CheckoutService @Inject constructor(
 
     private fun handleCancellation(payment: Payment, webhookData: PaymentWebhookData): Boolean {
         paymentRepository.updateStatus(payment.id, PaymentStatus.FAILED)
-        logger.info("Payment {} cancelled (psp={})", payment.id, webhookData.pspReference)
+        LOG.infof("Payment %s cancelled (psp=%s)", payment.id, webhookData.pspReference)
         return true
     }
 
     private fun handleRefund(payment: Payment, webhookData: PaymentWebhookData): Boolean {
         if (webhookData.success) {
             paymentRepository.updateStatus(payment.id, PaymentStatus.REFUNDED)
-            logger.info("Payment {} refunded (psp={})", payment.id, webhookData.pspReference)
+            LOG.infof("Payment %s refunded (psp=%s)", payment.id, webhookData.pspReference)
         }
         return true
     }
@@ -296,7 +296,7 @@ class CheckoutService @Inject constructor(
             issuedAt = now
         )
         invoiceRepository.save(buyerInvoice)
-        logger.info("Generated buyer invoice {} for payment {}", buyerInvoice.invoiceNumber, payment.id)
+        LOG.infof("Generated buyer invoice %s for payment %s", buyerInvoice.invoiceNumber, payment.id)
 
         // Seller invoice (self-billing / credit note)
         val sellerInvoice = Invoice(
@@ -308,7 +308,7 @@ class CheckoutService @Inject constructor(
             issuedAt = now
         )
         invoiceRepository.save(sellerInvoice)
-        logger.info("Generated seller invoice {} for payment {}", sellerInvoice.invoiceNumber, payment.id)
+        LOG.infof("Generated seller invoice %s for payment %s", sellerInvoice.invoiceNumber, payment.id)
     }
 
     /**

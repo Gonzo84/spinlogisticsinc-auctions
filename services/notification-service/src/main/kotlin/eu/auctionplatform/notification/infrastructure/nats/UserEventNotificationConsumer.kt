@@ -10,7 +10,7 @@ import io.nats.client.Message
 import io.quarkus.runtime.Startup
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -35,9 +35,9 @@ class UserEventNotificationConsumer @Inject constructor(
     private val notificationService: NotificationService
 ) {
 
-    private val logger = LoggerFactory.getLogger(UserEventNotificationConsumer::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(UserEventNotificationConsumer::class.java)
+
         private const val STREAM_NAME = "USER"
         private const val DURABLE_NAME = "notification-user-consumer"
 
@@ -52,7 +52,7 @@ class UserEventNotificationConsumer @Inject constructor(
      */
     @jakarta.annotation.PostConstruct
     fun init() {
-        logger.info("Starting user event notification consumers")
+        LOG.info("Starting user event notification consumers")
 
         executor.submit { createUserRegisteredConsumer().start() }
         executor.submit { createKycVerifiedConsumer().start() }
@@ -60,7 +60,7 @@ class UserEventNotificationConsumer @Inject constructor(
 
     @jakarta.annotation.PreDestroy
     fun shutdown() {
-        logger.info("Shutting down user event notification consumers")
+        LOG.info("Shutting down user event notification consumers")
         executor.shutdownNow()
     }
 
@@ -130,7 +130,7 @@ class UserEventNotificationConsumer @Inject constructor(
             data = data
         )
 
-        logger.debug("Sent WELCOME to user={} (email={})", userId, email)
+        LOG.debugf("Sent WELCOME to user=%s (email=%s)", userId, email)
     }
 
     /**
@@ -158,7 +158,7 @@ class UserEventNotificationConsumer @Inject constructor(
             data = data
         )
 
-        logger.debug("Sent KYC_APPROVED to user={}", userId)
+        LOG.debugf("Sent KYC_APPROVED to user=%s", userId)
     }
 
     // -----------------------------------------------------------------------
@@ -171,9 +171,9 @@ class UserEventNotificationConsumer @Inject constructor(
             val json = String(message.data, Charsets.UTF_8)
             JsonMapper.instance.readValue(json, Map::class.java) as Map<String, Any>
         } catch (ex: Exception) {
-            logger.error(
-                "Failed to parse user event payload on subject {}: {}",
-                message.subject, ex.message, ex
+            LOG.errorf(ex,
+                "Failed to parse user event payload on subject %s: %s",
+                message.subject, ex.message
             )
             null
         }

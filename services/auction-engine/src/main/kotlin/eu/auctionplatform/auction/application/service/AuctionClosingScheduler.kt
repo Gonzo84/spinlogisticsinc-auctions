@@ -5,7 +5,7 @@ import eu.auctionplatform.commons.domain.AuctionId
 import io.quarkus.scheduler.Scheduled
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 
 /**
@@ -35,7 +35,9 @@ class AuctionClosingScheduler @Inject constructor(
     private val lifecycleService: AuctionLifecycleService
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionClosingScheduler::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionClosingScheduler::class.java)
+    }
 
     /**
      * Polls for auctions that should be closed.
@@ -52,20 +54,21 @@ class AuctionClosingScheduler @Inject constructor(
             return
         }
 
-        logger.info("Found {} auction(s) eligible for closing", auctionsToClose.size)
+        LOG.infof("Found %d auction(s) eligible for closing", auctionsToClose.size)
 
         for (auction in auctionsToClose) {
             try {
                 val auctionId = AuctionId(auction.auctionId)
                 val result = lifecycleService.closeAuction(auctionId)
-                logger.info(
-                    "Successfully closed auction {} (winner={}, finalBid={}, reserveMet={})",
+                LOG.infof(
+                    "Successfully closed auction %s (winner=%s, finalBid=%s, reserveMet=%s)",
                     auctionId, result.winnerId, result.finalBid, result.reserveMet
                 )
             } catch (ex: Exception) {
-                logger.error(
-                    "Failed to close auction {}: {}",
-                    auction.auctionId, ex.message, ex
+                LOG.errorf(
+                    ex,
+                    "Failed to close auction %s: %s",
+                    auction.auctionId, ex.message
                 )
                 // Continue processing remaining auctions -- this one will be
                 // retried on the next scheduler tick if it is still eligible.

@@ -12,42 +12,42 @@ services:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   catalog-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   user-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   payment-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   notification-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   media-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_healthy
 
@@ -56,7 +56,7 @@ services:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
       elasticsearch:
         condition: service_healthy
 
@@ -65,42 +65,42 @@ services:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   broker-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   compliance-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   co2-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   analytics-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
 
   gateway-service:
     depends_on:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
 

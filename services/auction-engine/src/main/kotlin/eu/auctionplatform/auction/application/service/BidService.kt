@@ -19,7 +19,7 @@ import eu.auctionplatform.commons.util.JsonMapper
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -73,9 +73,8 @@ class BidService @Inject constructor(
     private val objectMapper: ObjectMapper
 ) {
 
-    private val logger = LoggerFactory.getLogger(BidService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(BidService::class.java)
         /** Maximum number of retry attempts on optimistic concurrency conflict. */
         private const val MAX_RETRIES = 3
     }
@@ -136,8 +135,8 @@ class BidService @Inject constructor(
             )
 
             if (!success) {
-                logger.warn(
-                    "Optimistic concurrency conflict on attempt {}/{} for auction {}",
+                LOG.warnf(
+                    "Optimistic concurrency conflict on attempt %d/%d for auction %s",
                     attempt, MAX_RETRIES, command.auctionId
                 )
                 if (attempt >= MAX_RETRIES) {
@@ -237,8 +236,8 @@ class BidService @Inject constructor(
             )
 
             if (!success) {
-                logger.warn(
-                    "Optimistic concurrency conflict on auto-bid attempt {}/{} for auction {}",
+                LOG.warnf(
+                    "Optimistic concurrency conflict on auto-bid attempt %d/%d for auction %s",
                     attempt, MAX_RETRIES, command.auctionId
                 )
                 if (attempt >= MAX_RETRIES) {

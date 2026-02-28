@@ -7,7 +7,7 @@ import eu.auctionplatform.media.infrastructure.persistence.repository.ImageRepos
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Duration
 import java.util.UUID
 
@@ -45,9 +45,9 @@ class PresignedUrlService @Inject constructor(
     private val mediaBucket: String
 ) {
 
-    private val logger = LoggerFactory.getLogger(PresignedUrlService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(PresignedUrlService::class.java)
+
         /** Default presigned URL validity period. */
         private val DEFAULT_EXPIRY: Duration = Duration.ofMinutes(15)
 
@@ -115,8 +115,8 @@ class PresignedUrlService @Inject constructor(
 
         val expiresIn = DEFAULT_EXPIRY.toSeconds()
 
-        logger.info(
-            "Generated presigned upload URL for lot {} (imageId={}, type={}, expiresIn={}s)",
+        LOG.infof(
+            "Generated presigned upload URL for lot %s (imageId=%s, type=%s, expiresIn=%ss)",
             lotId, imageId, contentType, expiresIn
         )
 

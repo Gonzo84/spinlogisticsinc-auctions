@@ -18,7 +18,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 
 /**
@@ -51,9 +51,9 @@ class WebhookResource {
     @ConfigProperty(name = "webhook.onfido.token", defaultValue = "")
     lateinit var onfidoToken: String
 
-    private val logger = LoggerFactory.getLogger(WebhookResource::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(WebhookResource::class.java)
+
         private const val NATS_SUBJECT_ADYEN = "webhook.adyen.received"
         private const val NATS_SUBJECT_ONFIDO = "webhook.onfido.received"
 
@@ -91,12 +91,12 @@ class WebhookResource {
     @Path("/adyen")
     @PermitAll
     fun handleAdyenWebhook(body: String): Response {
-        logger.info("Received Adyen webhook, payload size={} bytes", body.length)
+        LOG.infof("Received Adyen webhook, payload size=%s bytes", body.length)
 
         val payload: AdyenWebhookPayload = try {
             JsonMapper.fromJson(body)
         } catch (ex: Exception) {
-            logger.error("Failed to parse Adyen webhook payload: {}", ex.message)
+            LOG.errorf("Failed to parse Adyen webhook payload: %s", ex.message)
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(WebhookAckResponse(accepted = false, message = "Invalid payload"))
                 .build()
@@ -112,18 +112,18 @@ class WebhookResource {
             // Validate HMAC if key is configured
             if (adyenHmacKey.isNotBlank()) {
                 if (signature.isNullOrBlank()) {
-                    logger.warn("Adyen notification missing HMAC signature [psp={}]", item.pspReference)
+                    LOG.warnf("Adyen notification missing HMAC signature [psp=%s]", item.pspReference)
                     continue
                 }
                 if (!webhookValidator.validateAdyenHmac(body, signature, adyenHmacKey)) {
-                    logger.warn("Adyen HMAC validation failed [psp={}]", item.pspReference)
+                    LOG.warnf("Adyen HMAC validation failed [psp=%s]", item.pspReference)
                     continue
                 }
             }
 
             // Deduplicate
             if (isDuplicate(eventId)) {
-                logger.debug("Adyen notification already processed [psp={}]", item.pspReference)
+                LOG.debugf("Adyen notification already processed [psp=%s]", item.pspReference)
                 continue
             }
 
@@ -142,13 +142,13 @@ class WebhookResource {
             publishToNats(NATS_SUBJECT_ADYEN, natsEvent)
             processedCount++
 
-            logger.info(
-                "Processed Adyen notification [psp={}, eventCode={}, success={}]",
+            LOG.infof(
+                "Processed Adyen notification [psp=%s, eventCode=%s, success=%s]",
                 item.pspReference, item.eventCode, item.success
             )
         }
 
-        logger.info("Adyen webhook processed: {} of {} items", processedCount, payload.notificationItems.size)
+        LOG.infof("Adyen webhook processed: %s of %s items", processedCount, payload.notificationItems.size)
 
         return Response.ok(WebhookAckResponse(accepted = true, message = "[accepted]")).build()
     }
@@ -179,18 +179,18 @@ class WebhookResource {
         body: String,
         @HeaderParam("X-SHA2-Signature") sha2Signature: String?
     ): Response {
-        logger.info("Received Onfido webhook, payload size={} bytes", body.length)
+        LOG.infof("Received Onfido webhook, payload size=%s bytes", body.length)
 
         // Validate HMAC signature if token is configured
         if (onfidoToken.isNotBlank()) {
             if (sha2Signature.isNullOrBlank()) {
-                logger.warn("Onfido webhook missing X-SHA2-Signature header")
+                LOG.warn("Onfido webhook missing X-SHA2-Signature header")
                 return Response.status(Response.Status.UNAUTHORIZED)
                     .entity(WebhookAckResponse(accepted = false, message = "Missing signature"))
                     .build()
             }
             if (!webhookValidator.validateOnfidoHmac(body, sha2Signature, onfidoToken)) {
-                logger.warn("Onfido HMAC validation failed")
+                LOG.warn("Onfido HMAC validation failed")
                 return Response.status(Response.Status.UNAUTHORIZED)
                     .entity(WebhookAckResponse(accepted = false, message = "Invalid signature"))
                     .build()
@@ -200,7 +200,7 @@ class WebhookResource {
         val payload: OnfidoWebhookPayload = try {
             JsonMapper.fromJson(body)
         } catch (ex: Exception) {
-            logger.error("Failed to parse Onfido webhook payload: {}", ex.message)
+            LOG.errorf("Failed to parse Onfido webhook payload: %s", ex.message)
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(WebhookAckResponse(accepted = false, message = "Invalid payload"))
                 .build()
@@ -211,7 +211,7 @@ class WebhookResource {
 
         // Deduplicate
         if (isDuplicate(eventId)) {
-            logger.debug("Onfido webhook already processed [id={}]", eventObject.id)
+            LOG.debugf("Onfido webhook already processed [id=%s]", eventObject.id)
             return Response.ok(
                 WebhookAckResponse(accepted = true, eventId = eventId, message = "Duplicate event")
             ).build()
@@ -231,8 +231,8 @@ class WebhookResource {
 
         publishToNats(NATS_SUBJECT_ONFIDO, natsEvent)
 
-        logger.info(
-            "Processed Onfido webhook [id={}, type={}.{}, status={}]",
+        LOG.infof(
+            "Processed Onfido webhook [id=%s, type=%s.%s, status=%s]",
             eventObject.id, payload.payload.resourceType, payload.payload.action, eventObject.status
         )
 
@@ -257,7 +257,7 @@ class WebhookResource {
                 }
             }
         } catch (ex: Exception) {
-            logger.error("Dedup check failed for event {}: {}", eventId, ex.message)
+            LOG.errorf("Dedup check failed for event %s: %s", eventId, ex.message)
             false
         }
     }
@@ -275,7 +275,7 @@ class WebhookResource {
                 }
             }
         } catch (ex: Exception) {
-            logger.error("Failed to record dedup event {}: {}", eventId, ex.message)
+            LOG.errorf("Failed to record dedup event %s: %s", eventId, ex.message)
         }
     }
 
@@ -286,11 +286,12 @@ class WebhookResource {
         try {
             val payload = JsonMapper.toJson(event).toByteArray(Charsets.UTF_8)
             natsConnection.publish(subject, payload)
-            logger.debug("Published webhook event to NATS [subject={}, eventId={}]", subject, event.eventId)
+            LOG.debugf("Published webhook event to NATS [subject=%s, eventId=%s]", subject, event.eventId)
         } catch (ex: Exception) {
-            logger.error(
-                "Failed to publish webhook event to NATS [subject={}, eventId={}]: {}",
-                subject, event.eventId, ex.message, ex
+            LOG.errorf(
+                ex,
+                "Failed to publish webhook event to NATS [subject=%s, eventId=%s]: %s",
+                subject, event.eventId, ex.message
             )
         }
     }

@@ -1,59 +1,27 @@
-import { ref, reactive } from 'vue'
+import { ref, reactive, readonly } from 'vue'
+import axios from 'axios'
 import { useApi } from './useApi'
+import type { GdprRequest, GdprFilters, FraudAlert, FraudFilters } from '@/types/compliance'
+import type { PaginationParams } from '@/types/api'
 
-// GDPR types
-export type GdprRequestType = 'export' | 'erasure'
-export type GdprRequestStatus = 'pending' | 'processing' | 'completed' | 'rejected'
+export type {
+  GdprRequest,
+  GdprRequestType,
+  GdprRequestStatus,
+  GdprFilters,
+  FraudAlert,
+  FraudSeverity,
+  FraudAlertStatus,
+  FraudAlertType,
+  FraudFilters,
+} from '@/types/compliance'
 
-export interface GdprRequest {
-  id: string
-  userId: string
-  userName: string
-  userEmail: string
-  type: GdprRequestType
-  status: GdprRequestStatus
-  reason: string | null
-  requestedAt: string
-  processedAt: string | null
-  processedBy: string | null
-  downloadUrl: string | null
-}
-
-export interface GdprFilters {
-  type: string
-  status: string
-  page: number
-  pageSize: number
-}
-
-// Fraud types
-export type FraudSeverity = 'high' | 'medium' | 'low'
-export type FraudAlertStatus = 'new' | 'investigating' | 'resolved' | 'false_positive'
-export type FraudAlertType = 'shill_bidding' | 'bid_manipulation' | 'account_takeover' | 'payment_fraud' | 'multiple_accounts'
-
-export interface FraudAlert {
-  id: string
-  type: FraudAlertType
-  severity: FraudSeverity
-  status: FraudAlertStatus
-  title: string
-  description: string
-  affectedUsers: { id: string; name: string; role: string }[]
-  affectedAuction: { id: string; title: string } | null
-  affectedLots: { id: string; title: string }[]
-  evidence: string[]
-  detectedAt: string
-  resolvedAt: string | null
-  resolvedBy: string | null
-  resolution: string | null
-}
-
-export interface FraudFilters {
-  severity: string
-  status: string
-  type: string
-  page: number
-  pageSize: number
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const msg = (err.response?.data as Record<string, unknown> | undefined)?.message
+    return typeof msg === 'string' ? msg : fallback
+  }
+  return err instanceof Error ? err.message : fallback
 }
 
 export function useCompliance() {
@@ -88,7 +56,7 @@ export function useCompliance() {
     loading.value = true
     error.value = null
     try {
-      const params: Record<string, any> = {
+      const params: PaginationParams = {
         page: gdprFilters.page,
         pageSize: gdprFilters.pageSize,
       }
@@ -113,8 +81,8 @@ export function useCompliance() {
     try {
       await patch(`/compliance/gdpr/requests/${requestId}/approve`)
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to approve GDPR request'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to approve GDPR request')
       return false
     } finally {
       loading.value = false
@@ -127,8 +95,8 @@ export function useCompliance() {
     try {
       await patch(`/compliance/gdpr/requests/${requestId}/reject`, { reason })
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to reject GDPR request'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to reject GDPR request')
       return false
     } finally {
       loading.value = false
@@ -140,7 +108,7 @@ export function useCompliance() {
     loading.value = true
     error.value = null
     try {
-      const params: Record<string, any> = {
+      const params: PaginationParams = {
         page: fraudFilters.page,
         pageSize: fraudFilters.pageSize,
       }
@@ -164,8 +132,8 @@ export function useCompliance() {
     try {
       await patch(`/compliance/fraud/alerts/${alertId}/investigate`)
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to update alert'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to update alert')
       return false
     }
   }
@@ -176,8 +144,8 @@ export function useCompliance() {
     try {
       await patch(`/compliance/fraud/alerts/${alertId}/resolve`, { resolution, blockUsers })
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to resolve alert'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to resolve alert')
       return false
     } finally {
       loading.value = false
@@ -188,8 +156,8 @@ export function useCompliance() {
     try {
       await patch(`/compliance/fraud/alerts/${alertId}/dismiss`)
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to dismiss alert'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to dismiss alert')
       return false
     }
   }
@@ -211,7 +179,7 @@ export function useCompliance() {
     resolveAlert,
     dismissAlert,
     // Shared
-    loading,
-    error,
+    loading: readonly(loading),
+    error: readonly(error),
   }
 }

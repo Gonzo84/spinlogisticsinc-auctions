@@ -3,20 +3,22 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuctions, type AuctionCreatePayload } from '@/composables/useAuctions'
 import { useApi } from '@/composables/useApi'
+import type { ApprovedLot } from '@/types/lot'
+import type { ApiResponse, PagedResponse } from '@/types/api'
+
+interface RawLotSummary {
+  id?: string
+  title?: string
+  brand?: string
+  sellerId?: string
+  startingBid?: number
+  locationCountry?: string
+  locationCity?: string
+}
 
 const router = useRouter()
 const { createAuction, loading, error } = useAuctions()
 const { get } = useApi()
-
-interface ApprovedLot {
-  id: string
-  title: string
-  brand: string
-  sellerId: string
-  startingBid: number
-  locationCountry: string
-  locationCity: string
-}
 
 const approvedLots = ref<ApprovedLot[]>([])
 const lotsLoading = ref(false)
@@ -43,21 +45,26 @@ onMounted(async () => {
   await fetchApprovedLots()
 })
 
+function normalizeRawLot(lot: RawLotSummary): ApprovedLot {
+  return {
+    id: lot.id ?? '',
+    title: lot.title ?? '',
+    brand: lot.brand ?? '',
+    sellerId: lot.sellerId ?? '',
+    startingBid: lot.startingBid ?? 1,
+    locationCountry: lot.locationCountry ?? '',
+    locationCity: lot.locationCity ?? '',
+  }
+}
+
 async function fetchApprovedLots() {
   lotsLoading.value = true
   try {
-    const raw = await get<any>('/lots', { params: { status: 'APPROVED', pageSize: 100 } })
-    const data = raw?.data ?? raw
+    const raw = await get<ApiResponse<PagedResponse<RawLotSummary>> | PagedResponse<RawLotSummary>>('/lots', { params: { status: 'APPROVED', pageSize: 100 } })
+    const unwrapped = raw as ApiResponse<PagedResponse<RawLotSummary>>
+    const data = unwrapped?.data ?? (raw as PagedResponse<RawLotSummary>)
     const items = data?.items ?? []
-    approvedLots.value = items.map((lot: any) => ({
-      id: lot.id ?? '',
-      title: lot.title ?? '',
-      brand: lot.brand ?? '',
-      sellerId: lot.sellerId ?? '',
-      startingBid: lot.startingBid ?? 1,
-      locationCountry: lot.locationCountry ?? '',
-      locationCity: lot.locationCity ?? '',
-    }))
+    approvedLots.value = items.map(normalizeRawLot)
   } catch {
     approvedLots.value = []
   } finally {
@@ -73,8 +80,9 @@ async function onLotSelected() {
   }
   // Fetch full lot detail to get sellerId (not included in summary response)
   try {
-    const raw = await get<any>(`/lots/${summary.id}`)
-    const lot = raw?.data ?? raw
+    const raw = await get<ApiResponse<RawLotSummary> | RawLotSummary>(`/lots/${summary.id}`)
+    const unwrapped = raw as ApiResponse<RawLotSummary>
+    const lot: RawLotSummary = unwrapped?.data ?? (raw as RawLotSummary)
     selectedLot.value = {
       id: lot.id ?? summary.id,
       title: lot.title ?? summary.title,
@@ -102,7 +110,13 @@ function validate(): boolean {
 }
 
 async function handleSubmit() {
-  if (!validate() || !selectedLot.value) return
+  if (!validate()) return
+
+  // If selectedLot isn't populated yet, try to resolve it from selectedLotId
+  if (!selectedLot.value && selectedLotId.value) {
+    await onLotSelected()
+  }
+  if (!selectedLot.value) return
 
   const payload: AuctionCreatePayload = {
     lotId: selectedLot.value.id,
@@ -114,9 +128,13 @@ async function handleSubmit() {
     sellerId: selectedLot.value.sellerId,
   }
 
-  const auction = await createAuction(payload)
-  if (auction) {
-    router.push({ name: 'auctions' })
+  try {
+    const auction = await createAuction(payload)
+    if (auction) {
+      router.push({ name: 'auctions' })
+    }
+  } catch {
+    // Error is stored in the reactive `error` ref by useAuctions
   }
 }
 
@@ -353,6 +371,7 @@ function handleCancel() {
             type="submit"
             class="btn-primary"
             :disabled="loading || !selectedLotId"
+            @click.prevent="handleSubmit"
           >
             <svg
               v-if="loading"

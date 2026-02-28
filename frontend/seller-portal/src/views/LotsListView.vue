@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useLots, type LotStatus, type Lot } from '@/composables/useLots'
+import { useLots } from '@/composables/useLots'
+import type { LotStatus, Lot, LotsFilter } from '@/types'
 
 const router = useRouter()
 const {
@@ -40,7 +41,7 @@ function getTabCount(key: string): number {
 }
 
 async function loadLots(page = 1) {
-  const filters: Record<string, unknown> = {
+  const filters: LotsFilter = {
     page,
     pageSize: 20,
     sortBy: sortBy.value,
@@ -48,7 +49,7 @@ async function loadLots(page = 1) {
   }
   if (activeTab.value !== 'all') filters.status = activeTab.value
   if (searchQuery.value.trim()) filters.search = searchQuery.value.trim()
-  await fetchLots(filters as any)
+  await fetchLots(filters)
 }
 
 watch([activeTab, sortBy, sortDir], () => {
@@ -113,10 +114,13 @@ function getStatusLabel(status: LotStatus): string {
 }
 
 async function handleSubmitForReview(lot: Lot) {
-  if (confirm(`Submit "${lot.title}" for review?`)) {
+  if (!confirm(`Submit "${lot.title}" for review?`)) return
+  try {
     await submitForReview(lot.id)
-    await Promise.all([fetchStatusCounts(), loadLots(pagination.value.page)])
+  } catch {
+    // Error is already stored in the `error` ref by useApi
   }
+  await Promise.all([fetchStatusCounts(), loadLots(pagination.value.page)])
 }
 
 async function handleDelete(lot: Lot) {

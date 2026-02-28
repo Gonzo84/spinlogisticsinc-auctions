@@ -24,7 +24,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 
 /**
@@ -48,7 +48,9 @@ class MediaResource @Inject constructor(
     private val mediaBucket: String
 ) {
 
-    private val logger = LoggerFactory.getLogger(MediaResource::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(MediaResource::class.java)
+    }
 
     // -----------------------------------------------------------------------
     // Upload
@@ -69,7 +71,7 @@ class MediaResource @Inject constructor(
     @Path("/upload/presigned")
     @RolesAllowed("seller_verified", "seller_pending", "admin_ops", "admin_super", "broker")
     fun generatePresignedUrl(@Valid request: PresignedUploadRequest): Response {
-        logger.info("Generating presigned upload URL for lot {}", request.lotId)
+        LOG.infof("Generating presigned upload URL for lot %s", request.lotId)
 
         val result = presignedUrlService.generatePresignedUploadUrl(
             lotId = UUID.fromString(request.lotId),
@@ -134,13 +136,13 @@ class MediaResource @Inject constructor(
                 message = "Image $imageId not found"
             )
 
-        logger.info("Deleting image {} (lot={}, key={})", imageId, image.lotId, image.objectKey)
+        LOG.infof("Deleting image %s (lot=%s, key=%s)", imageId, image.lotId, image.objectKey)
 
         // Delete from MinIO (best-effort; object may not exist if upload never completed)
         try {
             minioService.deleteObject(mediaBucket, image.objectKey)
         } catch (ex: Exception) {
-            logger.warn("Failed to delete object {} from MinIO: {}", image.objectKey, ex.message)
+            LOG.warnf("Failed to delete object %s from MinIO: %s", image.objectKey, ex.message)
         }
 
         // Delete from database
@@ -177,7 +179,7 @@ class MediaResource @Inject constructor(
                 message = "Image $imageId not found"
             )
 
-        logger.info("Updating display order for image {} to {}", imageId, request.displayOrder)
+        LOG.infof("Updating display order for image %s to %s", imageId, request.displayOrder)
 
         imageRepository.updateOrder(id, request.displayOrder)
 
@@ -211,7 +213,7 @@ class MediaResource @Inject constructor(
                 message = "Image $imageId not found"
             )
 
-        logger.info("Setting image {} as primary for lot {}", imageId, image.lotId)
+        LOG.infof("Setting image %s as primary for lot %s", imageId, image.lotId)
 
         imageRepository.setPrimary(id, image.lotId)
 
@@ -235,7 +237,7 @@ class MediaResource @Inject constructor(
         return try {
             UUID.fromString(value)
         } catch (ex: IllegalArgumentException) {
-            logger.warn("Invalid UUID for parameter '{}': {}", paramName, value)
+            LOG.warnf("Invalid UUID for parameter '%s': %s", paramName, value)
             null
         }
     }

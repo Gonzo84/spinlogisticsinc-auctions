@@ -5,7 +5,7 @@ import io.quarkus.redis.datasource.sortedset.ScoreRange
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 // =============================================================================
 // Rate Limit Service – Redis-backed sliding-window rate limiter
@@ -30,8 +30,6 @@ class RateLimitService @Inject constructor(
     private val redisDataSource: RedisDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(RateLimitService::class.java)
-
     @ConfigProperty(name = "rate-limit.redis-key-prefix", defaultValue = "rl:")
     lateinit var keyPrefix: String
 
@@ -39,6 +37,8 @@ class RateLimitService @Inject constructor(
     var enabled: Boolean = true
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(RateLimitService::class.java)
+
         /** General API rate limit: 100 requests per 60 seconds. */
         const val GENERAL_LIMIT: Int = 100
         const val GENERAL_WINDOW_SECONDS: Int = 60
@@ -90,8 +90,8 @@ class RateLimitService @Inject constructor(
             val currentCount = commands.zcard(key)
 
             if (currentCount >= limit.toLong()) {
-                logger.debug(
-                    "Rate limit exceeded for user={}, endpoint={}, count={}/{}",
+                LOG.debugf(
+                    "Rate limit exceeded for user=%s, endpoint=%s, count=%s/%s",
                     userId, endpoint, currentCount, limit
                 )
                 return false
@@ -106,17 +106,18 @@ class RateLimitService @Inject constructor(
             // This prevents orphaned keys from accumulating
             redisDataSource.key(String::class.java).expire(key, windowSeconds.toLong() + 10)
 
-            logger.debug(
-                "Rate limit check passed for user={}, endpoint={}, count={}/{}",
+            LOG.debugf(
+                "Rate limit check passed for user=%s, endpoint=%s, count=%s/%s",
                 userId, endpoint, currentCount + 1, limit
             )
             return true
         } catch (ex: Exception) {
             // On Redis failure, allow the request through (fail-open) to avoid
             // blocking all traffic when Redis is temporarily unavailable
-            logger.error(
-                "Redis error during rate limit check for user={}, endpoint={}: {}",
-                userId, endpoint, ex.message, ex
+            LOG.errorf(
+                ex,
+                "Redis error during rate limit check for user=%s, endpoint=%s: %s",
+                userId, endpoint, ex.message
             )
             return true
         }
@@ -161,7 +162,7 @@ class RateLimitService @Inject constructor(
             val currentCount = commands.zcard(key)
             (limit.toLong() - currentCount).coerceAtLeast(0L)
         } catch (ex: Exception) {
-            logger.error("Redis error getting remaining requests: {}", ex.message, ex)
+            LOG.errorf(ex, "Redis error getting remaining requests: %s", ex.message)
             -1
         }
     }

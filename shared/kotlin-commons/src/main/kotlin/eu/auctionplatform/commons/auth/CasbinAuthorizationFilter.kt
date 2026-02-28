@@ -7,7 +7,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.ext.Provider
 import org.casbin.jcasbin.main.Enforcer
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 /**
  * JAX-RS [ContainerRequestFilter] that enforces Casbin RBAC policies.
@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory
 @Priority(Priorities.AUTHORIZATION + 100) // Run after @RolesAllowed
 class CasbinAuthorizationFilter : ContainerRequestFilter {
 
-    private val logger = LoggerFactory.getLogger(CasbinAuthorizationFilter::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(CasbinAuthorizationFilter::class.java)
+    }
 
     /**
      * Lazily initialised Casbin enforcer. Uses the model and policy files
@@ -52,7 +54,7 @@ class CasbinAuthorizationFilter : ContainerRequestFilter {
                 .getResourceAsStream("casbin_policy.csv")
 
             if (modelStream == null || policyStream == null) {
-                logger.warn(
+                LOG.warn(
                     "Casbin model or policy file not found on classpath; " +
                     "authorization filter will be disabled"
                 )
@@ -71,10 +73,10 @@ class CasbinAuthorizationFilter : ContainerRequestFilter {
             }
 
             Enforcer(modelFile.absolutePath, policyFile.absolutePath).also {
-                logger.info("Casbin enforcer initialised successfully")
+                LOG.info("Casbin enforcer initialised successfully")
             }
         } catch (ex: Exception) {
-            logger.error("Failed to initialise Casbin enforcer: {}", ex.message, ex)
+            LOG.errorf(ex, "Failed to initialise Casbin enforcer: %s", ex.message)
             null
         }
     }

@@ -5,7 +5,7 @@ import io.nats.client.api.RetentionPolicy
 import io.nats.client.api.StorageType
 import io.nats.client.api.StreamConfiguration
 import io.nats.client.api.StreamInfo
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Duration
 
 /**
@@ -24,7 +24,7 @@ import java.time.Duration
  */
 object NatsStreamInitializer {
 
-    private val logger = LoggerFactory.getLogger(NatsStreamInitializer::class.java)
+    private val LOG: Logger = Logger.getLogger(NatsStreamInitializer::class.java)
 
     /**
      * Stream definitions: stream name to list of subject patterns.
@@ -56,7 +56,7 @@ object NatsStreamInitializer {
         try {
             doInitialize(connection)
         } catch (ex: Exception) {
-            logger.error("Failed to initialize NATS JetStream streams: {}", ex.message, ex)
+            LOG.errorf(ex, "Failed to initialize NATS JetStream streams: %s", ex.message)
         }
     }
 
@@ -72,7 +72,7 @@ object NatsStreamInitializer {
         for ((streamName, subjects) in STREAM_DEFINITIONS) {
             try {
                 if (streamName in existingStreams) {
-                    logger.debug("NATS stream '{}' already exists — skipping", streamName)
+                    LOG.debugf("NATS stream '%s' already exists — skipping", streamName)
                     continue
                 }
 
@@ -86,18 +86,18 @@ object NatsStreamInitializer {
                     .build()
 
                 val info: StreamInfo = jsm.addStream(config)
-                logger.info(
-                    "Created NATS stream '{}' (subjects={}, messages={})",
+                LOG.infof(
+                    "Created NATS stream '%s' (subjects=%s, messages=%s)",
                     streamName, subjects, info.streamState.msgCount
                 )
             } catch (ex: Exception) {
-                logger.warn(
-                    "Could not create NATS stream '{}': {} — consumers may fail",
+                LOG.warnf(
+                    "Could not create NATS stream '%s': %s — consumers may fail",
                     streamName, ex.message
                 )
             }
         }
 
-        logger.info("NATS JetStream stream initialization complete")
+        LOG.info("NATS JetStream stream initialization complete")
     }
 }

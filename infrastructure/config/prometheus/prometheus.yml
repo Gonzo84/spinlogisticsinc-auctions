@@ -67,10 +67,9 @@ scrape_configs:
         labels:
           service: 'nats'
 
-  # Redis: requires redis-exporter sidecar to expose metrics over HTTP.
-  # Disabled until redis-exporter is added to docker-compose.
-  # - job_name: 'redis'
-  #   static_configs:
-  #     - targets: ['redis-exporter:9121']
-  #       labels:
-  #         service: 'redis'
+  # Redis: scraped via redis-exporter sidecar
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'

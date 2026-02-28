@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useLots, type LotFormData } from '@/composables/useLots'
+import { useLots } from '@/composables/useLots'
+import type { LotFormData, LotImage } from '@/types'
+import type { AxiosError } from 'axios'
 import LotForm from '@/components/lots/LotForm.vue'
 
 const route = useRoute()
@@ -14,23 +16,23 @@ const initialDataReady = ref(false)
 
 const initialData = computed<Partial<LotFormData> | undefined>(() => {
   if (!currentLot.value) return undefined
-  const lot = currentLot.value as any
+  const lot = currentLot.value
   return {
     brand: lot.brand ?? '',
     title: lot.title,
     description: lot.description,
-    categoryId: lot.categoryId ?? lot.category ?? '',
+    categoryId: lot.category ?? '',
     specifications: { ...(lot.specifications ?? {}) },
     startingBid: lot.startingBid,
     reservePrice: lot.reservePrice,
     location: lot.location ? { ...lot.location } : {
-      address: lot.locationAddress ?? '',
-      city: lot.locationCity ?? '',
-      country: lot.locationCountry ?? '',
-      lat: lot.locationLat ?? 0,
-      lng: lot.locationLng ?? 0,
+      address: '',
+      city: '',
+      country: '',
+      lat: 0,
+      lng: 0,
     },
-    imageIds: (lot.images ?? []).map((img: any) => img.id),
+    imageIds: (lot.images ?? []).map((img: LotImage) => img.id),
   }
 })
 
@@ -44,8 +46,9 @@ async function handleSubmit(data: LotFormData) {
   try {
     await updateLot(lotId.value, data)
     router.push({ name: 'lot-detail', params: { id: lotId.value } })
-  } catch (err: any) {
-    submitError.value = err?.response?.data?.message ?? 'Failed to update lot. Please try again.'
+  } catch (err: unknown) {
+    const axiosErr = err as AxiosError<{ message?: string }>
+    submitError.value = axiosErr?.response?.data?.message ?? 'Failed to update lot. Please try again.'
   }
 }
 

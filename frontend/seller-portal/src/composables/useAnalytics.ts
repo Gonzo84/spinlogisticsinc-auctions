@@ -1,49 +1,25 @@
-import { ref } from 'vue'
+import { ref, readonly } from 'vue'
 import { useApi } from './useApi'
+import type {
+  SellThroughData,
+  PriceVsEstimate,
+  CategoryPerformance,
+  MonthlyRevenue,
+  BuyerDemographic,
+  AnalyticsOverview,
+  ApiResponse,
+  RawAnalyticsResponse,
+  RawTopCategory,
+  RawMonthlyRevenue,
+} from '@/types'
 
-export interface SellThroughData {
-  totalListed: number
-  totalSold: number
-  rate: number
-}
-
-export interface PriceVsEstimate {
-  category: string
-  averageEstimate: number
-  averageHammerPrice: number
-  ratio: number
-}
-
-export interface CategoryPerformance {
-  category: string
-  lotsListed: number
-  lotsSold: number
-  revenue: number
-  sellThroughRate: number
-  averagePrice: number
-}
-
-export interface MonthlyRevenue {
-  month: string
-  revenue: number
-  lotsSold: number
-}
-
-export interface BuyerDemographic {
-  country: string
-  countryCode: string
-  buyerCount: number
-  totalSpent: number
-  percentage: number
-}
-
-export interface AnalyticsOverview {
-  sellThrough: SellThroughData
-  totalRevenue: number
-  averageHammerPrice: number
-  totalBids: number
-  averageBidsPerLot: number
-  currency: string
+export type {
+  SellThroughData,
+  PriceVsEstimate,
+  CategoryPerformance,
+  MonthlyRevenue,
+  BuyerDemographic,
+  AnalyticsOverview,
 }
 
 /**
@@ -63,11 +39,20 @@ export function useAnalytics() {
   const monthlyRevenue = ref<MonthlyRevenue[]>([])
   const buyerDemographics = ref<BuyerDemographic[]>([])
 
+  /** Unwrap ApiResponse wrapper if present, returning the inner data. */
+  function unwrapApiResponse<T>(raw: unknown): T {
+    const obj = raw as Record<string, unknown> | null
+    if (obj?.data && typeof obj.data === 'object' && !Array.isArray(obj.data)) {
+      return obj.data as T
+    }
+    return raw as T
+  }
+
   async function fetchAnalytics(): Promise<void> {
     try {
-      const raw = await get<any>('/sellers/me/analytics')
+      const raw = await get<ApiResponse<RawAnalyticsResponse> | RawAnalyticsResponse>('/sellers/me/analytics')
       // Unwrap ApiResponse wrapper if present
-      const data = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+      const data = unwrapApiResponse<RawAnalyticsResponse>(raw)
 
       // Map to overview
       const totalLots = data.totalLots ?? 0
@@ -96,25 +81,25 @@ export function useAnalytics() {
       }
 
       // Map topCategories to categoryPerformance
-      const cats = data.topCategories ?? []
-      categoryPerformance.value = cats.map((c: any) => ({
+      const cats: RawTopCategory[] = data.topCategories ?? []
+      categoryPerformance.value = cats.map((c: RawTopCategory) => ({
         category: c.category ?? 'Unknown',
         lotsListed: c.lotCount ?? 0,
         lotsSold: c.lotCount ?? 0,
         revenue: c.revenue ?? 0,
         sellThroughRate: 100,
-        averagePrice: c.lotCount > 0 ? (c.revenue ?? 0) / c.lotCount : 0,
+        averagePrice: (c.lotCount ?? 0) > 0 ? (c.revenue ?? 0) / (c.lotCount ?? 1) : 0,
       }))
 
       // Map monthlyRevenue
-      const months = data.monthlyRevenue ?? []
-      monthlyRevenue.value = months.map((m: any) => ({
+      const months: RawMonthlyRevenue[] = data.monthlyRevenue ?? []
+      monthlyRevenue.value = months.map((m: RawMonthlyRevenue) => ({
         month: m.month ?? '',
         revenue: m.revenue ?? 0,
         lotsSold: m.lotsSold ?? 0,
       }))
     } catch {
-      // Analytics endpoint is optional – clear error and show zeros
+      // Analytics endpoint is optional -- clear error and show zeros
       error.value = null
     }
   }
@@ -125,7 +110,7 @@ export function useAnalytics() {
   }
 
   async function fetchPriceVsEstimate(): Promise<void> {
-    // Not available from seller-service – keep empty
+    // Not available from seller-service -- keep empty
   }
 
   async function fetchCategoryPerformance(): Promise<void> {
@@ -137,7 +122,7 @@ export function useAnalytics() {
   }
 
   async function fetchBuyerDemographics(): Promise<void> {
-    // Not available from seller-service – keep empty
+    // Not available from seller-service -- keep empty
   }
 
   async function fetchAll(): Promise<void> {
@@ -145,12 +130,12 @@ export function useAnalytics() {
   }
 
   return {
-    overview,
-    sellThrough,
-    priceVsEstimate,
-    categoryPerformance,
-    monthlyRevenue,
-    buyerDemographics,
+    overview: readonly(overview),
+    sellThrough: readonly(sellThrough),
+    priceVsEstimate: readonly(priceVsEstimate),
+    categoryPerformance: readonly(categoryPerformance),
+    monthlyRevenue: readonly(monthlyRevenue),
+    buyerDemographics: readonly(buyerDemographics),
     loading,
     error,
     fetchOverview,

@@ -58,12 +58,13 @@ onMounted(async () => {
 
   // Try to load seller dashboard data for any additional info
   try {
-    const raw = await get<any>('/sellers/me/dashboard')
-    const data = raw?.data && typeof raw.data === 'object' ? raw.data : raw
-    // Dashboard doesn't return profile details, but confirms seller exists
-    if (data) {
-      // Seller is registered – keep form defaults
+    interface DashboardResponse {
+      data?: Record<string, unknown>
     }
+    const raw = await get<DashboardResponse | Record<string, unknown>>('/sellers/me/dashboard')
+    // Dashboard doesn't return profile details, but confirms seller exists
+    // Seller is registered -- keep form defaults
+    void raw
   } catch {
     // Seller profile not yet created – use defaults
   }

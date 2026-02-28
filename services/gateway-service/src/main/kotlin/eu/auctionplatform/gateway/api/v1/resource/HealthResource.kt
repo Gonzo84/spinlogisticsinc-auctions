@@ -13,7 +13,7 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 
 /**
@@ -41,7 +41,9 @@ class HealthResource {
     @Inject
     lateinit var webSocketHub: WebSocketHub
 
-    private val logger = LoggerFactory.getLogger(HealthResource::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(HealthResource::class.java)
+    }
 
     // -------------------------------------------------------------------------
     // Aggregated Health
@@ -148,7 +150,7 @@ class HealthResource {
             }
             ComponentHealth(status = "UP")
         } catch (ex: Exception) {
-            logger.warn("Database health check failed: {}", ex.message)
+            LOG.warnf("Database health check failed: %s", ex.message)
             ComponentHealth(
                 status = "DOWN",
                 details = mapOf("error" to (ex.message ?: "Unknown error"))
@@ -173,7 +175,7 @@ class HealthResource {
                 )
             }
         } catch (ex: Exception) {
-            logger.warn("Redis health check failed: {}", ex.message)
+            LOG.warnf("Redis health check failed: %s", ex.message)
             ComponentHealth(
                 status = "DOWN",
                 details = mapOf("error" to (ex.message ?: "Unknown error"))
@@ -199,7 +201,7 @@ class HealthResource {
                 )
             }
         } catch (ex: Exception) {
-            logger.warn("NATS health check failed: {}", ex.message)
+            LOG.warnf("NATS health check failed: %s", ex.message)
             ComponentHealth(
                 status = "DOWN",
                 details = mapOf("error" to (ex.message ?: "Unknown error"))

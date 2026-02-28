@@ -14,7 +14,7 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Singleton
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -48,11 +48,11 @@ class CatalogEventConsumer @Inject constructor(
     batchSize = 25
 ) {
 
-    private val logger = LoggerFactory.getLogger(CatalogEventConsumer::class.java)
-
     private var consumerThread: Thread? = null
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(CatalogEventConsumer::class.java)
+
         /** Durable consumer name -- persists across restarts. */
         const val DURABLE_NAME: String = "search-catalog-consumer"
 
@@ -68,7 +68,7 @@ class CatalogEventConsumer @Inject constructor(
      * Starts the consumer loop in a dedicated daemon thread on application startup.
      */
     fun onStart(@Observes event: StartupEvent) {
-        logger.info("Starting CatalogEventConsumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Starting CatalogEventConsumer [durable=%s]", DURABLE_NAME)
         consumerThread = Thread({
             start()
         }, "catalog-event-consumer").apply {
@@ -81,7 +81,7 @@ class CatalogEventConsumer @Inject constructor(
      * Signals the consumer loop to stop gracefully on application shutdown.
      */
     fun onStop(@Observes event: ShutdownEvent) {
-        logger.info("Stopping CatalogEventConsumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Stopping CatalogEventConsumer [durable=%s]", DURABLE_NAME)
         stop()
         consumerThread?.interrupt()
     }
@@ -103,7 +103,7 @@ class CatalogEventConsumer @Inject constructor(
         val subject = message.subject
         val payload = String(message.data, Charsets.UTF_8)
 
-        logger.debug("Received catalog event on subject [{}], payload size={} bytes",
+        LOG.debugf("Received catalog event on subject [%s], payload size=%s bytes",
             subject, message.data.size)
 
         try {
@@ -111,10 +111,10 @@ class CatalogEventConsumer @Inject constructor(
                 subject.startsWith("catalog.lot.status.changed") -> handleStatusChanged(payload)
                 subject.startsWith("catalog.lot.created") -> handleLotCreated(payload)
                 subject.startsWith("catalog.lot.updated") -> handleLotUpdated(payload)
-                else -> logger.warn("Unrecognised catalog subject [{}] -- skipping", subject)
+                else -> LOG.warnf("Unrecognised catalog subject [%s] -- skipping", subject)
             }
         } catch (ex: Exception) {
-            logger.error("Failed to process catalog event on [{}]: {}", subject, ex.message, ex)
+            LOG.errorf(ex, "Failed to process catalog event on [%s]: %s", subject, ex.message)
             throw ex // re-throw so the base class handles nak/dead-letter
         }
     }
@@ -133,7 +133,7 @@ class CatalogEventConsumer @Inject constructor(
         val node = JsonMapper.instance.readTree(payload)
         val lotId = node.requiredText("lotId")
 
-        logger.info("Indexing new lot [id={}]", lotId)
+        LOG.infof("Indexing new lot [id=%s]", lotId)
 
         val document = LotDocument(
             id = lotId,
@@ -161,7 +161,7 @@ class CatalogEventConsumer @Inject constructor(
         )
 
         lotIndexService.indexDocument(document)
-        logger.info("Successfully indexed lot [id={}]", lotId)
+        LOG.infof("Successfully indexed lot [id=%s]", lotId)
     }
 
     /**
@@ -175,7 +175,7 @@ class CatalogEventConsumer @Inject constructor(
         val node = JsonMapper.instance.readTree(payload)
         val lotId = node.requiredText("lotId")
 
-        logger.info("Updating lot [id={}]", lotId)
+        LOG.infof("Updating lot [id=%s]", lotId)
 
         val updates = mutableMapOf<String, Any?>()
 
@@ -202,9 +202,9 @@ class CatalogEventConsumer @Inject constructor(
 
         if (updates.isNotEmpty()) {
             lotIndexService.updateDocument(lotId, updates)
-            logger.info("Successfully updated lot [id={}] with {} fields", lotId, updates.size)
+            LOG.infof("Successfully updated lot [id=%s] with %s fields", lotId, updates.size)
         } else {
-            logger.debug("No updateable fields in event for lot [id={}]", lotId)
+            LOG.debugf("No updateable fields in event for lot [id=%s]", lotId)
         }
     }
 
@@ -216,10 +216,10 @@ class CatalogEventConsumer @Inject constructor(
         val lotId = node.requiredText("lotId")
         val newStatus = node.requiredText("status")
 
-        logger.info("Updating status for lot [id={}] to [{}]", lotId, newStatus)
+        LOG.infof("Updating status for lot [id=%s] to [%s]", lotId, newStatus)
 
         lotIndexService.updateDocument(lotId, mapOf("status" to newStatus))
-        logger.info("Successfully updated status for lot [id={}]", lotId)
+        LOG.infof("Successfully updated status for lot [id=%s]", lotId)
     }
 
     // -------------------------------------------------------------------------

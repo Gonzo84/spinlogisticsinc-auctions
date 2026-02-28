@@ -4,7 +4,7 @@ import eu.auctionplatform.auction.infrastructure.persistence.entity.AuctionEvent
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -22,9 +22,8 @@ class AuctionEventRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionEventRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionEventRepository::class.java)
         private const val SELECT_COLUMNS = """
             event_id, aggregate_id, aggregate_type, event_type,
             event_data, version, created_at, brand, metadata
@@ -133,9 +132,9 @@ class AuctionEventRepository @Inject constructor(
                     rs.next()
                     val conflictCount = rs.getInt(1)
                     if (conflictCount > 0) {
-                        logger.warn(
-                            "Optimistic concurrency conflict for aggregate {} at expected version {}. " +
-                                "Found {} events at or above that version.",
+                        LOG.warnf(
+                            "Optimistic concurrency conflict for aggregate %s at expected version %d. " +
+                                "Found %d events at or above that version.",
                             aggregateId, expectedVersion, conflictCount
                         )
                         return false
@@ -160,8 +159,8 @@ class AuctionEventRepository @Inject constructor(
                 insertStmt.executeBatch()
             }
 
-            logger.debug(
-                "Appended {} events to aggregate {} (versions {}..{})",
+            LOG.debugf(
+                "Appended %d events to aggregate %s (versions %d..%d)",
                 events.size, aggregateId,
                 events.first().version, events.last().version
             )

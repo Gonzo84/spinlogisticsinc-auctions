@@ -12,7 +12,7 @@ import eu.auctionplatform.commons.exception.ValidationException
 import eu.auctionplatform.commons.util.IdGenerator
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
@@ -33,7 +33,7 @@ class BrokerService {
     lateinit var lotIntakeRepository: LotIntakeRepository
 
     companion object {
-        private val logger = LoggerFactory.getLogger(BrokerService::class.java)
+        private val LOG: Logger = Logger.getLogger(BrokerService::class.java)
     }
 
     // -------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class BrokerService {
      * @return List of leads belonging to the broker.
      */
     fun getLeads(brokerId: UUID): List<Lead> {
-        logger.debug("Fetching leads for broker: {}", brokerId)
+        LOG.debugf("Fetching leads for broker: %s", brokerId)
         return leadRepository.findByBrokerId(brokerId)
     }
 
@@ -80,7 +80,7 @@ class BrokerService {
         val now = Instant.now()
         leadRepository.updateStatus(leadId, LeadStatus.VISIT_SCHEDULED, date, now)
 
-        logger.info("Visit scheduled for lead: id={}, date={}", leadId, date)
+        LOG.infof("Visit scheduled for lead: id=%s, date=%s", leadId, date)
 
         return lead.copy(
             status = LeadStatus.VISIT_SCHEDULED,
@@ -109,7 +109,7 @@ class BrokerService {
         sellerId: UUID,
         lots: List<LotIntakeInput>
     ): List<LotIntake> {
-        logger.info("Bulk lot intake: broker={}, seller={}, count={}", brokerId, sellerId, lots.size)
+        LOG.infof("Bulk lot intake: broker=%s, seller=%s, count=%s", brokerId, sellerId, lots.size)
 
         // Validate all referenced lead IDs exist before processing (skip nulls for standalone intakes)
         val uniqueLeadIds = lots.mapNotNull { it.leadId }.distinct()
@@ -150,7 +150,7 @@ class BrokerService {
             val lead = leadRepository.findById(leadId)
             if (lead != null && lead.status == LeadStatus.VISIT_COMPLETED) {
                 leadRepository.updateStatus(leadId, LeadStatus.LOTS_SUBMITTED, lead.scheduledVisitDate, now)
-                logger.info("Lead status updated to LOTS_SUBMITTED: id={}", leadId)
+                LOG.infof("Lead status updated to LOTS_SUBMITTED: id=%s", leadId)
             }
         }
 
@@ -186,7 +186,7 @@ class BrokerService {
             .filter { it.status == LeadStatus.VISIT_SCHEDULED && it.scheduledVisitDate != null }
             .sortedBy { it.scheduledVisitDate }
 
-        logger.debug("Dashboard for broker {}: {} leads, {} intakes", brokerId, leads.size, intakes.size)
+        LOG.debugf("Dashboard for broker %s: %s leads, %s intakes", brokerId, leads.size, intakes.size)
 
         return BrokerDashboard(
             totalLeads = leads.size,

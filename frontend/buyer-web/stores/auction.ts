@@ -1,107 +1,115 @@
+import { ref, computed, readonly } from 'vue'
 import { defineStore } from 'pinia'
 import type { Auction, Bid, AutoBidConfig } from '~/types/auction'
 
-export interface AuctionState {
-  currentAuction: Auction | null
-  bids: Bid[]
-  autoBidConfig: AutoBidConfig | null
-  timerEndTime: string | null
-  isExtended: boolean
-}
+export const useAuctionStore = defineStore('auction', () => {
+  const currentAuction = ref<Auction | null>(null)
+  const bids = ref<Bid[]>([])
+  const autoBidConfig = ref<AutoBidConfig | null>(null)
+  const timerEndTime = ref<string | null>(null)
+  const isExtended = ref(false)
 
-export const useAuctionStore = defineStore('auction', {
-  state: (): AuctionState => ({
-    currentAuction: null,
-    bids: [],
-    autoBidConfig: null,
-    timerEndTime: null,
-    isExtended: false,
-  }),
+  const currentBid = computed((): number => {
+    return currentAuction.value?.currentBid ?? 0
+  })
 
-  getters: {
-    currentBid: (state): number => {
-      return state.currentAuction?.currentBid ?? 0
-    },
+  const bidCount = computed((): number => {
+    return bids.value.length || currentAuction.value?.bidCount || 0
+  })
 
-    bidCount: (state): number => {
-      return state.bids.length || state.currentAuction?.bidCount || 0
-    },
+  const isActive = computed((): boolean => {
+    return currentAuction.value?.status === 'active' || currentAuction.value?.status === 'extended'
+  })
 
-    isActive: (state): boolean => {
-      return state.currentAuction?.status === 'active' || state.currentAuction?.status === 'extended'
-    },
+  const isClosed = computed((): boolean => {
+    return currentAuction.value?.status === 'closed'
+  })
 
-    isClosed: (state): boolean => {
-      return state.currentAuction?.status === 'closed'
-    },
+  const reserveMet = computed((): boolean => {
+    return currentAuction.value?.reserveMet ?? false
+  })
 
-    reserveMet: (state): boolean => {
-      return state.currentAuction?.reserveMet ?? false
-    },
+  const hasAutoBid = computed((): boolean => {
+    return autoBidConfig.value?.isActive ?? false
+  })
 
-    hasAutoBid: (state): boolean => {
-      return state.autoBidConfig?.isActive ?? false
-    },
+  const minBidAmount = computed((): number => {
+    if (!currentAuction.value) return 0
+    if (currentAuction.value.currentBid > 0) {
+      return currentAuction.value.currentBid + currentAuction.value.minIncrement
+    }
+    return currentAuction.value.startingPrice || currentAuction.value.minIncrement
+  })
 
-    minBidAmount: (state): number => {
-      if (!state.currentAuction) return 0
-      if (state.currentAuction.currentBid > 0) {
-        return state.currentAuction.currentBid + state.currentAuction.minIncrement
+  function setAuction(auction: Auction) {
+    currentAuction.value = auction
+    bids.value = auction.bidHistory || []
+    timerEndTime.value = auction.endTime
+    isExtended.value = auction.status === 'extended'
+  }
+
+  function addBid(bid: Bid) {
+    bids.value = [bid, ...bids.value]
+    if (currentAuction.value) {
+      currentAuction.value = {
+        ...currentAuction.value,
+        currentBid: bid.amount,
+        bidCount: bids.value.length,
       }
-      return state.currentAuction.startingPrice || state.currentAuction.minIncrement
-    },
-  },
+    }
+  }
 
-  actions: {
-    setAuction(auction: Auction) {
-      this.currentAuction = auction
-      this.bids = auction.bidHistory || []
-      this.timerEndTime = auction.endTime
-      this.isExtended = auction.status === 'extended'
-    },
-
-    addBid(bid: Bid) {
-      this.bids = [bid, ...this.bids]
-      if (this.currentAuction) {
-        this.currentAuction = {
-          ...this.currentAuction,
-          currentBid: bid.amount,
-          bidCount: this.bids.length,
-        }
+  function extendAuction(newEndTime: string) {
+    timerEndTime.value = newEndTime
+    isExtended.value = true
+    if (currentAuction.value) {
+      currentAuction.value = {
+        ...currentAuction.value,
+        endTime: newEndTime,
+        status: 'extended',
       }
-    },
+    }
+  }
 
-    extendAuction(newEndTime: string) {
-      this.timerEndTime = newEndTime
-      this.isExtended = true
-      if (this.currentAuction) {
-        this.currentAuction = {
-          ...this.currentAuction,
-          endTime: newEndTime,
-          status: 'extended',
-        }
+  function closeAuction() {
+    if (currentAuction.value) {
+      currentAuction.value = {
+        ...currentAuction.value,
+        status: 'closed',
       }
-    },
+    }
+  }
 
-    closeAuction() {
-      if (this.currentAuction) {
-        this.currentAuction = {
-          ...this.currentAuction,
-          status: 'closed',
-        }
-      }
-    },
+  function setAutoBid(config: AutoBidConfig | null) {
+    autoBidConfig.value = config
+  }
 
-    setAutoBid(config: AutoBidConfig | null) {
-      this.autoBidConfig = config
-    },
+  function clearAuction() {
+    currentAuction.value = null
+    bids.value = []
+    autoBidConfig.value = null
+    timerEndTime.value = null
+    isExtended.value = false
+  }
 
-    clearAuction() {
-      this.currentAuction = null
-      this.bids = []
-      this.autoBidConfig = null
-      this.timerEndTime = null
-      this.isExtended = false
-    },
-  },
+  return {
+    currentAuction: readonly(currentAuction),
+    bids: readonly(bids),
+    autoBidConfig: readonly(autoBidConfig),
+    timerEndTime: readonly(timerEndTime),
+    isExtended: readonly(isExtended),
+    currentBid,
+    bidCount,
+    isActive,
+    isClosed,
+    reserveMet,
+    hasAutoBid,
+    minBidAmount,
+    setAuction,
+    addBid,
+    extendAuction,
+    closeAuction,
+    setAutoBid,
+    clearAuction,
+  }
 })

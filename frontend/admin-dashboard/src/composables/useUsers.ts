@@ -1,67 +1,17 @@
-import { ref, reactive } from 'vue'
+import { ref, reactive, readonly } from 'vue'
+import axios from 'axios'
 import { useApi } from './useApi'
+import type { User, UserDetail, UserFilters } from '@/types/user'
+import type { ApiResponse, PagedResponse, PaginationParams } from '@/types/api'
 
-export interface User {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  companyName: string
-  accountType: 'buyer' | 'seller' | 'both'
-  status: 'active' | 'blocked' | 'pending' | 'suspended'
-  kycStatus: 'not_started' | 'pending' | 'approved' | 'rejected'
-  depositStatus: 'none' | 'pending' | 'held' | 'released' | 'forfeited'
-  registeredAt: string
-  lastLoginAt: string
-}
+export type { User, UserDetail, KycEvent, BidRecord, PaymentRecord, UserFilters } from '@/types/user'
 
-export interface UserDetail extends User {
-  phone: string
-  vatNumber: string
-  address: {
-    street: string
-    city: string
-    postalCode: string
-    country: string
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const msg = (err.response?.data as Record<string, unknown> | undefined)?.message
+    return typeof msg === 'string' ? msg : fallback
   }
-  kycHistory: KycEvent[]
-  bidHistory: BidRecord[]
-  paymentHistory: PaymentRecord[]
-}
-
-export interface KycEvent {
-  id: string
-  status: string
-  note: string
-  performedBy: string
-  timestamp: string
-}
-
-export interface BidRecord {
-  id: string
-  auctionTitle: string
-  lotTitle: string
-  amount: number
-  status: 'active' | 'outbid' | 'won' | 'lost'
-  timestamp: string
-}
-
-export interface PaymentRecord {
-  id: string
-  lotTitle: string
-  amount: number
-  status: 'pending' | 'paid' | 'overdue' | 'refunded'
-  dueDate: string
-  paidDate: string | null
-}
-
-export interface UserFilters {
-  search: string
-  accountType: string
-  status: string
-  kycStatus: string
-  page: number
-  pageSize: number
+  return err instanceof Error ? err.message : fallback
 }
 
 export function useUsers() {
@@ -86,7 +36,7 @@ export function useUsers() {
     loading.value = true
     error.value = null
     try {
-      const params: Record<string, any> = {
+      const params: PaginationParams = {
         page: filters.page,
         pageSize: filters.pageSize,
       }
@@ -95,13 +45,13 @@ export function useUsers() {
       if (filters.status) params.status = filters.status
       if (filters.kycStatus) params.kycStatus = filters.kycStatus
 
-      const raw = await get<any>('/users', { params })
+      const raw = await get<ApiResponse<PagedResponse<User>>>('/users', { params })
       // Unwrap ApiResponse wrapper: { data: { items: [...], total: N } }
-      const response = raw?.data && typeof raw.data === 'object' ? raw.data : raw
+      const response = raw?.data && typeof raw.data === 'object' ? raw.data : (raw as unknown as PagedResponse<User>)
       users.value = response.items ?? []
       totalCount.value = response.total ?? 0
-    } catch (err: any) {
-      // User-service may not support list endpoint yet – show empty list
+    } catch {
+      // User-service may not support list endpoint yet -- show empty list
       users.value = []
       totalCount.value = 0
       error.value = null
@@ -115,8 +65,8 @@ export function useUsers() {
     error.value = null
     try {
       currentUser.value = await get<UserDetail>(`/users/${id}`)
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch user'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to fetch user')
     } finally {
       loading.value = false
     }
@@ -131,8 +81,8 @@ export function useUsers() {
         currentUser.value.status = 'blocked'
       }
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to block user'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to block user')
       return false
     } finally {
       loading.value = false
@@ -148,8 +98,8 @@ export function useUsers() {
         currentUser.value.status = 'active'
       }
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to unblock user'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to unblock user')
       return false
     } finally {
       loading.value = false
@@ -160,8 +110,8 @@ export function useUsers() {
     try {
       await post('/compliance/gdpr/export-request', { userId })
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to trigger GDPR export'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to trigger GDPR export')
       return false
     }
   }
@@ -170,8 +120,8 @@ export function useUsers() {
     try {
       await post('/compliance/gdpr/erasure-request', { userId, reason })
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to trigger GDPR erasure'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to trigger GDPR erasure')
       return false
     }
   }
@@ -180,8 +130,8 @@ export function useUsers() {
     users,
     currentUser,
     totalCount,
-    loading,
-    error,
+    loading: readonly(loading),
+    error: readonly(error),
     filters,
     fetchUsers,
     fetchUser,

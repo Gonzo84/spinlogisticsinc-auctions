@@ -7,7 +7,7 @@ import eu.auctionplatform.compliance.domain.model.AmlScreeningStatus
 import eu.auctionplatform.compliance.infrastructure.persistence.repository.AmlScreeningRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 
 /**
@@ -23,7 +23,7 @@ class AmlService {
     lateinit var amlScreeningRepository: AmlScreeningRepository
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AmlService::class.java)
+        private val LOG: Logger = Logger.getLogger(AmlService::class.java)
 
         /** Default AML screening provider name. */
         private const val DEFAULT_PROVIDER = "ComplyAdvantage"
@@ -50,8 +50,8 @@ class AmlService {
 
         amlScreeningRepository.insert(screening)
 
-        logger.info(
-            "AML screening triggered: id={}, userId={}, provider={}, checkId={}",
+        LOG.infof(
+            "AML screening triggered: id=%s, userId=%s, provider=%s, checkId=%s",
             screening.id, userId, screening.provider, screening.checkId
         )
 
@@ -97,8 +97,8 @@ class AmlService {
 
         amlScreeningRepository.insert(screening)
 
-        logger.warn(
-            "Suspicious Activity Report filed: id={}, userId={}, details={}",
+        LOG.warnf(
+            "Suspicious Activity Report filed: id=%s, userId=%s, details=%s",
             screening.id, userId, details.take(100)
         )
 

@@ -6,7 +6,7 @@ import eu.auctionplatform.commons.util.JsonMapper
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.sql.Types
@@ -22,9 +22,9 @@ class LotIntakeRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(LotIntakeRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(LotIntakeRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, broker_id, seller_id, lead_id, title, category_id,
             description, specifications, reserve_price, location_address,
@@ -102,7 +102,7 @@ class LotIntakeRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted lot intake: id={}, broker={}", intake.id, intake.brokerId)
+        LOG.debugf("Inserted lot intake: id=%s, broker=%s", intake.id, intake.brokerId)
     }
 
     /**
@@ -128,10 +128,10 @@ class LotIntakeRepository @Inject constructor(
                     stmt.executeBatch()
                 }
                 conn.commit()
-                logger.info("Bulk inserted {} lot intakes", intakes.size)
+                LOG.infof("Bulk inserted %s lot intakes", intakes.size)
             } catch (ex: Exception) {
                 conn.rollback()
-                logger.error("Failed to bulk insert lot intakes: {}", ex.message, ex)
+                LOG.errorf(ex, "Failed to bulk insert lot intakes: %s", ex.message)
                 throw ex
             } finally {
                 conn.autoCommit = originalAutoCommit

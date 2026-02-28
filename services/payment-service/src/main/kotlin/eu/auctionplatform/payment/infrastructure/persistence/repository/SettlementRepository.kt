@@ -5,7 +5,7 @@ import eu.auctionplatform.payment.domain.model.SettlementStatus
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -22,9 +22,9 @@ class SettlementRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(SettlementRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(SettlementRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, seller_id, payment_id, net_amount, commission,
             commission_rate, status, settled_at, bank_reference, created_at
@@ -97,7 +97,7 @@ class SettlementRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Saved settlement {} for seller {} (payment={})",
+        LOG.debugf("Saved settlement %s for seller %s (payment=%s)",
             settlement.id, settlement.sellerId, settlement.paymentId)
     }
 
@@ -184,7 +184,7 @@ class SettlementRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Updated settlement {} status to {}", id, status)
+        LOG.debugf("Updated settlement %s status to %s", id, status)
     }
 
     /**
@@ -204,7 +204,7 @@ class SettlementRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Marked settlement {} as PAID (bankRef={})", id, bankReference)
+        LOG.debugf("Marked settlement %s as PAID (bankRef=%s)", id, bankReference)
     }
 
     /**
@@ -219,7 +219,7 @@ class SettlementRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Deleted settlement {}", id)
+        LOG.debugf("Deleted settlement %s", id)
     }
 
     // -----------------------------------------------------------------------

@@ -1,73 +1,76 @@
+import { ref, computed, readonly } from 'vue'
 import { defineStore } from 'pinia'
 import type { User } from '~/types/user'
 
-export interface AuthState {
-  user: User | null
-  token: string | null
-  refreshToken: string | null
-  isAuthenticated: boolean
-  roles: string[]
-}
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<User | null>(null)
+  const token = ref<string | null>(null)
+  const refreshToken = ref<string | null>(null)
+  const isAuthenticated = ref(false)
+  const roles = ref<string[]>([])
 
-export const useAuthStore = defineStore('auth', {
-  state: (): AuthState => ({
-    user: null,
-    token: null,
-    refreshToken: null,
-    isAuthenticated: false,
-    roles: [],
-  }),
+  const fullName = computed((): string => {
+    if (!user.value) return ''
+    return `${user.value.firstName} ${user.value.lastName}`.trim()
+  })
 
-  getters: {
-    fullName: (state): string => {
-      if (!state.user) return ''
-      return `${state.user.firstName} ${state.user.lastName}`.trim()
-    },
+  const initials = computed((): string => {
+    if (!user.value) return ''
+    const first = user.value.firstName?.charAt(0) || ''
+    const last = user.value.lastName?.charAt(0) || ''
+    return `${first}${last}`.toUpperCase()
+  })
 
-    initials: (state): string => {
-      if (!state.user) return ''
-      const first = state.user.firstName?.charAt(0) || ''
-      const last = state.user.lastName?.charAt(0) || ''
-      return `${first}${last}`.toUpperCase()
-    },
+  const isBusiness = computed((): boolean => {
+    return user.value?.accountType === 'business'
+  })
 
-    isBusiness: (state): boolean => {
-      return state.user?.accountType === 'business'
-    },
+  function hasRole(role: string): boolean {
+    return roles.value.includes(role)
+  }
 
-    hasRole: (state) => (role: string): boolean => {
-      return state.roles.includes(role)
-    },
-  },
+  function setSession(payload: { user: User; token: string; refreshToken: string }) {
+    user.value = payload.user
+    token.value = payload.token
+    refreshToken.value = payload.refreshToken
+    isAuthenticated.value = true
+    roles.value = payload.user.roles || []
+  }
 
-  actions: {
-    setSession(payload: { user: User; token: string; refreshToken: string }) {
-      this.user = payload.user
-      this.token = payload.token
-      this.refreshToken = payload.refreshToken
-      this.isAuthenticated = true
-      this.roles = payload.user.roles || []
-    },
+  function updateToken(newToken: string, newRefreshToken?: string) {
+    token.value = newToken
+    if (newRefreshToken) {
+      refreshToken.value = newRefreshToken
+    }
+  }
 
-    updateToken(token: string, refreshToken?: string) {
-      this.token = token
-      if (refreshToken) {
-        this.refreshToken = refreshToken
-      }
-    },
+  function updateUser(userData: Partial<User>) {
+    if (user.value) {
+      user.value = { ...user.value, ...userData }
+    }
+  }
 
-    updateUser(userData: Partial<User>) {
-      if (this.user) {
-        this.user = { ...this.user, ...userData }
-      }
-    },
+  function clearSession() {
+    user.value = null
+    token.value = null
+    refreshToken.value = null
+    isAuthenticated.value = false
+    roles.value = []
+  }
 
-    clearSession() {
-      this.user = null
-      this.token = null
-      this.refreshToken = null
-      this.isAuthenticated = false
-      this.roles = []
-    },
-  },
+  return {
+    user: readonly(user),
+    token: readonly(token),
+    refreshToken: readonly(refreshToken),
+    isAuthenticated: readonly(isAuthenticated),
+    roles: readonly(roles),
+    fullName,
+    initials,
+    isBusiness,
+    hasRole,
+    setSession,
+    updateToken,
+    updateUser,
+    clearSession,
+  }
 })

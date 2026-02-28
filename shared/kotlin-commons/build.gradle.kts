@@ -23,8 +23,11 @@ dependencies {
     // Quarkus Jackson (for ObjectMapperCustomizer interface)
     compileOnly("io.quarkus:quarkus-jackson:3.30.6")
 
-    // Logging
-    implementation("org.slf4j:slf4j-api:2.0.16")
+    // Agroal DataSource (for OutboxPoller JDBC access)
+    compileOnly("io.quarkus:quarkus-agroal:3.30.6")
+
+    // JBoss Logging (standard Quarkus logging)
+    compileOnly("org.jboss.logging:jboss-logging:3.6.1.Final")
 
     // Test
     testImplementation(kotlin("test"))

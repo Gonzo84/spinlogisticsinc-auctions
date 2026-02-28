@@ -1,42 +1,14 @@
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import { useApi } from './useApi'
+import type {
+  Settlement,
+  SettlementStatus,
+  SettlementFilter,
+  SettlementTotals,
+  ApiResponse,
+} from '@/types'
 
-export type SettlementStatus = 'pending' | 'processing' | 'paid' | 'disputed'
-
-export interface Settlement {
-  id: string
-  lotId: string
-  lotTitle: string
-  lotThumbnail: string
-  buyerAlias: string
-  hammerPrice: number
-  commissionRate: number
-  commissionAmount: number
-  netAmount: number
-  currency: string
-  status: SettlementStatus
-  bankReference: string | null
-  invoiceUrl: string | null
-  paidAt: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export interface SettlementFilter {
-  status?: SettlementStatus
-  dateFrom?: string
-  dateTo?: string
-  page?: number
-  pageSize?: number
-}
-
-export interface SettlementTotals {
-  totalHammerPrice: number
-  totalCommission: number
-  totalNetAmount: number
-  currency: string
-  count: number
-}
+export type { Settlement, SettlementStatus, SettlementFilter, SettlementTotals }
 
 export function useSettlements() {
   const { get, loading, error } = useApi()
@@ -59,6 +31,15 @@ export function useSettlements() {
     settlements.value.filter((s) => s.status === 'paid'),
   )
 
+  /** Unwrap ApiResponse wrapper if present, returning the inner data. */
+  function unwrapApiResponse<T>(raw: unknown): T {
+    const obj = raw as Record<string, unknown> | null
+    if (obj?.data && typeof obj.data === 'object') {
+      return obj.data as T
+    }
+    return raw as T
+  }
+
   async function fetchSettlements(filters: SettlementFilter = {}): Promise<void> {
     const params: Record<string, unknown> = {
       page: filters.page ?? 1,
@@ -69,11 +50,11 @@ export function useSettlements() {
     if (filters.dateTo) params.dateTo = filters.dateTo
 
     try {
-      const raw = await get<any>('/sellers/me/settlements', params)
+      const raw = await get<ApiResponse<Settlement[]> | Settlement[]>('/sellers/me/settlements', params)
       // Unwrap ApiResponse wrapper ({data: T}) if present
-      const data = raw?.data && typeof raw.data === 'object' ? raw.data : raw
+      const data = unwrapApiResponse<Settlement[] | { items?: Settlement[] }>(raw)
       // seller-service returns a flat list, not paginated
-      const items = Array.isArray(data) ? data : (data?.items ?? [])
+      const items: Settlement[] = Array.isArray(data) ? data : (data?.items ?? [])
       settlements.value = items
       pagination.value = {
         total: items.length,
@@ -82,7 +63,7 @@ export function useSettlements() {
         totalPages: 1,
       }
     } catch {
-      // Seller-service may not have settlements yet – show empty state
+      // Seller-service may not have settlements yet -- show empty state
       settlements.value = []
       error.value = null
     }
@@ -128,8 +109,8 @@ export function useSettlements() {
 
   return {
     settlements,
-    pagination,
-    totals,
+    pagination: readonly(pagination),
+    totals: readonly(totals),
     pendingSettlements,
     paidSettlements,
     loading,

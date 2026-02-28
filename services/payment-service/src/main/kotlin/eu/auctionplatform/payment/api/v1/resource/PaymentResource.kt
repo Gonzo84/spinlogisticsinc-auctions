@@ -34,7 +34,7 @@ import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.SecurityContext
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -59,7 +59,9 @@ class PaymentResource @Inject constructor(
     private val invoiceRepository: InvoiceRepository
 ) {
 
-    private val logger = LoggerFactory.getLogger(PaymentResource::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(PaymentResource::class.java)
+    }
 
     // -----------------------------------------------------------------------
     // Checkout endpoints
@@ -84,7 +86,7 @@ class PaymentResource @Inject constructor(
     ): Response {
         val buyerId = extractUserId(securityContext)
 
-        logger.info("Checkout initiated by buyer {} for {} lot(s)", buyerId, request.lotIds.size)
+        LOG.infof("Checkout initiated by buyer %s for %s lot(s)", buyerId, request.lotIds.size)
 
         // Build lot details — in a full implementation, lot/auction details
         // would be fetched from the lot-service or auction-engine.
@@ -154,7 +156,7 @@ class PaymentResource @Inject constructor(
     ): Response {
         val paymentId = UUID.fromString(id)
 
-        logger.info("Payment submission for {} via {}", paymentId, request.paymentMethod)
+        LOG.infof("Payment submission for %s via %s", paymentId, request.paymentMethod)
 
         val updatedPayment = try {
             checkoutService.processPayment(paymentId, request.paymentMethod)
@@ -190,7 +192,7 @@ class PaymentResource @Inject constructor(
     @POST
     @Path("/webhook")
     fun handleWebhook(body: Map<String, Any?>): Response {
-        logger.info("Received payment webhook")
+        LOG.info("Received payment webhook")
 
         // In production, validate HMAC signature before processing.
         // Parse the Adyen notification format.
@@ -309,8 +311,8 @@ class PaymentResource @Inject constructor(
     ): Response {
         val buyerId = extractUserId(securityContext)
 
-        logger.info(
-            "Deposit initiated by buyer {} for auction {} (amount={} {})",
+        LOG.infof(
+            "Deposit initiated by buyer %s for auction %s (amount=%s %s)",
             buyerId, request.auctionId, request.amount, request.currency
         )
 
@@ -346,8 +348,8 @@ class PaymentResource @Inject constructor(
     ): Response {
         val buyerId = extractUserId(securityContext)
 
-        logger.info(
-            "Deposit refund requested by buyer {} for auction {}",
+        LOG.infof(
+            "Deposit refund requested by buyer %s for auction %s",
             buyerId, request.auctionId
         )
 
@@ -438,7 +440,7 @@ class PaymentResource @Inject constructor(
                 amountCurrency = amount?.get("currency")?.toString()
             )
         } catch (e: Exception) {
-            logger.error("Failed to parse webhook payload: {}", e.message)
+            LOG.errorf("Failed to parse webhook payload: %s", e.message)
             null
         }
     }

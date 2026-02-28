@@ -5,7 +5,7 @@ import eu.auctionplatform.notification.domain.model.NotificationType
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.util.UUID
 
@@ -20,9 +20,9 @@ class NotificationPreferenceRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(NotificationPreferenceRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(NotificationPreferenceRepository::class.java)
+
         private const val SELECT_BY_USER_ID = """
             SELECT user_id, notification_type, email_enabled, push_enabled, sms_enabled
               FROM app.notification_preferences
@@ -110,8 +110,8 @@ class NotificationPreferenceRepository @Inject constructor(
             }
         }
 
-        logger.debug(
-            "Upserted preference: userId={}, type={}, email={}, push={}, sms={}",
+        LOG.debugf(
+            "Upserted preference: userId=%s, type=%s, email=%s, push=%s, sms=%s",
             preference.userId, preference.notificationType,
             preference.emailEnabled, preference.pushEnabled, preference.smsEnabled
         )

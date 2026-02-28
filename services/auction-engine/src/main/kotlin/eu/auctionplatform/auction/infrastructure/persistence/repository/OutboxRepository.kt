@@ -4,7 +4,7 @@ import eu.auctionplatform.auction.infrastructure.persistence.entity.OutboxEntity
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -23,9 +23,8 @@ class OutboxRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(OutboxRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(OutboxRepository::class.java)
         private const val INSERT_ENTRY = """
             INSERT INTO app.outbox
                 (aggregate_id, event_type, payload, nats_subject, published,
@@ -85,7 +84,7 @@ class OutboxRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Saved outbox entry for aggregate {} (eventType={})",
+        LOG.debugf("Saved outbox entry for aggregate %s (eventType=%s)",
             entry.aggregateId, entry.eventType)
     }
 
@@ -121,7 +120,7 @@ class OutboxRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Marked outbox entry {} as published", id)
+        LOG.debugf("Marked outbox entry %d as published", id)
     }
 
     /**
@@ -136,7 +135,7 @@ class OutboxRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Incremented retry count for outbox entry {}", id)
+        LOG.debugf("Incremented retry count for outbox entry %d", id)
     }
 
     /**
@@ -154,7 +153,7 @@ class OutboxRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.warn("Moved outbox entry {} to dead letter queue", id)
+        LOG.warnf("Moved outbox entry %d to dead letter queue", id)
     }
 
     // -----------------------------------------------------------------------

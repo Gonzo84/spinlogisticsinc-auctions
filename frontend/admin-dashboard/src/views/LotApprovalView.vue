@@ -1,23 +1,51 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import axios from 'axios'
 import { useApi } from '@/composables/useApi'
+import type { PendingLot } from '@/types/lot'
+import type { ApiResponse, PagedResponse } from '@/types/api'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
-interface PendingLot {
+interface RawLotResponse {
+  id?: string
+  title?: string
+  description?: string
+  category?: string
+  categoryId?: string
+  sellerName?: string
+  sellerId?: string
+  startingBid?: number
+  reservePrice?: number | null
+  location?: { city: string; country: string }
+  locationCity?: string
+  locationCountry?: string
+  imageCount?: number
+  images?: unknown[]
+  primaryImageUrl?: string
+  primaryImage?: string
+  specifications?: Record<string, string>
+  updatedAt?: string
+  createdAt?: string
+}
+
+interface RawCategoryResponse {
   id: string
-  title: string
-  description: string
-  category: string
-  sellerName: string
-  sellerId: string
-  startingBid: number
-  reservePrice: number | null
-  location: { city: string; country: string }
-  imageCount: number
-  primaryImage: string | null
-  specifications: Record<string, string>
-  submittedAt: string
+  name?: string
+  slug?: string
+}
+
+interface RawUserResponse {
+  user?: {
+    firstName?: string
+    lastName?: string
+    fullName?: string
+    email?: string
+  }
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  email?: string
 }
 
 const { get, post } = useApi()
@@ -44,15 +72,15 @@ onMounted(() => {
 async function fetchCategories() {
   if (categoryNameCache.size > 0) return
   try {
-    const raw = await get<any>('/categories')
-    const categories = raw?.data ?? raw
+    const raw = await get<ApiResponse<RawCategoryResponse[]> | RawCategoryResponse[]>('/categories')
+    const categories = (raw as ApiResponse<RawCategoryResponse[]>)?.data ?? (raw as RawCategoryResponse[])
     if (Array.isArray(categories)) {
       for (const cat of categories) {
         categoryNameCache.set(cat.id, cat.name ?? cat.slug ?? cat.id)
       }
     }
   } catch {
-    // Silently fail — category names will remain as UUIDs
+    // Silently fail -- category names will remain as UUIDs
   }
 }
 
@@ -65,8 +93,8 @@ async function resolveSellerName(sellerId: string): Promise<string> {
   if (sellerNameCache.has(sellerId)) return sellerNameCache.get(sellerId)!
   try {
     // sellerId from catalog is a Keycloak UUID, not a user-service internal ID
-    const raw = await get<any>(`/users/by-keycloak-id/${sellerId}`)
-    const userData = raw?.data ?? raw
+    const raw = await get<ApiResponse<RawUserResponse> | RawUserResponse>(`/users/by-keycloak-id/${sellerId}`)
+    const userData: RawUserResponse = (raw as ApiResponse<RawUserResponse>)?.data ?? (raw as RawUserResponse)
     const user = userData?.user ?? userData
     const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.fullName || user?.email || sellerId
     sellerNameCache.set(sellerId, name)
@@ -78,32 +106,37 @@ async function resolveSellerName(sellerId: string): Promise<string> {
   }
 }
 
+function normalizeLot(lot: RawLotResponse): PendingLot {
+  return {
+    id: lot.id ?? '',
+    title: lot.title ?? '',
+    description: lot.description ?? '',
+    category: lot.category ?? lot.categoryId ?? '',
+    sellerName: lot.sellerName ?? lot.sellerId ?? 'Unknown',
+    sellerId: lot.sellerId ?? '',
+    startingBid: lot.startingBid ?? 0,
+    reservePrice: lot.reservePrice ?? null,
+    location: lot.location ?? {
+      city: lot.locationCity ?? '',
+      country: lot.locationCountry ?? '',
+    },
+    imageCount: lot.imageCount ?? (lot.images?.length ?? 0),
+    primaryImage: lot.primaryImageUrl ?? lot.primaryImage ?? null,
+    specifications: lot.specifications ?? {},
+    submittedAt: lot.updatedAt ?? lot.createdAt ?? new Date().toISOString(),
+  }
+}
+
 async function fetchPendingLots() {
   loading.value = true
   error.value = null
   try {
-    const raw = await get<any>('/lots', { params: { status: 'PENDING_REVIEW', page: 0, pageSize: 50 } })
+    const raw = await get<ApiResponse<PagedResponse<RawLotResponse>> | PagedResponse<RawLotResponse>>('/lots', { params: { status: 'PENDING_REVIEW', page: 0, pageSize: 50 } })
     // Unwrap ApiResponse wrapper if present
-    const response = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw
+    const unwrapped = raw as ApiResponse<PagedResponse<RawLotResponse>>
+    const response = unwrapped?.data && typeof unwrapped.data === 'object' && !Array.isArray(unwrapped.data) ? unwrapped.data : (raw as PagedResponse<RawLotResponse>)
     const items = response.items ?? []
-    pendingLots.value = items.map((lot: any) => ({
-      id: lot.id,
-      title: lot.title ?? '',
-      description: lot.description ?? '',
-      category: lot.category ?? lot.categoryId ?? '',
-      sellerName: lot.sellerName ?? lot.sellerId ?? 'Unknown',
-      sellerId: lot.sellerId ?? '',
-      startingBid: lot.startingBid ?? 0,
-      reservePrice: lot.reservePrice ?? null,
-      location: lot.location ?? {
-        city: lot.locationCity ?? '',
-        country: lot.locationCountry ?? '',
-      },
-      imageCount: lot.imageCount ?? (lot.images?.length ?? 0),
-      primaryImage: lot.primaryImageUrl ?? lot.primaryImage ?? null,
-      specifications: lot.specifications ?? {},
-      submittedAt: lot.updatedAt ?? lot.createdAt ?? new Date().toISOString(),
-    }))
+    pendingLots.value = items.map(normalizeLot)
 
     // Resolve seller names and category names in parallel
     const uniqueSellerIds = [...new Set(pendingLots.value.map((l) => l.sellerId).filter(Boolean))]
@@ -117,8 +150,13 @@ async function fetchPendingLots() {
       sellerName: sellerNameCache.get(lot.sellerId) ?? lot.sellerName,
       category: resolveCategoryName(lot.category),
     }))
-  } catch (err: any) {
-    error.value = err.response?.data?.message ?? 'Failed to fetch pending lots'
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const msg = (err.response?.data as Record<string, unknown> | undefined)?.message
+      error.value = typeof msg === 'string' ? msg : 'Failed to fetch pending lots'
+    } else {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch pending lots'
+    }
   } finally {
     loading.value = false
   }
@@ -130,10 +168,23 @@ function toggleExpand(lotId: string) {
 
 async function approveLot(lotId: string) {
   try {
-    await post(`/lots/${lotId}/approve`)
+    await post(`/lots/${lotId}/approve`, {})
+    // Optimistically remove from the list
     pendingLots.value = pendingLots.value.filter((l) => l.id !== lotId)
-  } catch (err: any) {
-    error.value = err.response?.data?.message ?? 'Failed to approve lot'
+  } catch (err: unknown) {
+    // 409 means it was already approved — still remove from pending list
+    if (axios.isAxiosError(err) && err.response?.status === 409) {
+      pendingLots.value = pendingLots.value.filter((l) => l.id !== lotId)
+      return
+    }
+    if (axios.isAxiosError(err)) {
+      const msg = (err.response?.data as Record<string, unknown> | undefined)?.message
+      error.value = typeof msg === 'string' ? msg : 'Failed to approve lot'
+    } else {
+      error.value = err instanceof Error ? err.message : 'Failed to approve lot'
+    }
+    // Re-fetch to ensure UI is in sync
+    await fetchPendingLots()
   }
 }
 
@@ -145,12 +196,20 @@ function openRejectDialog(lotId: string) {
 
 async function confirmReject() {
   if (!rejectingLotId.value || !rejectReason.value.trim()) return
+  const lotId = rejectingLotId.value
   try {
-    await post(`/lots/${rejectingLotId.value}/admin-withdraw`, { reason: rejectReason.value })
-    pendingLots.value = pendingLots.value.filter((l) => l.id !== rejectingLotId.value)
+    await post(`/lots/${lotId}/admin-withdraw`, { reason: rejectReason.value })
+    pendingLots.value = pendingLots.value.filter((l) => l.id !== lotId)
     showRejectDialog.value = false
-  } catch (err: any) {
-    error.value = err.response?.data?.message ?? 'Failed to reject lot'
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const msg = (err.response?.data as Record<string, unknown> | undefined)?.message
+      error.value = typeof msg === 'string' ? msg : 'Failed to reject lot'
+    } else {
+      error.value = err instanceof Error ? err.message : 'Failed to reject lot'
+    }
+    // Re-fetch to ensure UI is in sync
+    await fetchPendingLots()
   }
 }
 

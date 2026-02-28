@@ -4,7 +4,7 @@ import eu.auctionplatform.compliance.domain.model.AuditLogEntry
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -22,9 +22,8 @@ class AuditLogRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuditLogRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(AuditLogRepository::class.java)
         private const val SELECT_COLUMNS = """
             id, timestamp, user_id, action, entity_type, entity_id,
             details, ip_address, source
@@ -56,7 +55,7 @@ class AuditLogRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.trace("Audit log entry appended: action={}, entityType={}", entry.action, entry.entityType)
+        LOG.tracef("Audit log entry appended: action=%s, entityType=%s", entry.action, entry.entityType)
     }
 
     /**

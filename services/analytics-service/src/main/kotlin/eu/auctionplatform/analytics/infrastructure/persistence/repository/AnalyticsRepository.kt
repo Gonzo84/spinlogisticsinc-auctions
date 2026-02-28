@@ -5,7 +5,7 @@ import eu.auctionplatform.analytics.domain.model.PlatformMetrics
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.sql.Timestamp
 import java.time.Instant
@@ -25,9 +25,9 @@ class AnalyticsRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(AnalyticsRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(AnalyticsRepository::class.java)
+
         private const val GET_PLATFORM_OVERVIEW = """
             SELECT active_auctions, total_bids_24h, total_revenue_30d,
                    registered_users, active_buyers, active_sellers, calculated_at
@@ -264,7 +264,7 @@ class AnalyticsRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted platform metrics snapshot at {}", metrics.calculatedAt)
+        LOG.debugf("Inserted platform metrics snapshot at %s", metrics.calculatedAt)
     }
 
     /**
@@ -283,7 +283,7 @@ class AnalyticsRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Upserted auction metrics for auction {}", metrics.auctionId)
+        LOG.debugf("Upserted auction metrics for auction %s", metrics.auctionId)
     }
 
     /**
@@ -299,7 +299,7 @@ class AnalyticsRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Upserted daily revenue for {}", entry.reportDate)
+        LOG.debugf("Upserted daily revenue for %s", entry.reportDate)
     }
 
     /**
@@ -316,7 +316,7 @@ class AnalyticsRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Upserted user growth for {}", entry.reportDate)
+        LOG.debugf("Upserted user growth for %s", entry.reportDate)
     }
 
     /**

@@ -45,7 +45,7 @@ import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.SecurityContext
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.net.URI
 import java.sql.Timestamp
@@ -85,7 +85,9 @@ class AuctionResource @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionResource::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionResource::class.java)
+    }
 
     // -----------------------------------------------------------------------
     // Auction CRUD
@@ -106,7 +108,7 @@ class AuctionResource @Inject constructor(
     fun createAuction(
         @Valid request: CreateAuctionRequest
     ): Response {
-        logger.info("Creating auction for lot {} (brand={})", request.lotId, request.brand)
+        LOG.infof("Creating auction for lot %s (brand=%s)", request.lotId, request.brand)
 
         val currency = Currency.getInstance(request.currency)
         val command = CreateAuctionCommand(
@@ -294,7 +296,7 @@ class AuctionResource @Inject constructor(
     ): Response {
         val userId = extractUserId(securityContext)
 
-        logger.info("Cancelling auto-bid for user {} on auction {}", userId, id)
+        LOG.infof("Cancelling auto-bid for user %s on auction %s", userId, id)
 
         // Cancel by setting auto-bid to minimum amount -- the aggregate will
         // either deactivate it or it will be outbid immediately.

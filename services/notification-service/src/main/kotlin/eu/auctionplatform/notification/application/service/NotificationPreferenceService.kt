@@ -6,7 +6,7 @@ import eu.auctionplatform.notification.domain.model.NotificationType
 import eu.auctionplatform.notification.infrastructure.persistence.repository.NotificationPreferenceRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 
 /**
@@ -24,7 +24,9 @@ class NotificationPreferenceService @Inject constructor(
     private val preferenceRepository: NotificationPreferenceRepository
 ) {
 
-    private val logger = LoggerFactory.getLogger(NotificationPreferenceService::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(NotificationPreferenceService::class.java)
+    }
 
     /**
      * Retrieves all notification preferences for a user, filling in
@@ -66,9 +68,9 @@ class NotificationPreferenceService @Inject constructor(
             NotificationChannel.PUSH -> existing.copy(pushEnabled = enabled)
             NotificationChannel.SMS -> existing.copy(smsEnabled = enabled)
             NotificationChannel.IN_APP -> {
-                logger.debug(
+                LOG.debugf(
                     "IN_APP channel is always enabled and cannot be toggled. " +
-                        "Ignoring preference update for userId={}, type={}",
+                        "Ignoring preference update for userId=%s, type=%s",
                     userId, type
                 )
                 existing
@@ -77,8 +79,8 @@ class NotificationPreferenceService @Inject constructor(
 
         preferenceRepository.upsert(updated)
 
-        logger.info(
-            "Updated preference: userId={}, type={}, channel={}, enabled={}",
+        LOG.infof(
+            "Updated preference: userId=%s, type=%s, channel=%s, enabled=%s",
             userId, type, channel, enabled
         )
 
@@ -100,7 +102,7 @@ class NotificationPreferenceService @Inject constructor(
             preferenceRepository.upsert(preference)
         }
 
-        logger.info("Bulk-updated {} preferences for userId={}", preferences.size, userId)
+        LOG.infof("Bulk-updated %s preferences for userId=%s", preferences.size, userId)
 
         return getPreferences(userId)
     }

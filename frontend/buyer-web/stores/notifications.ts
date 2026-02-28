@@ -1,77 +1,82 @@
+import { ref, computed, readonly } from 'vue'
 import { defineStore } from 'pinia'
 import type { Notification } from '~/types/notification'
 
-export interface NotificationsState {
-  unreadCount: number
-  recentNotifications: Notification[]
-  pushRegistered: boolean
-}
+export const useNotificationsStore = defineStore('notifications', () => {
+  const unreadCount = ref(0)
+  const recentNotifications = ref<Notification[]>([])
+  const pushRegistered = ref(false)
 
-export const useNotificationsStore = defineStore('notifications', {
-  state: (): NotificationsState => ({
-    unreadCount: 0,
-    recentNotifications: [],
-    pushRegistered: false,
-  }),
+  const hasUnread = computed((): boolean => {
+    return unreadCount.value > 0
+  })
 
-  getters: {
-    hasUnread: (state): boolean => {
-      return state.unreadCount > 0
-    },
+  const unreadNotifications = computed((): Notification[] => {
+    return recentNotifications.value.filter((n) => !n.read)
+  })
 
-    unreadNotifications: (state): Notification[] => {
-      return state.recentNotifications.filter((n) => !n.read)
-    },
+  const overbidNotifications = computed((): Notification[] => {
+    return recentNotifications.value.filter((n) => n.type === 'overbid' && !n.read)
+  })
 
-    overbidNotifications: (state): Notification[] => {
-      return state.recentNotifications.filter((n) => n.type === 'overbid' && !n.read)
-    },
-  },
+  function setNotifications(notifications: Notification[]) {
+    recentNotifications.value = notifications
+    unreadCount.value = notifications.filter((n) => !n.read).length
+  }
 
-  actions: {
-    setNotifications(notifications: Notification[]) {
-      this.recentNotifications = notifications
-      this.unreadCount = notifications.filter((n) => !n.read).length
-    },
+  function addNotification(notification: Notification) {
+    recentNotifications.value = [notification, ...recentNotifications.value].slice(0, 50)
+    if (!notification.read) {
+      unreadCount.value++
+    }
+  }
 
-    addNotification(notification: Notification) {
-      this.recentNotifications = [notification, ...this.recentNotifications].slice(0, 50)
+  function markAsRead(notificationId: string) {
+    const notification = recentNotifications.value.find((n) => n.id === notificationId)
+    if (notification && !notification.read) {
+      recentNotifications.value = recentNotifications.value.map((n) =>
+        n.id === notificationId ? { ...n, read: true } : n,
+      )
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    }
+  }
+
+  function markAllAsRead() {
+    recentNotifications.value = recentNotifications.value.map((n) => ({ ...n, read: true }))
+    unreadCount.value = 0
+  }
+
+  function setUnreadCount(count: number) {
+    unreadCount.value = count
+  }
+
+  function setPushRegistered(value: boolean) {
+    pushRegistered.value = value
+  }
+
+  function removeNotification(notificationId: string) {
+    const notification = recentNotifications.value.find((n) => n.id === notificationId)
+    if (notification) {
       if (!notification.read) {
-        this.unreadCount++
+        unreadCount.value = Math.max(0, unreadCount.value - 1)
       }
-    },
+      recentNotifications.value = recentNotifications.value.filter((n) => n.id !== notificationId)
+    }
+  }
 
-    markAsRead(notificationId: string) {
-      const notification = this.recentNotifications.find((n) => n.id === notificationId)
-      if (notification && !notification.read) {
-        this.recentNotifications = this.recentNotifications.map((n) =>
-          n.id === notificationId ? { ...n, read: true } : n,
-        )
-        this.unreadCount = Math.max(0, this.unreadCount - 1)
-      }
-    },
-
-    markAllAsRead() {
-      this.recentNotifications = this.recentNotifications.map((n) => ({ ...n, read: true }))
-      this.unreadCount = 0
-    },
-
-    setUnreadCount(count: number) {
-      this.unreadCount = count
-    },
-
-    setPushRegistered(value: boolean) {
-      this.pushRegistered = value
-    },
-
-    removeNotification(notificationId: string) {
-      const notification = this.recentNotifications.find((n) => n.id === notificationId)
-      if (notification) {
-        if (!notification.read) {
-          this.unreadCount = Math.max(0, this.unreadCount - 1)
-        }
-        this.recentNotifications = this.recentNotifications.filter((n) => n.id !== notificationId)
-      }
-    },
-  },
+  return {
+    unreadCount: readonly(unreadCount),
+    recentNotifications: readonly(recentNotifications),
+    pushRegistered: readonly(pushRegistered),
+    hasUnread,
+    unreadNotifications,
+    overbidNotifications,
+    setNotifications,
+    addNotification,
+    markAsRead,
+    markAllAsRead,
+    setUnreadCount,
+    setPushRegistered,
+    removeNotification,
+  }
 })

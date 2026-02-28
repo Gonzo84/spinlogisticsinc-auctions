@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useLots, type LotFormData } from '@/composables/useLots'
+import { useLots } from '@/composables/useLots'
+import type { LotFormData } from '@/types'
+import type { AxiosError } from 'axios'
 import LotForm from '@/components/lots/LotForm.vue'
 
 const router = useRouter()
@@ -14,8 +16,9 @@ async function handleSubmit(data: LotFormData) {
   try {
     const lot = await createLot(data)
     router.push({ name: 'lot-detail', params: { id: lot.id } })
-  } catch (err: any) {
-    submitError.value = err?.response?.data?.message ?? 'Failed to create lot. Please try again.'
+  } catch (err: unknown) {
+    const axiosErr = err as AxiosError<{ message?: string }>
+    submitError.value = axiosErr?.response?.data?.message ?? 'Failed to create lot. Please try again.'
   }
 }
 

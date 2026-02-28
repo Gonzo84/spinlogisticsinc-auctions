@@ -1,9 +1,15 @@
 p, broker, /api/v1/brokers/leads, GET, allow
-p, broker, /api/v1/brokers/leads/*/visit, POST, allow
+p, broker, /api/v1/brokers/leads/:id/visit, POST, allow
 p, broker, /api/v1/brokers/lots/intake, POST, allow
-p, broker, /api/v1/brokers/lots/*/ai-describe, POST, allow
+p, broker, /api/v1/brokers/lots/:id/ai-describe, POST, allow
 p, broker, /api/v1/brokers/me/dashboard, GET, allow
-p, broker, /api/v1/brokers/sellers/*, GET, allow
-p, admin_ops, /api/v1/brokers/**, .*, allow
-p, admin_super, /api/v1/**, .*, allow
+p, broker, /api/v1/brokers/sellers/:id, GET, allow
+p, admin_ops, /api/v1/brokers/:r, .*, allow
+p, admin_ops, /api/v1/brokers/:r/:id, .*, allow
+p, admin_ops, /api/v1/brokers/:r/:id/:sub, .*, allow
+p, admin_ops, /api/v1/brokers/:r/:id/:sub/:action, .*, allow
+p, admin_super, /api/v1/:r, .*, allow
+p, admin_super, /api/v1/:r/:id, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub/:action, .*, allow
 g, admin_super, admin_ops

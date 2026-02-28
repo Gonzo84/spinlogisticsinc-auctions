@@ -11,7 +11,7 @@ export interface Column {
 
 const props = withDefaults(defineProps<{
   columns: Column[]
-  data: Record<string, any>[]
+  data: Record<string, string | number | boolean | null | undefined>[]
   loading?: boolean
   searchable?: boolean
   searchPlaceholder?: string

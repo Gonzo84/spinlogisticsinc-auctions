@@ -7,7 +7,7 @@ import jakarta.ws.rs.container.ContainerResponseContext
 import jakarta.ws.rs.container.ContainerResponseFilter
 import jakarta.ws.rs.ext.Provider
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 // =============================================================================
 // CORS Filter – Cross-Origin Resource Sharing response headers
@@ -31,7 +31,9 @@ import org.slf4j.LoggerFactory
 @Priority(Priorities.HEADER_DECORATOR)
 class CorsFilter : ContainerResponseFilter {
 
-    private val logger = LoggerFactory.getLogger(CorsFilter::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(CorsFilter::class.java)
+    }
 
     @ConfigProperty(name = "cors.allowed-origins", defaultValue = "*")
     lateinit var allowedOrigins: String
@@ -73,7 +75,7 @@ class CorsFilter : ContainerResponseFilter {
         }
 
         if (effectiveOrigin == null) {
-            logger.debug("CORS: rejecting origin [{}] -- not in allowed list", origin)
+            LOG.debugf("CORS: rejecting origin [%s] -- not in allowed list", origin)
             return
         }
 

@@ -2,7 +2,7 @@ package eu.auctionplatform.media.infrastructure.minio
 
 import jakarta.enterprise.context.ApplicationScoped
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
@@ -41,7 +41,9 @@ class MinioService(
     private val region: String
 ) {
 
-    private val logger = LoggerFactory.getLogger(MinioService::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(MinioService::class.java)
+    }
 
     private val credentials: StaticCredentialsProvider by lazy {
         StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
@@ -82,7 +84,7 @@ class MinioService(
         contentType: String,
         expiry: Duration = Duration.ofMinutes(15)
     ): String {
-        logger.debug("Generating presigned upload URL: bucket={}, key={}, type={}", bucket, objectKey, contentType)
+        LOG.debugf("Generating presigned upload URL: bucket=%s, key=%s, type=%s", bucket, objectKey, contentType)
 
         val putRequest = PutObjectRequest.builder()
             .bucket(bucket)
@@ -112,7 +114,7 @@ class MinioService(
         objectKey: String,
         expiry: Duration = Duration.ofHours(1)
     ): String {
-        logger.debug("Generating presigned download URL: bucket={}, key={}", bucket, objectKey)
+        LOG.debugf("Generating presigned download URL: bucket=%s, key=%s", bucket, objectKey)
 
         val getRequest = GetObjectRequest.builder()
             .bucket(bucket)
@@ -135,7 +137,7 @@ class MinioService(
      * @param objectKey The object key to delete.
      */
     fun deleteObject(bucket: String, objectKey: String) {
-        logger.info("Deleting object: bucket={}, key={}", bucket, objectKey)
+        LOG.infof("Deleting object: bucket=%s, key=%s", bucket, objectKey)
 
         val deleteRequest = DeleteObjectRequest.builder()
             .bucket(bucket)
@@ -157,8 +159,8 @@ class MinioService(
      * @param destKey      The destination object key.
      */
     fun copyObject(sourceBucket: String, sourceKey: String, destBucket: String, destKey: String) {
-        logger.info(
-            "Copying object: {}/{} -> {}/{}",
+        LOG.infof(
+            "Copying object: %s/%s -> %s/%s",
             sourceBucket, sourceKey, destBucket, destKey
         )
 

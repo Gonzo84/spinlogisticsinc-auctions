@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
 import ImageUploader from './ImageUploader.vue'
-import { useLots, type LotFormData, type Category } from '@/composables/useLots'
+import { useLots } from '@/composables/useLots'
+import type { LotFormData, Category } from '@/types'
 
 const props = withDefaults(defineProps<{
   initialData?: Partial<LotFormData>

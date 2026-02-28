@@ -62,7 +62,12 @@ quarkus:
   log:
     level: INFO
     console:
-      json: true
+      json:
+        enabled: ${LOG_JSON:false}
+      format: "%d{HH:mm:ss} %-5p traceId=%X{traceId} spanId=%X{spanId} [%c{2.}] %s%e%n"
+    category:
+      "eu.auctionplatform":
+        level: ${LOG_LEVEL:DEBUG}
 
   # ---------------------------------------------------------------------------
   # Hibernate Search / Elasticsearch
@@ -88,11 +93,14 @@ quarkus:
   # ---------------------------------------------------------------------------
   # OpenTelemetry
   # ---------------------------------------------------------------------------
-  opentelemetry:
-    tracer:
-      exporter:
-        otlp:
-          endpoint: http://localhost:4317
+  otel:
+    enabled: ${OTEL_ENABLED:true}
+    exporter:
+      otlp:
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+    resource:
+      attributes:
+        - service.name=${quarkus.application.name}
 
   # ---------------------------------------------------------------------------
   # Health
@@ -141,11 +149,10 @@ elasticsearch:
       elasticsearch:
         hosts: localhost:9200
         protocol: http
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: http://localhost:4317
+    otel:
+      exporter:
+        otlp:
+          endpoint: http://localhost:4317
   elasticsearch:
     index:
       number-of-shards: 1
@@ -177,11 +184,10 @@ elasticsearch:
         protocol: ${ELASTICSEARCH_PROTOCOL:http}
         username: ${ELASTICSEARCH_USER:}
         password: ${ELASTICSEARCH_PASS:}
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-staging:4222}
   elasticsearch:
@@ -215,11 +221,10 @@ elasticsearch:
         protocol: ${ELASTICSEARCH_PROTOCOL:https}
         username: ${ELASTICSEARCH_USER}
         password: ${ELASTICSEARCH_PASS}
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-prod:4222}
   elasticsearch:

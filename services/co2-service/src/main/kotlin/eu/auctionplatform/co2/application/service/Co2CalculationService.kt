@@ -10,7 +10,7 @@ import eu.auctionplatform.commons.util.JsonMapper
 import io.nats.client.Connection
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -36,7 +36,7 @@ class Co2CalculationService {
     lateinit var natsConnection: Connection
 
     companion object {
-        private val logger = LoggerFactory.getLogger(Co2CalculationService::class.java)
+        private val LOG: Logger = Logger.getLogger(Co2CalculationService::class.java)
     }
 
     // -------------------------------------------------------------------------
@@ -60,7 +60,7 @@ class Co2CalculationService {
         val factor = emissionFactorRepository.findByCategoryId(categoryId)
 
         if (factor == null) {
-            logger.warn("No emission factor found for category [{}] -- using zero CO2", categoryId)
+            LOG.warnf("No emission factor found for category [%s] -- using zero CO2", categoryId)
             val calculation = Co2Calculation(
                 id = IdGenerator.generateUUIDv7(),
                 lotId = lotId,
@@ -95,7 +95,7 @@ class Co2CalculationService {
         // Publish event to NATS
         publishCo2CalculatedEvent(calculation, sellerId)
 
-        logger.info("CO2 calculated for lot [{}]: {} kg avoided (factor={}, reuse={})",
+        LOG.infof("CO2 calculated for lot [%s]: %s kg avoided (factor=%s, reuse=%s)",
             lotId, co2Avoided, factor.newManufacturingCo2Kg, factor.reuseFactor)
 
         return calculation
@@ -170,7 +170,7 @@ class Co2CalculationService {
     fun updateEmissionFactor(id: UUID, factor: EmissionFactor): EmissionFactor {
         val updated = factor.copy(id = id, lastUpdated = Instant.now())
         emissionFactorRepository.update(updated)
-        logger.info("Updated emission factor: id={}, type={}", id, updated.productType)
+        LOG.infof("Updated emission factor: id=%s, type=%s", id, updated.productType)
         return updated
     }
 
@@ -194,10 +194,10 @@ class Co2CalculationService {
             val subject = "co2.calculated.${calculation.lotId}"
 
             natsConnection.publish(subject, payload)
-            logger.debug("Published co2.calculated event for lot [{}]", calculation.lotId)
+            LOG.debugf("Published co2.calculated event for lot [%s]", calculation.lotId)
         } catch (ex: Exception) {
-            logger.error("Failed to publish co2.calculated event for lot [{}]: {}",
-                calculation.lotId, ex.message, ex)
+            LOG.errorf(ex, "Failed to publish co2.calculated event for lot [%s]: %s",
+                calculation.lotId, ex.message)
             // Do not re-throw: the calculation is already persisted
         }
     }

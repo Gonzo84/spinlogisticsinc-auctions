@@ -14,7 +14,7 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.ConfigProvider
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.Duration
 import java.util.UUID
@@ -41,8 +41,6 @@ class AuctionEventSellerConsumer @Inject constructor(
     private val sellerProfileRepository: SellerProfileRepository
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionEventSellerConsumer::class.java)
-
     private var connection: Connection? = null
     private val subscriptions = mutableListOf<JetStreamSubscription>()
     private var executor: ExecutorService? = null
@@ -51,6 +49,7 @@ class AuctionEventSellerConsumer @Inject constructor(
     private var running = false
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionEventSellerConsumer::class.java)
         private const val STREAM_NAME = "AUCTION"
         private const val DURABLE_PREFIX = "seller-metrics"
         private const val BATCH_SIZE = 20
@@ -101,9 +100,9 @@ class AuctionEventSellerConsumer @Inject constructor(
             }
             executor!!.submit { consumeLoop() }
 
-            logger.info("AuctionEventSellerConsumer started with {} subject(s)", SUBJECTS.size)
+            LOG.infof("AuctionEventSellerConsumer started with %s subject(s)", SUBJECTS.size)
         } catch (ex: Exception) {
-            logger.error("Failed to start AuctionEventSellerConsumer: {}", ex.message, ex)
+            LOG.errorf(ex, "Failed to start AuctionEventSellerConsumer: %s", ex.message)
         }
     }
 
@@ -116,9 +115,9 @@ class AuctionEventSellerConsumer @Inject constructor(
             subscriptions.forEach { it.drain(Duration.ofSeconds(10)) }
             connection?.close()
             executor?.shutdownNow()
-            logger.info("AuctionEventSellerConsumer stopped")
+            LOG.info("AuctionEventSellerConsumer stopped")
         } catch (ex: Exception) {
-            logger.warn("Error during AuctionEventSellerConsumer shutdown: {}", ex.message)
+            LOG.warnf("Error during AuctionEventSellerConsumer shutdown: %s", ex.message)
         }
     }
 
@@ -139,7 +138,7 @@ class AuctionEventSellerConsumer @Inject constructor(
                 Thread.currentThread().interrupt()
                 running = false
             } catch (ex: Exception) {
-                logger.error("Error in AuctionEventSellerConsumer loop: {}", ex.message, ex)
+                LOG.errorf(ex, "Error in AuctionEventSellerConsumer loop: %s", ex.message)
             }
         }
     }
@@ -161,12 +160,12 @@ class AuctionEventSellerConsumer @Inject constructor(
                 eventType.contains("lot.awarded") -> handleLotAwarded(eventData)
                 eventType.contains("settlement.ready") -> handleSettlementReady(eventData)
                 eventType.contains("lot.created") -> handleLotCreated(eventData)
-                else -> logger.debug("Unhandled event type: {}", eventType)
+                else -> LOG.debugf("Unhandled event type: %s", eventType)
             }
 
             message.ack()
         } catch (ex: Exception) {
-            logger.error("Failed to process auction event: {}", ex.message, ex)
+            LOG.errorf(ex, "Failed to process auction event: %s", ex.message)
             message.nak()
         }
     }
@@ -174,44 +173,44 @@ class AuctionEventSellerConsumer @Inject constructor(
     private fun handleBidPlaced(data: Map<String, Any>) {
         val sellerId = extractSellerId(data) ?: return
         sellerProfileRepository.incrementBids(sellerId)
-        logger.debug("Incremented bid count for seller {}", sellerId)
+        LOG.debugf("Incremented bid count for seller %s", sellerId)
     }
 
     private fun handleLotClosed(data: Map<String, Any>) {
         val sellerId = extractSellerId(data) ?: return
         val hammerAmount = data["finalBidAmount"]?.toString()?.let { BigDecimal(it) } ?: return
         sellerProfileRepository.addHammerSale(sellerId, hammerAmount)
-        logger.debug("Recorded hammer sale of {} for seller {}", hammerAmount, sellerId)
+        LOG.debugf("Recorded hammer sale of %s for seller %s", hammerAmount, sellerId)
     }
 
     private fun handleLotAwarded(data: Map<String, Any>) {
         val sellerId = extractSellerId(data) ?: return
-        logger.debug("Lot awarded for seller {} -- metrics already updated on close", sellerId)
+        LOG.debugf("Lot awarded for seller %s -- metrics already updated on close", sellerId)
     }
 
     private fun handleSettlementReady(data: Map<String, Any>) {
         val sellerId = extractSellerId(data) ?: return
         val amount = data["amount"]?.toString()?.let { BigDecimal(it) } ?: return
         sellerProfileRepository.settlePayment(sellerId, amount)
-        logger.debug("Recorded settlement of {} for seller {}", amount, sellerId)
+        LOG.debugf("Recorded settlement of %s for seller %s", amount, sellerId)
     }
 
     private fun handleLotCreated(data: Map<String, Any>) {
         val sellerId = extractSellerId(data) ?: return
         sellerProfileRepository.incrementActiveLots(sellerId)
-        logger.debug("Incremented active lots for seller {}", sellerId)
+        LOG.debugf("Incremented active lots for seller %s", sellerId)
     }
 
     private fun extractSellerId(data: Map<String, Any>): UUID? {
         val sellerIdStr = data["sellerId"]?.toString()
         if (sellerIdStr == null) {
-            logger.warn("Event missing sellerId field")
+            LOG.warn("Event missing sellerId field")
             return null
         }
         return try {
             UUID.fromString(sellerIdStr)
         } catch (ex: IllegalArgumentException) {
-            logger.warn("Invalid sellerId format: {}", sellerIdStr)
+            LOG.warnf("Invalid sellerId format: %s", sellerIdStr)
             null
         }
     }

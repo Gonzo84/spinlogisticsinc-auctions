@@ -3,7 +3,7 @@ package eu.auctionplatform.payment.application.service
 import eu.auctionplatform.payment.domain.model.VatRates
 import eu.auctionplatform.payment.domain.model.VatScheme
 import jakarta.enterprise.context.ApplicationScoped
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -40,9 +40,9 @@ data class VatCalculationResult(
 @ApplicationScoped
 class VatCalculationService {
 
-    private val logger = LoggerFactory.getLogger(VatCalculationService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(VatCalculationService::class.java)
+
         /** Account type constants. */
         const val ACCOUNT_TYPE_BUSINESS = "BUSINESS"
         const val ACCOUNT_TYPE_CONSUMER = "CONSUMER"
@@ -76,9 +76,9 @@ class VatCalculationService {
         val isBuyerBusiness = buyerType.equals(ACCOUNT_TYPE_BUSINESS, ignoreCase = true)
         val hasValidVatId = !buyerVatId.isNullOrBlank()
 
-        logger.debug(
-            "Calculating VAT: taxableBase={}, buyerCountry={}, sellerCountry={}, " +
-                "buyerType={}, sellerType={}, buyerVatId={}, isDomestic={}",
+        LOG.debugf(
+            "Calculating VAT: taxableBase=%s, buyerCountry=%s, sellerCountry=%s, " +
+                "buyerType=%s, sellerType=%s, buyerVatId=%s, isDomestic=%s",
             taxableBase, buyerCountry, sellerCountry, buyerType, sellerType,
             buyerVatId?.take(4)?.plus("***"), isDomestic
         )
@@ -86,8 +86,8 @@ class VatCalculationService {
         return when {
             // Intra-EU B2B with valid VAT ID -> Reverse charge
             !isDomestic && isBuyerBusiness && hasValidVatId -> {
-                logger.info(
-                    "Applying REVERSE_CHARGE: intra-EU B2B from {} to {} (VAT ID provided)",
+                LOG.infof(
+                    "Applying REVERSE_CHARGE: intra-EU B2B from %s to %s (VAT ID provided)",
                     sellerCountry, buyerCountry
                 )
                 VatCalculationResult(
@@ -101,8 +101,8 @@ class VatCalculationService {
             !isDomestic && !isBuyerBusiness -> {
                 val rate = VatRates.getRate(buyerCountry.uppercase())
                 val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                logger.info(
-                    "Applying OSS: intra-EU B2C from {} to {} (rate={})",
+                LOG.infof(
+                    "Applying OSS: intra-EU B2C from %s to %s (rate=%s)",
                     sellerCountry, buyerCountry, rate
                 )
                 VatCalculationResult(
@@ -116,8 +116,8 @@ class VatCalculationService {
             isDomestic && isBuyerBusiness -> {
                 val rate = VatRates.getRate(sellerCountry.uppercase())
                 val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                logger.info(
-                    "Applying STANDARD: domestic B2B in {} (rate={})",
+                LOG.infof(
+                    "Applying STANDARD: domestic B2B in %s (rate=%s)",
                     sellerCountry, rate
                 )
                 VatCalculationResult(
@@ -131,8 +131,8 @@ class VatCalculationService {
             isDomestic && !isBuyerBusiness -> {
                 val rate = VatRates.getRate(sellerCountry.uppercase())
                 val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                logger.info(
-                    "Applying STANDARD: domestic B2C in {} (rate={})",
+                LOG.infof(
+                    "Applying STANDARD: domestic B2C in %s (rate=%s)",
                     sellerCountry, rate
                 )
                 VatCalculationResult(
@@ -147,8 +147,8 @@ class VatCalculationService {
             else -> {
                 val rate = VatRates.getRate(sellerCountry.uppercase())
                 val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                logger.info(
-                    "Applying STANDARD: intra-EU B2B without VAT ID, from {} to {} (rate={})",
+                LOG.infof(
+                    "Applying STANDARD: intra-EU B2B without VAT ID, from %s to %s (rate=%s)",
                     sellerCountry, buyerCountry, rate
                 )
                 VatCalculationResult(

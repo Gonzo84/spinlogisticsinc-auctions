@@ -86,3 +86,22 @@ export interface AutoBidPayload {
   auctionId: string
   maxAmount: number
 }
+
+export interface BidEntry {
+  id: string
+  lotId: string
+  title: string
+  imageUrl?: string
+  amount: number
+  currentBid: number
+  status: string
+  createdAt: string
+}
+
+export interface WatchlistLot {
+  id: string
+  title: string
+  imageUrl?: string
+  startingBid: number
+  location?: string
+}

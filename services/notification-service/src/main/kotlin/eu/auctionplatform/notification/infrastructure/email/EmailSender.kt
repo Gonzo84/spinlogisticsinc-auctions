@@ -5,7 +5,7 @@ import io.quarkus.mailer.Mailer
 import io.quarkus.qute.Engine
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 /**
  * Sends transactional emails using the Quarkus Mailer (SMTP) with
@@ -22,7 +22,9 @@ class EmailSender @Inject constructor(
     private val quteEngine: Engine
 ) {
 
-    private val logger = LoggerFactory.getLogger(EmailSender::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(EmailSender::class.java)
+    }
 
     /**
      * Renders a Qute template and sends the resulting HTML as an email.
@@ -47,14 +49,14 @@ class EmailSender @Inject constructor(
 
         try {
             mailer.send(mail)
-            logger.info(
-                "Email sent: to={}, subject='{}', template={}/{}",
+            LOG.infof(
+                "Email sent: to=%s, subject='%s', template=%s/%s",
                 to, subject, locale, templateName
             )
         } catch (ex: Exception) {
-            logger.error(
-                "Failed to send email: to={}, subject='{}', template={}/{}: {}",
-                to, subject, locale, templateName, ex.message, ex
+            LOG.errorf(
+                ex, "Failed to send email: to=%s, subject='%s', template=%s/%s: %s",
+                to, subject, locale, templateName, ex.message
             )
             throw ex
         }
@@ -81,8 +83,8 @@ class EmailSender @Inject constructor(
 
         // Fallback to English if locale-specific template is not found
         if (template == null && locale != "en") {
-            logger.debug(
-                "Template '{}' not found, falling back to 'en/{}'",
+            LOG.debugf(
+                "Template '%s' not found, falling back to 'en/%s'",
                 templatePath, templateName
             )
             template = quteEngine.getTemplate("en/$templateName")

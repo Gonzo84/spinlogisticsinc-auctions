@@ -271,10 +271,7 @@ const props = defineProps<Props>()
 
 const { t } = useI18n()
 const { isAuthenticated, login } = useAuth()
-const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, error: _bidApiError, currentBid, minBidAmount, hasAutoBid, clearError } = useBid()
-const auctionStore = useAuctionStore()
-
-const bidCount = computed(() => auctionStore.bidCount)
+const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, error: _bidApiError, currentBid, bidCount, minBidAmount, hasAutoBid, clearError } = useBid()
 
 const bidAmount = ref<number | null>(null)
 const bidError = ref<string | null>(null)

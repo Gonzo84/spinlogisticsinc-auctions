@@ -11,7 +11,7 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Singleton
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.UUID
 
 // =============================================================================
@@ -48,11 +48,10 @@ class CatalogEventCo2Consumer @Inject constructor(
     batchSize = 25
 ) {
 
-    private val logger = LoggerFactory.getLogger(CatalogEventCo2Consumer::class.java)
-
     private var consumerThread: Thread? = null
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(CatalogEventCo2Consumer::class.java)
         /** Durable consumer name -- persists across restarts. */
         const val DURABLE_NAME: String = "co2-catalog-consumer"
 
@@ -68,7 +67,7 @@ class CatalogEventCo2Consumer @Inject constructor(
      * Starts the consumer loop in a dedicated daemon thread on application startup.
      */
     fun onStart(@Observes event: StartupEvent) {
-        logger.info("Starting CatalogEventCo2Consumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Starting CatalogEventCo2Consumer [durable=%s]", DURABLE_NAME)
         consumerThread = Thread({
             start()
         }, "co2-catalog-event-consumer").apply {
@@ -81,7 +80,7 @@ class CatalogEventCo2Consumer @Inject constructor(
      * Signals the consumer loop to stop gracefully on application shutdown.
      */
     fun onStop(@Observes event: ShutdownEvent) {
-        logger.info("Stopping CatalogEventCo2Consumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Stopping CatalogEventCo2Consumer [durable=%s]", DURABLE_NAME)
         stop()
         consumerThread?.interrupt()
     }
@@ -101,7 +100,7 @@ class CatalogEventCo2Consumer @Inject constructor(
         val subject = message.subject
         val payload = String(message.data, Charsets.UTF_8)
 
-        logger.debug("Received catalog event on subject [{}], payload size={} bytes",
+        LOG.debugf("Received catalog event on subject [%s], payload size=%s bytes",
             subject, message.data.size)
 
         try {
@@ -112,7 +111,7 @@ class CatalogEventCo2Consumer @Inject constructor(
             val sellerIdStr = node.optionalText("sellerId")
 
             if (categoryIdStr == null) {
-                logger.warn("Lot [{}] has no categoryId -- skipping CO2 calculation", lotIdStr)
+                LOG.warnf("Lot [%s] has no categoryId -- skipping CO2 calculation", lotIdStr)
                 return
             }
 
@@ -120,13 +119,13 @@ class CatalogEventCo2Consumer @Inject constructor(
             val categoryId = UUID.fromString(categoryIdStr)
             val sellerId = sellerIdStr?.let { UUID.fromString(it) }
 
-            logger.info("Calculating CO2 for lot [id={}, category={}]", lotId, categoryId)
+            LOG.infof("Calculating CO2 for lot [id=%s, category=%s]", lotId, categoryId)
 
             co2CalculationService.calculateForLot(lotId, categoryId, sellerId)
 
-            logger.info("Successfully calculated CO2 for lot [id={}]", lotId)
+            LOG.infof("Successfully calculated CO2 for lot [id=%s]", lotId)
         } catch (ex: Exception) {
-            logger.error("Failed to process catalog event on [{}]: {}", subject, ex.message, ex)
+            LOG.errorf(ex, "Failed to process catalog event on [%s]: %s", subject, ex.message)
             throw ex // re-throw so the base class handles nak/dead-letter
         }
     }

@@ -1,4 +1,4 @@
-import { inject, computed } from 'vue'
+import { inject, computed, readonly } from 'vue'
 import type Keycloak from 'keycloak-js'
 
 export function useAuth() {
@@ -69,13 +69,13 @@ export function useAuth() {
 
   return {
     keycloak,
-    isAuthenticated,
-    token,
-    userName,
-    userEmail,
-    userRoles,
-    sellerId,
-    companyName,
+    isAuthenticated: readonly(isAuthenticated),
+    token: readonly(token),
+    userName: readonly(userName),
+    userEmail: readonly(userEmail),
+    userRoles: readonly(userRoles),
+    sellerId: readonly(sellerId),
+    companyName: readonly(companyName),
     refreshToken,
     logout,
     hasRole,

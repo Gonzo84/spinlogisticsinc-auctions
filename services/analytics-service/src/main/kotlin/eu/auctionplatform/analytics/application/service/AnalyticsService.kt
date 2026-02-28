@@ -8,7 +8,7 @@ import eu.auctionplatform.analytics.infrastructure.persistence.repository.UserGr
 import eu.auctionplatform.commons.exception.NotFoundException
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.LocalDate
 import java.util.UUID
 
@@ -25,7 +25,7 @@ class AnalyticsService {
     lateinit var analyticsRepository: AnalyticsRepository
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AnalyticsService::class.java)
+        private val LOG: Logger = Logger.getLogger(AnalyticsService::class.java)
     }
 
     // -------------------------------------------------------------------------
@@ -38,7 +38,7 @@ class AnalyticsService {
      * @return The most recent [PlatformMetrics].
      */
     fun getPlatformOverview(): PlatformMetrics {
-        logger.debug("Fetching platform overview")
+        LOG.debug("Fetching platform overview")
         return analyticsRepository.getPlatformOverview()
     }
 
@@ -54,7 +54,7 @@ class AnalyticsService {
      * @throws NotFoundException if no metrics exist for the auction.
      */
     fun getAuctionMetrics(auctionId: UUID): AuctionMetrics {
-        logger.debug("Fetching auction metrics for auction={}", auctionId)
+        LOG.debugf("Fetching auction metrics for auction=%s", auctionId)
 
         return analyticsRepository.getAuctionMetrics(auctionId)
             ?: throw NotFoundException(
@@ -75,7 +75,7 @@ class AnalyticsService {
      * @return List of daily revenue entries.
      */
     fun getRevenueReport(from: LocalDate, to: LocalDate): List<DailyRevenueEntry> {
-        logger.debug("Fetching revenue report from={} to={}", from, to)
+        LOG.debugf("Fetching revenue report from=%s to=%s", from, to)
         return analyticsRepository.getRevenueReport(from, to)
     }
 
@@ -91,7 +91,7 @@ class AnalyticsService {
      * @return List of daily user growth entries.
      */
     fun getUserGrowthReport(from: LocalDate, to: LocalDate): List<UserGrowthEntry> {
-        logger.debug("Fetching user growth report from={} to={}", from, to)
+        LOG.debugf("Fetching user growth report from=%s to=%s", from, to)
         return analyticsRepository.getUserGrowthReport(from, to)
     }
 }

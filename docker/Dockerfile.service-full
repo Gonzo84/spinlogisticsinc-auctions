@@ -1,0 +1,22 @@
+# ============================================================
+# Build stage — compiles the service JAR
+# ============================================================
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /app
+COPY gradle gradle
+COPY gradlew .
+COPY build.gradle.kts settings.gradle.kts ./
+COPY shared shared
+COPY services services
+ARG SERVICE_NAME
+RUN chmod +x gradlew && ./gradlew :services:${SERVICE_NAME}:build -x test --no-daemon
+
+# ============================================================
+# Runtime stage — slim Alpine JRE
+# ============================================================
+FROM eclipse-temurin:21-jre-alpine
+ARG SERVICE_NAME
+WORKDIR /app
+COPY --from=build /app/services/${SERVICE_NAME}/build/quarkus-app /app
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "quarkus-run.jar"]

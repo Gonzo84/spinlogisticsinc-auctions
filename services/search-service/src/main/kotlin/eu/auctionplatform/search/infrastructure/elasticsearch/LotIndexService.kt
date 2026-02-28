@@ -27,7 +27,7 @@ import eu.auctionplatform.commons.util.JsonMapper
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.io.StringReader
 import java.math.BigDecimal
 import java.time.Instant
@@ -60,9 +60,9 @@ class LotIndexService @Inject constructor(
     private val numberOfReplicas: String
 ) {
 
-    private val logger = LoggerFactory.getLogger(LotIndexService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(LotIndexService::class.java)
+
         /** Base index name (combined with prefix at runtime). */
         const val INDEX_BASE_NAME: String = "lots_active"
 
@@ -102,11 +102,11 @@ class LotIndexService @Inject constructor(
         try {
             val exists = esClient.indices().exists { e -> e.index(indexName) }.value()
             if (exists) {
-                logger.info("Elasticsearch index [{}] already exists -- skipping creation", indexName)
+                LOG.infof("Elasticsearch index [%s] already exists -- skipping creation", indexName)
                 return
             }
 
-            logger.info("Creating Elasticsearch index [{}] with shards={}, replicas={}",
+            LOG.infof("Creating Elasticsearch index [%s] with shards=%s, replicas=%s",
                 indexName, numberOfShards, numberOfReplicas)
 
             esClient.indices().create { c ->
@@ -115,9 +115,9 @@ class LotIndexService @Inject constructor(
                     .mappings(buildMappings())
             }
 
-            logger.info("Elasticsearch index [{}] created successfully", indexName)
+            LOG.infof("Elasticsearch index [%s] created successfully", indexName)
         } catch (ex: Exception) {
-            logger.error("Failed to create Elasticsearch index [{}]: {}", indexName, ex.message, ex)
+            LOG.errorf(ex, "Failed to create Elasticsearch index [%s]: %s", indexName, ex.message)
             throw ex
         }
     }
@@ -138,7 +138,7 @@ class LotIndexService @Inject constructor(
                 .id(document.id)
                 .withJson(StringReader(json))
         }
-        logger.debug("Indexed lot document [id={}] in [{}]", document.id, activeIndexName)
+        LOG.debugf("Indexed lot document [id=%s] in [%s]", document.id, activeIndexName)
     }
 
     /**
@@ -158,7 +158,7 @@ class LotIndexService @Inject constructor(
                 .doc(JsonData.fromJson(json))
                 .docAsUpsert(false)
         }, LotDocument::class.java)
-        logger.debug("Updated lot document [id={}] in [{}]", documentId, activeIndexName)
+        LOG.debugf("Updated lot document [id=%s] in [%s]", documentId, activeIndexName)
     }
 
     /**
@@ -171,7 +171,7 @@ class LotIndexService @Inject constructor(
             d.index(activeIndexName)
                 .id(documentId)
         }
-        logger.debug("Deleted lot document [id={}] from [{}]", documentId, activeIndexName)
+        LOG.debugf("Deleted lot document [id=%s] from [%s]", documentId, activeIndexName)
     }
 
     /**
@@ -190,7 +190,7 @@ class LotIndexService @Inject constructor(
             }, LotDocument::class.java)
 
             if (!getResponse.found() || getResponse.source() == null) {
-                logger.warn("Lot document [id={}] not found in active index for archiving", documentId)
+                LOG.warnf("Lot document [id=%s] not found in active index for archiving", documentId)
                 return
             }
 
@@ -209,10 +209,10 @@ class LotIndexService @Inject constructor(
                 d.index(activeIndexName).id(documentId)
             }
 
-            logger.info("Archived lot document [id={}] from [{}] to [{}]",
+            LOG.infof("Archived lot document [id=%s] from [%s] to [%s]",
                 documentId, activeIndexName, archiveIndexName)
         } catch (ex: Exception) {
-            logger.error("Failed to archive lot document [id={}]: {}", documentId, ex.message, ex)
+            LOG.errorf(ex, "Failed to archive lot document [id=%s]: %s", documentId, ex.message)
             throw ex
         }
     }

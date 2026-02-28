@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import '@/types/router.d'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -82,7 +83,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  const title = to.meta.title as string | undefined
+  const title = to.meta.title
   document.title = title
     ? `${title} - Admin Dashboard`
     : 'Admin Dashboard - EU Auction Platform'

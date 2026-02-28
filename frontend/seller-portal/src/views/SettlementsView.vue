@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { useSettlements, type SettlementStatus } from '@/composables/useSettlements'
+import { useSettlements } from '@/composables/useSettlements'
+import type { SettlementStatus, SettlementFilter } from '@/types'
 
 const {
   settlements,
@@ -18,14 +19,14 @@ const filterDateFrom = ref('')
 const filterDateTo = ref('')
 
 async function loadData(page = 1) {
-  const filters: Record<string, unknown> = { page, pageSize: 20 }
+  const filters: SettlementFilter = { page, pageSize: 20 }
   if (filterStatus.value) filters.status = filterStatus.value
   if (filterDateFrom.value) filters.dateFrom = filterDateFrom.value
   if (filterDateTo.value) filters.dateTo = filterDateTo.value
 
   await Promise.all([
-    fetchSettlements(filters as any),
-    fetchSettlementTotals(filters as any),
+    fetchSettlements(filters),
+    fetchSettlementTotals(filters),
   ])
 }
 

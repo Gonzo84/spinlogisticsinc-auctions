@@ -6,7 +6,7 @@ import eu.auctionplatform.seller.domain.model.SellerStatus
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -24,9 +24,9 @@ class SellerProfileRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(SellerProfileRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(SellerProfileRepository::class.java)
+
         private const val SELECT_PROFILE_COLUMNS = """
             id, user_id, company_name, registration_no, vat_id,
             country, status, verified_at, created_at
@@ -147,7 +147,7 @@ class SellerProfileRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Saved seller profile {} for user {}", profile.id, profile.userId)
+        LOG.debugf("Saved seller profile %s for user %s", profile.id, profile.userId)
         return profile
     }
 

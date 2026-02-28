@@ -14,7 +14,7 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Singleton
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -56,11 +56,10 @@ class AnalyticsEventConsumer @Inject constructor(
     batchSize = 50
 ) {
 
-    private val logger = LoggerFactory.getLogger(AnalyticsEventConsumer::class.java)
-
     private var consumerThread: Thread? = null
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(AnalyticsEventConsumer::class.java)
         /** Durable consumer name -- persists across restarts. */
         const val DURABLE_NAME: String = "analytics-all-consumer"
 
@@ -76,7 +75,7 @@ class AnalyticsEventConsumer @Inject constructor(
      * Starts the consumer loop in a dedicated daemon thread on application startup.
      */
     fun onStart(@Observes event: StartupEvent) {
-        logger.info("Starting AnalyticsEventConsumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Starting AnalyticsEventConsumer [durable=%s]", DURABLE_NAME)
         consumerThread = Thread({
             start()
         }, "analytics-event-consumer").apply {
@@ -89,7 +88,7 @@ class AnalyticsEventConsumer @Inject constructor(
      * Signals the consumer loop to stop gracefully on application shutdown.
      */
     fun onStop(@Observes event: ShutdownEvent) {
-        logger.info("Stopping AnalyticsEventConsumer [durable={}]", DURABLE_NAME)
+        LOG.infof("Stopping AnalyticsEventConsumer [durable=%s]", DURABLE_NAME)
         stop()
         consumerThread?.interrupt()
     }
@@ -106,7 +105,7 @@ class AnalyticsEventConsumer @Inject constructor(
         val subject = message.subject
         val payload = String(message.data, Charsets.UTF_8)
 
-        logger.debug("Received analytics event on subject [{}], payload size={} bytes",
+        LOG.debugf("Received analytics event on subject [%s], payload size=%s bytes",
             subject, message.data.size)
 
         try {
@@ -116,10 +115,10 @@ class AnalyticsEventConsumer @Inject constructor(
                 subject.startsWith("auction.lot.closed") -> handleLotClosed(payload)
                 subject.startsWith("payment.checkout.completed") -> handleCheckoutCompleted(payload)
                 subject.startsWith("user.registered") -> handleUserRegistered(payload)
-                else -> logger.debug("Unhandled analytics event on subject [{}] -- skipping", subject)
+                else -> LOG.debugf("Unhandled analytics event on subject [%s] -- skipping", subject)
             }
         } catch (ex: Exception) {
-            logger.error("Failed to process analytics event on [{}]: {}", subject, ex.message, ex)
+            LOG.errorf(ex, "Failed to process analytics event on [%s]: %s", subject, ex.message)
             throw ex // re-throw so the base class handles nak/dead-letter
         }
     }
@@ -136,12 +135,12 @@ class AnalyticsEventConsumer @Inject constructor(
         val auctionId = node.uuidField("auctionId") ?: node.uuidField("aggregateId")
 
         if (auctionId == null) {
-            logger.warn("Bid placed event missing auctionId -- skipping")
+            LOG.warn("Bid placed event missing auctionId -- skipping")
             return
         }
 
         analyticsRepository.incrementBidCount(auctionId)
-        logger.debug("Incremented bid count for auction [{}]", auctionId)
+        LOG.debugf("Incremented bid count for auction [%s]", auctionId)
     }
 
     /**
@@ -152,12 +151,12 @@ class AnalyticsEventConsumer @Inject constructor(
         val auctionId = node.uuidField("auctionId") ?: node.uuidField("aggregateId")
 
         if (auctionId == null) {
-            logger.warn("Lot extended event missing auctionId -- skipping")
+            LOG.warn("Lot extended event missing auctionId -- skipping")
             return
         }
 
         analyticsRepository.incrementExtensionCount(auctionId)
-        logger.debug("Incremented extension count for auction [{}]", auctionId)
+        LOG.debugf("Incremented extension count for auction [%s]", auctionId)
     }
 
     /**
@@ -178,7 +177,7 @@ class AnalyticsEventConsumer @Inject constructor(
         )
 
         analyticsRepository.upsertAuctionMetrics(metrics)
-        logger.info("Updated auction metrics for auction [{}]: {} bids, max={}", auctionId, metrics.totalBids, metrics.maxBid)
+        LOG.infof("Updated auction metrics for auction [%s]: %s bids, max=%s", auctionId, metrics.totalBids, metrics.maxBid)
     }
 
     /**
@@ -197,7 +196,7 @@ class AnalyticsEventConsumer @Inject constructor(
         )
 
         analyticsRepository.upsertDailyRevenue(entry)
-        logger.debug("Updated daily revenue for {}: +{} EUR", today, amount)
+        LOG.debugf("Updated daily revenue for %s: +%s EUR", today, amount)
     }
 
     /**
@@ -217,7 +216,7 @@ class AnalyticsEventConsumer @Inject constructor(
         )
 
         analyticsRepository.upsertUserGrowth(entry)
-        logger.debug("Updated user growth for {}: +1 registration (type={})", today, accountType)
+        LOG.debugf("Updated user growth for %s: +1 registration (type=%s)", today, accountType)
     }
 
     // -------------------------------------------------------------------------

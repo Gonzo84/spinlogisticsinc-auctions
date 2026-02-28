@@ -13,7 +13,7 @@ import eu.auctionplatform.compliance.domain.model.GdprRequestType
 import eu.auctionplatform.compliance.infrastructure.persistence.repository.GdprRequestRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
@@ -34,7 +34,7 @@ class GdprService {
     lateinit var natsPublisher: NatsPublisher
 
     companion object {
-        private val logger = LoggerFactory.getLogger(GdprService::class.java)
+        private val LOG: Logger = Logger.getLogger(GdprService::class.java)
     }
 
     /**
@@ -58,7 +58,7 @@ class GdprService {
 
         gdprRequestRepository.insert(request)
 
-        logger.info("GDPR export request created: id={}, userId={}", request.id, userId)
+        LOG.infof("GDPR export request created: id=%s, userId=%s", request.id, userId)
 
         return request
     }
@@ -92,7 +92,7 @@ class GdprService {
 
         gdprRequestRepository.insert(request)
 
-        logger.info("GDPR erasure request created: id={}, userId={}", request.id, userId)
+        LOG.infof("GDPR erasure request created: id=%s, userId=%s", request.id, userId)
 
         return request
     }
@@ -150,7 +150,7 @@ class GdprService {
         // Status remains IN_PROGRESS until downstream services confirm data deletion.
         // A scheduled job or acknowledgment consumer should handle marking COMPLETED.
 
-        logger.info("GDPR erasure processed: requestId={}, userId={}", requestId, request.userId)
+        LOG.infof("GDPR erasure processed: requestId=%s, userId=%s", requestId, request.userId)
     }
 
     /**

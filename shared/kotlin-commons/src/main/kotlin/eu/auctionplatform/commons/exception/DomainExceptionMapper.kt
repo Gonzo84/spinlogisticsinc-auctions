@@ -4,7 +4,7 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.ext.ExceptionMapper
 import jakarta.ws.rs.ext.Provider
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 /**
  * JAX-RS exception mapper for [DomainException] and its subtypes.
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 class DomainExceptionMapper : ExceptionMapper<DomainException> {
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(DomainExceptionMapper::class.java)
+        private val LOG: Logger = Logger.getLogger(DomainExceptionMapper::class.java)
     }
 
     override fun toResponse(exception: DomainException): Response {
@@ -34,7 +34,7 @@ class DomainExceptionMapper : ExceptionMapper<DomainException> {
             else -> Response.Status.BAD_REQUEST
         }
 
-        LOG.debug("DomainException mapped: type={}, code={}, status={}, message={}",
+        LOG.debugf("DomainException mapped: type=%s, code=%s, status=%s, message=%s",
             exception.javaClass.simpleName, exception.code, status.statusCode, exception.message)
 
         val body = mutableMapOf<String, Any>(

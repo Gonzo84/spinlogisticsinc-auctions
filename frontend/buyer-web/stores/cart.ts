@@ -1,68 +1,73 @@
+import { ref, computed, readonly } from 'vue'
 import { defineStore } from 'pinia'
 import type { CartLot, CartTotals } from '~/types/cart'
 
-export interface CartState {
-  selectedLots: CartLot[]
-  checkoutInProgress: boolean
-}
+export const useCartStore = defineStore('cart', () => {
+  const selectedLots = ref<CartLot[]>([])
+  const checkoutInProgress = ref(false)
 
-export const useCartStore = defineStore('cart', {
-  state: (): CartState => ({
-    selectedLots: [],
-    checkoutInProgress: false,
-  }),
+  const lotCount = computed((): number => {
+    return selectedLots.value.length
+  })
 
-  getters: {
-    lotCount: (state): number => {
-      return state.selectedLots.length
-    },
+  const totals = computed((): CartTotals => {
+    const subtotal = selectedLots.value.reduce((sum, lot) => sum + lot.winningBid, 0)
+    const buyersPremium = selectedLots.value.reduce((sum, lot) => sum + lot.buyersPremium, 0)
+    const vat = selectedLots.value.reduce((sum, lot) => sum + lot.vatAmount, 0)
+    const total = subtotal + buyersPremium + vat
+    return { subtotal, buyersPremium, vat, total }
+  })
 
-    totals: (state): CartTotals => {
-      const subtotal = state.selectedLots.reduce((sum, lot) => sum + lot.winningBid, 0)
-      const buyersPremium = state.selectedLots.reduce((sum, lot) => sum + lot.buyersPremium, 0)
-      const vat = state.selectedLots.reduce((sum, lot) => sum + lot.vatAmount, 0)
-      const total = subtotal + buyersPremium + vat
-      return { subtotal, buyersPremium, vat, total }
-    },
+  function isLotSelected(lotId: string): boolean {
+    return selectedLots.value.some((lot) => lot.id === lotId)
+  }
 
-    isLotSelected: (state) => (lotId: string): boolean => {
-      return state.selectedLots.some((lot) => lot.id === lotId)
-    },
+  const isEmpty = computed((): boolean => {
+    return selectedLots.value.length === 0
+  })
 
-    isEmpty: (state): boolean => {
-      return state.selectedLots.length === 0
-    },
-  },
+  function addLot(lot: CartLot) {
+    if (!selectedLots.value.some((l) => l.id === lot.id)) {
+      selectedLots.value = [...selectedLots.value, lot]
+    }
+  }
 
-  actions: {
-    addLot(lot: CartLot) {
-      if (!this.selectedLots.some((l) => l.id === lot.id)) {
-        this.selectedLots = [...this.selectedLots, lot]
-      }
-    },
+  function removeLot(lotId: string) {
+    selectedLots.value = selectedLots.value.filter((l) => l.id !== lotId)
+  }
 
-    removeLot(lotId: string) {
-      this.selectedLots = this.selectedLots.filter((l) => l.id !== lotId)
-    },
+  function toggleLot(lot: CartLot) {
+    if (isLotSelected(lot.id)) {
+      removeLot(lot.id)
+    } else {
+      addLot(lot)
+    }
+  }
 
-    toggleLot(lot: CartLot) {
-      if (this.isLotSelected(lot.id)) {
-        this.removeLot(lot.id)
-      } else {
-        this.addLot(lot)
-      }
-    },
+  function selectAll(lots: CartLot[]) {
+    selectedLots.value = [...lots]
+  }
 
-    selectAll(lots: CartLot[]) {
-      this.selectedLots = [...lots]
-    },
+  function clearAll() {
+    selectedLots.value = []
+  }
 
-    clearAll() {
-      this.selectedLots = []
-    },
+  function setCheckoutInProgress(value: boolean) {
+    checkoutInProgress.value = value
+  }
 
-    setCheckoutInProgress(value: boolean) {
-      this.checkoutInProgress = value
-    },
-  },
+  return {
+    selectedLots: readonly(selectedLots),
+    checkoutInProgress: readonly(checkoutInProgress),
+    lotCount,
+    totals,
+    isLotSelected,
+    isEmpty,
+    addLot,
+    removeLot,
+    toggleLot,
+    selectAll,
+    clearAll,
+    setCheckoutInProgress,
+  }
 })

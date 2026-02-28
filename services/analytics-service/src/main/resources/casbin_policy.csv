@@ -1,6 +1,9 @@
 p, admin_ops, /api/v1/analytics/overview, GET, allow
-p, admin_ops, /api/v1/analytics/auctions/*, GET, allow
+p, admin_ops, /api/v1/analytics/auctions/:id, GET, allow
 p, admin_ops, /api/v1/analytics/revenue, GET, allow
 p, admin_ops, /api/v1/analytics/growth, GET, allow
-p, admin_super, /api/v1/**, .*, allow
+p, admin_super, /api/v1/:r, .*, allow
+p, admin_super, /api/v1/:r/:id, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub/:action, .*, allow
 g, admin_super, admin_ops

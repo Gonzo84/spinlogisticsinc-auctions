@@ -15,7 +15,7 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.UriInfo
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -42,7 +42,9 @@ import java.time.Duration
 @ApplicationScoped
 class ApiProxyResource {
 
-    private val logger = LoggerFactory.getLogger(ApiProxyResource::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(ApiProxyResource::class.java)
+    }
 
     @ConfigProperty(name = "gateway.routes.auction-engine.url")
     lateinit var auctionEngineUrl: String
@@ -172,7 +174,7 @@ class ApiProxyResource {
             }
         }
 
-        logger.debug("Proxying {} {} -> {}", method, requestPath, targetUrl)
+        LOG.debugf("Proxying %s %s -> %s", method, requestPath, targetUrl)
 
         return try {
             val requestBuilder = HttpRequest.newBuilder()
@@ -214,7 +216,7 @@ class ApiProxyResource {
 
             responseBuilder.build()
         } catch (ex: Exception) {
-            logger.error("Proxy error for {} {}: {}", method, targetUrl, ex.message)
+            LOG.errorf("Proxy error for %s %s: %s", method, targetUrl, ex.message)
             Response.status(Response.Status.BAD_GATEWAY)
                 .entity(mapOf("status" to 502, "title" to "Bad Gateway", "detail" to "Upstream service unavailable", "instance" to requestPath))
                 .build()

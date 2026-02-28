@@ -8,7 +8,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.ext.Provider
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 
 // =============================================================================
 // Rate Limit Filter – JAX-RS request filter for enforcing rate limits
@@ -37,12 +37,12 @@ class RateLimitFilter @Inject constructor(
     private val rateLimitService: RateLimitService
 ) : ContainerRequestFilter {
 
-    private val logger = LoggerFactory.getLogger(RateLimitFilter::class.java)
-
     @ConfigProperty(name = "rate-limit.enabled", defaultValue = "true")
     var enabled: Boolean = true
 
     companion object {
+        private val LOG: Logger = Logger.getLogger(RateLimitFilter::class.java)
+
         /** Regex to extract auctionId from bid placement paths. */
         private val BID_PATH_PATTERN = Regex("/api/v1/auctions/([^/]+)/bids")
 
@@ -100,8 +100,8 @@ class RateLimitFilter @Inject constructor(
         }
 
         if (!allowed) {
-            logger.warn(
-                "Rate limit exceeded for user={}, path={}, method={}",
+            LOG.warnf(
+                "Rate limit exceeded for user=%s, path=%s, method=%s",
                 userId, path, method
             )
 

@@ -4,7 +4,7 @@ import eu.auctionplatform.co2.domain.model.EmissionFactor
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -20,9 +20,9 @@ class EmissionFactorRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(EmissionFactorRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(EmissionFactorRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, category_id, product_type, new_manufacturing_co2_kg,
             reuse_factor, source, last_updated
@@ -131,7 +131,7 @@ class EmissionFactorRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted emission factor: id={}, type={}", factor.id, factor.productType)
+        LOG.debugf("Inserted emission factor: id=%s, type=%s", factor.id, factor.productType)
     }
 
     /**
@@ -150,11 +150,11 @@ class EmissionFactorRepository @Inject constructor(
                 stmt.setObject(6, factor.id)
                 val rowsUpdated = stmt.executeUpdate()
                 if (rowsUpdated == 0) {
-                    logger.warn("No emission factor found to update: id={}", factor.id)
+                    LOG.warnf("No emission factor found to update: id=%s", factor.id)
                 }
             }
         }
-        logger.debug("Updated emission factor: id={}, type={}", factor.id, factor.productType)
+        LOG.debugf("Updated emission factor: id=%s, type=%s", factor.id, factor.productType)
     }
 
     // -----------------------------------------------------------------------

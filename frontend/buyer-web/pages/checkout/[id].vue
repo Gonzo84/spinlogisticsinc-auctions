@@ -393,6 +393,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Order } from '~/types/checkout'
 import { formatCurrency } from '~/utils/format'
 
 definePageMeta({ middleware: 'auth' })
@@ -404,23 +405,6 @@ const orderId = computed(() => route.params.id as string)
 const loading = ref(false)
 const processing = ref(false)
 const currentStep = ref(0)
-
-interface OrderItem {
-  id: string
-  title: string
-  imageUrl: string
-  amount: number
-  location: string
-}
-
-interface Order {
-  id: string
-  items: OrderItem[]
-  subtotal: number
-  buyersPremium: number
-  vatEstimate: number
-  total: number
-}
 
 const order = ref<Order | null>(null)
 

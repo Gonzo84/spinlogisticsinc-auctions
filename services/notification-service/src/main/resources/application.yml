@@ -62,7 +62,12 @@ quarkus:
   log:
     level: INFO
     console:
-      json: true
+      json:
+        enabled: ${LOG_JSON:false}
+      format: "%d{HH:mm:ss} %-5p traceId=%X{traceId} spanId=%X{spanId} [%c{2.}] %s%e%n"
+    category:
+      "eu.auctionplatform":
+        level: ${LOG_LEVEL:DEBUG}
 
   # ---------------------------------------------------------------------------
   # Mailer (SMTP)
@@ -88,11 +93,14 @@ quarkus:
   # ---------------------------------------------------------------------------
   # OpenTelemetry
   # ---------------------------------------------------------------------------
-  opentelemetry:
-    tracer:
-      exporter:
-        otlp:
-          endpoint: http://localhost:4317
+  otel:
+    enabled: ${OTEL_ENABLED:true}
+    exporter:
+      otlp:
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+    resource:
+      attributes:
+        - service.name=${quarkus.application.name}
 
   # ---------------------------------------------------------------------------
   # Health
@@ -134,11 +142,10 @@ casbin:
       start-tls: DISABLED
       login: DISABLED
       mock: false
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: http://localhost:4317
+    otel:
+      exporter:
+        otlp:
+          endpoint: http://localhost:4317
 
 # =============================================================================
 # Profile: staging
@@ -165,11 +172,10 @@ casbin:
       port: ${SMTP_PORT:1025}
       start-tls: DISABLED
       login: DISABLED
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-staging:4222}
 
@@ -200,10 +206,9 @@ casbin:
       login: REQUIRED
       username: ${SMTP_USER}
       password: ${SMTP_PASS}
-    opentelemetry:
-      tracer:
-        exporter:
-          otlp:
-            endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
+    otel:
+      exporter:
+        otlp:
+          endpoint: ${OTEL_ENDPOINT:http://otel-collector:4317}
   nats:
     url: ${NATS_URL:nats://nats-prod:4222}

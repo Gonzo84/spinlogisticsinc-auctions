@@ -17,9 +17,9 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    'vue/multi-word-component-names': 'off',
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    'vue/multi-word-component-names': 'warn',
     'vue/no-v-html': 'warn',
   },
   ignorePatterns: ['dist/', 'node_modules/'],

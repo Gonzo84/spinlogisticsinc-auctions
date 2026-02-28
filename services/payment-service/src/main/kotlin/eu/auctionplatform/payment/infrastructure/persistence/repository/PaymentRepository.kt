@@ -6,7 +6,7 @@ import eu.auctionplatform.payment.domain.model.VatScheme
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -25,9 +25,9 @@ class PaymentRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(PaymentRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(PaymentRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, buyer_id, seller_id, auction_id, lot_id, hammer_price, buyer_premium,
             buyer_premium_rate, vat_amount, vat_rate, vat_scheme, total_amount,
@@ -129,7 +129,7 @@ class PaymentRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Saved payment {} for buyer {} (lot={})", payment.id, payment.buyerId, payment.lotId)
+        LOG.debugf("Saved payment %s for buyer %s (lot=%s)", payment.id, payment.buyerId, payment.lotId)
     }
 
     /**
@@ -261,7 +261,7 @@ class PaymentRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Updated payment {} status to {}", id, status)
+        LOG.debugf("Updated payment %s status to %s", id, status)
     }
 
     /**
@@ -284,7 +284,7 @@ class PaymentRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Marked payment {} as COMPLETED (psp={})", id, pspReference)
+        LOG.debugf("Marked payment %s as COMPLETED (psp=%s)", id, pspReference)
     }
 
     /**
@@ -299,7 +299,7 @@ class PaymentRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Deleted payment {}", id)
+        LOG.debugf("Deleted payment %s", id)
     }
 
     // -----------------------------------------------------------------------

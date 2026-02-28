@@ -1,59 +1,27 @@
-import { ref } from 'vue'
+import { ref, readonly } from 'vue'
+import axios from 'axios'
 import { useApi } from './useApi'
+import type {
+  ServiceStatus,
+  ServiceHealth,
+  NatsStatus,
+  DatabasePool,
+  SystemMetrics,
+  SystemHealthOverview,
+} from '@/types/analytics'
 
-export type ServiceStatus = 'healthy' | 'degraded' | 'down' | 'unknown'
-
-export interface ServiceHealth {
-  name: string
-  status: ServiceStatus
-  uptime: string
-  responseTimeMs: number
-  lastChecked: string
-  version: string
-  details: Record<string, string | number | boolean>
-}
-
-export interface NatsStatus {
-  connected: boolean
-  serverUrl: string
-  subjects: number
-  messagesPerSec: number
-  bytesPerSec: number
-  slowConsumers: number
-  pendingMessages: number
-}
-
-export interface DatabasePool {
-  name: string
-  status: ServiceStatus
-  activeConnections: number
-  idleConnections: number
-  maxConnections: number
-  waitCount: number
-  avgQueryTimeMs: number
-}
-
-export interface SystemMetrics {
-  cpuUsagePercent: number
-  memoryUsageMb: number
-  memoryTotalMb: number
-  diskUsagePercent: number
-  goroutines: number
-  gcPauseMs: number
-}
-
-export interface SystemHealthOverview {
-  overallStatus: ServiceStatus
-  services: ServiceHealth[]
-  nats: NatsStatus
-  databases: DatabasePool[]
-  metrics: SystemMetrics
-  lastUpdated: string
-}
+export type {
+  ServiceStatus,
+  ServiceHealth,
+  NatsStatus,
+  DatabasePool,
+  SystemMetrics,
+  SystemHealthOverview,
+} from '@/types/analytics'
 
 interface BackendComponentHealth {
   status: string
-  details?: Record<string, any> | null
+  details?: Record<string, string | number | boolean> | null
 }
 
 interface BackendHealthResponse {
@@ -127,6 +95,14 @@ function transformHealthResponse(raw: BackendHealthResponse): SystemHealthOvervi
   }
 }
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const msg = (err.response?.data as Record<string, unknown> | undefined)?.message
+    return typeof msg === 'string' ? msg : fallback
+  }
+  return err instanceof Error ? err.message : fallback
+}
+
 export function useSystemHealth() {
   const { get } = useApi()
 
@@ -140,8 +116,8 @@ export function useSystemHealth() {
     try {
       const raw = await get<BackendHealthResponse>('/health')
       health.value = transformHealthResponse(raw)
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to fetch system health data'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to fetch system health data')
     } finally {
       loading.value = false
     }
@@ -152,8 +128,8 @@ export function useSystemHealth() {
       const { post } = useApi()
       await post(`/health/services/${serviceName}/restart`)
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? `Failed to restart ${serviceName}`
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, `Failed to restart ${serviceName}`)
       return false
     }
   }
@@ -187,8 +163,8 @@ export function useSystemHealth() {
 
   return {
     health,
-    loading,
-    error,
+    loading: readonly(loading),
+    error: readonly(error),
     fetchHealth,
     restartService,
     getStatusColor,

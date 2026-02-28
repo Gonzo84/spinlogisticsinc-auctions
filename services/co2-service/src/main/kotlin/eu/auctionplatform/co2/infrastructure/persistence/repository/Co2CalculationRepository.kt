@@ -4,7 +4,7 @@ import eu.auctionplatform.co2.domain.model.Co2Calculation
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -20,9 +20,8 @@ class Co2CalculationRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(Co2CalculationRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(Co2CalculationRepository::class.java)
         private const val SELECT_COLUMNS = """
             id, lot_id, category_id, co2_avoided_kg, calculated_at, version
         """
@@ -101,7 +100,7 @@ class Co2CalculationRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted CO2 calculation: id={}, lot={}, co2={}kg",
+        LOG.debugf("Inserted CO2 calculation: id=%s, lot=%s, co2=%skg",
             calculation.id, calculation.lotId, calculation.co2AvoidedKg)
     }
 

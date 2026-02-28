@@ -10,6 +10,8 @@ export type {
   AuctionListResult,
   PlaceBidPayload,
   AutoBidPayload,
+  BidEntry,
+  WatchlistLot,
 } from './auction'
 export type {
   SearchFilters,
@@ -20,4 +22,5 @@ export type {
 } from './search'
 export type { Notification } from './notification'
 export type { CartLot, CartTotals } from './cart'
+export type { Order, OrderItem } from './checkout'
 export type { User } from './user'

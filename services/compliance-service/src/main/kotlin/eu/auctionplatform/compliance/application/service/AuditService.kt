@@ -5,7 +5,7 @@ import eu.auctionplatform.compliance.domain.model.AuditLogEntry
 import eu.auctionplatform.compliance.infrastructure.persistence.repository.AuditLogRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
@@ -22,7 +22,7 @@ class AuditService {
     lateinit var auditLogRepository: AuditLogRepository
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AuditService::class.java)
+        private val LOG: Logger = Logger.getLogger(AuditService::class.java)
     }
 
     /**
@@ -62,8 +62,8 @@ class AuditService {
             size = effectiveSize
         )
 
-        logger.debug(
-            "Audit log queried: action={}, entityType={}, userId={}, results={}",
+        LOG.debugf(
+            "Audit log queried: action=%s, entityType=%s, userId=%s, results=%s",
             action, entityType, userId, items.size
         )
 

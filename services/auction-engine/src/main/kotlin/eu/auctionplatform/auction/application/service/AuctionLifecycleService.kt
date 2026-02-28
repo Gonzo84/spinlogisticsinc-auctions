@@ -19,7 +19,7 @@ import eu.auctionplatform.commons.messaging.NatsSubjects
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.time.Instant
 
 /**
@@ -69,7 +69,9 @@ class AuctionLifecycleService @Inject constructor(
     private val objectMapper: ObjectMapper
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuctionLifecycleService::class.java)
+    companion object {
+        private val LOG: Logger = Logger.getLogger(AuctionLifecycleService::class.java)
+    }
 
     /**
      * Creates a new auction from the given command.
@@ -134,7 +136,7 @@ class AuctionLifecycleService @Inject constructor(
 
         auction.markEventsAsCommitted()
 
-        logger.info("Created auction {} for lot {} (brand={})",
+        LOG.infof("Created auction %s for lot %s (brand=%s)",
             auctionId, command.lotId, command.brand.code)
 
         return auctionId
@@ -159,7 +161,7 @@ class AuctionLifecycleService @Inject constructor(
         val newEvents = auction.close()
 
         if (newEvents.isEmpty()) {
-            logger.warn("Close command produced no events for auction {}", auctionId)
+            LOG.warnf("Close command produced no events for auction %s", auctionId)
             return AuctionCloseResult(
                 auctionId = auctionId.toString(),
                 finalBid = null,
@@ -185,7 +187,7 @@ class AuctionLifecycleService @Inject constructor(
 
         auction.markEventsAsCommitted()
 
-        logger.info("Closed auction {}", auctionId)
+        LOG.infof("Closed auction %s", auctionId)
 
         // Extract close result from the AuctionClosedEvent
         val closedEvent = newEvents.filterIsInstance<AuctionClosedEvent>().firstOrNull()
@@ -240,7 +242,7 @@ class AuctionLifecycleService @Inject constructor(
 
         auction.markEventsAsCommitted()
 
-        logger.info("Awarded lot for auction {}", auctionId)
+        LOG.infof("Awarded lot for auction %s", auctionId)
 
         // Extract award details from the LotAwardedEvent
         val awardedEvent = newEvents.filterIsInstance<LotAwardedEvent>().firstOrNull()
@@ -290,7 +292,7 @@ class AuctionLifecycleService @Inject constructor(
 
         auction.markEventsAsCommitted()
 
-        logger.info("Cancelled auction {} (reason={})", auctionId, reason)
+        LOG.infof("Cancelled auction %s (reason=%s)", auctionId, reason)
     }
 
     // -----------------------------------------------------------------------

@@ -1,7 +1,7 @@
 package eu.auctionplatform.gateway.infrastructure.webhook
 
 import jakarta.enterprise.context.ApplicationScoped
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -23,9 +23,9 @@ import javax.crypto.spec.SecretKeySpec
 @ApplicationScoped
 class WebhookValidator {
 
-    private val logger = LoggerFactory.getLogger(WebhookValidator::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(WebhookValidator::class.java)
+
         private const val HMAC_SHA256 = "HmacSHA256"
     }
 
@@ -52,7 +52,7 @@ class WebhookValidator {
             val computed = computeHmacSha256Base64(payload.toByteArray(Charsets.UTF_8), keyBytes)
             constantTimeEquals(computed, signature)
         } catch (ex: Exception) {
-            logger.error("Adyen HMAC validation error: {}", ex.message, ex)
+            LOG.errorf(ex, "Adyen HMAC validation error: %s", ex.message)
             false
         }
     }
@@ -78,7 +78,7 @@ class WebhookValidator {
             val computed = computeHmacSha256Hex(payload.toByteArray(Charsets.UTF_8), token.toByteArray(Charsets.UTF_8))
             constantTimeEquals(computed, signature)
         } catch (ex: Exception) {
-            logger.error("Onfido HMAC validation error: {}", ex.message, ex)
+            LOG.errorf(ex, "Onfido HMAC validation error: %s", ex.message)
             false
         }
     }
@@ -103,7 +103,7 @@ class WebhookValidator {
             val computed = computeHmacSha256Base64(payload, keyBytes)
             constantTimeEquals(computed, signature)
         } catch (ex: Exception) {
-            logger.error("HMAC-SHA256 (Base64) validation error: {}", ex.message, ex)
+            LOG.errorf(ex, "HMAC-SHA256 (Base64) validation error: %s", ex.message)
             false
         }
     }

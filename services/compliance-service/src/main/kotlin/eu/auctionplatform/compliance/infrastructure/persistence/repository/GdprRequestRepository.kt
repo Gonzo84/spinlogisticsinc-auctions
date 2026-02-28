@@ -6,7 +6,7 @@ import eu.auctionplatform.compliance.domain.model.GdprRequestType
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.util.UUID
@@ -22,9 +22,8 @@ class GdprRequestRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(GdprRequestRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(GdprRequestRepository::class.java)
         private const val SELECT_COLUMNS = """
             id, user_id, type, status, reason, requested_at, completed_at, rejection_reason
         """
@@ -88,7 +87,7 @@ class GdprRequestRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Inserted GDPR request: id={}, type={}", request.id, request.type)
+        LOG.debugf("Inserted GDPR request: id=%s, type=%s", request.id, request.type)
     }
 
     /**
@@ -194,7 +193,7 @@ class GdprRequestRepository @Inject constructor(
                 stmt.executeUpdate()
             }
         }
-        logger.debug("Updated GDPR request status: id={}, status={}", id, status)
+        LOG.debugf("Updated GDPR request status: id=%s, status=%s", id, status)
     }
 
     // -----------------------------------------------------------------------

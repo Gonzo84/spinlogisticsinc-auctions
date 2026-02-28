@@ -1,43 +1,17 @@
-import { ref, reactive } from 'vue'
+import { ref, reactive, readonly } from 'vue'
+import axios from 'axios'
 import { useApi } from './useApi'
+import type { Payment, PaymentFilters, PaymentSummary } from '@/types/payment'
+import type { PaginationParams } from '@/types/api'
 
-export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'refunded' | 'disputed'
+export type { Payment, PaymentStatus, PaymentFilters, PaymentSummary } from '@/types/payment'
 
-export interface Payment {
-  id: string
-  auctionTitle: string
-  lotTitle: string
-  lotId: string
-  buyerName: string
-  buyerId: string
-  sellerName: string
-  sellerId: string
-  amount: number
-  buyerPremium: number
-  totalAmount: number
-  currency: string
-  status: PaymentStatus
-  dueDate: string
-  paidDate: string | null
-  createdAt: string
-}
-
-export interface PaymentFilters {
-  status: string
-  search: string
-  dateFrom: string
-  dateTo: string
-  page: number
-  pageSize: number
-}
-
-export interface PaymentSummary {
-  totalPending: number
-  totalOverdue: number
-  totalPaid: number
-  totalDisputed: number
-  pendingCount: number
-  overdueCount: number
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const msg = (err.response?.data as Record<string, unknown> | undefined)?.message
+    return typeof msg === 'string' ? msg : fallback
+  }
+  return err instanceof Error ? err.message : fallback
 }
 
 export function usePayments() {
@@ -62,7 +36,7 @@ export function usePayments() {
     loading.value = true
     error.value = null
     try {
-      const params: Record<string, any> = {
+      const params: PaginationParams = {
         page: filters.page,
         pageSize: filters.pageSize,
       }
@@ -97,8 +71,8 @@ export function usePayments() {
     try {
       await patch(`/payments/${paymentId}/settle`, { bankReference })
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to settle payment'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to settle payment')
       return false
     } finally {
       loading.value = false
@@ -111,8 +85,8 @@ export function usePayments() {
     try {
       await post(`/payments/${paymentId}/refund`, { reason })
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to refund payment'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to refund payment')
       return false
     } finally {
       loading.value = false
@@ -123,8 +97,8 @@ export function usePayments() {
     try {
       await post(`/payments/${paymentId}/reminder`)
       return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message ?? 'Failed to send reminder'
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to send reminder')
       return false
     }
   }
@@ -133,8 +107,8 @@ export function usePayments() {
     payments,
     summary,
     totalCount,
-    loading,
-    error,
+    loading: readonly(loading),
+    error: readonly(error),
     filters,
     fetchPayments,
     fetchSummary,

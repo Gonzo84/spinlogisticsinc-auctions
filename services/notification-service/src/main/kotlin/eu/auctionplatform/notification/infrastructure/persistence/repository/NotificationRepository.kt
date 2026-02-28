@@ -7,7 +7,7 @@ import eu.auctionplatform.notification.domain.model.NotificationType
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.sql.Types
@@ -25,9 +25,9 @@ class NotificationRepository @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(NotificationRepository::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(NotificationRepository::class.java)
+
         private const val SELECT_COLUMNS = """
             id, user_id, type, channel, status, subject, body,
             template_data, locale, read_at, sent_at, created_at
@@ -128,8 +128,8 @@ class NotificationRepository @Inject constructor(
             }
         }
 
-        logger.debug(
-            "Inserted notification: id={}, userId={}, type={}, channel={}",
+        LOG.debugf(
+            "Inserted notification: id=%s, userId=%s, type=%s, channel=%s",
             notification.id, notification.userId, notification.type, notification.channel
         )
     }

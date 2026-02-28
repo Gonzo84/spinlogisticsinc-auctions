@@ -18,7 +18,7 @@ import eu.auctionplatform.seller.infrastructure.persistence.repository.SellerPro
 import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.slf4j.LoggerFactory
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.sql.Timestamp
@@ -38,9 +38,9 @@ class SellerService @Inject constructor(
     private val dataSource: AgroalDataSource
 ) {
 
-    private val logger = LoggerFactory.getLogger(SellerService::class.java)
-
     companion object {
+        private val LOG: Logger = Logger.getLogger(SellerService::class.java)
+
         private const val DEFAULT_COMMISSION_RATE = "0.0500"
 
         // -- SQL for lot queries against the seller_metrics / external lot data --
@@ -160,7 +160,7 @@ class SellerService @Inject constructor(
         // Initialise metrics row for the new seller
         initMetrics(saved.id)
 
-        logger.info("Registered new seller profile {} for user {}", saved.id, userId)
+        LOG.infof("Registered new seller profile %s for user %s", saved.id, userId)
         return saved
     }
 
@@ -191,7 +191,7 @@ class SellerService @Inject constructor(
         val saved = sellerProfileRepository.save(profile)
         initMetrics(saved.id)
 
-        logger.info("Auto-created seller profile {} for user {} (company={})", saved.id, userId, resolvedCompanyName)
+        LOG.infof("Auto-created seller profile %s for user %s (company=%s)", saved.id, userId, resolvedCompanyName)
         return saved
     }
 
@@ -258,7 +258,7 @@ class SellerService @Inject constructor(
                                 bidCount = rs.getInt("bid_count"),
                                 closingAt = rs.getTimestamp("closing_at")?.toInstant(),
                                 createdAt = rs.getTimestamp("created_at")?.toInstant() ?: run {
-                                    logger.warn("Lot record missing created_at timestamp, using epoch as fallback")
+                                    LOG.warn("Lot record missing created_at timestamp, using epoch as fallback")
                                     Instant.EPOCH
                                 }
                             )
@@ -302,7 +302,7 @@ class SellerService @Inject constructor(
                             bidCount = rs.getInt("bid_count"),
                             closingAt = rs.getTimestamp("closing_at")?.toInstant(),
                             createdAt = rs.getTimestamp("created_at")?.toInstant() ?: run {
-                                    logger.warn("Lot record missing created_at timestamp, using epoch as fallback")
+                                    LOG.warn("Lot record missing created_at timestamp, using epoch as fallback")
                                     Instant.EPOCH
                                 }
                         )
@@ -503,7 +503,7 @@ class SellerService @Inject constructor(
             )
         }
 
-        logger.info("Seller {} accepted below-reserve for lot {}", sellerId, lotId)
+        LOG.infof("Seller %s accepted below-reserve for lot %s", sellerId, lotId)
     }
 
     /**
@@ -534,7 +534,7 @@ class SellerService @Inject constructor(
             )
         }
 
-        logger.info("Seller {} relisted lot {}", sellerId, lotId)
+        LOG.infof("Seller %s relisted lot %s", sellerId, lotId)
     }
 
     // -------------------------------------------------------------------------
@@ -564,7 +564,7 @@ class SellerService @Inject constructor(
                 }
             }
         } catch (ex: Exception) {
-            logger.warn("Failed to initialise metrics for seller {}: {}", sellerId, ex.message)
+            LOG.warnf("Failed to initialise metrics for seller %s: %s", sellerId, ex.message)
         }
     }
 }
