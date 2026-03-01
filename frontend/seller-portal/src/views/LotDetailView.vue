@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
+import Button from 'primevue/button'
+import Tag from 'primevue/tag'
 import { useLots } from '@/composables/useLots'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 
@@ -52,17 +54,33 @@ onMounted(async () => {
 
 const lot = computed(() => currentLot.value)
 
-const statusConfig = computed(() => {
-  if (!lot.value) return { class: 'badge-draft', label: 'Unknown' }
-  const map: Record<string, { class: string; label: string }> = {
-    draft: { class: 'badge-draft', label: 'Draft' },
-    pending_review: { class: 'badge-pending', label: 'Pending Review' },
-    active: { class: 'badge-active', label: 'Active' },
-    sold: { class: 'badge-sold', label: 'Sold' },
-    unsold: { class: 'badge-unsold', label: 'Unsold' },
-    rejected: { class: 'bg-red-100 text-red-800 badge', label: 'Rejected' },
+function getStatusSeverity(status: string): string | undefined {
+  const map: Record<string, string> = {
+    draft: 'secondary',
+    pending: 'warn',
+    pending_review: 'warn',
+    active: 'success',
+    sold: 'info',
+    completed: 'info',
+    unsold: 'danger',
+    rejected: 'danger',
+    paid: 'success',
+    processing: 'warn',
   }
-  return map[lot.value.status] ?? { class: 'badge-draft', label: lot.value.status }
+  return map[status] || undefined
+}
+
+const statusConfig = computed(() => {
+  if (!lot.value) return { severity: 'secondary', label: 'Unknown' }
+  const map: Record<string, { severity: string | undefined; label: string }> = {
+    draft: { severity: getStatusSeverity('draft'), label: 'Draft' },
+    pending_review: { severity: getStatusSeverity('pending_review'), label: 'Pending Review' },
+    active: { severity: getStatusSeverity('active'), label: 'Active' },
+    sold: { severity: getStatusSeverity('sold'), label: 'Sold' },
+    unsold: { severity: getStatusSeverity('unsold'), label: 'Unsold' },
+    rejected: { severity: getStatusSeverity('rejected'), label: 'Rejected' },
+  }
+  return map[lot.value.status] ?? { severity: getStatusSeverity(lot.value.status), label: lot.value.status }
 })
 
 function formatCurrency(value: number | null): string {
@@ -204,12 +222,13 @@ function selectImage(index: number) {
       <p class="text-red-600">
         {{ error }}
       </p>
-      <button
-        class="btn-secondary btn-sm mt-3"
+      <Button
+        label="Retry"
+        severity="secondary"
+        size="small"
+        class="mt-3"
         @click="fetchLot(lotId)"
-      >
-        Retry
-      </button>
+      />
     </div>
 
     <!-- Lot content -->
@@ -221,7 +240,7 @@ function selectImage(index: number) {
             <h1 class="text-2xl font-bold text-gray-900">
               {{ lot.title }}
             </h1>
-            <span :class="statusConfig.class">{{ statusConfig.label }}</span>
+            <Tag :value="statusConfig.label" :severity="statusConfig.severity" />
           </div>
           <p class="mt-1 text-sm text-gray-500">
             {{ lot.category }} &middot; {{ lot.location.city }}, {{ lot.location.country }}
@@ -231,24 +250,27 @@ function selectImage(index: number) {
           <router-link
             v-if="lot.status === 'draft'"
             :to="`/lots/${lot.id}/edit`"
-            class="btn-secondary"
+            custom
+            v-slot="{ navigate }"
           >
-            Edit Lot
+            <Button
+              label="Edit Lot"
+              severity="secondary"
+              @click="navigate"
+            />
           </router-link>
-          <button
+          <Button
             v-if="lot.status === 'draft'"
-            class="btn-success"
+            label="Submit for Review"
+            severity="success"
             @click="handleSubmitForReview"
-          >
-            Submit for Review
-          </button>
-          <button
+          />
+          <Button
             v-if="lot.status === 'draft'"
-            class="btn-danger"
+            label="Delete"
+            severity="danger"
             @click="handleDelete"
-          >
-            Delete
-          </button>
+          />
         </div>
       </div>
 

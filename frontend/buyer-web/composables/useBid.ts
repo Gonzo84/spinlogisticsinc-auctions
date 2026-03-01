@@ -48,8 +48,14 @@ export function useBid() {
       auctionStore.addBid(bid)
       return bid
     } catch (e: unknown) {
-      const err = e as { data?: { message?: string }; message?: string }
-      const message = err?.data?.message || err?.message || 'Failed to place bid'
+      const err = e as { statusCode?: number; status?: number; data?: { message?: string; title?: string }; message?: string }
+      const statusCode = err?.statusCode ?? err?.status
+      let message: string
+      if (statusCode === 403) {
+        message = 'You do not have permission to bid. Please ensure you are logged in with a buyer account.'
+      } else {
+        message = err?.data?.message || err?.data?.title || err?.message || 'Failed to place bid'
+      }
       error.value = message
       throw new Error(message)
     } finally {

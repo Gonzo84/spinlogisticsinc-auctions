@@ -1,15 +1,29 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
 import { usePayments } from '@/composables/usePayments'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Tag from 'primevue/tag'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
+
+const paymentStatusOptions = [
+  { label: 'All statuses', value: '' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Paid', value: 'paid' },
+  { label: 'Overdue', value: 'overdue' },
+  { label: 'Refunded', value: 'refunded' },
+  { label: 'Disputed', value: 'disputed' },
+]
 
 const {
   payments,
   summary,
   totalCount,
   loading,
-  error,
   filters,
   fetchPayments,
   fetchSummary,
@@ -149,38 +163,22 @@ const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div class="flex-1">
           <label class="label">Search</label>
-          <input
+          <InputText
             v-model="filters.search"
-            type="text"
-            class="input"
             placeholder="Search by buyer, seller, lot..."
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label class="label">Status</label>
-          <select
+          <Select
             v-model="filters.status"
-            class="select"
-          >
-            <option value="">
-              All statuses
-            </option>
-            <option value="pending">
-              Pending
-            </option>
-            <option value="paid">
-              Paid
-            </option>
-            <option value="overdue">
-              Overdue
-            </option>
-            <option value="refunded">
-              Refunded
-            </option>
-            <option value="disputed">
-              Disputed
-            </option>
-          </select>
+            :options="paymentStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All statuses"
+            class="w-full"
+          />
         </div>
         <div>
           <label class="label">From</label>
@@ -198,202 +196,147 @@ const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
             class="input"
           >
         </div>
-        <button
-          class="btn-secondary"
+        <Button
+          label="Clear"
+          severity="secondary"
           @click="clearFilters"
-        >
-          Clear
-        </button>
+        />
       </div>
-    </div>
-
-    <!-- Loading -->
-    <div
-      v-if="loading"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
     </div>
 
     <!-- Table -->
-    <div
-      v-else
-      class="table-container"
-    >
-      <table class="w-full">
-        <thead>
-          <tr>
-            <th class="table-header">
-              Lot
-            </th>
-            <th class="table-header">
-              Buyer
-            </th>
-            <th class="table-header">
-              Seller
-            </th>
-            <th class="table-header text-right">
-              Amount
-            </th>
-            <th class="table-header text-right">
-              Premium
-            </th>
-            <th class="table-header text-right">
-              Total
-            </th>
-            <th class="table-header">
-              Status
-            </th>
-            <th class="table-header">
-              Due Date
-            </th>
-            <th class="table-header text-right">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="payments.length === 0">
-            <td
-              colspan="9"
-              class="px-4 py-12 text-center text-sm text-gray-500"
-            >
-              No payments found.
-            </td>
-          </tr>
-          <tr
-            v-for="payment in payments"
-            :key="payment.id"
-            :class="['table-row', payment.status === 'overdue' && 'bg-red-50']"
-          >
-            <td class="table-cell">
-              <p class="font-medium text-gray-900">
-                {{ payment.lotTitle }}
-              </p>
-              <p class="text-xs text-gray-500">
-                {{ payment.auctionTitle }}
-              </p>
-            </td>
-            <td class="table-cell">
-              <router-link
-                :to="`/users/${payment.buyerId}`"
-                class="text-primary-600 hover:text-primary-700"
-              >
-                {{ payment.buyerName }}
-              </router-link>
-            </td>
-            <td class="table-cell">
-              <router-link
-                :to="`/users/${payment.sellerId}`"
-                class="text-primary-600 hover:text-primary-700"
-              >
-                {{ payment.sellerName }}
-              </router-link>
-            </td>
-            <td class="table-cell text-right">
-              {{ formatCurrency(payment.amount) }}
-            </td>
-            <td class="table-cell text-right text-gray-500">
-              {{ formatCurrency(payment.buyerPremium) }}
-            </td>
-            <td class="table-cell text-right font-medium">
-              {{ formatCurrency(payment.totalAmount) }}
-            </td>
-            <td class="table-cell">
-              <StatusBadge :status="payment.status" />
-            </td>
-            <td class="table-cell text-gray-500">
-              {{ formatDate(payment.dueDate) }}
-            </td>
-            <td class="table-cell text-right">
-              <div class="flex justify-end gap-1">
-                <button
-                  v-if="payment.status === 'pending' || payment.status === 'overdue'"
-                  class="btn-success btn-sm"
-                  title="Manual settle"
-                  @click="openSettleDialog(payment.id)"
-                >
-                  Settle
-                </button>
-                <button
-                  v-if="payment.status === 'overdue'"
-                  class="btn-warning btn-sm"
-                  title="Send reminder"
-                  @click="handleSendReminder(payment.id)"
-                >
-                  Remind
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Pagination -->
-      <div
-        v-if="totalPages() > 1"
-        class="flex items-center justify-between border-t border-gray-200 px-4 py-3"
+    <div class="card">
+      <DataTable
+        :value="payments"
+        :loading="loading"
+        paginator
+        :rows="filters.pageSize"
+        :totalRecords="totalCount"
+        :lazy="true"
+        :first="(filters.page - 1) * filters.pageSize"
+        @page="goToPage($event.page + 1)"
+        :rowClass="(rowData: any) => rowData.status === 'overdue' ? 'bg-red-50' : ''"
+        stripedRows
+        removableSort
       >
-        <p class="text-sm text-gray-500">
-          {{ totalCount }} payments total
-        </p>
-        <div class="flex gap-1">
-          <button
-            class="btn-secondary btn-sm"
-            :disabled="filters.page <= 1"
-            @click="goToPage(filters.page - 1)"
-          >
-            Previous
-          </button>
-          <button
-            class="btn-secondary btn-sm"
-            :disabled="filters.page >= totalPages()"
-            @click="goToPage(filters.page + 1)"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+        <template #empty>
+          <div class="text-center py-8 text-gray-500">No payments found.</div>
+        </template>
+        <Column field="lotTitle" header="Lot">
+          <template #body="{ data }">
+            <p class="font-medium text-gray-900">
+              {{ data.lotTitle }}
+            </p>
+            <p class="text-xs text-gray-500">
+              {{ data.auctionTitle }}
+            </p>
+          </template>
+        </Column>
+        <Column field="buyerName" header="Buyer">
+          <template #body="{ data }">
+            <router-link
+              :to="`/users/${data.buyerId}`"
+              class="text-primary-600 hover:text-primary-700"
+            >
+              {{ data.buyerName }}
+            </router-link>
+          </template>
+        </Column>
+        <Column field="sellerName" header="Seller">
+          <template #body="{ data }">
+            <router-link
+              :to="`/users/${data.sellerId}`"
+              class="text-primary-600 hover:text-primary-700"
+            >
+              {{ data.sellerName }}
+            </router-link>
+          </template>
+        </Column>
+        <Column field="amount" header="Amount" headerStyle="text-align: right" bodyStyle="text-align: right" sortable>
+          <template #body="{ data }">
+            {{ formatCurrency(data.amount) }}
+          </template>
+        </Column>
+        <Column field="buyerPremium" header="Premium" headerStyle="text-align: right" bodyStyle="text-align: right">
+          <template #body="{ data }">
+            <span class="text-gray-500">{{ formatCurrency(data.buyerPremium) }}</span>
+          </template>
+        </Column>
+        <Column field="totalAmount" header="Total" headerStyle="text-align: right" bodyStyle="text-align: right" sortable>
+          <template #body="{ data }">
+            <span class="font-medium">{{ formatCurrency(data.totalAmount) }}</span>
+          </template>
+        </Column>
+        <Column field="status" header="Status">
+          <template #body="{ data }">
+            <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+          </template>
+        </Column>
+        <Column field="dueDate" header="Due Date" sortable>
+          <template #body="{ data }">
+            <span class="text-gray-500">{{ formatDate(data.dueDate) }}</span>
+          </template>
+        </Column>
+        <Column header="Actions" headerStyle="text-align: right" bodyStyle="text-align: right" style="width: 150px">
+          <template #body="{ data }">
+            <div class="flex justify-end gap-1">
+              <Button
+                v-if="data.status === 'pending' || data.status === 'overdue'"
+                label="Settle"
+                severity="success"
+                size="small"
+                title="Manual settle"
+                @click="openSettleDialog(data.id)"
+              />
+              <Button
+                v-if="data.status === 'overdue'"
+                label="Remind"
+                severity="warn"
+                size="small"
+                title="Send reminder"
+                @click="handleSendReminder(data.id)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
     </div>
 
     <!-- Settle Dialog -->
-    <ConfirmDialog
-      :open="showSettleDialog"
-      title="Manual Settlement"
-      message="Mark this payment as settled. Enter the bank reference for the transfer."
-      confirm-label="Confirm Settlement"
-      variant="info"
-      :loading="loading"
-      @confirm="confirmSettle"
-      @cancel="showSettleDialog = false"
+    <Dialog
+      v-model:visible="showSettleDialog"
+      header="Manual Settlement"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '28rem' }"
     >
+      <p class="mb-4 text-sm text-gray-500">
+        Mark this payment as settled. Enter the bank reference for the transfer.
+      </p>
       <div>
         <label class="label">Bank Reference *</label>
-        <input
+        <InputText
           v-model="bankReference"
-          type="text"
-          class="input"
           placeholder="e.g., SEPA-2026-0223-001"
-        >
+          class="w-full"
+        />
       </div>
-    </ConfirmDialog>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            :disabled="loading"
+            @click="showSettleDialog = false"
+          />
+          <Button
+            label="Confirm Settlement"
+            :loading="loading"
+            :disabled="loading"
+            @click="confirmSettle"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>

@@ -402,6 +402,12 @@ class LotService {
                 val total = lotRepository.countByCountry(filter.country)
                 Pair(lots, total)
             }
+            !filter.search.isNullOrBlank() -> {
+                val lots = lotRepository.findBySearch(filter.search, filter.page, filter.pageSize)
+                    .map { it.toDomain() }
+                val total = lotRepository.countBySearch(filter.search)
+                Pair(lots, total)
+            }
             else -> {
                 val lots = lotRepository.findAll()
                     .page(io.quarkus.panache.common.Page.of(filter.page, filter.pageSize))

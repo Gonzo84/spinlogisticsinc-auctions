@@ -1,3 +1,5 @@
+import { themeConfig } from '@auction-platform/design-tokens'
+
 export default defineNuxtConfig({
   ssr: true,
 
@@ -7,7 +9,15 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@nuxtjs/i18n',
     '@nuxt/eslint',
+    '@primevue/nuxt-module',
   ],
+
+  primevue: {
+    options: { theme: themeConfig },
+    autoImport: true,
+  },
+
+  css: ['primeicons/primeicons.css'],
 
   i18n: {
     locales: [
@@ -52,6 +62,11 @@ export default defineNuxtConfig({
       meta: [
         { name: 'description', content: 'B2B online auction platform for industrial equipment across Europe' },
         { name: 'format-detection', content: 'telephone=no' },
+      ],
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' },
       ],
       htmlAttrs: {
         lang: 'en',

@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import Button from 'primevue/button'
+import Tag from 'primevue/tag'
+import Select from 'primevue/select'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import { useSettlements } from '@/composables/useSettlements'
 import type { SettlementStatus, SettlementFilter } from '@/types'
 
@@ -17,6 +22,14 @@ const {
 const filterStatus = ref<SettlementStatus | ''>('')
 const filterDateFrom = ref('')
 const filterDateTo = ref('')
+
+const statusOptions = [
+  { label: 'All statuses', value: '' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Processing', value: 'processing' },
+  { label: 'Paid', value: 'paid' },
+  { label: 'Disputed', value: 'disputed' },
+]
 
 async function loadData(page = 1) {
   const filters: SettlementFilter = { page, pageSize: 20 }
@@ -51,14 +64,20 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-function getStatusBadge(status: SettlementStatus): string {
-  const map: Record<SettlementStatus, string> = {
-    pending: 'badge-pending',
-    processing: 'badge-processing',
-    paid: 'badge-paid',
-    disputed: 'bg-red-100 text-red-800 badge',
+function getStatusSeverity(status: string): string | undefined {
+  const map: Record<string, string> = {
+    draft: 'secondary',
+    pending: 'warn',
+    pending_review: 'warn',
+    active: 'success',
+    sold: 'info',
+    completed: 'info',
+    unsold: 'danger',
+    rejected: 'danger',
+    paid: 'success',
+    processing: 'warn',
   }
-  return map[status] ?? 'badge-draft'
+  return map[status] || undefined
 }
 
 function getStatusLabel(status: SettlementStatus): string {
@@ -127,26 +146,14 @@ async function handleDownloadInvoice(settlementId: string) {
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div class="flex-1">
           <label class="label">Status</label>
-          <select
+          <Select
             v-model="filterStatus"
-            class="input"
-          >
-            <option value="">
-              All statuses
-            </option>
-            <option value="pending">
-              Pending
-            </option>
-            <option value="processing">
-              Processing
-            </option>
-            <option value="paid">
-              Paid
-            </option>
-            <option value="disputed">
-              Disputed
-            </option>
-          </select>
+            :options="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All statuses"
+            class="w-full"
+          />
         </div>
         <div class="flex-1">
           <label class="label">Date From</label>
@@ -164,215 +171,135 @@ async function handleDownloadInvoice(settlementId: string) {
             class="input"
           >
         </div>
-        <button
-          class="btn-secondary"
+        <Button
+          label="Clear Filters"
+          severity="secondary"
           @click="filterStatus = ''; filterDateFrom = ''; filterDateTo = ''"
-        >
-          Clear Filters
-        </button>
+        />
       </div>
-    </div>
-
-    <!-- Loading -->
-    <div
-      v-if="loading"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
     </div>
 
     <!-- Error -->
     <div
-      v-else-if="error"
+      v-if="error"
       class="card border-red-200 bg-red-50 text-center"
     >
       <p class="text-sm text-red-600">
         {{ error }}
       </p>
-      <button
-        class="btn-secondary btn-sm mt-3"
+      <Button
+        label="Retry"
+        severity="secondary"
+        size="small"
+        class="mt-3"
         @click="loadData()"
-      >
-        Retry
-      </button>
-    </div>
-
-    <!-- Empty state -->
-    <div
-      v-else-if="settlements.length === 0"
-      class="card py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-12 w-12 text-gray-300"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="1.5"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-      <h3 class="mt-4 text-lg font-medium text-gray-900">
-        No settlements found
-      </h3>
-      <p class="mt-1 text-sm text-gray-500">
-        Settlements will appear here once your lots are sold.
-      </p>
+      />
     </div>
 
     <!-- Settlements table -->
-    <div
+    <DataTable
       v-else
-      class="table-wrapper"
+      :value="settlements"
+      :loading="loading"
+      stripedRows
+      paginator
+      :rows="20"
+      :totalRecords="pagination.total"
+      :lazy="true"
+      @page="goToPage($event.page + 1)"
     >
-      <table class="w-full">
-        <thead>
-          <tr class="bg-gray-50">
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Lot
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Buyer
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Status
-            </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Hammer Price
-            </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Commission
-            </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Net Amount
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Paid Date
-            </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Invoice
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr
-            v-for="settlement in settlements"
-            :key="settlement.id"
-            class="transition-colors hover:bg-gray-50"
-          >
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-3">
-                <div class="h-8 w-8 shrink-0 overflow-hidden rounded bg-gray-100">
-                  <img
-                    v-if="settlement.lotThumbnail"
-                    :src="settlement.lotThumbnail"
-                    :alt="settlement.lotTitle"
-                    class="h-full w-full object-cover"
-                  >
-                </div>
-                <router-link
-                  :to="`/lots/${settlement.lotId}`"
-                  class="text-sm font-medium text-gray-900 hover:text-primary-600"
-                >
-                  {{ settlement.lotTitle }}
-                </router-link>
-              </div>
-            </td>
-            <td class="px-4 py-3 text-sm text-gray-600">
-              {{ settlement.buyerAlias }}
-            </td>
-            <td class="px-4 py-3">
-              <span :class="getStatusBadge(settlement.status)">
-                {{ getStatusLabel(settlement.status) }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-right text-sm text-gray-900">
-              {{ formatCurrency(settlement.hammerPrice) }}
-            </td>
-            <td class="px-4 py-3 text-right text-sm text-gray-500">
-              {{ formatCurrency(settlement.commissionAmount) }}
-              <span class="text-xs">({{ settlement.commissionRate }}%)</span>
-            </td>
-            <td class="px-4 py-3 text-right text-sm font-medium text-seller-700">
-              {{ formatCurrency(settlement.netAmount) }}
-            </td>
-            <td class="px-4 py-3 text-sm text-gray-500">
-              {{ formatDate(settlement.paidAt) }}
-            </td>
-            <td class="px-4 py-3 text-right">
-              <button
-                v-if="settlement.invoiceUrl"
-                class="btn-ghost btn-sm text-primary-600"
-                title="Download invoice"
-                @click="handleDownloadInvoice(settlement.id)"
+      <Column header="Lot">
+        <template #body="{ data }">
+          <div class="flex items-center gap-3">
+            <div class="h-8 w-8 shrink-0 overflow-hidden rounded bg-gray-100">
+              <img
+                v-if="data.lotThumbnail"
+                :src="data.lotThumbnail"
+                :alt="data.lotTitle"
+                class="h-full w-full object-cover"
               >
-                <svg
-                  class="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Pagination -->
-      <div
-        v-if="pagination.totalPages > 1"
-        class="flex items-center justify-between border-t border-gray-200 px-4 py-3"
-      >
-        <p class="text-sm text-gray-500">
-          Showing {{ (pagination.page - 1) * pagination.pageSize + 1 }} to
-          {{ Math.min(pagination.page * pagination.pageSize, pagination.total) }}
-          of {{ pagination.total }} settlements
-        </p>
-        <div class="flex gap-1">
-          <button
-            class="btn-ghost btn-sm"
-            :disabled="pagination.page <= 1"
-            @click="goToPage(pagination.page - 1)"
+            </div>
+            <router-link
+              :to="`/lots/${data.lotId}`"
+              class="text-sm font-medium text-gray-900 hover:text-primary-600"
+            >
+              {{ data.lotTitle }}
+            </router-link>
+          </div>
+        </template>
+      </Column>
+      <Column field="buyerAlias" header="Buyer" />
+      <Column header="Status">
+        <template #body="{ data }">
+          <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+        </template>
+      </Column>
+      <Column header="Hammer Price" headerStyle="text-align: right">
+        <template #body="{ data }">
+          <div class="text-right text-sm text-gray-900">
+            {{ formatCurrency(data.hammerPrice) }}
+          </div>
+        </template>
+      </Column>
+      <Column header="Commission" headerStyle="text-align: right">
+        <template #body="{ data }">
+          <div class="text-right text-sm text-gray-500">
+            {{ formatCurrency(data.commissionAmount) }}
+            <span class="text-xs">({{ data.commissionRate }}%)</span>
+          </div>
+        </template>
+      </Column>
+      <Column header="Net Amount" headerStyle="text-align: right">
+        <template #body="{ data }">
+          <div class="text-right text-sm font-medium text-seller-700">
+            {{ formatCurrency(data.netAmount) }}
+          </div>
+        </template>
+      </Column>
+      <Column header="Paid Date">
+        <template #body="{ data }">
+          <span class="text-sm text-gray-500">{{ formatDate(data.paidAt) }}</span>
+        </template>
+      </Column>
+      <Column header="Invoice" headerStyle="text-align: right">
+        <template #body="{ data }">
+          <div class="text-right">
+            <Button
+              v-if="data.invoiceUrl"
+              text
+              icon="pi pi-download"
+              size="small"
+              title="Download invoice"
+              aria-label="Download invoice"
+              class="text-primary-600"
+              @click="handleDownloadInvoice(data.id)"
+            />
+          </div>
+        </template>
+      </Column>
+      <template #empty>
+        <div class="py-12 text-center">
+          <svg
+            class="mx-auto h-12 w-12 text-gray-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="1.5"
           >
-            Previous
-          </button>
-          <button
-            class="btn-ghost btn-sm"
-            :disabled="pagination.page >= pagination.totalPages"
-            @click="goToPage(pagination.page + 1)"
-          >
-            Next
-          </button>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 class="mt-4 text-lg font-medium text-gray-900">
+            No settlements found
+          </h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Settlements will appear here once your lots are sold.
+          </p>
         </div>
-      </div>
-    </div>
+      </template>
+    </DataTable>
   </div>
 </template>

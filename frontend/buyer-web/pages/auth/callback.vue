@@ -73,7 +73,7 @@ onMounted(async () => {
       }
 
       // Timeout after 10 seconds
-      const _timeout = setTimeout(() => {
+      setTimeout(() => {
         resolve()
       }, 10000)
 

@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, nextTick } from 'vue'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Checkbox from 'primevue/checkbox'
+import Select from 'primevue/select'
 import { useAuth } from '@/composables/useAuth'
 import { useApi } from '@/composables/useApi'
 
 const { userName, userEmail, companyName } = useAuth()
-const { get, put, loading, error } = useApi()
+const { get, loading } = useApi()
 
 const activeTab = ref<'company' | 'bank' | 'notifications'>('company')
 
@@ -49,6 +53,19 @@ const countries = [
   'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
   'Malta', 'Netherlands', 'Poland', 'Portugal', 'Romania', 'Slovakia',
   'Slovenia', 'Spain', 'Sweden',
+]
+
+const countryOptions = [
+  { label: 'Select country', value: '' },
+  ...countries.map((c) => ({ label: c, value: c })),
+]
+
+const currencyOptions = [
+  { label: 'EUR - Euro', value: 'EUR' },
+  { label: 'GBP - British Pound', value: 'GBP' },
+  { label: 'SEK - Swedish Krona', value: 'SEK' },
+  { label: 'DKK - Danish Krone', value: 'DKK' },
+  { label: 'PLN - Polish Zloty', value: 'PLN' },
 ]
 
 onMounted(async () => {
@@ -202,149 +219,132 @@ async function saveNotifications() {
             class="label"
             for="company-name"
           >Company Name</label>
-          <input
+          <InputText
             id="company-name"
             v-model="companyForm.companyName"
-            type="text"
-            class="input"
             placeholder="Acme Industries B.V."
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="vat-number"
           >VAT Number</label>
-          <input
+          <InputText
             id="vat-number"
             v-model="companyForm.vatNumber"
-            type="text"
-            class="input"
             placeholder="NL123456789B01"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="reg-number"
           >Registration Number</label>
-          <input
+          <InputText
             id="reg-number"
             v-model="companyForm.registrationNumber"
-            type="text"
-            class="input"
             placeholder="12345678"
-          >
+            class="w-full"
+          />
         </div>
         <div class="sm:col-span-2">
           <label
             class="label"
             for="company-address"
           >Address</label>
-          <input
+          <InputText
             id="company-address"
             v-model="companyForm.address"
-            type="text"
-            class="input"
             placeholder="123 Business Street"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="company-city"
           >City</label>
-          <input
+          <InputText
             id="company-city"
             v-model="companyForm.city"
-            type="text"
-            class="input"
             placeholder="Amsterdam"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="company-postal"
           >Postal Code</label>
-          <input
+          <InputText
             id="company-postal"
             v-model="companyForm.postalCode"
-            type="text"
-            class="input"
             placeholder="1012 AB"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="company-country"
           >Country</label>
-          <select
+          <Select
             id="company-country"
             v-model="companyForm.country"
-            class="input"
-          >
-            <option value="">
-              Select country
-            </option>
-            <option
-              v-for="c in countries"
-              :key="c"
-              :value="c"
-            >
-              {{ c }}
-            </option>
-          </select>
+            :options="countryOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select country"
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="company-phone"
           >Phone</label>
-          <input
+          <InputText
             id="company-phone"
             v-model="companyForm.phone"
-            type="tel"
-            class="input"
             placeholder="+31 20 123 4567"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="company-website"
           >Website</label>
-          <input
+          <InputText
             id="company-website"
             v-model="companyForm.website"
-            type="url"
-            class="input"
             placeholder="https://www.example.com"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="contact-email"
           >Contact Email</label>
-          <input
+          <InputText
             id="contact-email"
             v-model="companyForm.contactEmail"
-            type="email"
-            class="input"
             placeholder="sales@example.com"
-          >
+            class="w-full"
+          />
         </div>
       </div>
       <div class="mt-6 flex justify-end">
-        <button
+        <Button
           type="submit"
-          class="btn-primary"
+          :label="loading ? 'Saving...' : 'Save Company Details'"
+          :icon="loading ? 'pi pi-spin pi-spinner' : undefined"
           :disabled="loading"
-        >
-          {{ loading ? 'Saving...' : 'Save Company Details' }}
-        </button>
+        />
       </div>
     </form>
 
@@ -366,79 +366,62 @@ async function saveNotifications() {
             class="label"
             for="account-holder"
           >Account Holder</label>
-          <input
+          <InputText
             id="account-holder"
             v-model="bankForm.accountHolder"
-            type="text"
-            class="input"
             placeholder="Acme Industries B.V."
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="iban"
           >IBAN</label>
-          <input
+          <InputText
             id="iban"
             v-model="bankForm.iban"
-            type="text"
-            class="input"
             placeholder="NL91 ABNA 0417 1643 00"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="bic"
           >BIC/SWIFT</label>
-          <input
+          <InputText
             id="bic"
             v-model="bankForm.bic"
-            type="text"
-            class="input"
             placeholder="ABNANL2A"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="bank-name"
           >Bank Name</label>
-          <input
+          <InputText
             id="bank-name"
             v-model="bankForm.bankName"
-            type="text"
-            class="input"
             placeholder="ABN AMRO"
-          >
+            class="w-full"
+          />
         </div>
         <div>
           <label
             class="label"
             for="currency"
           >Preferred Currency</label>
-          <select
+          <Select
             id="currency"
             v-model="bankForm.currency"
-            class="input"
-          >
-            <option value="EUR">
-              EUR - Euro
-            </option>
-            <option value="GBP">
-              GBP - British Pound
-            </option>
-            <option value="SEK">
-              SEK - Swedish Krona
-            </option>
-            <option value="DKK">
-              DKK - Danish Krone
-            </option>
-            <option value="PLN">
-              PLN - Polish Zloty
-            </option>
-          </select>
+            :options="currencyOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+          />
         </div>
       </div>
       <div class="mt-4 rounded-lg bg-amber-50 p-3">
@@ -447,13 +430,12 @@ async function saveNotifications() {
         </p>
       </div>
       <div class="mt-6 flex justify-end">
-        <button
+        <Button
           type="submit"
-          class="btn-primary"
+          :label="loading ? 'Saving...' : 'Save Bank Settings'"
+          :icon="loading ? 'pi pi-spin pi-spinner' : undefined"
           :disabled="loading"
-        >
-          {{ loading ? 'Saving...' : 'Save Bank Settings' }}
-        </button>
+        />
       </div>
     </form>
 
@@ -479,66 +461,60 @@ async function saveNotifications() {
                 <p class="text-sm font-medium text-gray-900">New bid received</p>
                 <p class="text-xs text-gray-500">Get notified when someone bids on your lots</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.emailOnNewBid"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
             <label class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
               <div>
                 <p class="text-sm font-medium text-gray-900">Lot approved</p>
                 <p class="text-xs text-gray-500">When your lot is approved and goes live</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.emailOnLotApproved"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
             <label class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
               <div>
                 <p class="text-sm font-medium text-gray-900">Lot sold</p>
                 <p class="text-xs text-gray-500">When your lot is sold at auction</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.emailOnLotSold"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
             <label class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
               <div>
                 <p class="text-sm font-medium text-gray-900">Settlement paid</p>
                 <p class="text-xs text-gray-500">When a payment is transferred to your account</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.emailOnSettlementPaid"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
             <label class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
               <div>
                 <p class="text-sm font-medium text-gray-900">Daily digest</p>
                 <p class="text-xs text-gray-500">A summary of daily activity on your lots</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.emailDailyDigest"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
             <label class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
               <div>
                 <p class="text-sm font-medium text-gray-900">Weekly report</p>
                 <p class="text-xs text-gray-500">A weekly summary of performance and analytics</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.emailWeeklyReport"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
           </div>
         </div>
@@ -554,35 +530,32 @@ async function saveNotifications() {
                 <p class="text-sm font-medium text-gray-900">New bid received</p>
                 <p class="text-xs text-gray-500">Real-time push notification for new bids</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.pushOnNewBid"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
             <label class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
               <div>
                 <p class="text-sm font-medium text-gray-900">Lot sold</p>
                 <p class="text-xs text-gray-500">Instant notification when a lot sells</p>
               </div>
-              <input
+              <Checkbox
                 v-model="notificationPrefs.pushOnLotSold"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              >
+                :binary="true"
+              />
             </label>
           </div>
         </div>
       </div>
 
       <div class="mt-6 flex justify-end">
-        <button
+        <Button
           type="submit"
-          class="btn-primary"
+          :label="loading ? 'Saving...' : 'Save Preferences'"
+          :icon="loading ? 'pi pi-spin pi-spinner' : undefined"
           :disabled="loading"
-        >
-          {{ loading ? 'Saving...' : 'Save Preferences' }}
-        </button>
+        />
       </div>
     </form>
   </div>

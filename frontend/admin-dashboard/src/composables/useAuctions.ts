@@ -40,7 +40,7 @@ function normalizeAuction(a: RawAuctionResponse): Auction {
 }
 
 export function useAuctions() {
-  const { get, post, put, patch } = useApi()
+  const { get, post, patch } = useApi()
 
   const auctions = ref<Auction[]>([])
   const currentAuction = ref<Auction | null>(null)

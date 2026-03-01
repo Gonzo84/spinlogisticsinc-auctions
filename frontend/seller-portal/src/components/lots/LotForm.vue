@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
+import Checkbox from 'primevue/checkbox'
+import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
 import ImageUploader from './ImageUploader.vue'
 import { useLots } from '@/composables/useLots'
 import type { LotFormData, Category } from '@/types'
@@ -74,6 +80,16 @@ const countries = [
   { code: 'SI', name: 'Slovenia' },
   { code: 'ES', name: 'Spain' },
   { code: 'SE', name: 'Sweden' },
+]
+
+const categoryOptions = computed(() => [
+  { label: 'Select a category', value: '' },
+  ...categories.value.map((cat) => ({ label: cat.name, value: cat.id })),
+])
+
+const countryOptions = [
+  { label: 'Select country', value: '' },
+  ...countries.map((c) => ({ label: c.name, value: c.code })),
 ]
 
 // Specification management
@@ -156,14 +172,13 @@ function handleSubmit() {
               class="label"
               for="lot-title"
             >Lot Title *</label>
-            <input
+            <InputText
               id="lot-title"
               v-model="form.title"
-              type="text"
-              class="input"
-              :class="errors.title && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
+              :invalid="!!errors.title"
               placeholder="e.g., Komatsu PC200-8 Hydraulic Excavator"
-            >
+              class="w-full"
+            />
             <p
               v-if="errors.title"
               class="mt-1 text-sm text-red-600"
@@ -177,14 +192,13 @@ function handleSubmit() {
               class="label"
               for="lot-brand"
             >Brand / Manufacturer *</label>
-            <input
+            <InputText
               id="lot-brand"
               v-model="form.brand"
-              type="text"
-              class="input"
-              :class="errors.brand && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
+              :invalid="!!errors.brand"
               placeholder="e.g., Caterpillar, Komatsu, Liebherr"
-            >
+              class="w-full"
+            />
             <p
               v-if="errors.brand"
               class="mt-1 text-sm text-red-600"
@@ -199,13 +213,13 @@ function handleSubmit() {
             class="label"
             for="lot-description"
           >Description *</label>
-          <textarea
+          <Textarea
             id="lot-description"
             v-model="form.description"
             rows="5"
-            class="input resize-y"
-            :class="errors.description && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
+            :invalid="!!errors.description"
             placeholder="Detailed description of the item including condition, history, and any defects..."
+            class="w-full"
           />
           <div class="mt-1 flex justify-between">
             <p
@@ -225,23 +239,16 @@ function handleSubmit() {
             class="label"
             for="lot-category"
           >Category *</label>
-          <select
+          <Select
             id="lot-category"
             v-model="form.categoryId"
-            class="input"
-            :class="errors.category && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
-          >
-            <option value="">
-              Select a category
-            </option>
-            <option
-              v-for="cat in categories"
-              :key="cat.id"
-              :value="cat.id"
-            >
-              {{ cat.name }}
-            </option>
-          </select>
+            :options="categoryOptions"
+            optionLabel="label"
+            optionValue="value"
+            :invalid="!!errors.category"
+            placeholder="Select a category"
+            class="w-full"
+          />
           <p
             v-if="errors.category"
             class="mt-1 text-sm text-red-600"
@@ -291,27 +298,25 @@ function handleSubmit() {
       </div>
 
       <div class="flex gap-2">
-        <input
+        <InputText
           v-model="newSpecKey"
-          type="text"
-          class="input flex-1"
           placeholder="e.g., Weight"
+          class="flex-1"
           @keyup.enter="addSpecification"
-        >
-        <input
+        />
+        <InputText
           v-model="newSpecValue"
-          type="text"
-          class="input flex-1"
           placeholder="e.g., 2,500 kg"
+          class="flex-1"
           @keyup.enter="addSpecification"
-        >
-        <button
+        />
+        <Button
           type="button"
-          class="btn-secondary btn-sm"
+          label="Add"
+          severity="secondary"
+          size="small"
           @click="addSpecification"
-        >
-          Add
-        </button>
+        />
       </div>
     </div>
 
@@ -326,19 +331,16 @@ function handleSubmit() {
             class="label"
             for="lot-starting-bid"
           >Starting Bid (EUR) *</label>
-          <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">EUR</span>
-            <input
-              id="lot-starting-bid"
-              v-model.number="form.startingBid"
-              type="number"
-              min="1"
-              step="0.01"
-              class="input pl-12"
-              :class="errors.startingBid && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
-              placeholder="0.00"
-            >
-          </div>
+          <InputNumber
+            id="lot-starting-bid"
+            v-model="form.startingBid"
+            mode="currency"
+            currency="EUR"
+            locale="en-US"
+            :min="1"
+            :invalid="!!errors.startingBid"
+            class="w-full"
+          />
           <p
             v-if="errors.startingBid"
             class="mt-1 text-sm text-red-600"
@@ -354,29 +356,25 @@ function handleSubmit() {
               for="lot-reserve-price"
             >Reserve Price (EUR)</label>
             <label class="flex items-center gap-2">
-              <input
+              <Checkbox
                 v-model="hasReserve"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                :binary="true"
                 @change="toggleReserve"
-              >
+              />
               <span class="text-xs text-gray-500">Set reserve</span>
             </label>
           </div>
-          <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">EUR</span>
-            <input
-              id="lot-reserve-price"
-              v-model.number="form.reservePrice"
-              type="number"
-              min="0"
-              step="0.01"
-              class="input pl-12"
-              :class="errors.reservePrice && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
-              :disabled="!hasReserve"
-              placeholder="0.00"
-            >
-          </div>
+          <InputNumber
+            id="lot-reserve-price"
+            v-model="form.reservePrice"
+            mode="currency"
+            currency="EUR"
+            locale="en-US"
+            :min="0"
+            :invalid="!!errors.reservePrice"
+            :disabled="!hasReserve"
+            class="w-full"
+          />
           <p
             v-if="errors.reservePrice"
             class="mt-1 text-sm text-red-600"
@@ -404,13 +402,12 @@ function handleSubmit() {
             class="label"
             for="lot-address"
           >Street Address</label>
-          <input
+          <InputText
             id="lot-address"
             v-model="form.location.address"
-            type="text"
-            class="input"
             placeholder="123 Industrial Road"
-          >
+            class="w-full"
+          />
         </div>
 
         <div>
@@ -418,14 +415,13 @@ function handleSubmit() {
             class="label"
             for="lot-city"
           >City *</label>
-          <input
+          <InputText
             id="lot-city"
             v-model="form.location.city"
-            type="text"
-            class="input"
-            :class="errors.city && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
+            :invalid="!!errors.city"
             placeholder="Amsterdam"
-          >
+            class="w-full"
+          />
           <p
             v-if="errors.city"
             class="mt-1 text-sm text-red-600"
@@ -439,23 +435,16 @@ function handleSubmit() {
             class="label"
             for="lot-country"
           >Country *</label>
-          <select
+          <Select
             id="lot-country"
             v-model="form.location.country"
-            class="input"
-            :class="errors.country && 'border-red-300 focus:border-red-500 focus:ring-red-500/20'"
-          >
-            <option value="">
-              Select country
-            </option>
-            <option
-              v-for="c in countries"
-              :key="c.code"
-              :value="c.code"
-            >
-              {{ c.name }}
-            </option>
-          </select>
+            :options="countryOptions"
+            optionLabel="label"
+            optionValue="value"
+            :invalid="!!errors.country"
+            placeholder="Select country"
+            class="w-full"
+          />
           <p
             v-if="errors.country"
             class="mt-1 text-sm text-red-600"
@@ -482,41 +471,19 @@ function handleSubmit() {
 
     <!-- Actions -->
     <div class="flex items-center justify-end gap-3 border-t border-gray-200 pt-6">
-      <button
+      <Button
         type="button"
-        class="btn-secondary"
+        label="Cancel"
+        severity="secondary"
         @click="emit('cancel')"
-      >
-        Cancel
-      </button>
-      <button
+      />
+      <Button
         type="submit"
-        class="btn-primary"
+        :label="isSubmitting ? 'Saving...' : submitLabel"
+        :icon="isSubmitting ? 'pi pi-spin pi-spinner' : undefined"
         :disabled="isSubmitting"
         @click.prevent="handleSubmit"
-      >
-        <svg
-          v-if="isSubmitting"
-          class="h-4 w-4 animate-spin"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          />
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-        {{ isSubmitting ? 'Saving...' : submitLabel }}
-      </button>
+      />
     </div>
   </form>
 </template>

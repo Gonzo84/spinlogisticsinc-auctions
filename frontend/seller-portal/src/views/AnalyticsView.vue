@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import { useAnalytics } from '@/composables/useAnalytics'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 import SellThroughChart from '@/components/charts/SellThroughChart.vue'
@@ -90,12 +93,13 @@ const revenueChartData = computed(() =>
       <p class="text-sm text-red-600">
         {{ error }}
       </p>
-      <button
-        class="btn-secondary btn-sm mt-3"
+      <Button
+        label="Retry"
+        severity="secondary"
+        size="small"
+        class="mt-3"
         @click="fetchAll()"
-      >
-        Retry
-      </button>
+      />
     </div>
 
     <template v-else>
@@ -202,59 +206,43 @@ const revenueChartData = computed(() =>
           <h2 class="mb-4 text-lg font-semibold text-gray-900">
             Category Breakdown
           </h2>
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead>
-                <tr class="border-b border-gray-200">
-                  <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
-                    Category
-                  </th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                    Listed
-                  </th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                    Sold
-                  </th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                    STR
-                  </th>
-                  <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                    Revenue
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100">
-                <tr
-                  v-for="cat in categoryPerformance"
-                  :key="cat.category"
-                  class="hover:bg-gray-50"
-                >
-                  <td class="py-2.5 text-sm font-medium text-gray-900">
-                    {{ cat.category }}
-                  </td>
-                  <td class="py-2.5 text-right text-sm text-gray-600">
-                    {{ cat.lotsListed }}
-                  </td>
-                  <td class="py-2.5 text-right text-sm text-gray-600">
-                    {{ cat.lotsSold }}
-                  </td>
-                  <td class="py-2.5 text-right text-sm">
-                    <span
-                      :class="[
-                        'font-medium',
-                        cat.sellThroughRate >= 70 ? 'text-green-600' : cat.sellThroughRate >= 40 ? 'text-amber-600' : 'text-red-600',
-                      ]"
-                    >
-                      {{ formatPercent(cat.sellThroughRate) }}
-                    </span>
-                  </td>
-                  <td class="py-2.5 text-right text-sm font-medium text-gray-900">
-                    {{ formatCurrency(cat.revenue) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <DataTable :value="categoryPerformance" stripedRows>
+            <Column field="category" header="Category" />
+            <Column header="Listed" headerStyle="text-align: right">
+              <template #body="{ data }">
+                <div class="text-right text-sm text-gray-600">{{ data.lotsListed }}</div>
+              </template>
+            </Column>
+            <Column header="Sold" headerStyle="text-align: right">
+              <template #body="{ data }">
+                <div class="text-right text-sm text-gray-600">{{ data.lotsSold }}</div>
+              </template>
+            </Column>
+            <Column header="STR" headerStyle="text-align: right">
+              <template #body="{ data }">
+                <div class="text-right text-sm">
+                  <span
+                    :class="[
+                      'font-medium',
+                      data.sellThroughRate >= 70 ? 'text-green-600' : data.sellThroughRate >= 40 ? 'text-amber-600' : 'text-red-600',
+                    ]"
+                  >
+                    {{ formatPercent(data.sellThroughRate) }}
+                  </span>
+                </div>
+              </template>
+            </Column>
+            <Column header="Revenue" headerStyle="text-align: right">
+              <template #body="{ data }">
+                <div class="text-right text-sm font-medium text-gray-900">
+                  {{ formatCurrency(data.revenue) }}
+                </div>
+              </template>
+            </Column>
+            <template #empty>
+              <div class="text-center py-8 text-gray-500">No category data available</div>
+            </template>
+          </DataTable>
         </div>
       </div>
 
@@ -263,62 +251,48 @@ const revenueChartData = computed(() =>
         <h2 class="mb-4 text-lg font-semibold text-gray-900">
           Price vs. Estimate by Category
         </h2>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-gray-200">
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
-                  Category
-                </th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                  Avg. Estimate
-                </th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                  Avg. Hammer Price
-                </th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                  Ratio
-                </th>
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
-                  Performance
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr
-                v-for="item in priceVsEstimate"
-                :key="item.category"
-                class="hover:bg-gray-50"
-              >
-                <td class="py-2.5 text-sm font-medium text-gray-900">
-                  {{ item.category }}
-                </td>
-                <td class="py-2.5 text-right text-sm text-gray-600">
-                  {{ formatCurrency(item.averageEstimate) }}
-                </td>
-                <td class="py-2.5 text-right text-sm text-gray-900">
-                  {{ formatCurrency(item.averageHammerPrice) }}
-                </td>
-                <td class="py-2.5 text-right text-sm font-medium">
-                  <span :class="item.ratio >= 1 ? 'text-green-600' : 'text-red-600'">
-                    {{ (item.ratio * 100).toFixed(0) }}%
-                  </span>
-                </td>
-                <td class="py-2.5">
-                  <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      :class="[
-                        'h-full rounded-full',
-                        item.ratio >= 1 ? 'bg-green-500' : 'bg-red-400',
-                      ]"
-                      :style="{ width: Math.min(item.ratio * 100, 150) + '%' }"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DataTable :value="priceVsEstimate" stripedRows>
+          <Column field="category" header="Category" />
+          <Column header="Avg. Estimate" headerStyle="text-align: right">
+            <template #body="{ data }">
+              <div class="text-right text-sm text-gray-600">
+                {{ formatCurrency(data.averageEstimate) }}
+              </div>
+            </template>
+          </Column>
+          <Column header="Avg. Hammer Price" headerStyle="text-align: right">
+            <template #body="{ data }">
+              <div class="text-right text-sm text-gray-900">
+                {{ formatCurrency(data.averageHammerPrice) }}
+              </div>
+            </template>
+          </Column>
+          <Column header="Ratio" headerStyle="text-align: right">
+            <template #body="{ data }">
+              <div class="text-right text-sm font-medium">
+                <span :class="data.ratio >= 1 ? 'text-green-600' : 'text-red-600'">
+                  {{ (data.ratio * 100).toFixed(0) }}%
+                </span>
+              </div>
+            </template>
+          </Column>
+          <Column header="Performance">
+            <template #body="{ data }">
+              <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-100">
+                <div
+                  :class="[
+                    'h-full rounded-full',
+                    data.ratio >= 1 ? 'bg-green-500' : 'bg-red-400',
+                  ]"
+                  :style="{ width: Math.min(data.ratio * 100, 150) + '%' }"
+                />
+              </div>
+            </template>
+          </Column>
+          <template #empty>
+            <div class="text-center py-8 text-gray-500">No price data available</div>
+          </template>
+        </DataTable>
       </div>
     </template>
   </div>

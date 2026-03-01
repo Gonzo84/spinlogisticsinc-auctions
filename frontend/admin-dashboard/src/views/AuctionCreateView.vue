@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuctions, type AuctionCreatePayload } from '@/composables/useAuctions'
 import { useApi } from '@/composables/useApi'
 import type { ApprovedLot } from '@/types/lot'
 import type { ApiResponse, PagedResponse } from '@/types/api'
+import Button from 'primevue/button'
+import Select from 'primevue/select'
+import DatePicker from 'primevue/datepicker'
 
 interface RawLotSummary {
   id?: string
@@ -22,7 +25,7 @@ const { get } = useApi()
 
 const approvedLots = ref<ApprovedLot[]>([])
 const lotsLoading = ref(false)
-const selectedLotId = ref('')
+const selectedLotId = ref<string | null>(null)
 const selectedLot = ref<ApprovedLot | null>(null)
 
 const PLATFORM_BRANDS = [
@@ -32,11 +35,32 @@ const PLATFORM_BRANDS = [
   { code: 'custom', label: 'Custom' },
 ]
 
+const CURRENCY_OPTIONS = [
+  { label: 'EUR', value: 'EUR' },
+  { label: 'USD', value: 'USD' },
+  { label: 'GBP', value: 'GBP' },
+]
+
 const form = reactive({
-  startTime: '',
-  endTime: '',
+  startTime: null as Date | null,
+  endTime: null as Date | null,
   currency: 'EUR',
   brand: 'troostwijk',
+})
+
+const lotOptions = computed(() =>
+  approvedLots.value.map(lot => ({
+    label: `${lot.title} (${lot.brand} - ${lot.locationCity}, ${lot.locationCountry}) [${lot.id.slice(-8)}]`,
+    value: lot.id,
+  }))
+)
+
+const lotPlaceholder = computed(() =>
+  lotsLoading.value ? 'Loading lots...' : 'Select an approved lot'
+)
+
+const isSubmitDisabled = computed(() => {
+  return loading.value || submitting.value || !selectedLotId.value
 })
 
 const errors = ref<Record<string, string>>({})
@@ -73,6 +97,14 @@ async function fetchApprovedLots() {
 }
 
 async function onLotSelected() {
+  // PrimeVue Select may provide the value as an object or string depending on configuration
+  const lotId = typeof selectedLotId.value === 'object' && selectedLotId.value !== null
+    ? (selectedLotId.value as unknown as Record<string, string>).value ?? ''
+    : selectedLotId.value ?? ''
+  if (typeof lotId === 'string' && lotId !== selectedLotId.value) {
+    selectedLotId.value = lotId
+  }
+
   const summary = approvedLots.value.find(l => l.id === selectedLotId.value)
   if (!summary) {
     selectedLot.value = null
@@ -100,29 +132,33 @@ async function onLotSelected() {
 
 function validate(): boolean {
   errors.value = {}
-  if (!selectedLotId.value) errors.value.lot = 'Please select an approved lot'
+  if (!selectedLotId.value || selectedLotId.value === '') errors.value.lot = 'Please select an approved lot'
   if (!form.startTime) errors.value.startTime = 'Start time is required'
   if (!form.endTime) errors.value.endTime = 'End time is required'
-  if (form.startTime && form.endTime && new Date(form.startTime) >= new Date(form.endTime)) {
+  if (form.startTime && form.endTime && form.startTime >= form.endTime) {
     errors.value.endTime = 'End time must be after start time'
   }
   return Object.keys(errors.value).length === 0
 }
 
+const submitting = ref(false)
+
 async function handleSubmit() {
   if (!validate()) return
+  if (submitting.value) return
+  submitting.value = true
 
   // If selectedLot isn't populated yet, try to resolve it from selectedLotId
   if (!selectedLot.value && selectedLotId.value) {
     await onLotSelected()
   }
-  if (!selectedLot.value) return
+  if (!selectedLot.value) { submitting.value = false; return }
 
   const payload: AuctionCreatePayload = {
     lotId: selectedLot.value.id,
     brand: form.brand,
-    startTime: new Date(form.startTime).toISOString(),
-    endTime: new Date(form.endTime).toISOString(),
+    startTime: form.startTime!.toISOString(),
+    endTime: form.endTime!.toISOString(),
     startingBid: selectedLot.value.startingBid,
     currency: form.currency,
     sellerId: selectedLot.value.sellerId,
@@ -131,15 +167,18 @@ async function handleSubmit() {
   try {
     const auction = await createAuction(payload)
     if (auction) {
-      router.push({ name: 'auctions' })
+      // Use path-based navigation as primary, with named route as fallback
+      await router.push('/auctions')
     }
   } catch {
     // Error is stored in the reactive `error` ref by useAuctions
+  } finally {
+    submitting.value = false
   }
 }
 
 function handleCancel() {
-  router.push({ name: 'auctions' })
+  router.push('/auctions')
 }
 </script>
 
@@ -198,24 +237,17 @@ function handleCancel() {
                 class="label"
                 for="lot"
               >Approved Lot *</label>
-              <select
+              <Select
                 id="lot"
                 v-model="selectedLotId"
-                class="select"
-                :class="errors.lot && 'border-red-300'"
+                :options="lotOptions"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="lotPlaceholder"
+                class="w-full"
+                :class="errors.lot && 'p-invalid'"
                 @change="onLotSelected"
-              >
-                <option value="">
-                  {{ lotsLoading ? 'Loading lots...' : 'Select an approved lot' }}
-                </option>
-                <option
-                  v-for="lot in approvedLots"
-                  :key="lot.id"
-                  :value="lot.id"
-                >
-                  {{ lot.title }} ({{ lot.brand }} - {{ lot.locationCity }}, {{ lot.locationCountry }}) [{{ lot.id.slice(-8) }}]
-                </option>
-              </select>
+              />
               <p
                 v-if="errors.lot"
                 class="mt-1 text-sm text-red-600"
@@ -279,13 +311,15 @@ function handleCancel() {
                   class="label"
                   for="startTime"
                 >Start Date & Time *</label>
-                <input
+                <DatePicker
                   id="startTime"
                   v-model="form.startTime"
-                  type="datetime-local"
-                  class="input"
-                  :class="errors.startTime && 'border-red-300'"
-                >
+                  showTime
+                  hourFormat="24"
+                  dateFormat="yy-mm-dd"
+                  class="w-full"
+                  :class="errors.startTime && 'p-invalid'"
+                />
                 <p
                   v-if="errors.startTime"
                   class="mt-1 text-sm text-red-600"
@@ -298,13 +332,15 @@ function handleCancel() {
                   class="label"
                   for="endTime"
                 >End Date & Time *</label>
-                <input
+                <DatePicker
                   id="endTime"
                   v-model="form.endTime"
-                  type="datetime-local"
-                  class="input"
-                  :class="errors.endTime && 'border-red-300'"
-                >
+                  showTime
+                  hourFormat="24"
+                  dateFormat="yy-mm-dd"
+                  class="w-full"
+                  :class="errors.endTime && 'p-invalid'"
+                />
                 <p
                   v-if="errors.endTime"
                   class="mt-1 text-sm text-red-600"
@@ -320,81 +356,46 @@ function handleCancel() {
                   class="label"
                   for="brand"
                 >Platform Brand *</label>
-                <select
+                <Select
                   id="brand"
                   v-model="form.brand"
-                  class="select"
-                >
-                  <option
-                    v-for="b in PLATFORM_BRANDS"
-                    :key="b.code"
-                    :value="b.code"
-                  >
-                    {{ b.label }}
-                  </option>
-                </select>
+                  :options="PLATFORM_BRANDS"
+                  optionLabel="label"
+                  optionValue="code"
+                  class="w-full"
+                />
               </div>
               <div>
                 <label
                   class="label"
                   for="currency"
                 >Currency</label>
-                <select
+                <Select
                   id="currency"
                   v-model="form.currency"
-                  class="select"
-                >
-                  <option value="EUR">
-                    EUR
-                  </option>
-                  <option value="USD">
-                    USD
-                  </option>
-                  <option value="GBP">
-                    GBP
-                  </option>
-                </select>
+                  :options="CURRENCY_OPTIONS"
+                  optionLabel="label"
+                  optionValue="value"
+                  class="w-full"
+                />
               </div>
             </div>
           </div>
         </div>
 
         <div class="flex justify-end gap-3">
-          <button
+          <Button
             type="button"
-            class="btn-secondary"
+            label="Cancel"
+            severity="secondary"
             @click="handleCancel"
-          >
-            Cancel
-          </button>
-          <button
+          />
+          <Button
             type="submit"
-            class="btn-primary"
-            :disabled="loading || !selectedLotId"
-            @click.prevent="handleSubmit"
-          >
-            <svg
-              v-if="loading"
-              class="h-4 w-4 animate-spin"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              />
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-            {{ loading ? 'Creating...' : 'Create Auction' }}
-          </button>
+            :label="loading || submitting ? 'Creating...' : 'Create Auction'"
+            :loading="loading || submitting"
+            :disabled="isSubmitDisabled"
+          />
         </div>
       </form>
     </div>

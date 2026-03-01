@@ -8,7 +8,7 @@ import LotForm from '@/components/lots/LotForm.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { currentLot, loading, error, fetchLot, updateLot } = useLots()
+const { currentLot, loading, fetchLot, updateLot } = useLots()
 
 const lotId = computed(() => route.params.id as string)
 const submitError = ref<string | null>(null)

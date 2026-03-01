@@ -167,4 +167,39 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
      */
     fun countByAuctionId(auctionId: UUID): Long =
         count("auctionId", auctionId)
+
+    /**
+     * Full-text search on title and description (case-insensitive) with pagination.
+     *
+     * @param searchTerm The search keyword.
+     * @param page       The page to retrieve (0-based).
+     * @param pageSize   The number of items per page.
+     * @return List of matching lot entities.
+     */
+    fun findBySearch(searchTerm: String, page: Int, pageSize: Int): List<LotEntity> {
+        val pattern = "%${searchTerm.lowercase()}%"
+        return find(
+            "status != ?1 and (lower(title) like ?2 or lower(description) like ?2)",
+            Sort.descending("createdAt"),
+            LotStatus.WITHDRAWN,
+            pattern
+        )
+            .page(Page.of(page, pageSize))
+            .list()
+    }
+
+    /**
+     * Counts lots matching a text search on title and description.
+     *
+     * @param searchTerm The search keyword.
+     * @return Total number of matching lots.
+     */
+    fun countBySearch(searchTerm: String): Long {
+        val pattern = "%${searchTerm.lowercase()}%"
+        return count(
+            "status != ?1 and (lower(title) like ?2 or lower(description) like ?2)",
+            LotStatus.WITHDRAWN,
+            pattern
+        )
+    }
 }

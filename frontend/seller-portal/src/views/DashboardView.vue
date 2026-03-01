@@ -5,9 +5,10 @@ import { useLots } from '@/composables/useLots'
 import { useSettlements } from '@/composables/useSettlements'
 import { useAnalytics } from '@/composables/useAnalytics'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
+import Tag from 'primevue/tag'
 
 const { userName } = useAuth()
-const { statusCounts, fetchStatusCounts, fetchLots, lots, loading: lotsLoading } = useLots()
+const { statusCounts, fetchStatusCounts, fetchLots } = useLots()
 const { totals, fetchSettlementTotals } = useSettlements()
 const { monthlyRevenue, fetchMonthlyRevenue, overview, fetchOverview } = useAnalytics()
 
@@ -33,15 +34,6 @@ function formatCurrency(value: number): string {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
 }
 
-function getActivityIcon(type: string): string {
-  switch (type) {
-    case 'bid': return 'bid'
-    case 'approved': return 'approved'
-    case 'sold': return 'sold'
-    case 'settlement': return 'settlement'
-    default: return 'default'
-  }
-}
 </script>
 
 <template>
@@ -406,35 +398,35 @@ function getActivityIcon(type: string): string {
         <div class="space-y-3">
           <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
             <div class="flex items-center gap-2">
-              <span class="badge-draft">Draft</span>
+              <Tag value="Draft" severity="secondary" />
               <span class="text-sm text-gray-600">Lots</span>
             </div>
             <span class="text-lg font-semibold text-gray-900">{{ statusCounts.draft }}</span>
           </div>
           <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
             <div class="flex items-center gap-2">
-              <span class="badge-pending">Pending Review</span>
+              <Tag value="Pending Review" severity="warn" />
               <span class="text-sm text-gray-600">Lots</span>
             </div>
             <span class="text-lg font-semibold text-gray-900">{{ statusCounts.pending_review }}</span>
           </div>
           <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
             <div class="flex items-center gap-2">
-              <span class="badge-active">Active</span>
+              <Tag value="Active" severity="success" />
               <span class="text-sm text-gray-600">Lots</span>
             </div>
             <span class="text-lg font-semibold text-gray-900">{{ statusCounts.active }}</span>
           </div>
           <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
             <div class="flex items-center gap-2">
-              <span class="badge-sold">Sold</span>
+              <Tag value="Sold" severity="info" />
               <span class="text-sm text-gray-600">Lots</span>
             </div>
             <span class="text-lg font-semibold text-gray-900">{{ statusCounts.sold }}</span>
           </div>
           <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
             <div class="flex items-center gap-2">
-              <span class="badge-unsold">Unsold</span>
+              <Tag value="Unsold" severity="danger" />
               <span class="text-sm text-gray-600">Lots</span>
             </div>
             <span class="text-lg font-semibold text-gray-900">{{ statusCounts.unsold }}</span>

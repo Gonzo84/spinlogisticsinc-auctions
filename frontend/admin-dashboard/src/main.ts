@@ -1,8 +1,13 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import PrimeVue from 'primevue/config'
+import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
+import { themeConfig } from '@auction-platform/design-tokens'
 import Keycloak from 'keycloak-js'
 import App from './App.vue'
 import router from './router'
+import 'primeicons/primeicons.css'
 import './assets/main.css'
 
 const keycloak = new Keycloak({
@@ -42,17 +47,18 @@ if (!hasAdminRole) {
 }
 
 // Clean up OIDC hash/query fragments left by Keycloak after login redirect
-setTimeout(() => {
-  if (
-    (window.location.hash && (window.location.hash.includes('state=') || window.location.hash.includes('session_state='))) ||
-    (window.location.search && window.location.search.includes('code='))
-  ) {
-    window.history.replaceState(null, '', window.location.pathname)
-  }
-}, 100)
+if (
+  (window.location.hash && (window.location.hash.includes('state=') || window.location.hash.includes('session_state='))) ||
+  (window.location.search && window.location.search.includes('code='))
+) {
+  window.history.replaceState(null, '', window.location.pathname)
+}
 
 const app = createApp(App)
 app.provide('keycloak', keycloak)
 app.use(createPinia())
+app.use(PrimeVue, { theme: themeConfig })
+app.use(ConfirmationService)
+app.use(ToastService)
 app.use(router)
 app.mount('#app')

@@ -1,4 +1,4 @@
-import { ref, computed, readonly } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { Notification } from '~/types/notification'
 
@@ -65,9 +65,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   return {
-    unreadCount: readonly(unreadCount),
-    recentNotifications: readonly(recentNotifications),
-    pushRegistered: readonly(pushRegistered),
+    unreadCount,
+    recentNotifications,
+    pushRegistered,
     hasUnread,
     unreadNotifications,
     overbidNotifications,

@@ -25,7 +25,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 }
 
 export function useCompliance() {
-  const { get, post, patch } = useApi()
+  const { get, patch } = useApi()
 
   // GDPR state
   const gdprRequests = ref<GdprRequest[]>([])

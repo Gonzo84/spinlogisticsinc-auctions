@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
-const props = defineProps<{
+defineProps<{
   collapsed: boolean
 }>()
 

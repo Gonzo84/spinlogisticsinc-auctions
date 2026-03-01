@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuctions } from '@/composables/useAuctions'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import Tag from 'primevue/tag'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
 import LiveBidChart from '@/components/charts/LiveBidChart.vue'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import Textarea from 'primevue/textarea'
+
+const confirm = useConfirm()
+const toast = useToast()
 
 const route = useRoute()
-const router = useRouter()
 const {
   currentAuction,
   auctionLots,
   liveBids,
   loading,
-  error,
   fetchAuction,
   fetchAuctionLots,
   fetchLiveBids,
@@ -60,11 +68,20 @@ async function handleCancel() {
   }
 }
 
-async function handleClose() {
-  if (confirm('Are you sure you want to close this auction?')) {
-    const ok = await closeAuction(auctionId.value)
-    if (ok) await fetchAuction(auctionId.value)
-  }
+function handleClose() {
+  confirm.require({
+    message: 'Are you sure you want to close this auction?',
+    header: 'Close Auction',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-warning',
+    accept: async () => {
+      const ok = await closeAuction(auctionId.value)
+      if (ok) {
+        toast.add({ severity: 'success', summary: 'Closed', detail: 'Auction has been closed', life: 3000 })
+        await fetchAuction(auctionId.value)
+      }
+    },
+  })
 }
 
 const bidChartLabels = computed(() =>
@@ -139,27 +156,25 @@ const bidChartData = computed(() =>
             <h1 class="page-title">
               {{ currentAuction.title }}
             </h1>
-            <StatusBadge :status="currentAuction.status" />
+            <Tag :value="formatStatusLabel(currentAuction.status)" :severity="getStatusSeverity(currentAuction.status)" />
           </div>
           <p class="mt-1 text-sm text-gray-500">
             {{ currentAuction.brand }} &middot; {{ currentAuction.country }}
           </p>
         </div>
         <div class="flex gap-2">
-          <button
+          <Button
             v-if="currentAuction.status === 'active'"
-            class="btn-warning"
+            label="Close Auction"
+            severity="warn"
             @click="handleClose"
-          >
-            Close Auction
-          </button>
-          <button
+          />
+          <Button
             v-if="currentAuction.status !== 'cancelled' && currentAuction.status !== 'closed'"
-            class="btn-danger"
+            label="Cancel Auction"
+            severity="danger"
             @click="showCancelDialog = true"
-          >
-            Cancel Auction
-          </button>
+          />
         </div>
       </div>
 
@@ -221,66 +236,37 @@ const bidChartData = computed(() =>
         <h2 class="section-title">
           Lots ({{ auctionLots.length }})
         </h2>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr>
-                <th class="table-header">
-                  #
-                </th>
-                <th class="table-header">
-                  Title
-                </th>
-                <th class="table-header">
-                  Status
-                </th>
-                <th class="table-header text-right">
-                  Current Bid
-                </th>
-                <th class="table-header text-right">
-                  Bids
-                </th>
-                <th class="table-header">
-                  Closing
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="auctionLots.length === 0">
-                <td
-                  colspan="6"
-                  class="px-4 py-8 text-center text-sm text-gray-500"
-                >
-                  No lots assigned to this auction.
-                </td>
-              </tr>
-              <tr
-                v-for="lot in auctionLots"
-                :key="lot.id"
-                class="table-row"
-              >
-                <td class="table-cell font-medium">
-                  {{ lot.lotNumber }}
-                </td>
-                <td class="table-cell font-medium text-gray-900">
-                  {{ lot.title }}
-                </td>
-                <td class="table-cell">
-                  <StatusBadge :status="lot.status" />
-                </td>
-                <td class="table-cell text-right">
-                  {{ formatCurrency(lot.currentBid) }}
-                </td>
-                <td class="table-cell text-right">
-                  {{ lot.bidCount }}
-                </td>
-                <td class="table-cell text-gray-500">
-                  {{ formatDate(lot.closingTime) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DataTable :value="auctionLots" stripedRows>
+          <template #empty>
+            <div class="text-center py-8 text-gray-500">No lots assigned to this auction.</div>
+          </template>
+          <Column field="lotNumber" header="#">
+            <template #body="{ data }">
+              <span class="font-medium">{{ data.lotNumber }}</span>
+            </template>
+          </Column>
+          <Column field="title" header="Title">
+            <template #body="{ data }">
+              <span class="font-medium text-gray-900">{{ data.title }}</span>
+            </template>
+          </Column>
+          <Column field="status" header="Status">
+            <template #body="{ data }">
+              <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+            </template>
+          </Column>
+          <Column field="currentBid" header="Current Bid" headerStyle="text-align: right" bodyStyle="text-align: right">
+            <template #body="{ data }">
+              {{ formatCurrency(data.currentBid) }}
+            </template>
+          </Column>
+          <Column field="bidCount" header="Bids" headerStyle="text-align: right" bodyStyle="text-align: right" />
+          <Column field="closingTime" header="Closing">
+            <template #body="{ data }">
+              <span class="text-gray-500">{{ formatDate(data.closingTime) }}</span>
+            </template>
+          </Column>
+        </DataTable>
       </div>
 
       <!-- Recent bids -->
@@ -319,25 +305,42 @@ const bidChartData = computed(() =>
     </template>
 
     <!-- Cancel Dialog -->
-    <ConfirmDialog
-      :open="showCancelDialog"
-      title="Cancel Auction"
-      message="Are you sure you want to cancel this auction? All active bids will be voided."
-      confirm-label="Cancel Auction"
-      variant="danger"
-      :loading="loading"
-      @confirm="handleCancel"
-      @cancel="showCancelDialog = false"
+    <Dialog
+      v-model:visible="showCancelDialog"
+      header="Cancel Auction"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '28rem' }"
     >
+      <p class="mb-4 text-sm text-gray-500">
+        Are you sure you want to cancel this auction? All active bids will be voided.
+      </p>
       <div>
         <label class="label">Reason for cancellation</label>
-        <textarea
+        <Textarea
           v-model="cancelReason"
           rows="3"
-          class="input"
+          class="w-full"
           placeholder="Provide a reason..."
         />
       </div>
-    </ConfirmDialog>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            :disabled="loading"
+            @click="showCancelDialog = false"
+          />
+          <Button
+            label="Cancel Auction"
+            severity="danger"
+            :loading="loading"
+            :disabled="loading"
+            @click="handleCancel"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>

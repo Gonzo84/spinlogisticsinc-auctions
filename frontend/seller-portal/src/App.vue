@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import ConfirmDialog from 'primevue/confirmdialog'
+import Toast from 'primevue/toast'
+import Button from 'primevue/button'
 import SidebarNav from '@/components/layout/SidebarNav.vue'
 import TopBar from '@/components/layout/TopBar.vue'
 
@@ -22,6 +24,7 @@ function closeMobileSidebar() {
 
 <template>
   <div class="flex h-screen overflow-hidden bg-gray-50">
+    <Toast />
     <ConfirmDialog />
     <!-- Mobile sidebar overlay -->
     <div
@@ -69,26 +72,14 @@ function closeMobileSidebar() {
 
       <!-- Collapse toggle (desktop) -->
       <div class="hidden border-t border-gray-200 p-3 lg:block">
-        <button
-          class="btn-ghost w-full justify-center"
+        <Button
+          text
+          icon="pi pi-chevron-left"
           :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+          :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+          class="w-full justify-center"
           @click="toggleSidebar"
-        >
-          <svg
-            class="h-5 w-5 transition-transform duration-200"
-            :class="{ 'rotate-180': sidebarCollapsed }"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-            />
-          </svg>
-        </button>
+        />
       </div>
     </aside>
 

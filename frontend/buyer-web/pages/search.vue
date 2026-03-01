@@ -21,18 +21,13 @@
 
       <!-- Mobile Filter Toggle -->
       <div class="lg:hidden fixed bottom-4 left-4 right-4 z-40">
-        <button
-          class="w-full py-3 bg-primary text-white rounded-xl font-medium shadow-lg flex items-center justify-center gap-2"
+        <Button
+          :label="$t('search.filters')"
+          icon="pi pi-filter"
+          class="w-full shadow-lg"
+          :badge="activeFilterCount > 0 ? String(activeFilterCount) : undefined"
           @click="showMobileFilters = true"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          {{ $t('search.filters') }}
-          <span v-if="activeFilterCount > 0" class="px-2 py-0.5 bg-white text-primary text-xs rounded-full font-bold">
-            {{ activeFilterCount }}
-          </span>
-        </button>
+        />
       </div>
 
       <!-- Mobile Filter Modal -->
@@ -42,11 +37,13 @@
           <div class="absolute inset-y-0 left-0 w-80 max-w-full bg-white overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
               <h2 class="font-semibold text-lg">{{ $t('search.filters') }}</h2>
-              <button @click="showMobileFilters = false" class="p-2 hover:bg-gray-100 rounded-full">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <Button
+                icon="pi pi-times"
+                text
+                rounded
+                aria-label="Close filters"
+                @click="showMobileFilters = false"
+              />
             </div>
             <div class="p-4">
               <SearchFilterSidebar
@@ -117,8 +114,8 @@
         >
           <AuctionLotCard
             v-for="lot in lots"
-            :key="lot.id"
-            :lot="lot"
+            :key="(lot.id as string)"
+            :lot="(lot as Partial<Auction> & { id: string })"
             :view-mode="viewMode"
           />
         </div>
@@ -130,9 +127,7 @@
           </svg>
           <h3 class="text-lg font-medium text-gray-900 mb-2">{{ $t('search.noResults') }}</h3>
           <p class="text-gray-500 mb-6">{{ $t('search.noResultsHint') }}</p>
-          <button class="px-6 py-2 bg-primary text-white rounded-lg font-medium" @click="clearAllFilters">
-            {{ $t('search.clearFilters') }}
-          </button>
+          <Button :label="$t('search.clearFilters')" @click="clearAllFilters" />
         </div>
 
         <!-- Pagination -->
@@ -173,6 +168,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Auction } from '~/types/auction'
 import type { SearchFilters } from '~/types/search'
 
 const { t } = useI18n()

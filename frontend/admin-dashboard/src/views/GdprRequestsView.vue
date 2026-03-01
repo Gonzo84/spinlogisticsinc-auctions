@@ -1,15 +1,39 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
 import { useCompliance } from '@/composables/useCompliance'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import Tag from 'primevue/tag'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
+
+const gdprTypeOptions = [
+  { label: 'All types', value: '' },
+  { label: 'Data Export', value: 'export' },
+  { label: 'Data Erasure', value: 'erasure' },
+]
+
+const gdprStatusOptions = [
+  { label: 'All statuses', value: '' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Processing', value: 'processing' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Rejected', value: 'rejected' },
+]
+
+const confirm = useConfirm()
+const toast = useToast()
 
 const {
   gdprRequests,
   gdprTotalCount,
   gdprFilters,
   loading,
-  error,
   fetchGdprRequests,
   approveGdprRequest,
   rejectGdprRequest,
@@ -39,11 +63,20 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-async function handleApprove(requestId: string) {
-  if (confirm('Approve this GDPR request? This action will begin processing immediately.')) {
-    const ok = await approveGdprRequest(requestId)
-    if (ok) await fetchGdprRequests()
-  }
+function handleApprove(requestId: string) {
+  confirm.require({
+    message: 'Approve this GDPR request? This action will begin processing immediately.',
+    header: 'Approve GDPR Request',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-success',
+    accept: async () => {
+      const ok = await approveGdprRequest(requestId)
+      if (ok) {
+        toast.add({ severity: 'success', summary: 'Approved', detail: 'GDPR request approved and processing started', life: 3000 })
+        await fetchGdprRequests()
+      }
+    },
+  })
 }
 
 function openRejectDialog(requestId: string) {
@@ -126,265 +159,201 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div class="flex-1">
           <label class="label">Request Type</label>
-          <select
+          <Select
             v-model="gdprFilters.type"
-            class="select"
-          >
-            <option value="">
-              All types
-            </option>
-            <option value="export">
-              Data Export
-            </option>
-            <option value="erasure">
-              Data Erasure
-            </option>
-          </select>
+            :options="gdprTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All types"
+            class="w-full"
+          />
         </div>
         <div class="flex-1">
           <label class="label">Status</label>
-          <select
+          <Select
             v-model="gdprFilters.status"
-            class="select"
-          >
-            <option value="">
-              All statuses
-            </option>
-            <option value="pending">
-              Pending
-            </option>
-            <option value="processing">
-              Processing
-            </option>
-            <option value="completed">
-              Completed
-            </option>
-            <option value="rejected">
-              Rejected
-            </option>
-          </select>
+            :options="gdprStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All statuses"
+            class="w-full"
+          />
         </div>
-        <button
-          class="btn-secondary"
+        <Button
+          label="Clear"
+          severity="secondary"
           @click="clearFilters"
-        >
-          Clear
-        </button>
+        />
       </div>
-    </div>
-
-    <!-- Loading -->
-    <div
-      v-if="loading"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
-    </div>
-
-    <!-- Empty -->
-    <div
-      v-else-if="gdprRequests.length === 0"
-      class="card py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-12 w-12 text-gray-300"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="1.5"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-        />
-      </svg>
-      <h3 class="mt-4 text-lg font-medium text-gray-900">
-        No GDPR requests
-      </h3>
-      <p class="mt-1 text-sm text-gray-500">
-        No pending data requests.
-      </p>
     </div>
 
     <!-- Table -->
-    <div
-      v-else
-      class="table-container"
-    >
-      <table class="w-full">
-        <thead>
-          <tr>
-            <th class="table-header">
-              User
-            </th>
-            <th class="table-header">
-              Type
-            </th>
-            <th class="table-header">
-              Status
-            </th>
-            <th class="table-header">
-              Reason
-            </th>
-            <th class="table-header">
-              Requested
-            </th>
-            <th class="table-header">
-              Processed
-            </th>
-            <th class="table-header text-right">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="request in gdprRequests"
-            :key="request.id"
-            class="table-row"
-          >
-            <td class="table-cell">
-              <router-link
-                :to="`/users/${request.userId}`"
-                class="hover:text-primary-600"
-              >
-                <p class="font-medium text-gray-900">
-                  {{ request.userName }}
-                </p>
-                <p class="text-xs text-gray-500">
-                  {{ request.userEmail }}
-                </p>
-              </router-link>
-            </td>
-            <td class="table-cell">
-              <span
-                :class="[
-                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  request.type === 'export'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-red-100 text-red-800',
-                ]"
-              >
-                {{ request.type === 'export' ? 'Data Export' : 'Data Erasure' }}
-              </span>
-            </td>
-            <td class="table-cell">
-              <StatusBadge :status="request.status" />
-            </td>
-            <td class="table-cell text-gray-600">
-              {{ request.reason || '--' }}
-            </td>
-            <td class="table-cell text-gray-500">
-              {{ formatDate(request.requestedAt) }}
-            </td>
-            <td class="table-cell text-gray-500">
-              <template v-if="request.processedAt">
-                {{ formatDate(request.processedAt) }}
-                <p class="text-xs text-gray-400">
-                  by {{ request.processedBy }}
-                </p>
-              </template>
-              <template v-else>
-                --
-              </template>
-            </td>
-            <td class="table-cell text-right">
-              <div
-                v-if="request.status === 'pending'"
-                class="flex justify-end gap-1"
-              >
-                <button
-                  class="btn-success btn-sm"
-                  @click="handleApprove(request.id)"
-                >
-                  Approve
-                </button>
-                <button
-                  class="btn-danger btn-sm"
-                  @click="openRejectDialog(request.id)"
-                >
-                  Reject
-                </button>
-              </div>
-              <a
-                v-else-if="request.status === 'completed' && request.downloadUrl"
-                :href="request.downloadUrl"
-                target="_blank"
-                class="btn-secondary btn-sm"
-              >
-                Download
-              </a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Pagination -->
-      <div
-        v-if="totalPages() > 1"
-        class="flex items-center justify-between border-t border-gray-200 px-4 py-3"
+    <div class="card">
+      <DataTable
+        :value="gdprRequests"
+        :loading="loading"
+        paginator
+        :rows="gdprFilters.pageSize"
+        :totalRecords="gdprTotalCount"
+        :lazy="true"
+        :first="(gdprFilters.page - 1) * gdprFilters.pageSize"
+        @page="goToPage($event.page + 1)"
+        stripedRows
+        removableSort
       >
-        <p class="text-sm text-gray-500">
-          {{ gdprTotalCount }} requests total
-        </p>
-        <div class="flex gap-1">
-          <button
-            class="btn-secondary btn-sm"
-            :disabled="gdprFilters.page <= 1"
-            @click="goToPage(gdprFilters.page - 1)"
-          >
-            Previous
-          </button>
-          <button
-            class="btn-secondary btn-sm"
-            :disabled="gdprFilters.page >= totalPages()"
-            @click="goToPage(gdprFilters.page + 1)"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+        <template #empty>
+          <div class="py-12 text-center">
+            <svg
+              class="mx-auto h-12 w-12 text-gray-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">
+              No GDPR requests
+            </h3>
+            <p class="mt-1 text-sm text-gray-500">
+              No pending data requests.
+            </p>
+          </div>
+        </template>
+        <Column field="userName" header="User">
+          <template #body="{ data }">
+            <router-link
+              :to="`/users/${data.userId}`"
+              class="hover:text-primary-600"
+            >
+              <p class="font-medium text-gray-900">
+                {{ data.userName }}
+              </p>
+              <p class="text-xs text-gray-500">
+                {{ data.userEmail }}
+              </p>
+            </router-link>
+          </template>
+        </Column>
+        <Column field="type" header="Type">
+          <template #body="{ data }">
+            <span
+              :class="[
+                'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                data.type === 'export'
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-red-100 text-red-800',
+              ]"
+            >
+              {{ data.type === 'export' ? 'Data Export' : 'Data Erasure' }}
+            </span>
+          </template>
+        </Column>
+        <Column field="status" header="Status">
+          <template #body="{ data }">
+            <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+          </template>
+        </Column>
+        <Column field="reason" header="Reason">
+          <template #body="{ data }">
+            <span class="text-gray-600">{{ data.reason || '--' }}</span>
+          </template>
+        </Column>
+        <Column field="requestedAt" header="Requested" sortable>
+          <template #body="{ data }">
+            <span class="text-gray-500">{{ formatDate(data.requestedAt) }}</span>
+          </template>
+        </Column>
+        <Column field="processedAt" header="Processed">
+          <template #body="{ data }">
+            <template v-if="data.processedAt">
+              <span class="text-gray-500">{{ formatDate(data.processedAt) }}</span>
+              <p class="text-xs text-gray-400">
+                by {{ data.processedBy }}
+              </p>
+            </template>
+            <template v-else>
+              --
+            </template>
+          </template>
+        </Column>
+        <Column header="Actions" headerStyle="text-align: right" bodyStyle="text-align: right" style="width: 180px">
+          <template #body="{ data }">
+            <div
+              v-if="data.status === 'pending'"
+              class="flex justify-end gap-1"
+            >
+              <Button
+                label="Approve"
+                severity="success"
+                size="small"
+                @click="handleApprove(data.id)"
+              />
+              <Button
+                label="Reject"
+                severity="danger"
+                size="small"
+                @click="openRejectDialog(data.id)"
+              />
+            </div>
+            <a
+              v-else-if="data.status === 'completed' && data.downloadUrl"
+              :href="data.downloadUrl"
+              target="_blank"
+            >
+              <Button
+                label="Download"
+                icon="pi pi-download"
+                severity="secondary"
+                size="small"
+              />
+            </a>
+          </template>
+        </Column>
+      </DataTable>
     </div>
 
     <!-- Reject Dialog -->
-    <ConfirmDialog
-      :open="showRejectDialog"
-      title="Reject GDPR Request"
-      message="Please provide a legally compliant reason for rejecting this request."
-      confirm-label="Reject Request"
-      variant="danger"
-      :loading="loading"
-      @confirm="confirmReject"
-      @cancel="showRejectDialog = false"
+    <Dialog
+      v-model:visible="showRejectDialog"
+      header="Reject GDPR Request"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '28rem' }"
     >
+      <p class="mb-4 text-sm text-gray-500">
+        Please provide a legally compliant reason for rejecting this request.
+      </p>
       <div>
         <label class="label">Reason *</label>
-        <textarea
+        <Textarea
           v-model="rejectReason"
           rows="3"
-          class="input"
+          class="w-full"
           placeholder="e.g., Active pending payments must be settled first..."
         />
       </div>
-    </ConfirmDialog>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            :disabled="loading"
+            @click="showRejectDialog = false"
+          />
+          <Button
+            label="Reject Request"
+            severity="danger"
+            :loading="loading"
+            :disabled="loading"
+            @click="confirmReject"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>

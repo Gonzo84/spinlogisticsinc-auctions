@@ -3,6 +3,8 @@ import { onMounted, computed } from 'vue'
 import { useAnalytics } from '@/composables/useAnalytics'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 import LiveBidChart from '@/components/charts/LiveBidChart.vue'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 
 const {
   overview,
@@ -10,7 +12,6 @@ const {
   registrationTrends,
   categoryPopularity,
   loading,
-  error,
   fetchAll,
 } = useAnalytics()
 
@@ -173,68 +174,35 @@ const registrationData = computed(() => registrationTrends.value.map((r) => r.to
           <h2 class="section-title">
             Category Popularity
           </h2>
-          <div
-            v-if="categoryPopularity.length === 0"
-            class="py-8 text-center text-sm text-gray-500"
-          >
-            No category data available.
-          </div>
-          <div
-            v-else
-            class="overflow-x-auto"
-          >
-            <table class="w-full">
-              <thead>
-                <tr>
-                  <th class="table-header">
-                    Category
-                  </th>
-                  <th class="table-header text-right">
-                    Lots
-                  </th>
-                  <th class="table-header text-right">
-                    Bids
-                  </th>
-                  <th class="table-header text-right">
-                    Revenue
-                  </th>
-                  <th class="table-header text-right">
-                    STR
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="cat in categoryPopularity"
-                  :key="cat.category"
-                  class="table-row"
+          <DataTable :value="categoryPopularity" stripedRows>
+            <template #empty>
+              <div class="text-center py-8 text-gray-500">No category data available.</div>
+            </template>
+            <Column field="category" header="Category">
+              <template #body="{ data }">
+                <span class="font-medium text-gray-900">{{ data.category }}</span>
+              </template>
+            </Column>
+            <Column field="lotCount" header="Lots" headerStyle="text-align: right" bodyStyle="text-align: right" />
+            <Column field="bidCount" header="Bids" headerStyle="text-align: right" bodyStyle="text-align: right" />
+            <Column field="revenue" header="Revenue" headerStyle="text-align: right" bodyStyle="text-align: right">
+              <template #body="{ data }">
+                <span class="font-medium">{{ formatCurrency(data.revenue) }}</span>
+              </template>
+            </Column>
+            <Column field="sellThroughRate" header="STR" headerStyle="text-align: right" bodyStyle="text-align: right">
+              <template #body="{ data }">
+                <span
+                  :class="[
+                    'font-medium',
+                    data.sellThroughRate >= 70 ? 'text-green-600' : data.sellThroughRate >= 40 ? 'text-amber-600' : 'text-red-600',
+                  ]"
                 >
-                  <td class="table-cell font-medium text-gray-900">
-                    {{ cat.category }}
-                  </td>
-                  <td class="table-cell text-right">
-                    {{ cat.lotCount }}
-                  </td>
-                  <td class="table-cell text-right">
-                    {{ cat.bidCount }}
-                  </td>
-                  <td class="table-cell text-right font-medium">
-                    {{ formatCurrency(cat.revenue) }}
-                  </td>
-                  <td class="table-cell text-right">
-                    <span
-                      :class="[
-                        'font-medium',
-                        cat.sellThroughRate >= 70 ? 'text-green-600' : cat.sellThroughRate >= 40 ? 'text-amber-600' : 'text-red-600',
-                      ]"
-                    >
-                      {{ formatPercent(cat.sellThroughRate) }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  {{ formatPercent(data.sellThroughRate) }}
+                </span>
+              </template>
+            </Column>
+          </DataTable>
         </div>
       </div>
 

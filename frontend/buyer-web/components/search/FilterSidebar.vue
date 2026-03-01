@@ -42,12 +42,11 @@
           :key="country.code"
           class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer"
         >
-          <input
-            type="checkbox"
-            :checked="selectedCountries.includes(country.code)"
-            class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-            @change="toggleCountry(country.code)"
-          >
+          <Checkbox
+            :modelValue="selectedCountries.includes(country.code)"
+            @update:modelValue="toggleCountry(country.code)"
+            :binary="true"
+          />
           <span class="text-base">{{ country.flag }}</span>
           <span class="text-sm text-gray-700">{{ country.name }}</span>
         </label>
@@ -58,26 +57,28 @@
     <div>
       <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ $t('search.priceRange') }}</h3>
       <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">EUR</span>
-          <input
-            v-model.number="priceMin"
-            type="number"
+        <div class="flex-1">
+          <InputNumber
+            v-model="priceMin"
             :placeholder="$t('search.min')"
-            class="w-full pl-10 pr-2 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-            @change="applyPriceRange"
-          >
+            inputClass="w-full"
+            mode="currency"
+            currency="EUR"
+            locale="en-US"
+            @blur="applyPriceRange"
+          />
         </div>
         <span class="text-gray-400">-</span>
-        <div class="relative flex-1">
-          <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">EUR</span>
-          <input
-            v-model.number="priceMax"
-            type="number"
+        <div class="flex-1">
+          <InputNumber
+            v-model="priceMax"
             :placeholder="$t('search.max')"
-            class="w-full pl-10 pr-2 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-            @change="applyPriceRange"
-          >
+            inputClass="w-full"
+            mode="currency"
+            currency="EUR"
+            locale="en-US"
+            @blur="applyPriceRange"
+          />
         </div>
       </div>
       <!-- Quick Price Buttons -->
@@ -99,18 +100,14 @@
     <!-- Distance -->
     <div>
       <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ $t('search.distance') }}</h3>
-      <select
-        v-model.number="distanceValue"
-        class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+      <Select
+        v-model="distanceValue"
+        :options="distanceOptions"
+        optionLabel="label"
+        optionValue="value"
+        class="w-full"
         @change="applyDistance"
-      >
-        <option :value="0">{{ $t('search.anyDistance') }}</option>
-        <option :value="50">50 km</option>
-        <option :value="100">100 km</option>
-        <option :value="250">250 km</option>
-        <option :value="500">500 km</option>
-        <option :value="1000">1000 km</option>
-      </select>
+      />
     </div>
 
     <!-- Reserve Toggle -->
@@ -118,47 +115,35 @@
       <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ $t('search.reserveStatus') }}</h3>
       <div class="space-y-1.5">
         <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
-          <input
-            type="radio"
-            name="reserve"
+          <RadioButton
+            :modelValue="reserveStatusModel"
+            @update:modelValue="setReserve(undefined)"
             value=""
-            :checked="!filters.reserveStatus"
-            class="w-4 h-4 text-primary focus:ring-primary"
-            @change="setReserve(undefined)"
-          >
+          />
           <span class="text-sm text-gray-700">{{ $t('search.allLots') }}</span>
         </label>
         <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
-          <input
-            type="radio"
-            name="reserve"
+          <RadioButton
+            :modelValue="reserveStatusModel"
+            @update:modelValue="setReserve('met')"
             value="met"
-            :checked="filters.reserveStatus === 'met'"
-            class="w-4 h-4 text-primary focus:ring-primary"
-            @change="setReserve('met')"
-          >
+          />
           <span class="text-sm text-gray-700">{{ $t('search.reserveMet') }}</span>
         </label>
         <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
-          <input
-            type="radio"
-            name="reserve"
+          <RadioButton
+            :modelValue="reserveStatusModel"
+            @update:modelValue="setReserve('not_met')"
             value="not_met"
-            :checked="filters.reserveStatus === 'not_met'"
-            class="w-4 h-4 text-primary focus:ring-primary"
-            @change="setReserve('not_met')"
-          >
+          />
           <span class="text-sm text-gray-700">{{ $t('search.reserveNotMet') }}</span>
         </label>
         <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
-          <input
-            type="radio"
-            name="reserve"
+          <RadioButton
+            :modelValue="reserveStatusModel"
+            @update:modelValue="setReserve('no_reserve')"
             value="no_reserve"
-            :checked="filters.reserveStatus === 'no_reserve'"
-            class="w-4 h-4 text-primary focus:ring-primary"
-            @change="setReserve('no_reserve')"
-          >
+          />
           <span class="text-sm text-gray-700">{{ $t('search.noReserve') }}</span>
         </label>
       </div>
@@ -184,6 +169,17 @@ const { t } = useI18n()
 const priceMin = ref<number | undefined>(props.filters.priceMin)
 const priceMax = ref<number | undefined>(props.filters.priceMax)
 const distanceValue = ref<number>(props.filters.distance || 0)
+
+const reserveStatusModel = computed(() => props.filters.reserveStatus || '')
+
+const distanceOptions = computed(() => [
+  { label: t('search.anyDistance'), value: 0 },
+  { label: '50 km', value: 50 },
+  { label: '100 km', value: 100 },
+  { label: '250 km', value: 250 },
+  { label: '500 km', value: 500 },
+  { label: '1000 km', value: 1000 },
+])
 
 const selectedCountries = computed(() => props.filters.country || [])
 

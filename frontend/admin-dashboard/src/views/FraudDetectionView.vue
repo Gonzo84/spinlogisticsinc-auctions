@@ -1,15 +1,47 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
-import { useCompliance, type FraudAlert } from '@/composables/useCompliance'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { useCompliance } from '@/composables/useCompliance'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import Tag from 'primevue/tag'
+import Dialog from 'primevue/dialog'
+import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
+import Button from 'primevue/button'
+import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
+import Checkbox from 'primevue/checkbox'
+
+const severityOptions = [
+  { label: 'All', value: '' },
+  { label: 'High', value: 'high' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'Low', value: 'low' },
+]
+
+const fraudStatusOptions = [
+  { label: 'All', value: '' },
+  { label: 'New', value: 'new' },
+  { label: 'Investigating', value: 'investigating' },
+  { label: 'Resolved', value: 'resolved' },
+  { label: 'False Positive', value: 'false_positive' },
+]
+
+const fraudTypeOptions = [
+  { label: 'All types', value: '' },
+  { label: 'Shill Bidding', value: 'shill_bidding' },
+  { label: 'Bid Manipulation', value: 'bid_manipulation' },
+  { label: 'Account Takeover', value: 'account_takeover' },
+  { label: 'Payment Fraud', value: 'payment_fraud' },
+  { label: 'Multiple Accounts', value: 'multiple_accounts' },
+]
+
+const confirm = useConfirm()
+const toast = useToast()
 
 const {
   fraudAlerts,
-  fraudTotalCount,
   fraudFilters,
   loading,
-  error,
   fetchFraudAlerts,
   investigateAlert,
   resolveAlert,
@@ -87,11 +119,20 @@ async function confirmResolve() {
   }
 }
 
-async function handleDismiss(id: string) {
-  if (confirm('Dismiss this alert as a false positive?')) {
-    const ok = await dismissAlert(id)
-    if (ok) await fetchFraudAlerts()
-  }
+function handleDismiss(id: string) {
+  confirm.require({
+    message: 'Dismiss this alert as a false positive?',
+    header: 'Dismiss Alert',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-warning',
+    accept: async () => {
+      const ok = await dismissAlert(id)
+      if (ok) {
+        toast.add({ severity: 'success', summary: 'Dismissed', detail: 'Alert dismissed as false positive', life: 3000 })
+        await fetchFraudAlerts()
+      }
+    },
+  })
 }
 
 function clearFilters() {
@@ -122,79 +163,42 @@ function clearFilters() {
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div class="flex-1">
           <label class="label">Severity</label>
-          <select
+          <Select
             v-model="fraudFilters.severity"
-            class="select"
-          >
-            <option value="">
-              All
-            </option>
-            <option value="high">
-              High
-            </option>
-            <option value="medium">
-              Medium
-            </option>
-            <option value="low">
-              Low
-            </option>
-          </select>
+            :options="severityOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All"
+            class="w-full"
+          />
         </div>
         <div class="flex-1">
           <label class="label">Status</label>
-          <select
+          <Select
             v-model="fraudFilters.status"
-            class="select"
-          >
-            <option value="">
-              All
-            </option>
-            <option value="new">
-              New
-            </option>
-            <option value="investigating">
-              Investigating
-            </option>
-            <option value="resolved">
-              Resolved
-            </option>
-            <option value="false_positive">
-              False Positive
-            </option>
-          </select>
+            :options="fraudStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All"
+            class="w-full"
+          />
         </div>
         <div class="flex-1">
           <label class="label">Type</label>
-          <select
+          <Select
             v-model="fraudFilters.type"
-            class="select"
-          >
-            <option value="">
-              All types
-            </option>
-            <option value="shill_bidding">
-              Shill Bidding
-            </option>
-            <option value="bid_manipulation">
-              Bid Manipulation
-            </option>
-            <option value="account_takeover">
-              Account Takeover
-            </option>
-            <option value="payment_fraud">
-              Payment Fraud
-            </option>
-            <option value="multiple_accounts">
-              Multiple Accounts
-            </option>
-          </select>
+            :options="fraudTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All types"
+            class="w-full"
+          />
         </div>
-        <button
-          class="btn-secondary"
+        <Button
+          label="Clear"
+          severity="secondary"
           @click="clearFilters"
-        >
-          Clear
-        </button>
+        />
       </div>
     </div>
 
@@ -270,14 +274,8 @@ function clearFilters() {
               <h3 class="text-sm font-semibold text-gray-900">
                 {{ alert.title }}
               </h3>
-              <StatusBadge
-                :status="alert.severity"
-                size="sm"
-              />
-              <StatusBadge
-                :status="alert.status"
-                size="sm"
-              />
+              <Tag :value="formatStatusLabel(alert.severity)" :severity="getStatusSeverity(alert.severity)" />
+              <Tag :value="formatStatusLabel(alert.status)" :severity="getStatusSeverity(alert.status)" />
             </div>
             <p class="mt-1 text-xs text-gray-500">
               {{ getTypeLabel(alert.type) }} &middot; Detected {{ formatDate(alert.detectedAt) }}
@@ -289,27 +287,27 @@ function clearFilters() {
             class="flex gap-2"
             @click.stop
           >
-            <button
+            <Button
               v-if="alert.status === 'new'"
-              class="btn-warning btn-sm"
+              label="Investigate"
+              severity="warn"
+              size="small"
               @click="handleInvestigate(alert.id)"
-            >
-              Investigate
-            </button>
-            <button
+            />
+            <Button
               v-if="alert.status === 'new' || alert.status === 'investigating'"
-              class="btn-success btn-sm"
+              label="Resolve"
+              severity="success"
+              size="small"
               @click="openResolveDialog(alert.id)"
-            >
-              Resolve
-            </button>
-            <button
+            />
+            <Button
               v-if="alert.status === 'new'"
-              class="btn-secondary btn-sm"
+              label="Dismiss"
+              severity="secondary"
+              size="small"
               @click="handleDismiss(alert.id)"
-            >
-              Dismiss
-            </button>
+            />
           </div>
 
           <svg
@@ -353,10 +351,7 @@ function clearFilters() {
                   class="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
                 >
                   <span>{{ user.name }}</span>
-                  <StatusBadge
-                    :status="user.role"
-                    size="sm"
-                  />
+                  <Tag :value="formatStatusLabel(user.role)" :severity="getStatusSeverity(user.role)" />
                 </router-link>
               </div>
             </div>
@@ -401,35 +396,50 @@ function clearFilters() {
     </div>
 
     <!-- Resolve Dialog -->
-    <ConfirmDialog
-      :open="showResolveDialog"
-      title="Resolve Fraud Alert"
-      message="Provide a resolution summary for this fraud alert."
-      confirm-label="Resolve Alert"
-      variant="info"
-      :loading="loading"
-      @confirm="confirmResolve"
-      @cancel="showResolveDialog = false"
+    <Dialog
+      v-model:visible="showResolveDialog"
+      header="Resolve Fraud Alert"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '28rem' }"
     >
+      <p class="mb-4 text-sm text-gray-500">
+        Provide a resolution summary for this fraud alert.
+      </p>
       <div class="space-y-3">
         <div>
           <label class="label">Resolution *</label>
-          <textarea
+          <Textarea
             v-model="resolution"
             rows="3"
-            class="input"
+            class="w-full"
             placeholder="Describe the resolution and actions taken..."
           />
         </div>
         <label class="flex items-center gap-2">
-          <input
+          <Checkbox
             v-model="blockUsers"
-            type="checkbox"
-            class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-          >
+            :binary="true"
+          />
           <span class="text-sm text-gray-700">Block affected users</span>
         </label>
       </div>
-    </ConfirmDialog>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            :disabled="loading"
+            @click="showResolveDialog = false"
+          />
+          <Button
+            label="Resolve Alert"
+            :loading="loading"
+            :disabled="loading"
+            @click="confirmResolve"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>

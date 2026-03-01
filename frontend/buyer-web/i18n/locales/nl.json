@@ -48,6 +48,7 @@
   },
   "auction": {
     "currentBid": "Huidig bod",
+    "bid": "bod",
     "bids": "biedingen",
     "bidHistory": "Biedgeschiedenis",
     "timeRemaining": "Resterende tijd",

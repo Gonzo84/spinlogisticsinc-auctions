@@ -1,4 +1,4 @@
-import { ref, computed, readonly } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { Auction, Bid, AutoBidConfig } from '~/types/auction'
 
@@ -93,11 +93,11 @@ export const useAuctionStore = defineStore('auction', () => {
   }
 
   return {
-    currentAuction: readonly(currentAuction),
-    bids: readonly(bids),
-    autoBidConfig: readonly(autoBidConfig),
-    timerEndTime: readonly(timerEndTime),
-    isExtended: readonly(isExtended),
+    currentAuction,
+    bids,
+    autoBidConfig,
+    timerEndTime,
+    isExtended,
     currentBid,
     bidCount,
     isActive,

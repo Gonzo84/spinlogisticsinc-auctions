@@ -25,7 +25,7 @@
       <div class="flex items-center justify-between mb-1">
         <span class="text-sm text-gray-500">{{ $t('auction.currentBid') }}</span>
         <span class="text-sm text-gray-500">
-          {{ bidCount }} {{ $t('auction.bids') }}
+          {{ bidCount }} {{ bidCount === 1 ? $t('auction.bid') : $t('auction.bids') }}
         </span>
       </div>
       <p class="text-3xl font-bold text-primary">{{ formatCurrency(currentBid) }}</p>
@@ -57,12 +57,11 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
         <p class="text-sm text-gray-600 mb-3">{{ $t('auction.loginToBid') }}</p>
-        <button
-          class="w-full py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-800 transition-colors"
+        <Button
+          :label="$t('nav.login')"
+          class="w-full"
           @click="handleLogin"
-        >
-          {{ $t('nav.login') }}
-        </button>
+        />
         <NuxtLink
           to="/auth/register"
           class="block mt-2 text-sm text-primary hover:underline"
@@ -93,19 +92,18 @@
       <!-- Bid Input -->
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1.5 block">{{ $t('auction.yourBid') }}</label>
-        <div class="relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">EUR</span>
-          <input
-            v-model.number="bidAmount"
-            type="number"
-            :min="minBidAmount"
-            :step="lot.minIncrement"
-            class="w-full pl-14 pr-4 py-3 border rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-primary focus:border-primary"
-            :class="{ 'border-warning': bidError }"
-            :placeholder="formatCurrency(minBidAmount)"
-            @keydown.enter="handlePlaceBid"
-          >
-        </div>
+        <InputNumber
+          v-model="bidAmount"
+          :min="minBidAmount"
+          :step="lot.minIncrement"
+          mode="currency"
+          currency="EUR"
+          locale="en-US"
+          inputClass="w-full"
+          :class="{ 'border-warning': bidError }"
+          :placeholder="formatCurrency(minBidAmount)"
+          @keydown.enter="handlePlaceBid"
+        />
         <p v-if="bidError" class="text-xs text-warning mt-1">{{ bidError }}</p>
         <p class="text-xs text-gray-400 mt-1">
           {{ $t('auction.minimumBid') }}: {{ formatCurrency(minBidAmount) }}
@@ -125,22 +123,15 @@
       </div>
 
       <!-- Place Bid Button -->
-      <button
-        class="w-full py-3 bg-primary text-white font-bold text-lg rounded-lg hover:bg-primary-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      <Button
+        :label="bidLoading ? $t('auction.placingBid') : `${$t('auction.placeBid')} ${bidAmount ? formatCurrency(bidAmount) : ''}`"
+        :loading="bidLoading"
         :disabled="bidLoading || !canBid"
+        icon="pi pi-dollar"
+        class="w-full"
+        size="large"
         @click="handlePlaceBid"
-      >
-        <span v-if="bidLoading" class="flex items-center justify-center gap-2">
-          <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          {{ $t('auction.placingBid') }}
-        </span>
-        <span v-else>
-          {{ $t('auction.placeBid') }} {{ bidAmount ? formatCurrency(bidAmount) : '' }}
-        </span>
-      </button>
+      />
 
       <!-- Success message (inline) -->
       <Transition
@@ -216,31 +207,33 @@
           <div v-if="autoBidEnabled" class="overflow-hidden">
             <div class="mt-2">
               <label class="text-xs text-gray-500 mb-1 block">{{ $t('auction.maxAutoBid') }}</label>
-              <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">EUR</span>
-                <input
-                  v-model.number="autoBidMax"
-                  type="number"
-                  :min="minBidAmount"
-                  class="w-full pl-14 pr-4 py-2 border rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary focus:border-primary"
-                  :placeholder="$t('auction.enterMaxBid')"
-                >
-              </div>
+              <InputNumber
+                v-model="autoBidMax"
+                :min="minBidAmount"
+                mode="currency"
+                currency="EUR"
+                locale="en-US"
+                inputClass="w-full"
+                :placeholder="$t('auction.enterMaxBid')"
+              />
               <p class="text-xs text-gray-400 mt-1">{{ $t('auction.autoBidHint') }}</p>
-              <button
-                class="w-full mt-2 py-2 bg-primary-50 text-primary font-medium text-sm rounded-lg hover:bg-primary-100 transition-colors disabled:opacity-50"
+              <Button
+                :label="hasAutoBid ? $t('auction.updateAutoBid') : $t('auction.setAutoBid')"
+                outlined
+                size="small"
+                class="w-full mt-2"
                 :disabled="!autoBidMax || autoBidMax < minBidAmount || bidLoading"
                 @click="handleSetAutoBid"
-              >
-                {{ hasAutoBid ? $t('auction.updateAutoBid') : $t('auction.setAutoBid') }}
-              </button>
-              <button
+              />
+              <Button
                 v-if="hasAutoBid"
-                class="w-full mt-1 py-2 text-warning text-sm font-medium hover:bg-warning-50 rounded-lg transition-colors"
+                :label="$t('auction.cancelAutoBid')"
+                text
+                severity="danger"
+                size="small"
+                class="w-full mt-1"
                 @click="handleCancelAutoBid"
-              >
-                {{ $t('auction.cancelAutoBid') }}
-              </button>
+              />
             </div>
           </div>
         </Transition>
@@ -271,7 +264,7 @@ const props = defineProps<Props>()
 
 const { t } = useI18n()
 const { isAuthenticated, login } = useAuth()
-const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, error: _bidApiError, currentBid, bidCount, minBidAmount, hasAutoBid, clearError } = useBid()
+const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, currentBid, bidCount, minBidAmount, hasAutoBid, clearError } = useBid()
 
 const bidAmount = ref<number | null>(null)
 const bidError = ref<string | null>(null)

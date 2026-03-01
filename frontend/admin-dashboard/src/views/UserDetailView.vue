@@ -2,14 +2,23 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUsers } from '@/composables/useUsers'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import Tag from 'primevue/tag'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import Textarea from 'primevue/textarea'
+
+const confirm = useConfirm()
+const toast = useToast()
 
 const route = useRoute()
 const {
   currentUser,
   loading,
-  error,
   fetchUser,
   blockUser,
   unblockUser,
@@ -49,10 +58,17 @@ async function handleBlock() {
   }
 }
 
-async function handleUnblock() {
-  if (confirm('Are you sure you want to unblock this user?')) {
-    await unblockUser(userId.value)
-  }
+function handleUnblock() {
+  confirm.require({
+    message: 'Are you sure you want to unblock this user?',
+    header: 'Unblock User',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-success',
+    accept: async () => {
+      await unblockUser(userId.value)
+      toast.add({ severity: 'success', summary: 'Unblocked', detail: 'User has been unblocked', life: 3000 })
+    },
+  })
 }
 </script>
 
@@ -124,11 +140,8 @@ async function handleUnblock() {
               <h1 class="page-title">
                 {{ currentUser.firstName }} {{ currentUser.lastName }}
               </h1>
-              <StatusBadge :status="currentUser.status" />
-              <StatusBadge
-                :status="currentUser.accountType"
-                size="sm"
-              />
+              <Tag :value="formatStatusLabel(currentUser.status)" :severity="getStatusSeverity(currentUser.status)" />
+              <Tag :value="formatStatusLabel(currentUser.accountType)" :severity="getStatusSeverity(currentUser.accountType)" />
             </div>
             <p class="text-sm text-gray-500">
               {{ currentUser.email }}
@@ -136,20 +149,18 @@ async function handleUnblock() {
           </div>
         </div>
         <div class="flex gap-2">
-          <button
+          <Button
             v-if="currentUser.status === 'active'"
-            class="btn-danger"
+            label="Block User"
+            severity="danger"
             @click="showBlockDialog = true"
-          >
-            Block User
-          </button>
-          <button
+          />
+          <Button
             v-if="currentUser.status === 'blocked'"
-            class="btn-success"
+            label="Unblock User"
+            severity="success"
             @click="handleUnblock"
-          >
-            Unblock User
-          </button>
+          />
         </div>
       </div>
 
@@ -245,13 +256,13 @@ async function handleUnblock() {
               <dt class="text-gray-500">
                 Account Type
               </dt>
-              <dd><StatusBadge :status="currentUser.accountType" /></dd>
+              <dd><Tag :value="formatStatusLabel(currentUser.accountType)" :severity="getStatusSeverity(currentUser.accountType)" /></dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-gray-500">
                 Deposit Status
               </dt>
-              <dd><StatusBadge :status="currentUser.depositStatus" /></dd>
+              <dd><Tag :value="formatStatusLabel(currentUser.depositStatus)" :severity="getStatusSeverity(currentUser.depositStatus)" /></dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-gray-500">
@@ -282,7 +293,7 @@ async function handleUnblock() {
           <h2 class="section-title mb-0">
             KYC History
           </h2>
-          <StatusBadge :status="currentUser.kycStatus" />
+          <Tag :value="formatStatusLabel(currentUser.kycStatus)" :severity="getStatusSeverity(currentUser.kycStatus)" />
         </div>
 
         <div
@@ -302,10 +313,7 @@ async function handleUnblock() {
             class="flex items-start gap-4 rounded-lg bg-gray-50 p-4"
           >
             <div class="mt-1">
-              <StatusBadge
-                :status="event.status"
-                size="sm"
-              />
+              <Tag :value="formatStatusLabel(event.status)" :severity="getStatusSeverity(event.status)" />
             </div>
             <div class="flex-1">
               <p class="text-sm text-gray-700">
@@ -327,64 +335,36 @@ async function handleUnblock() {
         <h2 class="section-title">
           Bid History
         </h2>
-        <div
-          v-if="currentUser.bidHistory.length === 0"
-          class="py-8 text-center text-sm text-gray-500"
-        >
-          No bid history.
-        </div>
-        <div
-          v-else
-          class="overflow-x-auto"
-        >
-          <table class="w-full">
-            <thead>
-              <tr>
-                <th class="table-header">
-                  Auction
-                </th>
-                <th class="table-header">
-                  Lot
-                </th>
-                <th class="table-header text-right">
-                  Amount
-                </th>
-                <th class="table-header">
-                  Status
-                </th>
-                <th class="table-header">
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="bid in currentUser.bidHistory"
-                :key="bid.id"
-                class="table-row"
-              >
-                <td class="table-cell text-gray-600">
-                  {{ bid.auctionTitle }}
-                </td>
-                <td class="table-cell font-medium text-gray-900">
-                  {{ bid.lotTitle }}
-                </td>
-                <td class="table-cell text-right font-medium">
-                  {{ formatCurrency(bid.amount) }}
-                </td>
-                <td class="table-cell">
-                  <StatusBadge
-                    :status="bid.status"
-                    size="sm"
-                  />
-                </td>
-                <td class="table-cell text-gray-500">
-                  {{ formatDate(bid.timestamp) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DataTable :value="currentUser.bidHistory" stripedRows>
+          <template #empty>
+            <div class="text-center py-8 text-gray-500">No bid history.</div>
+          </template>
+          <Column field="auctionTitle" header="Auction">
+            <template #body="{ data }">
+              <span class="text-gray-600">{{ data.auctionTitle }}</span>
+            </template>
+          </Column>
+          <Column field="lotTitle" header="Lot">
+            <template #body="{ data }">
+              <span class="font-medium text-gray-900">{{ data.lotTitle }}</span>
+            </template>
+          </Column>
+          <Column field="amount" header="Amount" headerStyle="text-align: right" bodyStyle="text-align: right">
+            <template #body="{ data }">
+              <span class="font-medium">{{ formatCurrency(data.amount) }}</span>
+            </template>
+          </Column>
+          <Column field="status" header="Status">
+            <template #body="{ data }">
+              <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+            </template>
+          </Column>
+          <Column field="timestamp" header="Date">
+            <template #body="{ data }">
+              <span class="text-gray-500">{{ formatDate(data.timestamp) }}</span>
+            </template>
+          </Column>
+        </DataTable>
       </div>
 
       <!-- Payments Tab -->
@@ -395,84 +375,80 @@ async function handleUnblock() {
         <h2 class="section-title">
           Payment History
         </h2>
-        <div
-          v-if="currentUser.paymentHistory.length === 0"
-          class="py-8 text-center text-sm text-gray-500"
+        <DataTable
+          :value="currentUser.paymentHistory"
+          :rowClass="(rowData: any) => rowData.status === 'overdue' ? 'bg-red-50' : ''"
+          stripedRows
         >
-          No payment history.
-        </div>
-        <div
-          v-else
-          class="overflow-x-auto"
-        >
-          <table class="w-full">
-            <thead>
-              <tr>
-                <th class="table-header">
-                  Lot
-                </th>
-                <th class="table-header text-right">
-                  Amount
-                </th>
-                <th class="table-header">
-                  Status
-                </th>
-                <th class="table-header">
-                  Due Date
-                </th>
-                <th class="table-header">
-                  Paid Date
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="payment in currentUser.paymentHistory"
-                :key="payment.id"
-                :class="['table-row', payment.status === 'overdue' && 'bg-red-50']"
-              >
-                <td class="table-cell font-medium text-gray-900">
-                  {{ payment.lotTitle }}
-                </td>
-                <td class="table-cell text-right font-medium">
-                  {{ formatCurrency(payment.amount) }}
-                </td>
-                <td class="table-cell">
-                  <StatusBadge :status="payment.status" />
-                </td>
-                <td class="table-cell text-gray-500">
-                  {{ formatDate(payment.dueDate) }}
-                </td>
-                <td class="table-cell text-gray-500">
-                  {{ formatDate(payment.paidDate) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <template #empty>
+            <div class="text-center py-8 text-gray-500">No payment history.</div>
+          </template>
+          <Column field="lotTitle" header="Lot">
+            <template #body="{ data }">
+              <span class="font-medium text-gray-900">{{ data.lotTitle }}</span>
+            </template>
+          </Column>
+          <Column field="amount" header="Amount" headerStyle="text-align: right" bodyStyle="text-align: right">
+            <template #body="{ data }">
+              <span class="font-medium">{{ formatCurrency(data.amount) }}</span>
+            </template>
+          </Column>
+          <Column field="status" header="Status">
+            <template #body="{ data }">
+              <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+            </template>
+          </Column>
+          <Column field="dueDate" header="Due Date">
+            <template #body="{ data }">
+              <span class="text-gray-500">{{ formatDate(data.dueDate) }}</span>
+            </template>
+          </Column>
+          <Column field="paidDate" header="Paid Date">
+            <template #body="{ data }">
+              <span class="text-gray-500">{{ formatDate(data.paidDate) }}</span>
+            </template>
+          </Column>
+        </DataTable>
       </div>
     </template>
 
     <!-- Block Dialog -->
-    <ConfirmDialog
-      :open="showBlockDialog"
-      title="Block User"
-      message="This will prevent the user from logging in, placing bids, or listing lots."
-      confirm-label="Block User"
-      variant="danger"
-      :loading="loading"
-      @confirm="handleBlock"
-      @cancel="showBlockDialog = false"
+    <Dialog
+      v-model:visible="showBlockDialog"
+      header="Block User"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '28rem' }"
     >
+      <p class="mb-4 text-sm text-gray-500">
+        This will prevent the user from logging in, placing bids, or listing lots.
+      </p>
       <div>
         <label class="label">Reason *</label>
-        <textarea
+        <Textarea
           v-model="blockReason"
           rows="3"
-          class="input"
+          class="w-full"
           placeholder="Reason for blocking this user..."
         />
       </div>
-    </ConfirmDialog>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            :disabled="loading"
+            @click="showBlockDialog = false"
+          />
+          <Button
+            label="Block User"
+            severity="danger"
+            :loading="loading"
+            :disabled="loading"
+            @click="handleBlock"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>

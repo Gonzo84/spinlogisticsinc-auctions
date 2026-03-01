@@ -12,12 +12,17 @@
     "postinstall": "node scripts/patch-pinia.mjs"
   },
   "dependencies": {
+    "@auction-platform/design-tokens": "*",
     "@pinia/nuxt": "^0.7.0",
+    "@primeuix/themes": "^2.0.3",
+    "@primevue/nuxt-module": "^4.5.4",
     "@vueuse/nuxt": "^11.0.0",
     "chart.js": "^4.4.0",
     "keycloak-js": "^26.0.0",
     "nuxt": "^3.14.0",
     "pinia": "^2.2.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.4",
     "vue-chartjs": "^5.3.0"
   },
   "devDependencies": {

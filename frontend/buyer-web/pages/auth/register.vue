@@ -49,33 +49,30 @@
         <template v-if="accountType === 'business'">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.companyName') }} *</label>
-            <input
+            <InputText
               v-model="form.companyName"
-              type="text"
               required
-              class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full"
               :placeholder="$t('auth.companyNamePlaceholder')"
-            >
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.vatNumber') }}</label>
-              <input
+              <InputText
                 v-model="form.vatNumber"
-                type="text"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full"
                 placeholder="NL123456789B01"
-              >
+              />
             </div>
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.chamberOfCommerce') }}</label>
-              <input
+              <InputText
                 v-model="form.cocNumber"
-                type="text"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full"
                 :placeholder="$t('auth.cocPlaceholder')"
-              >
+              />
             </div>
           </div>
         </template>
@@ -84,108 +81,93 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.firstName') }} *</label>
-            <input
+            <InputText
               v-model="form.firstName"
-              type="text"
               required
-              class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-            >
+              class="w-full"
+            />
           </div>
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.lastName') }} *</label>
-            <input
+            <InputText
               v-model="form.lastName"
-              type="text"
               required
-              class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-            >
+              class="w-full"
+            />
           </div>
         </div>
 
         <!-- Email -->
         <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.email') }} *</label>
-          <input
+          <InputText
             v-model="form.email"
             type="email"
             required
-            class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            class="w-full"
             :placeholder="$t('auth.emailPlaceholder')"
-          >
+          />
         </div>
 
         <!-- Phone -->
         <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.phone') }} *</label>
-          <input
+          <InputText
             v-model="form.phone"
             type="tel"
             required
-            class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            class="w-full"
             placeholder="+31 6 12345678"
-          >
+          />
         </div>
 
         <!-- Country -->
         <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.country') }} *</label>
-          <select
+          <Select
             v-model="form.country"
-            required
-            class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-          >
-            <option value="">{{ $t('auth.selectCountry') }}</option>
-            <option value="NL">Netherlands</option>
-            <option value="DE">Germany</option>
-            <option value="FR">France</option>
-            <option value="BE">Belgium</option>
-            <option value="PL">Poland</option>
-            <option value="IT">Italy</option>
-            <option value="RO">Romania</option>
-            <option value="ES">Spain</option>
-            <option value="AT">Austria</option>
-          </select>
+            :options="countryOptions"
+            optionLabel="label"
+            optionValue="value"
+            :placeholder="$t('auth.selectCountry')"
+            class="w-full"
+          />
         </div>
 
         <!-- Address (Business only) -->
         <template v-if="accountType === 'business'">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.address') }}</label>
-            <input
+            <InputText
               v-model="form.address"
-              type="text"
-              class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full"
               :placeholder="$t('auth.addressPlaceholder')"
-            >
+            />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.postalCode') }}</label>
-              <input
+              <InputText
                 v-model="form.postalCode"
-                type="text"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              >
+                class="w-full"
+              />
             </div>
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.city') }}</label>
-              <input
+              <InputText
                 v-model="form.city"
-                type="text"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              >
+                class="w-full"
+              />
             </div>
           </div>
         </template>
 
         <!-- Terms -->
         <label class="flex items-start gap-3 cursor-pointer">
-          <input
+          <Checkbox
             v-model="form.termsAccepted"
-            type="checkbox"
-            required
-            class="w-4 h-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
-          >
+            :binary="true"
+          />
           <span class="text-sm text-gray-600">
             {{ $t('auth.acceptTerms') }}
             <a href="#" class="text-primary hover:underline">{{ $t('auth.termsLink') }}</a>
@@ -200,27 +182,19 @@
         </div>
 
         <!-- Submit -->
-        <button
+        <Button
           type="submit"
-          class="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-800 transition-colors disabled:opacity-50"
+          :label="submitting ? $t('auth.registering') : $t('auth.createAccountBtn')"
+          :loading="submitting"
           :disabled="submitting"
-        >
-          <span v-if="submitting" class="flex items-center justify-center gap-2">
-            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            {{ $t('auth.registering') }}
-          </span>
-          <span v-else>{{ $t('auth.createAccountBtn') }}</span>
-        </button>
+          class="w-full"
+          size="large"
+        />
 
         <!-- Login Link -->
         <p class="text-center text-sm text-gray-500 mt-4">
           {{ $t('auth.alreadyHaveAccount') }}
-          <button type="button" class="text-primary font-medium hover:underline" @click="handleLogin">
-            {{ $t('auth.loginHere') }}
-          </button>
+          <Button type="button" :label="$t('auth.loginHere')" link @click="handleLogin" />
         </p>
       </form>
     </div>
@@ -234,6 +208,18 @@ const { register, login, isAuthenticated } = useAuth()
 const accountType = ref<'business' | 'private'>('business')
 const submitting = ref(false)
 const registerError = ref<string | null>(null)
+
+const countryOptions = [
+  { label: 'Netherlands', value: 'NL' },
+  { label: 'Germany', value: 'DE' },
+  { label: 'France', value: 'FR' },
+  { label: 'Belgium', value: 'BE' },
+  { label: 'Poland', value: 'PL' },
+  { label: 'Italy', value: 'IT' },
+  { label: 'Romania', value: 'RO' },
+  { label: 'Spain', value: 'ES' },
+  { label: 'Austria', value: 'AT' },
+]
 
 const form = reactive({
   companyName: '',

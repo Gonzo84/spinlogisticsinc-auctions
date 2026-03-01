@@ -1,3 +1,8 @@
+<!--
+  @deprecated Use PrimeVue's Tag component with getStatusSeverity() and formatStatusLabel()
+  from '@/composables/useStatusSeverity' instead. This component is no longer used and will
+  be removed in a future cleanup.
+-->
 <script setup lang="ts">
 import { computed } from 'vue'
 

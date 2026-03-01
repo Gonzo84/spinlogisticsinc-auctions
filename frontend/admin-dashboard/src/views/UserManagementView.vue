@@ -1,7 +1,39 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUsers } from '@/composables/useUsers'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Tag from 'primevue/tag'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
+
+const accountTypeOptions = [
+  { label: 'All types', value: '' },
+  { label: 'Buyer', value: 'buyer' },
+  { label: 'Seller', value: 'seller' },
+  { label: 'Both', value: 'both' },
+]
+
+const statusOptions = [
+  { label: 'All statuses', value: '' },
+  { label: 'Active', value: 'active' },
+  { label: 'Blocked', value: 'blocked' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Suspended', value: 'suspended' },
+]
+
+const kycStatusOptions = [
+  { label: 'All', value: '' },
+  { label: 'Not Started', value: 'not_started' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Approved', value: 'approved' },
+  { label: 'Rejected', value: 'rejected' },
+]
+
+const router = useRouter()
 
 const {
   users,
@@ -88,118 +120,57 @@ const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            <input
+            <InputText
               v-model="filters.search"
-              type="text"
-              class="input pl-10"
               placeholder="Search by name, email, company..."
-            >
+              class="w-full pl-10"
+            />
           </div>
         </div>
         <div>
           <label class="label">Account Type</label>
-          <select
+          <Select
             v-model="filters.accountType"
-            class="select"
-          >
-            <option value="">
-              All types
-            </option>
-            <option value="buyer">
-              Buyer
-            </option>
-            <option value="seller">
-              Seller
-            </option>
-            <option value="both">
-              Both
-            </option>
-          </select>
+            :options="accountTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All types"
+            class="w-full"
+          />
         </div>
         <div>
           <label class="label">Status</label>
-          <select
+          <Select
             v-model="filters.status"
-            class="select"
-          >
-            <option value="">
-              All statuses
-            </option>
-            <option value="active">
-              Active
-            </option>
-            <option value="blocked">
-              Blocked
-            </option>
-            <option value="pending">
-              Pending
-            </option>
-            <option value="suspended">
-              Suspended
-            </option>
-          </select>
+            :options="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All statuses"
+            class="w-full"
+          />
         </div>
         <div>
           <label class="label">KYC</label>
-          <select
+          <Select
             v-model="filters.kycStatus"
-            class="select"
-          >
-            <option value="">
-              All
-            </option>
-            <option value="not_started">
-              Not Started
-            </option>
-            <option value="pending">
-              Pending
-            </option>
-            <option value="approved">
-              Approved
-            </option>
-            <option value="rejected">
-              Rejected
-            </option>
-          </select>
+            :options="kycStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All"
+            class="w-full"
+          />
         </div>
-        <button
-          class="btn-secondary"
+        <Button
+          label="Clear"
+          severity="secondary"
           @click="clearFilters"
-        >
-          Clear
-        </button>
+        />
       </div>
-    </div>
-
-    <!-- Loading -->
-    <div
-      v-if="loading"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
     </div>
 
     <!-- Error -->
     <div
-      v-else-if="error"
+      v-if="error"
       class="card border-red-200 bg-red-50 text-center"
     >
       <p class="text-sm text-red-600">
@@ -208,136 +179,83 @@ const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
     </div>
 
     <!-- Table -->
-    <div
-      v-else
-      class="table-container"
-    >
-      <table class="w-full">
-        <thead>
-          <tr>
-            <th class="table-header">
-              User
-            </th>
-            <th class="table-header">
-              Company
-            </th>
-            <th class="table-header">
-              Type
-            </th>
-            <th class="table-header">
-              Status
-            </th>
-            <th class="table-header">
-              KYC
-            </th>
-            <th class="table-header">
-              Deposit
-            </th>
-            <th class="table-header">
-              Registered
-            </th>
-            <th class="table-header">
-              Last Login
-            </th>
-            <th class="table-header text-right">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="users.length === 0">
-            <td
-              colspan="9"
-              class="px-4 py-12 text-center text-sm text-gray-500"
-            >
-              No users found.
-            </td>
-          </tr>
-          <tr
-            v-for="user in users"
-            :key="user.id"
-            class="table-row"
-          >
-            <td class="table-cell">
-              <router-link
-                :to="`/users/${user.id}`"
-                class="hover:text-primary-600"
-              >
-                <p class="font-medium text-gray-900">
-                  {{ user.firstName }} {{ user.lastName }}
-                </p>
-                <p class="text-xs text-gray-500">
-                  {{ user.email }}
-                </p>
-              </router-link>
-            </td>
-            <td class="table-cell text-gray-600">
-              {{ user.companyName || '--' }}
-            </td>
-            <td class="table-cell">
-              <StatusBadge
-                :status="user.accountType"
-                size="sm"
-              />
-            </td>
-            <td class="table-cell">
-              <StatusBadge :status="user.status" />
-            </td>
-            <td class="table-cell">
-              <StatusBadge
-                :status="user.kycStatus"
-                size="sm"
-              />
-            </td>
-            <td class="table-cell">
-              <StatusBadge
-                :status="user.depositStatus"
-                size="sm"
-              />
-            </td>
-            <td class="table-cell text-gray-500">
-              {{ formatDate(user.registeredAt) }}
-            </td>
-            <td class="table-cell text-gray-500">
-              {{ formatDate(user.lastLoginAt) }}
-            </td>
-            <td class="table-cell text-right">
-              <router-link
-                :to="`/users/${user.id}`"
-                class="btn-secondary btn-sm"
-              >
-                View
-              </router-link>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Pagination -->
-      <div
-        v-if="totalPages() > 1"
-        class="flex items-center justify-between border-t border-gray-200 px-4 py-3"
+    <div v-else class="card">
+      <DataTable
+        :value="users"
+        :loading="loading"
+        paginator
+        :rows="filters.pageSize"
+        :totalRecords="totalCount"
+        :lazy="true"
+        :first="(filters.page - 1) * filters.pageSize"
+        @page="goToPage($event.page + 1)"
+        stripedRows
+        removableSort
       >
-        <p class="text-sm text-gray-500">
-          Page {{ filters.page }} of {{ totalPages() }}
-        </p>
-        <div class="flex gap-1">
-          <button
-            class="btn-secondary btn-sm"
-            :disabled="filters.page <= 1"
-            @click="goToPage(filters.page - 1)"
-          >
-            Previous
-          </button>
-          <button
-            class="btn-secondary btn-sm"
-            :disabled="filters.page >= totalPages()"
-            @click="goToPage(filters.page + 1)"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+        <template #empty>
+          <div class="text-center py-8 text-gray-500">No users found.</div>
+        </template>
+        <Column field="firstName" header="User">
+          <template #body="{ data }">
+            <router-link
+              :to="`/users/${data.id}`"
+              class="hover:text-primary-600"
+            >
+              <p class="font-medium text-gray-900">
+                {{ data.firstName }} {{ data.lastName }}
+              </p>
+              <p class="text-xs text-gray-500">
+                {{ data.email }}
+              </p>
+            </router-link>
+          </template>
+        </Column>
+        <Column field="companyName" header="Company">
+          <template #body="{ data }">
+            <span class="text-gray-600">{{ data.companyName || '--' }}</span>
+          </template>
+        </Column>
+        <Column field="accountType" header="Type">
+          <template #body="{ data }">
+            <Tag :value="formatStatusLabel(data.accountType)" :severity="getStatusSeverity(data.accountType)" />
+          </template>
+        </Column>
+        <Column field="status" header="Status">
+          <template #body="{ data }">
+            <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+          </template>
+        </Column>
+        <Column field="kycStatus" header="KYC">
+          <template #body="{ data }">
+            <Tag :value="formatStatusLabel(data.kycStatus)" :severity="getStatusSeverity(data.kycStatus)" />
+          </template>
+        </Column>
+        <Column field="depositStatus" header="Deposit">
+          <template #body="{ data }">
+            <Tag :value="formatStatusLabel(data.depositStatus)" :severity="getStatusSeverity(data.depositStatus)" />
+          </template>
+        </Column>
+        <Column field="registeredAt" header="Registered" sortable>
+          <template #body="{ data }">
+            <span class="text-gray-500">{{ formatDate(data.registeredAt) }}</span>
+          </template>
+        </Column>
+        <Column field="lastLoginAt" header="Last Login" sortable>
+          <template #body="{ data }">
+            <span class="text-gray-500">{{ formatDate(data.lastLoginAt) }}</span>
+          </template>
+        </Column>
+        <Column header="Actions" headerStyle="text-align: right" bodyStyle="text-align: right" style="width: 100px">
+          <template #body="{ data }">
+            <Button
+              label="View"
+              severity="secondary"
+              size="small"
+              @click="router.push(`/users/${data.id}`)"
+            />
+          </template>
+        </Column>
+      </DataTable>
     </div>
   </div>
 </template>

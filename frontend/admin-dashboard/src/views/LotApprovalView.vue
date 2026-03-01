@@ -4,8 +4,9 @@ import axios from 'axios'
 import { useApi } from '@/composables/useApi'
 import type { PendingLot } from '@/types/lot'
 import type { ApiResponse, PagedResponse } from '@/types/api'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import Textarea from 'primevue/textarea'
 
 interface RawLotResponse {
   id?: string
@@ -244,25 +245,13 @@ function formatDate(dateStr: string): string {
         <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
           {{ pendingLots.length }} pending
         </span>
-        <button
-          class="btn-secondary btn-sm"
+        <Button
+          label="Refresh"
+          icon="pi pi-refresh"
+          severity="secondary"
+          size="small"
           @click="fetchPendingLots"
-        >
-          <svg
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Refresh
-        </button>
+        />
       </div>
     </div>
 
@@ -399,18 +388,18 @@ function formatDate(dateStr: string): string {
             class="flex gap-2"
             @click.stop
           >
-            <button
-              class="btn-success btn-sm"
+            <Button
+              label="Approve"
+              severity="success"
+              size="small"
               @click="approveLot(lot.id)"
-            >
-              Approve
-            </button>
-            <button
-              class="btn-danger btn-sm"
+            />
+            <Button
+              label="Reject"
+              severity="danger"
+              size="small"
               @click="openRejectDialog(lot.id)"
-            >
-              Reject
-            </button>
+            />
           </div>
 
           <!-- Expand icon -->
@@ -512,24 +501,39 @@ function formatDate(dateStr: string): string {
     </div>
 
     <!-- Reject Dialog -->
-    <ConfirmDialog
-      :open="showRejectDialog"
-      title="Reject Lot"
-      message="Please provide a reason for rejecting this lot. The seller will be notified."
-      confirm-label="Reject Lot"
-      variant="danger"
-      @confirm="confirmReject"
-      @cancel="showRejectDialog = false"
+    <Dialog
+      v-model:visible="showRejectDialog"
+      header="Reject Lot"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '28rem' }"
     >
+      <p class="mb-4 text-sm text-gray-500">
+        Please provide a reason for rejecting this lot. The seller will be notified.
+      </p>
       <div>
         <label class="label">Rejection Reason *</label>
-        <textarea
+        <Textarea
           v-model="rejectReason"
           rows="3"
-          class="input"
+          class="w-full"
           placeholder="e.g., Images are blurry, description is incomplete..."
         />
       </div>
-    </ConfirmDialog>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            @click="showRejectDialog = false"
+          />
+          <Button
+            label="Reject Lot"
+            severity="danger"
+            @click="confirmReject"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>

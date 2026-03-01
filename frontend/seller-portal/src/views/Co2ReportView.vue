@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import { useCo2 } from '@/composables/useCo2'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
-import SellThroughChart from '@/components/charts/SellThroughChart.vue'
 
 const {
   summary,
@@ -41,14 +43,6 @@ function formatDate(dateStr: string): string {
 const trendLabels = computed(() => monthlyTrend.value.map((m) => m.month))
 const trendData = computed(() => monthlyTrend.value.map((m) => m.co2AvoidedKg))
 
-// For the category doughnut, use the top two as a breakdown
-const topCategoryName = computed(() => categoryBreakdown.value[0]?.category ?? 'Main')
-const topCategoryValue = computed(() => categoryBreakdown.value[0]?.co2AvoidedKg ?? 0)
-const otherCategoriesValue = computed(() => {
-  const total = categoryBreakdown.value.reduce((sum, c) => sum + c.co2AvoidedKg, 0)
-  return total - topCategoryValue.value
-})
-
 async function handleDownload(format: 'pdf' | 'csv') {
   await downloadReport(format)
 }
@@ -67,44 +61,18 @@ async function handleDownload(format: 'pdf' | 'csv') {
         </p>
       </div>
       <div class="flex gap-2">
-        <button
-          class="btn-secondary"
+        <Button
+          label="Export CSV"
+          icon="pi pi-download"
+          severity="secondary"
           @click="handleDownload('csv')"
-        >
-          <svg
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-            />
-          </svg>
-          Export CSV
-        </button>
-        <button
-          class="btn-success"
+        />
+        <Button
+          label="Download PDF"
+          icon="pi pi-download"
+          severity="success"
           @click="handleDownload('pdf')"
-        >
-          <svg
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          Download PDF
-        </button>
+        />
       </div>
     </div>
 
@@ -142,12 +110,13 @@ async function handleDownload(format: 'pdf' | 'csv') {
       <p class="text-sm text-red-600">
         {{ error }}
       </p>
-      <button
-        class="btn-secondary btn-sm mt-3"
+      <Button
+        label="Retry"
+        severity="secondary"
+        size="small"
+        class="mt-3"
         @click="fetchAll()"
-      >
-        Retry
-      </button>
+      />
     </div>
 
     <template v-else-if="summary">
@@ -321,72 +290,44 @@ async function handleDownload(format: 'pdf' | 'csv') {
             {{ lotBreakdown.length }} lots
           </p>
         </div>
-        <div
-          v-if="lotBreakdown.length === 0"
-          class="py-8 text-center text-sm text-gray-500"
-        >
-          No CO2 data available yet.
-        </div>
-        <div
-          v-else
-          class="overflow-x-auto"
-        >
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-gray-200">
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
-                  Lot
-                </th>
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
-                  Category
-                </th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                  CO2 Avoided
-                </th>
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
-                  Basis
-                </th>
-                <th class="pb-2 text-right text-xs font-semibold uppercase text-gray-500">
-                  Hammer Price
-                </th>
-                <th class="pb-2 text-left text-xs font-semibold uppercase text-gray-500">
-                  Sold Date
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr
-                v-for="item in lotBreakdown"
-                :key="item.lotId"
-                class="hover:bg-gray-50"
+        <DataTable :value="lotBreakdown" stripedRows>
+          <Column header="Lot">
+            <template #body="{ data }">
+              <router-link
+                :to="`/lots/${data.lotId}`"
+                class="text-sm font-medium text-gray-900 hover:text-primary-600"
               >
-                <td class="py-2.5">
-                  <router-link
-                    :to="`/lots/${item.lotId}`"
-                    class="text-sm font-medium text-gray-900 hover:text-primary-600"
-                  >
-                    {{ item.lotTitle }}
-                  </router-link>
-                </td>
-                <td class="py-2.5 text-sm text-gray-600">
-                  {{ item.category }}
-                </td>
-                <td class="py-2.5 text-right text-sm font-medium text-emerald-700">
-                  {{ formatWeight(item.co2AvoidedKg) }}
-                </td>
-                <td class="py-2.5 text-sm text-gray-500">
-                  {{ item.calculationBasis }}
-                </td>
-                <td class="py-2.5 text-right text-sm text-gray-900">
-                  {{ formatCurrency(item.hammerPrice) }}
-                </td>
-                <td class="py-2.5 text-sm text-gray-500">
-                  {{ formatDate(item.soldAt) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                {{ data.lotTitle }}
+              </router-link>
+            </template>
+          </Column>
+          <Column field="category" header="Category" />
+          <Column header="CO2 Avoided" headerStyle="text-align: right">
+            <template #body="{ data }">
+              <div class="text-right text-sm font-medium text-emerald-700">
+                {{ formatWeight(data.co2AvoidedKg) }}
+              </div>
+            </template>
+          </Column>
+          <Column field="calculationBasis" header="Basis" />
+          <Column header="Hammer Price" headerStyle="text-align: right">
+            <template #body="{ data }">
+              <div class="text-right text-sm text-gray-900">
+                {{ formatCurrency(data.hammerPrice) }}
+              </div>
+            </template>
+          </Column>
+          <Column header="Sold Date">
+            <template #body="{ data }">
+              <span class="text-sm text-gray-500">{{ formatDate(data.soldAt) }}</span>
+            </template>
+          </Column>
+          <template #empty>
+            <div class="py-8 text-center text-sm text-gray-500">
+              No CO2 data available yet.
+            </div>
+          </template>
+        </DataTable>
       </div>
     </template>
   </div>

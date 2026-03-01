@@ -34,7 +34,9 @@ export default defineNuxtPlugin((nuxtApp) => {
       }
 
       if (status === 403) {
-        navigateTo('/')
+        // Don't redirect — let the calling code handle 403 errors
+        // so components can display meaningful error messages to users
+        console.warn('API 403 Forbidden:', response.url)
       }
 
       if (status >= 500) {

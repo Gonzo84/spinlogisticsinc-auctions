@@ -1,4 +1,4 @@
-import { ref, computed, readonly } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { User } from '~/types/user'
 
@@ -59,11 +59,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    user: readonly(user),
-    token: readonly(token),
-    refreshToken: readonly(refreshToken),
-    isAuthenticated: readonly(isAuthenticated),
-    roles: readonly(roles),
+    user,
+    token,
+    refreshToken,
+    isAuthenticated,
+    roles,
     fullName,
     initials,
     isBusiness,

@@ -48,6 +48,7 @@
   },
   "auction": {
     "currentBid": "Aktuelles Gebot",
+    "bid": "Gebot",
     "bids": "Gebote",
     "bidHistory": "Gebotshistorie",
     "timeRemaining": "Verbleibende Zeit",

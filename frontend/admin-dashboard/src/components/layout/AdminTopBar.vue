@@ -6,7 +6,7 @@ const emit = defineEmits<{
   'toggle-sidebar': []
 }>()
 
-const { userName, fullName, roles, isAdmin, isSuperAdmin, logout } = useAuth()
+const { userName, fullName, isSuperAdmin, logout } = useAuth()
 
 const showDropdown = ref(false)
 const showNotifications = ref(false)

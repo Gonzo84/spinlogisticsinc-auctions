@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import Button from 'primevue/button'
+import Tag from 'primevue/tag'
+import Select from 'primevue/select'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import { useLots } from '@/composables/useLots'
 import type { LotStatus, Lot, LotsFilter } from '@/types'
 
-const router = useRouter()
 const {
   lots,
   pagination,
@@ -24,13 +27,36 @@ const searchQuery = ref('')
 const sortBy = ref('createdAt')
 const sortDir = ref<'asc' | 'desc'>('desc')
 
-const tabs: { key: LotStatus | 'all'; label: string; badge: string }[] = [
-  { key: 'all', label: 'All', badge: '' },
-  { key: 'draft', label: 'Draft', badge: 'badge-draft' },
-  { key: 'pending_review', label: 'Pending', badge: 'badge-pending' },
-  { key: 'active', label: 'Active', badge: 'badge-active' },
-  { key: 'sold', label: 'Sold', badge: 'badge-sold' },
-  { key: 'unsold', label: 'Unsold', badge: 'badge-unsold' },
+const sortByOptions = [
+  { label: 'Date Created', value: 'createdAt' },
+  { label: 'Title', value: 'title' },
+  { label: 'Current Bid', value: 'currentBid' },
+  { label: 'Bid Count', value: 'bidCount' },
+]
+
+function getStatusSeverity(status: string): string | undefined {
+  const map: Record<string, string> = {
+    draft: 'secondary',
+    pending: 'warn',
+    pending_review: 'warn',
+    active: 'success',
+    sold: 'info',
+    completed: 'info',
+    unsold: 'danger',
+    rejected: 'danger',
+    paid: 'success',
+    processing: 'warn',
+  }
+  return map[status] || undefined
+}
+
+const tabs: { key: LotStatus | 'all'; label: string; severity: string | undefined }[] = [
+  { key: 'all', label: 'All', severity: undefined },
+  { key: 'draft', label: 'Draft', severity: getStatusSeverity('draft') },
+  { key: 'pending_review', label: 'Pending', severity: getStatusSeverity('pending_review') },
+  { key: 'active', label: 'Active', severity: getStatusSeverity('active') },
+  { key: 'sold', label: 'Sold', severity: getStatusSeverity('sold') },
+  { key: 'unsold', label: 'Unsold', severity: getStatusSeverity('unsold') },
 ]
 
 function getTabCount(key: string): number {
@@ -89,17 +115,6 @@ function formatDate(dateStr: string): string {
   })
 }
 
-function getStatusBadge(status: LotStatus): string {
-  const map: Record<LotStatus, string> = {
-    draft: 'badge-draft',
-    pending_review: 'badge-pending',
-    active: 'badge-active',
-    sold: 'badge-sold',
-    unsold: 'badge-unsold',
-    rejected: 'bg-red-100 text-red-800 badge',
-  }
-  return map[status] ?? 'badge-draft'
-}
 
 function getStatusLabel(status: LotStatus): string {
   const map: Record<LotStatus, string> = {
@@ -149,22 +164,14 @@ function goToPage(page: number) {
       </div>
       <router-link
         to="/lots/create"
-        class="btn-primary"
+        custom
+        v-slot="{ navigate }"
       >
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-        Create Lot
+        <Button
+          label="Create Lot"
+          icon="pi pi-plus"
+          @click="navigate"
+        />
       </router-link>
     </div>
 
@@ -220,355 +227,215 @@ function goToPage(page: number) {
           class="input pl-10"
         >
       </div>
-      <select
+      <Select
         v-model="sortBy"
-        class="input w-auto"
-      >
-        <option value="createdAt">
-          Date Created
-        </option>
-        <option value="title">
-          Title
-        </option>
-        <option value="currentBid">
-          Current Bid
-        </option>
-        <option value="bidCount">
-          Bid Count
-        </option>
-      </select>
-      <button
-        class="btn-ghost p-2"
+        :options="sortByOptions"
+        optionLabel="label"
+        optionValue="value"
+        class="w-auto"
+      />
+      <Button
+        text
+        :icon="sortDir === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'"
         :title="sortDir === 'asc' ? 'Ascending' : 'Descending'"
+        :aria-label="sortDir === 'asc' ? 'Ascending' : 'Descending'"
+        class="p-2"
         @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
-      >
-        <svg
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            v-if="sortDir === 'asc'"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
-          />
-          <path
-            v-else
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"
-          />
-        </svg>
-      </button>
-    </div>
-
-    <!-- Loading state -->
-    <div
-      v-if="loading"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
-      <p class="mt-2 text-sm text-gray-500">
-        Loading lots...
-      </p>
+      />
     </div>
 
     <!-- Error state -->
     <div
-      v-else-if="error"
+      v-if="error"
       class="card border-red-200 bg-red-50 text-center"
     >
       <p class="text-sm text-red-600">
         {{ error }}
       </p>
-      <button
-        class="btn-secondary btn-sm mt-3"
+      <Button
+        label="Retry"
+        severity="secondary"
+        size="small"
+        class="mt-3"
         @click="loadLots()"
-      >
-        Retry
-      </button>
-    </div>
-
-    <!-- Empty state -->
-    <div
-      v-else-if="lots.length === 0"
-      class="card py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-12 w-12 text-gray-300"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="1.5"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-        />
-      </svg>
-      <h3 class="mt-4 text-lg font-medium text-gray-900">
-        No lots found
-      </h3>
-      <p class="mt-1 text-sm text-gray-500">
-        {{ searchQuery ? 'Try adjusting your search criteria.' : 'Get started by creating your first lot.' }}
-      </p>
-      <router-link
-        v-if="!searchQuery"
-        to="/lots/create"
-        class="btn-primary mt-4"
-      >
-        Create Your First Lot
-      </router-link>
+      />
     </div>
 
     <!-- Lots table -->
-    <div
+    <DataTable
       v-else
-      class="table-wrapper"
+      :value="lots"
+      :loading="loading"
+      stripedRows
+      paginator
+      :rows="20"
+      :totalRecords="pagination.total"
+      :lazy="true"
+      @page="goToPage($event.page + 1)"
     >
-      <table class="w-full">
-        <thead>
-          <tr class="bg-gray-50">
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Lot
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Category
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Status
-            </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Current Bid
-            </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Bids
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Created
-            </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr
-            v-for="lot in lots"
-            :key="lot.id"
-            class="transition-colors hover:bg-gray-50"
+      <Column header="Lot">
+        <template #body="{ data }">
+          <router-link
+            :to="`/lots/${data.id}`"
+            class="flex items-center gap-3"
           >
-            <td class="px-4 py-3">
-              <router-link
-                :to="`/lots/${lot.id}`"
-                class="flex items-center gap-3"
+            <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+              <img
+                v-if="data.images.length > 0"
+                :src="data.images.find((i: any) => i.isPrimary)?.thumbnailUrl ?? data.images[0].thumbnailUrl"
+                :alt="data.title"
+                class="h-full w-full object-cover"
               >
-                <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                  <img
-                    v-if="lot.images.length > 0"
-                    :src="lot.images.find((i) => i.isPrimary)?.thumbnailUrl ?? lot.images[0].thumbnailUrl"
-                    :alt="lot.title"
-                    class="h-full w-full object-cover"
-                  >
-                  <div
-                    v-else
-                    class="flex h-full w-full items-center justify-center"
-                  >
-                    <svg
-                      class="h-5 w-5 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <div class="min-w-0">
-                  <p class="truncate text-sm font-medium text-gray-900 hover:text-primary-600">
-                    {{ lot.title }}
-                  </p>
-                  <p class="text-xs text-gray-500">
-                    {{ lot.location.city }}, {{ lot.location.country }}
-                  </p>
-                </div>
-              </router-link>
-            </td>
-            <td class="px-4 py-3 text-sm text-gray-600">
-              {{ getCategoryName(lot.category) }}
-            </td>
-            <td class="px-4 py-3">
-              <span :class="getStatusBadge(lot.status)">{{ getStatusLabel(lot.status) }}</span>
-            </td>
-            <td class="px-4 py-3 text-right text-sm font-medium text-gray-900">
-              {{ formatCurrency(lot.currentBid) }}
-            </td>
-            <td class="px-4 py-3 text-right text-sm text-gray-600">
-              {{ lot.bidCount }}
-            </td>
-            <td class="px-4 py-3 text-sm text-gray-500">
-              {{ formatDate(lot.createdAt) }}
-            </td>
-            <td class="px-4 py-3 text-right">
-              <div class="flex items-center justify-end gap-1">
-                <router-link
-                  :to="`/lots/${lot.id}`"
-                  class="btn-ghost btn-sm"
-                  title="View details"
+              <div
+                v-else
+                class="flex h-full w-full items-center justify-center"
+              >
+                <svg
+                  class="h-5 w-5 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
                 >
-                  <svg
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    />
-                  </svg>
-                </router-link>
-
-                <router-link
-                  v-if="lot.status === 'draft'"
-                  :to="`/lots/${lot.id}/edit`"
-                  class="btn-ghost btn-sm"
-                  title="Edit"
-                >
-                  <svg
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </router-link>
-
-                <button
-                  v-if="lot.status === 'draft'"
-                  class="btn-ghost btn-sm text-green-600 hover:text-green-700"
-                  title="Submit for review"
-                  @click="handleSubmitForReview(lot)"
-                >
-                  <svg
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </button>
-
-                <button
-                  v-if="lot.status === 'draft'"
-                  class="btn-ghost btn-sm text-red-600 hover:text-red-700"
-                  title="Delete"
-                  @click="handleDelete(lot)"
-                >
-                  <svg
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-gray-900 hover:text-primary-600">
+                {{ data.title }}
+              </p>
+              <p class="text-xs text-gray-500">
+                {{ data.location.city }}, {{ data.location.country }}
+              </p>
+            </div>
+          </router-link>
+        </template>
+      </Column>
+      <Column header="Category">
+        <template #body="{ data }">
+          <span class="text-sm text-gray-600">{{ getCategoryName(data.category) }}</span>
+        </template>
+      </Column>
+      <Column header="Status">
+        <template #body="{ data }">
+          <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+        </template>
+      </Column>
+      <Column header="Current Bid" headerStyle="text-align: right">
+        <template #body="{ data }">
+          <div class="text-right text-sm font-medium text-gray-900">
+            {{ formatCurrency(data.currentBid) }}
+          </div>
+        </template>
+      </Column>
+      <Column header="Bids" headerStyle="text-align: right">
+        <template #body="{ data }">
+          <div class="text-right text-sm text-gray-600">{{ data.bidCount }}</div>
+        </template>
+      </Column>
+      <Column header="Created">
+        <template #body="{ data }">
+          <span class="text-sm text-gray-500">{{ formatDate(data.createdAt) }}</span>
+        </template>
+      </Column>
+      <Column header="Actions" headerStyle="text-align: right">
+        <template #body="{ data }">
+          <div class="flex items-center justify-end gap-1">
+            <router-link
+              :to="`/lots/${data.id}`"
+              custom
+              v-slot="{ navigate }"
+            >
+              <Button
+                text
+                icon="pi pi-eye"
+                size="small"
+                title="View details"
+                aria-label="View details"
+                @click="navigate"
+              />
+            </router-link>
 
-      <!-- Pagination -->
-      <div
-        v-if="pagination.totalPages > 1"
-        class="flex items-center justify-between border-t border-gray-200 px-4 py-3"
-      >
-        <p class="text-sm text-gray-500">
-          Showing {{ (pagination.page - 1) * pagination.pageSize + 1 }} to
-          {{ Math.min(pagination.page * pagination.pageSize, pagination.total) }}
-          of {{ pagination.total }} lots
-        </p>
-        <div class="flex gap-1">
-          <button
-            class="btn-ghost btn-sm"
-            :disabled="pagination.page <= 1"
-            @click="goToPage(pagination.page - 1)"
+            <router-link
+              v-if="data.status === 'draft'"
+              :to="`/lots/${data.id}/edit`"
+              custom
+              v-slot="{ navigate }"
+            >
+              <Button
+                text
+                icon="pi pi-pencil"
+                size="small"
+                title="Edit"
+                aria-label="Edit"
+                @click="navigate"
+              />
+            </router-link>
+
+            <Button
+              v-if="data.status === 'draft'"
+              text
+              icon="pi pi-check"
+              size="small"
+              title="Submit for review"
+              aria-label="Submit for review"
+              class="text-green-600 hover:text-green-700"
+              @click="handleSubmitForReview(data)"
+            />
+
+            <Button
+              v-if="data.status === 'draft'"
+              text
+              icon="pi pi-trash"
+              size="small"
+              title="Delete"
+              aria-label="Delete"
+              class="text-red-600 hover:text-red-700"
+              @click="handleDelete(data)"
+            />
+          </div>
+        </template>
+      </Column>
+      <template #empty>
+        <div class="py-12 text-center">
+          <svg
+            class="mx-auto h-12 w-12 text-gray-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="1.5"
           >
-            Previous
-          </button>
-          <button
-            v-for="page in pagination.totalPages"
-            :key="page"
-            :class="[
-              'btn-sm min-w-[2rem]',
-              page === pagination.page ? 'btn-primary' : 'btn-ghost',
-            ]"
-            @click="goToPage(page)"
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+            />
+          </svg>
+          <h3 class="mt-4 text-lg font-medium text-gray-900">
+            No lots found
+          </h3>
+          <p class="mt-1 text-sm text-gray-500">
+            {{ searchQuery ? 'Try adjusting your search criteria.' : 'Get started by creating your first lot.' }}
+          </p>
+          <router-link
+            v-if="!searchQuery"
+            to="/lots/create"
+            custom
+            v-slot="{ navigate }"
           >
-            {{ page }}
-          </button>
-          <button
-            class="btn-ghost btn-sm"
-            :disabled="pagination.page >= pagination.totalPages"
-            @click="goToPage(pagination.page + 1)"
-          >
-            Next
-          </button>
+            <Button
+              label="Create Your First Lot"
+              class="mt-4"
+              @click="navigate"
+            />
+          </router-link>
         </div>
-      </div>
-    </div>
+      </template>
+    </DataTable>
   </div>
 </template>

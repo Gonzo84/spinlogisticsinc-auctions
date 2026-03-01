@@ -1,4 +1,4 @@
-import { ref, computed, readonly } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { CartLot, CartTotals } from '~/types/cart'
 
@@ -57,8 +57,8 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   return {
-    selectedLots: readonly(selectedLots),
-    checkoutInProgress: readonly(checkoutInProgress),
+    selectedLots,
+    checkoutInProgress,
     lotCount,
     totals,
     isLotSelected,

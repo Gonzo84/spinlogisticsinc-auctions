@@ -3,9 +3,12 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuctions } from '@/composables/useAuctions'
 import { useAnalytics } from '@/composables/useAnalytics'
 import LiveBidChart from '@/components/charts/LiveBidChart.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Tag from 'primevue/tag'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
 
-const { auctions, fetchAuctions, liveBids, loading: auctionsLoading } = useAuctions()
+const { auctions, fetchAuctions, loading: auctionsLoading } = useAuctions()
 const { overview, fetchOverview, loading: analyticsLoading } = useAnalytics()
 
 const loading = computed(() => auctionsLoading.value || analyticsLoading.value)
@@ -262,91 +265,38 @@ const bidsPerMinute = ref(34)
         </router-link>
       </div>
 
-      <div
-        v-if="loading"
-        class="py-8 text-center"
-      >
-        <svg
-          class="mx-auto h-8 w-8 animate-spin text-primary-600"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          />
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-      </div>
-
-      <div
-        v-else
-        class="overflow-x-auto"
-      >
-        <table class="w-full">
-          <thead>
-            <tr>
-              <th class="table-header">
-                Auction
-              </th>
-              <th class="table-header">
-                Brand
-              </th>
-              <th class="table-header">
-                Status
-              </th>
-              <th class="table-header text-right">
-                Lots
-              </th>
-              <th class="table-header text-right">
-                Total Bids
-              </th>
-              <th class="table-header">
-                End Date
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="auction in auctions.slice(0, 5)"
-              :key="auction.id"
-              class="table-row"
+      <DataTable :value="auctions.slice(0, 5)" :loading="loading" stripedRows>
+        <template #empty>
+          <div class="text-center py-8 text-gray-500">No active auctions</div>
+        </template>
+        <Column field="title" header="Auction">
+          <template #body="{ data }">
+            <router-link
+              :to="`/auctions/${data.id}`"
+              class="font-medium text-gray-900 hover:text-primary-600"
             >
-              <td class="table-cell">
-                <router-link
-                  :to="`/auctions/${auction.id}`"
-                  class="font-medium text-gray-900 hover:text-primary-600"
-                >
-                  {{ auction.title }}
-                </router-link>
-              </td>
-              <td class="table-cell text-gray-600">
-                {{ auction.brand }}
-              </td>
-              <td class="table-cell">
-                <StatusBadge :status="auction.status" />
-              </td>
-              <td class="table-cell text-right">
-                {{ auction.lotCount }}
-              </td>
-              <td class="table-cell text-right">
-                {{ auction.totalBids }}
-              </td>
-              <td class="table-cell text-gray-500">
-                {{ new Date(auction.endDate).toLocaleDateString('en-GB') }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              {{ data.title }}
+            </router-link>
+          </template>
+        </Column>
+        <Column field="brand" header="Brand">
+          <template #body="{ data }">
+            <span class="text-gray-600">{{ data.brand }}</span>
+          </template>
+        </Column>
+        <Column field="status" header="Status">
+          <template #body="{ data }">
+            <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+          </template>
+        </Column>
+        <Column field="lotCount" header="Lots" headerStyle="text-align: right" bodyStyle="text-align: right" />
+        <Column field="totalBids" header="Total Bids" headerStyle="text-align: right" bodyStyle="text-align: right" />
+        <Column field="endDate" header="End Date">
+          <template #body="{ data }">
+            <span class="text-gray-500">{{ new Date(data.endDate).toLocaleDateString('en-GB') }}</span>
+          </template>
+        </Column>
+      </DataTable>
     </div>
   </div>
 </template>

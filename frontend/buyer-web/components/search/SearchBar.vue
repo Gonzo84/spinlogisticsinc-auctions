@@ -126,7 +126,7 @@ function handleInput() {
   }
 }
 
-function handleSearch() {
+async function handleSearch() {
   // If a suggestion is highlighted, select it instead
   if (highlightedIndex.value >= 0 && highlightedIndex.value < suggestions.value.length) {
     selectSuggestion(suggestions.value[highlightedIndex.value])
@@ -138,7 +138,10 @@ function handleSearch() {
   closeDropdown()
   clearSuggestions()
 
-  navigateTo({
+  // Blur the input to dismiss any open overlays/keyboards
+  inputRef.value?.blur()
+
+  await navigateTo({
     path: '/search',
     query: { q: query.value.trim() },
   })

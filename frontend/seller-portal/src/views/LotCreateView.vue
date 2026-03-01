@@ -7,7 +7,7 @@ import type { AxiosError } from 'axios'
 import LotForm from '@/components/lots/LotForm.vue'
 
 const router = useRouter()
-const { createLot, loading, error } = useLots()
+const { createLot, loading } = useLots()
 
 const submitError = ref<string | null>(null)
 

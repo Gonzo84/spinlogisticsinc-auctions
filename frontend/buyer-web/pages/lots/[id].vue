@@ -97,35 +97,38 @@
         <!-- Fullscreen Modal -->
         <Teleport to="body">
           <div v-if="isFullscreen" class="fixed inset-0 z-50 bg-black flex items-center justify-center" @click="isFullscreen = false">
-            <button class="absolute top-4 right-4 p-3 text-white hover:bg-white/10 rounded-full z-10" @click="isFullscreen = false">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <Button
+              icon="pi pi-times"
+              text
+              rounded
+              class="absolute top-4 right-4 z-10 !text-white hover:!bg-white/10"
+              aria-label="Close fullscreen"
+              @click="isFullscreen = false"
+            />
             <img
               :src="lot.images[activeImageIndex]?.url"
               :alt="lot.title"
               class="max-w-full max-h-full object-contain"
               @click.stop
             >
-            <button
+            <Button
               v-if="lot.images.length > 1"
-              class="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-white hover:bg-white/10 rounded-full"
+              icon="pi pi-chevron-left"
+              text
+              rounded
+              class="absolute left-4 top-1/2 -translate-y-1/2 !text-white hover:!bg-white/10"
+              aria-label="Previous image"
               @click.stop="activeImageIndex = (activeImageIndex - 1 + lot.images.length) % lot.images.length"
-            >
-              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
+            />
+            <Button
               v-if="lot.images.length > 1"
-              class="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-white hover:bg-white/10 rounded-full"
+              icon="pi pi-chevron-right"
+              text
+              rounded
+              class="absolute right-4 top-1/2 -translate-y-1/2 !text-white hover:!bg-white/10"
+              aria-label="Next image"
               @click.stop="activeImageIndex = (activeImageIndex + 1) % lot.images.length"
-            >
-              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            />
           </div>
         </Teleport>
 

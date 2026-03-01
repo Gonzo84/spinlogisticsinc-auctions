@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import Button from 'primevue/button'
 import { useAuth } from '@/composables/useAuth'
 
 const emit = defineEmits<{
@@ -43,24 +44,13 @@ function handleLogout() {
 <template>
   <header class="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6">
     <!-- Mobile menu toggle -->
-    <button
-      class="btn-ghost lg:hidden"
+    <Button
+      text
+      icon="pi pi-bars"
+      aria-label="Toggle sidebar"
+      class="lg:hidden"
       @click="emit('toggle-sidebar')"
-    >
-      <svg
-        class="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M4 6h16M4 12h16M4 18h16"
-        />
-      </svg>
-    </button>
+    />
 
     <!-- Search bar -->
     <div class="hidden flex-1 md:block md:max-w-md lg:max-w-lg">
@@ -90,30 +80,20 @@ function handleLogout() {
     <div class="flex items-center gap-2">
       <!-- Notifications -->
       <div class="relative">
-        <button
-          class="btn-ghost relative p-2"
+        <Button
+          text
+          icon="pi pi-bell"
+          aria-label="Notifications"
+          class="relative p-2"
           @click="toggleNotifications"
         >
-          <svg
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-          </svg>
           <span
             v-if="unreadCount > 0"
             class="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
           >
             {{ unreadCount }}
           </span>
-        </button>
+        </Button>
 
         <!-- Notifications dropdown -->
         <div

@@ -125,7 +125,7 @@
                 class="flex-1 flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors"
                 :class="vatForm.type === 'business' ? 'border-primary bg-primary-50' : 'hover:bg-gray-50'"
               >
-                <input v-model="vatForm.type" type="radio" value="business" class="text-primary focus:ring-primary">
+                <RadioButton v-model="vatForm.type" value="business" />
                 <div>
                   <p class="text-sm font-medium">{{ $t('checkout.businessVat') }}</p>
                   <p class="text-xs text-gray-500">{{ $t('checkout.businessVatHint') }}</p>
@@ -135,7 +135,7 @@
                 class="flex-1 flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors"
                 :class="vatForm.type === 'private' ? 'border-primary bg-primary-50' : 'hover:bg-gray-50'"
               >
-                <input v-model="vatForm.type" type="radio" value="private" class="text-primary focus:ring-primary">
+                <RadioButton v-model="vatForm.type" value="private" />
                 <div>
                   <p class="text-sm font-medium">{{ $t('checkout.privateVat') }}</p>
                   <p class="text-xs text-gray-500">{{ $t('checkout.privateVatHint') }}</p>
@@ -148,12 +148,11 @@
           <div v-if="vatForm.type === 'business'">
             <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('checkout.vatNumber') }}</label>
             <div class="relative">
-              <input
+              <InputText
                 v-model="vatForm.vatNumber"
-                type="text"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full"
                 :placeholder="$t('checkout.vatNumberPlaceholder')"
-              >
+              />
               <button
                 v-if="vatForm.vatNumber"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium"
@@ -169,47 +168,36 @@
           <!-- Billing Address -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('checkout.billingAddress') }}</label>
-            <input
+            <InputText
               v-model="vatForm.companyName"
-              type="text"
-              class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary mb-2"
+              class="w-full mb-2"
               :placeholder="$t('checkout.companyName')"
-            >
-            <input
+            />
+            <InputText
               v-model="vatForm.address"
-              type="text"
-              class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary mb-2"
+              class="w-full mb-2"
               :placeholder="$t('checkout.address')"
-            >
+            />
             <div class="grid grid-cols-2 gap-2">
-              <input
+              <InputText
                 v-model="vatForm.postalCode"
-                type="text"
-                class="px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full"
                 :placeholder="$t('checkout.postalCode')"
-              >
-              <input
+              />
+              <InputText
                 v-model="vatForm.city"
-                type="text"
-                class="px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full"
                 :placeholder="$t('checkout.city')"
-              >
+              />
             </div>
-            <select
+            <Select
               v-model="vatForm.country"
-              class="w-full mt-2 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-            >
-              <option value="">{{ $t('checkout.selectCountry') }}</option>
-              <option value="NL">Netherlands</option>
-              <option value="DE">Germany</option>
-              <option value="FR">France</option>
-              <option value="BE">Belgium</option>
-              <option value="PL">Poland</option>
-              <option value="IT">Italy</option>
-              <option value="RO">Romania</option>
-              <option value="ES">Spain</option>
-              <option value="AT">Austria</option>
-            </select>
+              :options="countryOptions"
+              optionLabel="label"
+              optionValue="value"
+              :placeholder="$t('checkout.selectCountry')"
+              class="w-full mt-2"
+            />
           </div>
         </div>
       </div>
@@ -248,31 +236,28 @@
 
         <div class="space-y-3">
           <label class="flex items-start gap-3 cursor-pointer">
-            <input
+            <Checkbox
               v-model="termsAccepted.general"
-              type="checkbox"
-              class="w-4 h-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
-            >
+              :binary="true"
+            />
             <span class="text-sm text-gray-700">
               {{ $t('checkout.acceptGeneralTerms') }}
             </span>
           </label>
           <label class="flex items-start gap-3 cursor-pointer">
-            <input
+            <Checkbox
               v-model="termsAccepted.auction"
-              type="checkbox"
-              class="w-4 h-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
-            >
+              :binary="true"
+            />
             <span class="text-sm text-gray-700">
               {{ $t('checkout.acceptAuctionTerms') }}
             </span>
           </label>
           <label class="flex items-start gap-3 cursor-pointer">
-            <input
+            <Checkbox
               v-model="termsAccepted.privacy"
-              type="checkbox"
-              class="w-4 h-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
-            >
+              :binary="true"
+            />
             <span class="text-sm text-gray-700">
               {{ $t('checkout.acceptPrivacy') }}
             </span>
@@ -318,7 +303,7 @@
             class="flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors"
             :class="paymentMethod === 'bank_transfer' ? 'border-primary bg-primary-50' : 'hover:bg-gray-50'"
           >
-            <input v-model="paymentMethod" type="radio" value="bank_transfer" class="text-primary focus:ring-primary">
+            <RadioButton v-model="paymentMethod" value="bank_transfer" />
             <div class="flex items-center gap-3">
               <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -334,7 +319,7 @@
             class="flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors"
             :class="paymentMethod === 'ideal' ? 'border-primary bg-primary-50' : 'hover:bg-gray-50'"
           >
-            <input v-model="paymentMethod" type="radio" value="ideal" class="text-primary focus:ring-primary">
+            <RadioButton v-model="paymentMethod" value="ideal" />
             <div class="flex items-center gap-3">
               <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -350,7 +335,7 @@
             class="flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors"
             :class="paymentMethod === 'card' ? 'border-primary bg-primary-50' : 'hover:bg-gray-50'"
           >
-            <input v-model="paymentMethod" type="radio" value="card" class="text-primary focus:ring-primary">
+            <RadioButton v-model="paymentMethod" value="card" />
             <div class="flex items-center gap-3">
               <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -400,6 +385,18 @@ definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
 const route = useRoute()
+
+const countryOptions = [
+  { label: 'Netherlands', value: 'NL' },
+  { label: 'Germany', value: 'DE' },
+  { label: 'France', value: 'FR' },
+  { label: 'Belgium', value: 'BE' },
+  { label: 'Poland', value: 'PL' },
+  { label: 'Italy', value: 'IT' },
+  { label: 'Romania', value: 'RO' },
+  { label: 'Spain', value: 'ES' },
+  { label: 'Austria', value: 'AT' },
+]
 
 const orderId = computed(() => route.params.id as string)
 const loading = ref(false)

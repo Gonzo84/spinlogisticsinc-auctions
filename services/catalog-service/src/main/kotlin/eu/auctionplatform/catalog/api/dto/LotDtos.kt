@@ -78,6 +78,7 @@ data class LotListFilter(
     val status: LotStatus? = null,
     val sellerId: UUID? = null,
     val auctionId: UUID? = null,
+    val search: String? = null,
     val page: Int = 0,
     val pageSize: Int = 20
 )

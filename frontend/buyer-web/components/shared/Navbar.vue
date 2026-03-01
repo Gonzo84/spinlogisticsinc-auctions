@@ -209,33 +209,33 @@
                   {{ $t('nav.profile') }}
                 </NuxtLink>
                 <div class="border-t my-1" role="separator" />
-                <button
+                <Button
                   role="menuitem"
-                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-warning hover:bg-gray-50 transition-colors"
+                  :label="$t('nav.logout')"
+                  icon="pi pi-sign-out"
+                  text
+                  severity="danger"
+                  class="w-full !justify-start"
                   @click="handleLogout"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  {{ $t('nav.logout') }}
-                </button>
+                />
               </div>
             </Transition>
           </div>
 
           <!-- Login / Register (not authenticated) -->
           <template v-else>
-            <button
-              class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            <Button
+              :label="$t('nav.login')"
+              text
+              severity="secondary"
+              size="small"
               @click="handleLogin"
-            >
-              {{ $t('nav.login') }}
-            </button>
-            <NuxtLink
-              to="/auth/register"
-              class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-800 rounded-lg transition-colors"
-            >
-              {{ $t('nav.register') }}
+            />
+            <NuxtLink to="/auth/register">
+              <Button
+                :label="$t('nav.register')"
+                size="small"
+              />
             </NuxtLink>
           </template>
           </ClientOnly>

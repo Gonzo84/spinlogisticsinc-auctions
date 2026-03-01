@@ -39,59 +39,50 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.firstName') }}</label>
-                <input
+                <InputText
                   v-model="form.firstName"
-                  type="text"
-                  class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                >
+                  class="w-full"
+                />
               </div>
               <div>
                 <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.lastName') }}</label>
-                <input
+                <InputText
                   v-model="form.lastName"
-                  type="text"
-                  class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                >
+                  class="w-full"
+                />
               </div>
             </div>
 
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.email') }}</label>
-              <input
-                :value="user.email"
+              <InputText
+                :model-value="user.email"
                 type="email"
                 disabled
-                class="w-full px-4 py-2.5 border rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-              >
+                class="w-full"
+              />
               <p class="text-xs text-gray-400 mt-1">{{ $t('profile.emailHint') }}</p>
             </div>
 
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.phone') }}</label>
-              <input
+              <InputText
                 v-model="form.phone"
                 type="tel"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              >
+                class="w-full"
+              />
             </div>
 
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.country') }}</label>
-              <select
+              <Select
                 v-model="form.country"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              >
-                <option value="">{{ $t('profile.selectCountry') }}</option>
-                <option value="NL">Netherlands</option>
-                <option value="DE">Germany</option>
-                <option value="FR">France</option>
-                <option value="BE">Belgium</option>
-                <option value="PL">Poland</option>
-                <option value="IT">Italy</option>
-                <option value="RO">Romania</option>
-                <option value="ES">Spain</option>
-                <option value="AT">Austria</option>
-              </select>
+                :options="countryOptions"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="$t('profile.selectCountry')"
+                class="w-full"
+              />
             </div>
           </div>
         </div>
@@ -103,21 +94,19 @@
           <div class="space-y-4">
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.companyName') }}</label>
-              <input
+              <InputText
                 v-model="form.company"
-                type="text"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              >
+                class="w-full"
+              />
             </div>
 
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.vatNumber') }}</label>
-              <input
+              <InputText
                 v-model="form.vatNumber"
-                type="text"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full"
                 placeholder="NL123456789B01"
-              >
+              />
             </div>
           </div>
         </div>
@@ -253,6 +242,18 @@ definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
 const { user, fullName, initials, updateProfile } = useAuth()
+
+const countryOptions = [
+  { label: 'Netherlands', value: 'NL' },
+  { label: 'Germany', value: 'DE' },
+  { label: 'France', value: 'FR' },
+  { label: 'Belgium', value: 'BE' },
+  { label: 'Poland', value: 'PL' },
+  { label: 'Italy', value: 'IT' },
+  { label: 'Romania', value: 'RO' },
+  { label: 'Spain', value: 'ES' },
+  { label: 'Austria', value: 'AT' },
+]
 
 const saving = ref(false)
 const showSuccess = ref(false)

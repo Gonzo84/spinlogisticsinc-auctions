@@ -48,6 +48,7 @@
   },
   "auction": {
     "currentBid": "Enchère actuelle",
+    "bid": "enchère",
     "bids": "enchères",
     "bidHistory": "Historique des enchères",
     "timeRemaining": "Temps restant",

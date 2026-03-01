@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useSystemHealth } from '@/composables/useSystemHealth'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 
 const {
   health,
@@ -68,25 +71,13 @@ const memoryPercent = () => {
             {{ health.overallStatus }}
           </span>
         </span>
-        <button
-          class="btn-secondary btn-sm"
+        <Button
+          label="Refresh"
+          icon="pi pi-refresh"
+          severity="secondary"
+          size="small"
           @click="fetchHealth"
-        >
-          <svg
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Refresh
-        </button>
+        />
       </div>
     </div>
 
@@ -124,12 +115,13 @@ const memoryPercent = () => {
       <p class="text-sm text-red-600">
         {{ error }}
       </p>
-      <button
-        class="btn-secondary btn-sm mt-3"
+      <Button
+        label="Retry"
+        severity="secondary"
+        size="small"
+        class="mt-3"
         @click="fetchHealth"
-      >
-        Retry
-      </button>
+      />
     </div>
 
     <template v-else-if="health">
@@ -338,95 +330,62 @@ const memoryPercent = () => {
         <h2 class="section-title">
           Database Connection Pools
         </h2>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr>
-                <th class="table-header">
-                  Database
-                </th>
-                <th class="table-header">
-                  Status
-                </th>
-                <th class="table-header text-right">
-                  Active
-                </th>
-                <th class="table-header text-right">
-                  Idle
-                </th>
-                <th class="table-header text-right">
-                  Max
-                </th>
-                <th class="table-header text-right">
-                  Wait Queue
-                </th>
-                <th class="table-header text-right">
-                  Avg Query
-                </th>
-                <th class="table-header">
-                  Pool Usage
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="db in health.databases"
-                :key="db.name"
-                class="table-row"
-              >
-                <td class="table-cell font-medium text-gray-900">
-                  {{ db.name }}
-                </td>
-                <td class="table-cell">
-                  <span class="flex items-center gap-1.5">
-                    <span :class="['h-2 w-2 rounded-full', getStatusDot(db.status)]" />
-                    <span
-                      :class="getStatusColor(db.status)"
-                      class="capitalize"
-                    >{{ db.status }}</span>
-                  </span>
-                </td>
-                <td class="table-cell text-right">
-                  {{ db.activeConnections }}
-                </td>
-                <td class="table-cell text-right">
-                  {{ db.idleConnections }}
-                </td>
-                <td class="table-cell text-right">
-                  {{ db.maxConnections }}
-                </td>
-                <td
-                  class="table-cell text-right"
-                  :class="db.waitCount > 0 ? 'text-amber-600 font-medium' : ''"
-                >
-                  {{ db.waitCount }}
-                </td>
-                <td
-                  class="table-cell text-right"
-                  :class="db.avgQueryTimeMs > 100 ? 'text-amber-600' : ''"
-                >
-                  {{ db.avgQueryTimeMs.toFixed(1) }}ms
-                </td>
-                <td class="table-cell">
-                  <div class="flex items-center gap-2">
-                    <div class="h-2 w-20 overflow-hidden rounded-full bg-gray-200">
-                      <div
-                        :class="[
-                          'h-full rounded-full',
-                          (db.activeConnections / db.maxConnections) > 0.8 ? 'bg-red-500' : 'bg-green-500',
-                        ]"
-                        :style="{ width: (db.activeConnections / db.maxConnections * 100) + '%' }"
-                      />
-                    </div>
-                    <span class="text-xs text-gray-500">
-                      {{ Math.round(db.activeConnections / db.maxConnections * 100) }}%
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DataTable :value="health.databases" stripedRows>
+          <template #empty>
+            <div class="text-center py-8 text-gray-500">No database pools available.</div>
+          </template>
+          <Column field="name" header="Database">
+            <template #body="{ data }">
+              <span class="font-medium text-gray-900">{{ data.name }}</span>
+            </template>
+          </Column>
+          <Column field="status" header="Status">
+            <template #body="{ data }">
+              <span class="flex items-center gap-1.5">
+                <span :class="['h-2 w-2 rounded-full', getStatusDot(data.status)]" />
+                <span
+                  :class="getStatusColor(data.status)"
+                  class="capitalize"
+                >{{ data.status }}</span>
+              </span>
+            </template>
+          </Column>
+          <Column field="activeConnections" header="Active" headerStyle="text-align: right" bodyStyle="text-align: right" />
+          <Column field="idleConnections" header="Idle" headerStyle="text-align: right" bodyStyle="text-align: right" />
+          <Column field="maxConnections" header="Max" headerStyle="text-align: right" bodyStyle="text-align: right" />
+          <Column field="waitCount" header="Wait Queue" headerStyle="text-align: right" bodyStyle="text-align: right">
+            <template #body="{ data }">
+              <span :class="data.waitCount > 0 ? 'text-amber-600 font-medium' : ''">
+                {{ data.waitCount }}
+              </span>
+            </template>
+          </Column>
+          <Column field="avgQueryTimeMs" header="Avg Query" headerStyle="text-align: right" bodyStyle="text-align: right">
+            <template #body="{ data }">
+              <span :class="data.avgQueryTimeMs > 100 ? 'text-amber-600' : ''">
+                {{ data.avgQueryTimeMs.toFixed(1) }}ms
+              </span>
+            </template>
+          </Column>
+          <Column header="Pool Usage">
+            <template #body="{ data }">
+              <div class="flex items-center gap-2">
+                <div class="h-2 w-20 overflow-hidden rounded-full bg-gray-200">
+                  <div
+                    :class="[
+                      'h-full rounded-full',
+                      (data.activeConnections / data.maxConnections) > 0.8 ? 'bg-red-500' : 'bg-green-500',
+                    ]"
+                    :style="{ width: (data.activeConnections / data.maxConnections * 100) + '%' }"
+                  />
+                </div>
+                <span class="text-xs text-gray-500">
+                  {{ Math.round(data.activeConnections / data.maxConnections * 100) }}%
+                </span>
+              </div>
+            </template>
+          </Column>
+        </DataTable>
       </div>
 
       <!-- Last updated -->

@@ -77,6 +77,7 @@ class LotResource {
         @QueryParam("status") status: LotStatus?,
         @QueryParam("sellerId") sellerId: UUID?,
         @QueryParam("auctionId") auctionId: UUID?,
+        @QueryParam("search") search: String?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("pageSize") @DefaultValue("20") pageSize: Int
     ): Response {
@@ -87,6 +88,7 @@ class LotResource {
             status = status,
             sellerId = sellerId,
             auctionId = auctionId,
+            search = search,
             page = page,
             pageSize = pageSize
         )

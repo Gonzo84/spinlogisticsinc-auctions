@@ -48,6 +48,7 @@
   },
   "auction": {
     "currentBid": "Oferta curentă",
+    "bid": "ofertă",
     "bids": "oferte",
     "bidHistory": "Istoricul ofertelor",
     "timeRemaining": "Timp rămas",
