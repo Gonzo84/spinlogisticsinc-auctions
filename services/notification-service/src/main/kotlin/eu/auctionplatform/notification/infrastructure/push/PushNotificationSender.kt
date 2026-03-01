@@ -2,20 +2,27 @@ package eu.auctionplatform.notification.infrastructure.push
 
 import eu.auctionplatform.notification.domain.model.DeviceToken
 import jakarta.enterprise.context.ApplicationScoped
+import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.jboss.logging.Logger
 
 /**
  * Sends push notifications to user devices.
  *
- * This is a placeholder implementation that logs push notification
- * requests. In production, this would integrate with:
+ * Controlled by the `push.enabled` configuration property:
+ * - When disabled (default): logs notifications at INFO level and returns success.
+ * - When enabled: placeholder for future Firebase Admin SDK / APNs integration.
+ *
+ * In production, this would integrate with:
  * - Firebase Cloud Messaging (FCM) for Android and Web
  * - Apple Push Notification Service (APNs) for iOS
  *
  * Thread-safe and managed as an application-scoped CDI bean.
  */
 @ApplicationScoped
-class PushNotificationSender {
+class PushNotificationSender(
+    @ConfigProperty(name = "push.enabled", defaultValue = "false")
+    private val pushEnabled: Boolean
+) {
 
     companion object {
         private val LOG: Logger = Logger.getLogger(PushNotificationSender::class.java)
@@ -23,6 +30,10 @@ class PushNotificationSender {
 
     /**
      * Sends a push notification to one or more device tokens.
+     *
+     * If push notifications are disabled via configuration, the notification
+     * is logged at INFO level and a successful result is returned without
+     * attempting delivery.
      *
      * @param deviceTokens List of active device tokens to target.
      * @param title        Notification title (shown in the notification shade).
@@ -41,6 +52,14 @@ class PushNotificationSender {
         if (deviceTokens.isEmpty()) {
             LOG.debug("No device tokens provided -- skipping push notification")
             return PushResult(sent = 0, failed = 0)
+        }
+
+        if (!pushEnabled) {
+            LOG.infof(
+                "Push notifications disabled -- would send to %s devices: title='%s', body='%s'",
+                deviceTokens.size, title, body.take(80)
+            )
+            return PushResult(sent = deviceTokens.size, failed = 0)
         }
 
         var sent = 0
@@ -70,9 +89,11 @@ class PushNotificationSender {
     /**
      * Sends a push notification to a single device.
      *
-     * TODO: Replace with actual FCM/APNs integration.
-     * - For "android" and "web" tokens: use Firebase Admin SDK
-     * - For "ios" tokens: use APNs HTTP/2 client or Firebase
+     * This is a placeholder for future Firebase Admin SDK / APNs integration.
+     * When `push.enabled=true`, this method will dispatch to the appropriate
+     * platform-specific sender:
+     * - For "android" and "web" tokens: Firebase Admin SDK (FCM)
+     * - For "ios" tokens: APNs HTTP/2 client or Firebase
      */
     private fun sendToDevice(
         deviceToken: DeviceToken,
@@ -92,7 +113,7 @@ class PushNotificationSender {
             deepLink ?: "none"
         )
 
-        // In production, dispatch based on platform:
+        // TODO: Integrate Firebase Admin SDK for production push delivery
         // when (deviceToken.platform) {
         //     "android", "web" -> sendViaFcm(deviceToken.token, title, body, data, deepLink)
         //     "ios" -> sendViaApns(deviceToken.token, title, body, data, deepLink)

@@ -9,6 +9,7 @@ import eu.auctionplatform.seller.api.v1.dto.Co2Report
 import eu.auctionplatform.seller.api.v1.dto.LotSummary
 import eu.auctionplatform.seller.api.v1.dto.MonthlyRevenue
 import eu.auctionplatform.seller.api.v1.dto.SellerAnalytics
+import eu.auctionplatform.seller.api.v1.dto.MonthlySettlementResponse
 import eu.auctionplatform.seller.api.v1.dto.SellerRegistrationRequest
 import eu.auctionplatform.seller.api.v1.dto.SettlementSummary
 import eu.auctionplatform.seller.domain.model.SellerDashboard
@@ -410,6 +411,10 @@ class SellerService @Inject constructor(
         val commissionRate = BigDecimal(DEFAULT_COMMISSION_RATE)
         val totalCommissionPaid = totalRevenue.multiply(commissionRate).setScale(2, RoundingMode.HALF_UP)
 
+        // Fetch real data for top categories and monthly revenue from the database
+        val topCategories = sellerProfileRepository.getTopCategories(sellerId)
+        val monthlyRevenue = sellerProfileRepository.getMonthlyRevenue(sellerId)
+
         return SellerAnalytics(
             totalLots = totalLots,
             totalSold = totalSold,
@@ -417,8 +422,8 @@ class SellerService @Inject constructor(
             averageHammerPrice = averageHammerPrice,
             totalRevenue = totalRevenue,
             totalCommissionPaid = totalCommissionPaid,
-            topCategories = emptyList(),
-            monthlyRevenue = emptyList()
+            topCategories = topCategories,
+            monthlyRevenue = monthlyRevenue
         )
     }
 
@@ -469,6 +474,46 @@ class SellerService @Inject constructor(
             reportPeriod = "ALL_TIME",
             generatedAt = Instant.now()
         )
+    }
+
+    // -------------------------------------------------------------------------
+    // Lot Status Counts
+    // -------------------------------------------------------------------------
+
+    /**
+     * Retrieves a map of lot status to count for the seller.
+     *
+     * This is more efficient than fetching all lots and counting client-side.
+     *
+     * @param sellerId The seller profile identifier.
+     * @return A map of status strings to their respective counts.
+     */
+    fun getLotStatusCounts(sellerId: UUID): Map<String, Int> {
+        ensureSellerExists(sellerId)
+        return sellerProfileRepository.getLotStatusCounts(sellerId)
+    }
+
+    // -------------------------------------------------------------------------
+    // Monthly Settlements
+    // -------------------------------------------------------------------------
+
+    /**
+     * Retrieves monthly settlement aggregations for the seller.
+     *
+     * @param sellerId The seller profile identifier.
+     * @return Up to 12 months of settlement totals.
+     */
+    fun getMonthlySettlements(sellerId: UUID): List<MonthlySettlementResponse> {
+        ensureSellerExists(sellerId)
+        return sellerProfileRepository.getMonthlySettlements(sellerId).map { row ->
+            MonthlySettlementResponse(
+                month = row.month,
+                totalNet = row.totalNet,
+                totalHammer = row.totalHammer,
+                totalCommission = row.totalCommission,
+                settlementCount = row.settlementCount
+            )
+        }
     }
 
     // -------------------------------------------------------------------------

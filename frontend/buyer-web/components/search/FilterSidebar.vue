@@ -28,7 +28,7 @@
             <span>{{ cat.icon }}</span>
             <span>{{ cat.name }}</span>
           </span>
-          <span class="text-xs text-gray-400">{{ cat.count }}</span>
+          <span v-if="cat.count > 0" class="text-xs text-gray-400">{{ cat.count }}</span>
         </button>
       </div>
     </div>
@@ -194,16 +194,47 @@ const hasActiveFilters = computed(() => {
   )
 })
 
-const categories = [
-  { slug: 'transport', icon: '\uD83D\uDE9A', name: t('categories.transport'), count: 1240 },
-  { slug: 'agriculture', icon: '\uD83D\uDE9C', name: t('categories.agriculture'), count: 890 },
-  { slug: 'construction', icon: '\uD83C\uDFD7\uFE0F', name: t('categories.construction'), count: 1560 },
-  { slug: 'metalworking', icon: '\u2699\uFE0F', name: t('categories.metalworking'), count: 430 },
-  { slug: 'woodworking', icon: '\uD83E\uDEB5', name: t('categories.woodworking'), count: 310 },
-  { slug: 'food-processing', icon: '\uD83C\uDFED', name: t('categories.foodProcessing'), count: 220 },
-  { slug: 'electronics', icon: '\uD83D\uDD0C', name: t('categories.electronics'), count: 670 },
-  { slug: 'warehouse', icon: '\uD83D\uDCE6', name: t('categories.warehouse'), count: 540 },
+const categoryCounts = ref<Record<string, number>>({})
+
+const categorySlugs = [
+  { slug: 'transport', icon: '\uD83D\uDE9A', nameKey: 'categories.transport' },
+  { slug: 'agriculture', icon: '\uD83D\uDE9C', nameKey: 'categories.agriculture' },
+  { slug: 'construction', icon: '\uD83C\uDFD7\uFE0F', nameKey: 'categories.construction' },
+  { slug: 'metalworking', icon: '\u2699\uFE0F', nameKey: 'categories.metalworking' },
+  { slug: 'woodworking', icon: '\uD83E\uDEB5', nameKey: 'categories.woodworking' },
+  { slug: 'food-processing', icon: '\uD83C\uDFED', nameKey: 'categories.foodProcessing' },
+  { slug: 'electronics', icon: '\uD83D\uDD0C', nameKey: 'categories.electronics' },
+  { slug: 'warehouse', icon: '\uD83D\uDCE6', nameKey: 'categories.warehouse' },
 ]
+
+const categories = computed(() =>
+  categorySlugs.map((cat) => ({
+    slug: cat.slug,
+    icon: cat.icon,
+    name: t(cat.nameKey),
+    count: categoryCounts.value[cat.slug] ?? 0,
+  }))
+)
+
+async function fetchCategoryCounts() {
+  const { $api } = useNuxtApp()
+  const api = $api as typeof $fetch
+  try {
+    const raw = await api<Record<string, unknown>>('/lots/counts-by-category')
+    if (raw && typeof raw === 'object') {
+      const data = (raw as Record<string, unknown>).data ?? raw
+      if (data && typeof data === 'object') {
+        categoryCounts.value = data as Record<string, number>
+      }
+    }
+  } catch {
+    // Category counts not available -- leave as 0
+  }
+}
+
+onMounted(() => {
+  fetchCategoryCounts()
+})
 
 const countries = [
   { code: 'NL', flag: '\uD83C\uDDF3\uD83C\uDDF1', name: 'Netherlands' },

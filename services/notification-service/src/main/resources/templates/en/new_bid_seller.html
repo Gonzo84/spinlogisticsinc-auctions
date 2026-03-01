@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New bid on your lot</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;">
+        <tr>
+            <td style="padding:24px;background-color:#1e40af;text-align:center;">
+                <h1 style="color:#ffffff;margin:0;font-size:24px;">New Bid Received</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:32px 24px;">
+                <p style="color:#4a5568;font-size:16px;line-height:1.6;">
+                    A new bid has been placed on your lot <strong>{lotTitle}</strong>.
+                </p>
+                <table style="width:100%;border-collapse:collapse;margin:24px 0;">
+                    <tr>
+                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#718096;">Bid amount</td>
+                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:bold;color:#059669;">&euro;{bidAmount}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:12px;color:#718096;">Total bids</td>
+                        <td style="padding:12px;text-align:right;font-weight:bold;color:#1e40af;">{bidCount}</td>
+                    </tr>
+                </table>
+                <div style="text-align:center;margin:32px 0;">
+                    <a href="{lotUrl}" style="display:inline-block;padding:14px 32px;background-color:#1e40af;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:bold;">
+                        View Lot Activity
+                    </a>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:16px 24px;background-color:#f7fafc;text-align:center;color:#a0aec0;font-size:12px;">
+                <p><a href="{preferencesUrl}" style="color:#1e40af;">Manage notifications</a> | <a href="{unsubscribeUrl}" style="color:#1e40af;">Unsubscribe</a></p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

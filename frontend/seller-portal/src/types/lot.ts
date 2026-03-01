@@ -27,7 +27,7 @@ export interface LotLocation {
   lng: number
 }
 
-export type LotStatus = 'draft' | 'pending_review' | 'active' | 'sold' | 'unsold' | 'rejected'
+export type LotStatus = 'draft' | 'pending_review' | 'approved' | 'active' | 'sold' | 'unsold' | 'rejected' | 'withdrawn'
 
 export interface Lot {
   id: string

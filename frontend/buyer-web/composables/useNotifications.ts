@@ -22,7 +22,7 @@ export function useNotifications() {
     try {
       const api = $api as typeof $fetch
       const raw = await api<Record<string, unknown>>('/notifications', {
-        params: { page, limit: 20 },
+        params: { page, size: 20 },
       })
 
       const data = unwrapApiResponse(raw)

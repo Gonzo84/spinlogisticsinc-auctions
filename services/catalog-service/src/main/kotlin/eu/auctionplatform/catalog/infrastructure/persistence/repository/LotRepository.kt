@@ -169,6 +169,32 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
         count("auctionId", auctionId)
 
     /**
+     * Counts non-withdrawn lots grouped by category, returning a map of
+     * category slug to lot count. Joins with the categories table to
+     * resolve slugs.
+     *
+     * @return Map of category slug to lot count.
+     */
+    fun countsByCategorySlug(): Map<String, Long> {
+        @Suppress("UNCHECKED_CAST")
+        val results = getEntityManager()
+            .createNativeQuery(
+                """
+                SELECT c.slug, COUNT(l.id) as cnt
+                FROM app.lots l
+                JOIN app.categories c ON l.category_id = c.id
+                WHERE l.status != 'WITHDRAWN'
+                GROUP BY c.slug
+                """.trimIndent()
+            )
+            .resultList as List<Array<Any>>
+
+        return results.associate { row ->
+            (row[0] as String) to (row[1] as Number).toLong()
+        }
+    }
+
+    /**
      * Full-text search on title and description (case-insensitive) with pagination.
      *
      * @param searchTerm The search keyword.

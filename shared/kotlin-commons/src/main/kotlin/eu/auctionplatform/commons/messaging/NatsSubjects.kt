@@ -48,11 +48,17 @@ object NatsSubjects {
     // ── CO₂ / Sustainability ─────────────────────────────────────────────
     const val CO2_CALCULATED: String            = "co2.calculated"
 
+    // ── Payment Non-Payment ───────────────────────────────────────────────
+    const val PAYMENT_NON_PAYMENT_PENALTY: String = "payment.non-payment.penalty"
+    const val PAYMENT_LOT_RELIST: String          = "payment.lot.relist-requested"
+
     /**
      * Prefixes a NATS [subject] with the given [brand] code.
      *
-     * Example: `withBrand("auction.bid.placed", "troostwijk")` →
-     * `"troostwijk.auction.bid.placed"`.
+     * @deprecated Brand should be sent as NATS header, not as subject prefix.
+     *             The AUCTION stream captures `auction.>` and brand-prefixed subjects
+     *             (e.g. `troostwijk.auction.bid.placed`) silently fall outside the stream.
      */
+    @Deprecated("Brand should be sent as NATS header, not as subject prefix", level = DeprecationLevel.WARNING)
     fun withBrand(subject: String, brand: String): String = "$brand.$subject"
 }

@@ -12,6 +12,8 @@ import eu.auctionplatform.events.media.ImageProcessedEvent
 import eu.auctionplatform.events.media.ImageUploadedEvent
 import eu.auctionplatform.events.payment.CheckoutCompletedEvent
 import eu.auctionplatform.events.payment.DepositPaidEvent
+import eu.auctionplatform.events.payment.LotRelistRequestedEvent
+import eu.auctionplatform.events.payment.NonPaymentPenaltyEvent
 import eu.auctionplatform.events.payment.SettlementReadyEvent
 import eu.auctionplatform.events.user.KycVerifiedEvent
 import eu.auctionplatform.events.user.UserRegisteredEvent
@@ -81,6 +83,8 @@ data class EventMetadata(
     JsonSubTypes.Type(value = CheckoutCompletedEvent::class, name = "payment.checkout.completed"),
     JsonSubTypes.Type(value = SettlementReadyEvent::class, name = "payment.settlement.ready"),
     JsonSubTypes.Type(value = DepositPaidEvent::class, name = "payment.deposit.paid"),
+    JsonSubTypes.Type(value = NonPaymentPenaltyEvent::class, name = "payment.non-payment.penalty"),
+    JsonSubTypes.Type(value = LotRelistRequestedEvent::class, name = "payment.lot.relist-requested"),
     // User domain
     JsonSubTypes.Type(value = UserRegisteredEvent::class, name = "user.registered"),
     JsonSubTypes.Type(value = KycVerifiedEvent::class, name = "user.kyc.verified"),

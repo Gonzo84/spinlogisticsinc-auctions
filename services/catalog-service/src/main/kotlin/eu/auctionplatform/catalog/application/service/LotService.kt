@@ -61,7 +61,7 @@ class LotService {
 
     private fun publishLotEvent(eventType: String, lot: Lot) {
         try {
-            val subject = "catalog.lot.$eventType.${lot.brand}"
+            val subject = "catalog.lot.$eventType"
             val payload = mapOf(
                 "lotId" to lot.id.toString(),
                 "title" to lot.title,
@@ -79,8 +79,15 @@ class LotService {
                 "specifications" to lot.specifications
             )
             val json = JsonMapper.toJson(payload)
-            natsConnection.jetStream().publish(subject, json.toByteArray(Charsets.UTF_8))
-            LOG.infof("Published NATS event: %s for lot %s", subject, lot.id)
+            val headers = io.nats.client.impl.Headers()
+            headers.add("brand", lot.brand)
+            val message = io.nats.client.impl.NatsMessage.builder()
+                .subject(subject)
+                .data(json.toByteArray(Charsets.UTF_8))
+                .headers(headers)
+                .build()
+            natsConnection.jetStream().publish(message)
+            LOG.infof("Published NATS event: %s for lot %s (brand header: %s)", subject, lot.id, lot.brand)
         } catch (ex: Exception) {
             LOG.warnf("Failed to publish NATS event for lot %s: %s", lot.id, ex.message)
         }
@@ -356,6 +363,15 @@ class LotService {
         val entity = findLotEntityOrThrow(lotId)
         val images = lotImageRepository.findByLotId(lotId).map { it.toDomain() }
         return Pair(entity.toDomain(), images)
+    }
+
+    /**
+     * Returns lot counts grouped by category slug (excluding withdrawn lots).
+     *
+     * @return Map of category slug to lot count.
+     */
+    fun countsByCategory(): Map<String, Long> {
+        return lotRepository.countsByCategorySlug()
     }
 
     /**

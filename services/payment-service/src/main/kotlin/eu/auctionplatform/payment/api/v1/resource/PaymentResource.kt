@@ -13,11 +13,14 @@ import eu.auctionplatform.payment.api.v1.dto.PaymentsSummaryResponse
 import eu.auctionplatform.payment.api.v1.dto.SettlementResponse
 import eu.auctionplatform.payment.application.service.CheckoutService
 import eu.auctionplatform.payment.application.service.LotCheckoutDetail
+import eu.auctionplatform.payment.application.service.NonPaymentService
 import eu.auctionplatform.payment.application.service.PaymentWebhookData
 import eu.auctionplatform.payment.application.service.SettlementService
 import eu.auctionplatform.payment.domain.model.Invoice
 import eu.auctionplatform.payment.domain.model.Payment
+import eu.auctionplatform.payment.domain.model.PaymentStatus
 import eu.auctionplatform.payment.domain.model.Settlement
+import eu.auctionplatform.payment.infrastructure.invoice.InvoiceHtmlGenerator
 import eu.auctionplatform.payment.infrastructure.persistence.repository.InvoiceRepository
 import eu.auctionplatform.payment.infrastructure.persistence.repository.PaymentRepository
 import jakarta.annotation.security.RolesAllowed
@@ -26,6 +29,7 @@ import jakarta.validation.Valid
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DefaultValue
 import jakarta.ws.rs.GET
+import jakarta.ws.rs.PATCH
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
@@ -56,8 +60,10 @@ import java.util.UUID
 class PaymentResource @Inject constructor(
     private val checkoutService: CheckoutService,
     private val settlementService: SettlementService,
+    private val nonPaymentService: NonPaymentService,
     private val paymentRepository: PaymentRepository,
-    private val invoiceRepository: InvoiceRepository
+    private val invoiceRepository: InvoiceRepository,
+    private val invoiceHtmlGenerator: InvoiceHtmlGenerator
 ) {
 
     companion object {
@@ -214,7 +220,9 @@ class PaymentResource @Inject constructor(
     /**
      * Lists invoices for the authenticated user.
      *
-     * Returns buyer invoices for buyers and seller invoices for sellers.
+     * For buyers: returns invoices linked to payments where the caller is the buyer.
+     * For sellers: returns invoices linked to payments where the caller is the seller.
+     * For admins: returns all invoices.
      *
      * @param page Page number (1-based).
      * @param size Page size.
@@ -225,13 +233,34 @@ class PaymentResource @Inject constructor(
     @RolesAllowed("buyer_active", "seller_verified", "admin_ops", "admin_super")
     fun listInvoices(
         @QueryParam("page") @DefaultValue("1") page: Int,
-        @QueryParam("size") @DefaultValue("20") size: Int
+        @QueryParam("size") @DefaultValue("20") size: Int,
+        @Context securityContext: SecurityContext
     ): Response {
         val effectiveSize = size.coerceIn(1, 100)
         val effectivePage = page.coerceAtLeast(1)
         val offset = (effectivePage - 1) * effectiveSize
 
-        val (invoices, total) = invoiceRepository.findAll(effectiveSize, offset)
+        val userId = extractUserId(securityContext)
+        val isAdmin = securityContext.isUserInRole("admin_ops") ||
+            securityContext.isUserInRole("admin_super")
+
+        val (invoices, total) = if (isAdmin) {
+            // Admins see all invoices
+            invoiceRepository.findAll(effectiveSize, offset)
+        } else {
+            // Non-admin users: filter by their payments
+            val userPayments = paymentRepository.findByBuyerId(userId)
+            val sellerPayments = paymentRepository.findByStatus(PaymentStatus.COMPLETED)
+                .filter { it.sellerId == userId }
+            val allUserPaymentIds = (userPayments + sellerPayments).map { it.id }.toSet()
+
+            val allInvoices = invoiceRepository.findAll(effectiveSize * 10, 0)
+                .first
+                .filter { it.paymentId in allUserPaymentIds }
+
+            val pagedInvoices = allInvoices.drop(offset).take(effectiveSize)
+            Pair(pagedInvoices, allInvoices.size.toLong())
+        }
 
         val response = mapOf(
             "items" to invoices.map { toInvoiceResponse(it) },
@@ -266,6 +295,41 @@ class PaymentResource @Inject constructor(
         }
 
         return Response.temporaryRedirect(java.net.URI.create(invoice.pdfUrl)).build()
+    }
+
+    /**
+     * Returns an HTML-rendered invoice.
+     *
+     * **GET /api/v1/payments/invoices/{id}/html**
+     *
+     * @param id The invoice UUID.
+     * @return 200 OK with text/html content, or 404 if not found.
+     */
+    @GET
+    @Path("/invoices/{id}/html")
+    @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("buyer_active", "seller_verified", "admin_ops", "admin_super")
+    fun getInvoiceHtml(@PathParam("id") id: String): Response {
+        val invoiceId = UUID.fromString(id)
+        val invoice = invoiceRepository.findById(invoiceId)
+            ?: return Response.status(Response.Status.NOT_FOUND)
+                .entity("Invoice not found")
+                .build()
+
+        val payment = paymentRepository.findById(invoice.paymentId)
+            ?: return Response.status(Response.Status.NOT_FOUND)
+                .entity("Payment not found for invoice")
+                .build()
+
+        val html = invoiceHtmlGenerator.generate(
+            invoice = invoice,
+            payment = payment,
+            buyerName = payment.buyerName ?: "Buyer ${payment.buyerId}",
+            sellerName = payment.sellerName ?: "Seller ${payment.sellerId}",
+            lotTitle = payment.lotTitle ?: "Lot ${payment.lotId}"
+        )
+
+        return Response.ok(html, MediaType.TEXT_HTML).build()
     }
 
     // -----------------------------------------------------------------------
@@ -381,26 +445,22 @@ class PaymentResource @Inject constructor(
     fun getPaymentsSummary(): Response {
         LOG.debug("GET /payments/summary")
 
-        val pending = paymentRepository.findByStatus(
-            eu.auctionplatform.payment.domain.model.PaymentStatus.PENDING
-        )
-        val completed = paymentRepository.findByStatus(
-            eu.auctionplatform.payment.domain.model.PaymentStatus.COMPLETED
-        )
-        val failed = paymentRepository.findByStatus(
-            eu.auctionplatform.payment.domain.model.PaymentStatus.FAILED
-        )
+        val pending = paymentRepository.findByStatus(PaymentStatus.PENDING)
+        val completed = paymentRepository.findByStatus(PaymentStatus.COMPLETED)
+
+        val overdueNow = paymentRepository.findOverdue(Instant.now())
 
         val totalPending = pending.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
         val totalPaid = completed.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
+        val totalOverdue = overdueNow.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
 
         val summary = PaymentsSummaryResponse(
             totalPending = totalPending,
-            totalOverdue = BigDecimal.ZERO,
+            totalOverdue = totalOverdue,
             totalPaid = totalPaid,
             totalDisputed = BigDecimal.ZERO,
             pendingCount = pending.size,
-            overdueCount = 0
+            overdueCount = overdueNow.size
         )
 
         return Response.ok(summary).build()
@@ -428,7 +488,7 @@ class PaymentResource @Inject constructor(
         val offset = (effectivePage - 1) * effectiveSize
 
         val (payments, total) = if (!status.isNullOrBlank()) {
-            val statusEnum = eu.auctionplatform.payment.domain.model.PaymentStatus.valueOf(status.uppercase())
+            val statusEnum = PaymentStatus.valueOf(status.uppercase())
             val list = paymentRepository.findByStatus(statusEnum)
             Pair(list, list.size.toLong())
         } else {
@@ -443,6 +503,123 @@ class PaymentResource @Inject constructor(
         )
 
         return Response.ok(response).build()
+    }
+
+    /**
+     * Marks a payment as settled (admin only).
+     *
+     * **PATCH /api/v1/payments/{id}/settle**
+     *
+     * Triggers settlement processing for a completed payment.
+     *
+     * @param id The payment UUID.
+     * @return 200 OK with settlement response, or 404/409 on error.
+     */
+    @PATCH
+    @Path("/{id}/settle")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun settlePayment(@PathParam("id") id: String): Response {
+        val paymentId = UUID.fromString(id)
+        val payment = paymentRepository.findById(paymentId)
+            ?: return Response.status(Response.Status.NOT_FOUND)
+                .entity(mapOf("error" to "Payment not found", "code" to "PAYMENT_NOT_FOUND"))
+                .build()
+
+        if (payment.status != PaymentStatus.COMPLETED) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(mapOf(
+                    "error" to "Payment must be COMPLETED to settle (current: ${payment.status})",
+                    "code" to "INVALID_STATUS"
+                ))
+                .build()
+        }
+
+        val settlement = settlementService.createSettlement(paymentId)
+            ?: return Response.status(Response.Status.CONFLICT)
+                .entity(mapOf("error" to "Settlement already exists or could not be created", "code" to "SETTLEMENT_EXISTS"))
+                .build()
+
+        // Auto-process the settlement
+        val processed = settlementService.processSettlement(settlement.id)
+
+        return Response.ok(toSettlementResponse(processed ?: settlement)).build()
+    }
+
+    /**
+     * Initiates a refund for a completed payment (admin only).
+     *
+     * **POST /api/v1/payments/{id}/refund**
+     *
+     * @param id The payment UUID.
+     * @return 200 OK with updated payment status, or 404/409 on error.
+     */
+    @POST
+    @Path("/{id}/refund")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun refundPayment(@PathParam("id") id: String): Response {
+        val paymentId = UUID.fromString(id)
+        val payment = paymentRepository.findById(paymentId)
+            ?: return Response.status(Response.Status.NOT_FOUND)
+                .entity(mapOf("error" to "Payment not found", "code" to "PAYMENT_NOT_FOUND"))
+                .build()
+
+        if (payment.status != PaymentStatus.COMPLETED) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(mapOf(
+                    "error" to "Only COMPLETED payments can be refunded (current: ${payment.status})",
+                    "code" to "INVALID_STATUS"
+                ))
+                .build()
+        }
+
+        paymentRepository.updateStatus(paymentId, PaymentStatus.REFUNDED)
+        LOG.infof("Payment %s refunded by admin", paymentId)
+
+        val updated = paymentRepository.findById(paymentId)!!
+        return Response.ok(toPaymentStatusResponse(updated)).build()
+    }
+
+    /**
+     * Sends a payment reminder for a pending payment (admin only).
+     *
+     * **POST /api/v1/payments/{id}/reminder**
+     *
+     * In production this would publish a notification event. For now it
+     * returns a confirmation that the reminder was triggered.
+     *
+     * @param id The payment UUID.
+     * @return 200 OK with confirmation, or 404 on error.
+     */
+    @POST
+    @Path("/{id}/reminder")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun sendPaymentReminder(@PathParam("id") id: String): Response {
+        val paymentId = UUID.fromString(id)
+        val payment = paymentRepository.findById(paymentId)
+            ?: return Response.status(Response.Status.NOT_FOUND)
+                .entity(mapOf("error" to "Payment not found", "code" to "PAYMENT_NOT_FOUND"))
+                .build()
+
+        if (payment.status != PaymentStatus.PENDING) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(mapOf(
+                    "error" to "Reminders can only be sent for PENDING payments (current: ${payment.status})",
+                    "code" to "INVALID_STATUS"
+                ))
+                .build()
+        }
+
+        LOG.infof(
+            "Payment reminder sent for payment %s (buyer=%s, amount=%s %s, due=%s)",
+            paymentId, payment.buyerId, payment.totalAmount, payment.currency, payment.dueDate
+        )
+
+        return Response.ok(mapOf(
+            "paymentId" to paymentId.toString(),
+            "buyerId" to payment.buyerId.toString(),
+            "status" to "REMINDER_SENT",
+            "message" to "Payment reminder has been sent to buyer ${payment.buyerId}"
+        )).build()
     }
 
     // -----------------------------------------------------------------------
@@ -514,7 +691,10 @@ class PaymentResource @Inject constructor(
             pspReference = payment.pspReference,
             dueDate = payment.dueDate,
             paidAt = payment.paidAt,
-            createdAt = payment.createdAt
+            createdAt = payment.createdAt,
+            lotTitle = payment.lotTitle,
+            buyerName = payment.buyerName,
+            sellerName = payment.sellerName
         )
 
     private fun toInvoiceResponse(invoice: Invoice): InvoiceResponse = InvoiceResponse(

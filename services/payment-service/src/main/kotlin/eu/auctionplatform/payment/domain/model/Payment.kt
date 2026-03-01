@@ -31,6 +31,9 @@ import java.util.UUID
  * @property dueDate Deadline by which payment must be completed.
  * @property paidAt Timestamp when payment was confirmed by the PSP.
  * @property createdAt Timestamp when the payment record was created.
+ * @property lotTitle Denormalized lot title for display purposes (may be null).
+ * @property buyerName Denormalized buyer display name (may be null).
+ * @property sellerName Denormalized seller display name (may be null).
  */
 data class Payment(
     val id: UUID,
@@ -52,5 +55,8 @@ data class Payment(
     val status: PaymentStatus,
     val dueDate: Instant,
     val paidAt: Instant?,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val lotTitle: String? = null,
+    val buyerName: String? = null,
+    val sellerName: String? = null
 )

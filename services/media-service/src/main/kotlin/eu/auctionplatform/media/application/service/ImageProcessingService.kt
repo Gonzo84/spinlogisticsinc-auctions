@@ -6,6 +6,8 @@ import eu.auctionplatform.media.domain.model.ImageStatus
 import eu.auctionplatform.media.domain.model.MediaImage
 import eu.auctionplatform.media.infrastructure.minio.MinioService
 import eu.auctionplatform.media.infrastructure.persistence.repository.ImageRepository
+import io.nats.client.Connection
+import io.nats.client.impl.NatsMessage
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import net.coobird.thumbnailator.Thumbnails
@@ -44,6 +46,7 @@ import java.util.UUID
 class ImageProcessingService @Inject constructor(
     private val imageRepository: ImageRepository,
     private val minioService: MinioService,
+    private val natsConnection: Connection,
 
     @ConfigProperty(name = "minio.endpoint")
     private val minioEndpoint: String,
@@ -218,7 +221,7 @@ class ImageProcessingService @Inject constructor(
     }
 
     /**
-     * Publishes a `media.image.processed` event to NATS.
+     * Publishes a `media.image.processed` event to NATS JetStream.
      *
      * Downstream consumers (catalog service, search indexer, etc.) can react
      * to this event to update their projections with the new image URLs.
@@ -234,8 +237,17 @@ class ImageProcessingService @Inject constructor(
             )
             val json = JsonMapper.toJson(eventPayload)
             LOG.debugf("Publishing image processed event: %s", json)
-            // In a full implementation this would use NatsPublisher.
-            // The event is available for outbox-based delivery as well.
+
+            val message = NatsMessage.builder()
+                .subject(NatsSubjects.MEDIA_IMAGE_PROCESSED)
+                .data(json.toByteArray(Charsets.UTF_8))
+                .build()
+
+            val ack = natsConnection.jetStream().publish(message)
+            LOG.infof(
+                "Published image processed event for image %s (stream=%s, seq=%s)",
+                image.id, ack.stream, ack.seqno
+            )
         } catch (ex: Exception) {
             LOG.warnf("Failed to publish image processed event for image %s: %s", image.id, ex.message)
         }

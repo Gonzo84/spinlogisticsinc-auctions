@@ -1,217 +1,237 @@
 package eu.auctionplatform.seller.infrastructure.nats
 
-import eu.auctionplatform.commons.messaging.NatsSubjects
+import com.fasterxml.jackson.databind.JsonNode
+import eu.auctionplatform.commons.messaging.NatsConsumer
 import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.seller.infrastructure.persistence.repository.SellerProfileRepository
 import io.nats.client.Connection
-import io.nats.client.JetStreamSubscription
 import io.nats.client.Message
-import io.nats.client.PullSubscribeOptions
-import io.nats.client.api.ConsumerConfiguration
 import io.quarkus.runtime.ShutdownEvent
 import io.quarkus.runtime.StartupEvent
-import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
+import jakarta.inject.Singleton
 import jakarta.inject.Inject
-import org.eclipse.microprofile.config.ConfigProvider
 import org.jboss.logging.Logger
 import java.math.BigDecimal
-import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+
+// =============================================================================
+// Auction Event Seller Consumer -- NATS JetStream subscriber for auction events
+// =============================================================================
 
 /**
- * NATS JetStream consumer that listens for auction lifecycle events and
- * updates seller dashboard metrics accordingly.
+ * Consumes auction domain events from NATS JetStream and updates seller
+ * dashboard metrics and lot projections accordingly.
  *
- * ## Subscribed events
+ * Subscribed subjects (on the AUCTION stream):
+ * - `auction.bid.placed` -- increments bid counter for the lot's seller.
+ * - `auction.lot.closed` -- records hammer sale, updates lot status.
+ * - `auction.lot.awarded` -- records award, updates lot status.
  *
- * - `auction.bid.placed` -- increments the bid counter for the lot's seller.
- * - `auction.lot.closed` -- records hammer sale amount, decrements active lots.
- * - `auction.lot.awarded` -- marks the lot as awarded (used for settlement tracking).
- * - `payment.settlement.ready` -- records a completed settlement payment.
- * - `catalog.lot.created` -- increments active lots counter for the seller.
+ * Because auction events do not carry a `sellerId` field, this consumer
+ * resolves the seller via a DB lookup on `seller_lots(id)` using the lotId
+ * from the event payload.
  *
- * The consumer uses a durable pull subscription for at-least-once delivery
- * guarantees across service restarts.
+ * Uses a durable pull consumer named "seller-auction-consumer" on the
+ * "AUCTION" stream to ensure at-least-once delivery and survive restarts.
  */
-@ApplicationScoped
+@Singleton
 class AuctionEventSellerConsumer @Inject constructor(
+    connection: Connection,
     private val sellerProfileRepository: SellerProfileRepository
+) : NatsConsumer(
+    connection = connection,
+    streamName = STREAM_NAME,
+    durableName = DURABLE_NAME,
+    filterSubject = FILTER_SUBJECT,
+    maxRedeliveries = 5,
+    deadLetterSubject = "seller.dlq.auction",
+    batchSize = 20
 ) {
 
-    private var connection: Connection? = null
-    private val subscriptions = mutableListOf<JetStreamSubscription>()
-    private var executor: ExecutorService? = null
-
-    @Volatile
-    private var running = false
+    private var consumerThread: Thread? = null
 
     companion object {
         private val LOG: Logger = Logger.getLogger(AuctionEventSellerConsumer::class.java)
-        private const val STREAM_NAME = "AUCTION"
-        private const val DURABLE_PREFIX = "seller-metrics"
-        private const val BATCH_SIZE = 20
-        private val POLL_TIMEOUT: Duration = Duration.ofSeconds(5)
 
-        /** Subjects this consumer listens to. */
-        private val SUBJECTS = listOf(
-            NatsSubjects.AUCTION_BID_PLACED,
-            NatsSubjects.AUCTION_LOT_CLOSED,
-            NatsSubjects.AUCTION_LOT_AWARDED,
-            NatsSubjects.PAYMENT_SETTLEMENT_READY,
-            NatsSubjects.CATALOG_LOT_CREATED
-        )
+        /** NATS JetStream stream for auction events. */
+        const val STREAM_NAME: String = "AUCTION"
+
+        /** Durable consumer name -- persists across restarts. */
+        const val DURABLE_NAME: String = "seller-auction-consumer"
+
+        /** Subject filter matching all auction events. */
+        const val FILTER_SUBJECT: String = "auction.>"
+
+        // Subject prefixes for routing
+        private const val SUBJECT_BID_PLACED = "auction.bid.placed"
+        private const val SUBJECT_LOT_CLOSED = "auction.lot.closed"
+        private const val SUBJECT_LOT_AWARDED = "auction.lot.awarded"
     }
 
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
+
     /**
-     * Starts the consumer on application startup.
+     * Starts the consumer loop in a dedicated daemon thread on application startup.
      */
     fun onStart(@Observes event: StartupEvent) {
-        try {
-            val natsUrl = ConfigProvider.getConfig()
-                .getOptionalValue("nats.url", String::class.java)
-                .orElse("nats://localhost:4222")
-            connection = io.nats.client.Nats.connect(natsUrl)
-
-            val jetStream = connection!!.jetStream()
-
-            for (subject in SUBJECTS) {
-                val durableName = "$DURABLE_PREFIX-${subject.replace(".", "-")}"
-                val consumerConfig = ConsumerConfiguration.builder()
-                    .durable(durableName)
-                    .filterSubject(subject)
-                    .maxDeliver(5)
-                    .build()
-
-                val pullOptions = PullSubscribeOptions.builder()
-                    .stream(STREAM_NAME)
-                    .configuration(consumerConfig)
-                    .build()
-
-                val subscription = jetStream.subscribe(subject, pullOptions)
-                subscriptions.add(subscription)
-            }
-
-            running = true
-            executor = Executors.newSingleThreadExecutor { r ->
-                Thread(r, "seller-auction-consumer").apply { isDaemon = true }
-            }
-            executor!!.submit { consumeLoop() }
-
-            LOG.infof("AuctionEventSellerConsumer started with %s subject(s)", SUBJECTS.size)
-        } catch (ex: Exception) {
-            LOG.errorf(ex, "Failed to start AuctionEventSellerConsumer: %s", ex.message)
+        LOG.infof("Starting AuctionEventSellerConsumer [durable=%s]", DURABLE_NAME)
+        consumerThread = Thread({
+            start()
+        }, "seller-auction-consumer").apply {
+            isDaemon = true
+            start()
         }
     }
 
     /**
-     * Gracefully shuts down the consumer.
+     * Signals the consumer loop to stop gracefully on application shutdown.
      */
     fun onStop(@Observes event: ShutdownEvent) {
-        running = false
+        LOG.infof("Stopping AuctionEventSellerConsumer [durable=%s]", DURABLE_NAME)
+        stop()
+        consumerThread?.interrupt()
+    }
+
+    // -------------------------------------------------------------------------
+    // Message handling
+    // -------------------------------------------------------------------------
+
+    /**
+     * Routes an incoming NATS message to the appropriate handler based on the
+     * subject pattern.
+     *
+     * Subject convention: `auction.<entity>.<action>` (optionally with brand suffix).
+     */
+    override fun handleMessage(message: Message) {
+        val subject = message.subject
+        val payload = String(message.data, Charsets.UTF_8)
+
+        LOG.debugf("Received auction event on subject [%s], payload size=%s bytes",
+            subject, message.data.size)
+
         try {
-            subscriptions.forEach { it.drain(Duration.ofSeconds(10)) }
-            connection?.close()
-            executor?.shutdownNow()
-            LOG.info("AuctionEventSellerConsumer stopped")
+            when {
+                subject.startsWith(SUBJECT_BID_PLACED) -> handleBidPlaced(payload)
+                subject.startsWith(SUBJECT_LOT_CLOSED) -> handleLotClosed(payload)
+                subject.startsWith(SUBJECT_LOT_AWARDED) -> handleLotAwarded(payload)
+                else -> LOG.debugf("Ignoring unrelated subject [%s] on auction stream", subject)
+            }
         } catch (ex: Exception) {
-            LOG.warnf("Error during AuctionEventSellerConsumer shutdown: %s", ex.message)
+            LOG.errorf(ex, "Failed to process auction event on [%s]: %s", subject, ex.message)
+            throw ex // re-throw so the base class handles nak/dead-letter
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Internal
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Event handlers
+    // -------------------------------------------------------------------------
 
-    private fun consumeLoop() {
-        while (running) {
-            try {
-                for (subscription in subscriptions) {
-                    val messages = subscription.fetch(BATCH_SIZE, POLL_TIMEOUT)
-                    for (msg in messages) {
-                        processMessage(msg)
-                    }
-                }
-            } catch (ex: InterruptedException) {
-                Thread.currentThread().interrupt()
-                running = false
-            } catch (ex: Exception) {
-                LOG.errorf(ex, "Error in AuctionEventSellerConsumer loop: %s", ex.message)
-            }
+    /**
+     * Handles `auction.bid.placed` events by incrementing the bid counter
+     * for the seller who owns the lot and updating current bid on seller_lots.
+     *
+     * The sellerId is resolved by looking up `seller_lots` by lotId.
+     */
+    private fun handleBidPlaced(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node) ?: return
+        val bidAmount = node.optionalDecimal("amount")
+
+        val sellerId = sellerProfileRepository.findSellerIdByLotId(lotId)
+        if (sellerId == null) {
+            LOG.debugf("No seller found for lot %s -- skipping bid.placed", lotId)
+            return
         }
+
+        sellerProfileRepository.incrementBids(sellerId)
+
+        // Update current bid and bid count on seller_lots projection
+        if (bidAmount != null) {
+            sellerProfileRepository.updateLotBid(lotId, bidAmount, node.optionalInt("bidCount"))
+        }
+
+        LOG.debugf("Incremented bid count for seller %s (lot=%s)", sellerId, lotId)
     }
 
     /**
-     * Dispatches a single NATS message to the appropriate handler based on
-     * the event type extracted from the payload.
+     * Handles `auction.lot.closed` events by recording the hammer sale amount
+     * and updating the lot status in seller_lots.
+     *
+     * Uses `finalBid` from [AuctionClosedEvent].
      */
-    @Suppress("UNCHECKED_CAST")
-    private fun processMessage(message: Message) {
-        try {
-            val payload = String(message.data, Charsets.UTF_8)
-            val eventData = JsonMapper.fromJson<Map<String, Any>>(payload)
-            val eventType = eventData["eventType"]?.toString() ?: message.subject
+    private fun handleLotClosed(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node) ?: return
 
-            when {
-                eventType.contains("bid.placed") -> handleBidPlaced(eventData)
-                eventType.contains("lot.closed") -> handleLotClosed(eventData)
-                eventType.contains("lot.awarded") -> handleLotAwarded(eventData)
-                eventType.contains("settlement.ready") -> handleSettlementReady(eventData)
-                eventType.contains("lot.created") -> handleLotCreated(eventData)
-                else -> LOG.debugf("Unhandled event type: %s", eventType)
-            }
-
-            message.ack()
-        } catch (ex: Exception) {
-            LOG.errorf(ex, "Failed to process auction event: %s", ex.message)
-            message.nak()
+        val sellerId = sellerProfileRepository.findSellerIdByLotId(lotId)
+        if (sellerId == null) {
+            LOG.debugf("No seller found for lot %s -- skipping lot.closed", lotId)
+            return
         }
+
+        val hammerAmount = node.optionalDecimal("finalBid")
+        if (hammerAmount != null && hammerAmount > BigDecimal.ZERO) {
+            sellerProfileRepository.addHammerSale(sellerId, hammerAmount)
+        }
+
+        // Update lot status in seller_lots
+        sellerProfileRepository.updateLotStatus(lotId, "CLOSED")
+
+        LOG.debugf("Recorded lot closed for seller %s (lot=%s, hammer=%s)",
+            sellerId, lotId, hammerAmount)
     }
 
-    private fun handleBidPlaced(data: Map<String, Any>) {
-        val sellerId = extractSellerId(data) ?: return
-        sellerProfileRepository.incrementBids(sellerId)
-        LOG.debugf("Incremented bid count for seller %s", sellerId)
+    /**
+     * Handles `auction.lot.awarded` events by updating the lot status
+     * and recording the hammer price.
+     *
+     * Uses `hammerPrice` from [LotAwardedEvent].
+     */
+    private fun handleLotAwarded(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node) ?: return
+
+        val sellerId = sellerProfileRepository.findSellerIdByLotId(lotId)
+        if (sellerId == null) {
+            LOG.debugf("No seller found for lot %s -- skipping lot.awarded", lotId)
+            return
+        }
+
+        // Update lot status to AWARDED
+        sellerProfileRepository.updateLotStatus(lotId, "AWARDED")
+
+        LOG.debugf("Recorded lot awarded for seller %s (lot=%s)", sellerId, lotId)
     }
 
-    private fun handleLotClosed(data: Map<String, Any>) {
-        val sellerId = extractSellerId(data) ?: return
-        val hammerAmount = data["finalBidAmount"]?.toString()?.let { BigDecimal(it) } ?: return
-        sellerProfileRepository.addHammerSale(sellerId, hammerAmount)
-        LOG.debugf("Recorded hammer sale of %s for seller %s", hammerAmount, sellerId)
-    }
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
 
-    private fun handleLotAwarded(data: Map<String, Any>) {
-        val sellerId = extractSellerId(data) ?: return
-        LOG.debugf("Lot awarded for seller %s -- metrics already updated on close", sellerId)
-    }
-
-    private fun handleSettlementReady(data: Map<String, Any>) {
-        val sellerId = extractSellerId(data) ?: return
-        val amount = data["amount"]?.toString()?.let { BigDecimal(it) } ?: return
-        sellerProfileRepository.settlePayment(sellerId, amount)
-        LOG.debugf("Recorded settlement of %s for seller %s", amount, sellerId)
-    }
-
-    private fun handleLotCreated(data: Map<String, Any>) {
-        val sellerId = extractSellerId(data) ?: return
-        sellerProfileRepository.incrementActiveLots(sellerId)
-        LOG.debugf("Incremented active lots for seller %s", sellerId)
-    }
-
-    private fun extractSellerId(data: Map<String, Any>): UUID? {
-        val sellerIdStr = data["sellerId"]?.toString()
-        if (sellerIdStr == null) {
-            LOG.warn("Event missing sellerId field")
+    /**
+     * Extracts the lot ID from the event payload.
+     * Supports both `lotId` (explicit) and `aggregateId` (auction event convention).
+     */
+    private fun extractLotId(node: JsonNode): UUID? {
+        val lotIdStr = node.get("lotId")?.asText()
+            ?: node.get("aggregateId")?.asText()
+        if (lotIdStr == null) {
+            LOG.warn("Event payload missing both 'lotId' and 'aggregateId' fields")
             return null
         }
         return try {
-            UUID.fromString(sellerIdStr)
+            UUID.fromString(lotIdStr)
         } catch (ex: IllegalArgumentException) {
-            LOG.warnf("Invalid sellerId format: %s", sellerIdStr)
+            LOG.warnf("Invalid lotId format: %s", lotIdStr)
             null
         }
     }
+
+    private fun JsonNode.optionalDecimal(field: String): BigDecimal? =
+        this.get(field)?.takeIf { !it.isNull }?.decimalValue()
+
+    private fun JsonNode.optionalInt(field: String): Int? =
+        this.get(field)?.takeIf { !it.isNull }?.asInt()
 }

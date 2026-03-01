@@ -276,10 +276,11 @@ class BidService @Inject constructor(
     // -----------------------------------------------------------------------
 
     /**
-     * Resolves the NATS subject for a given domain event, including brand prefix.
+     * Resolves the NATS subject for a given domain event.
+     * Brand is propagated via NATS message headers (set by OutboxPublisher), not subject prefix.
      */
     private fun resolveNatsSubject(event: DomainEvent): String {
-        val baseSubject = when (event.eventType) {
+        return when (event.eventType) {
             "BidPlacedEvent" -> NatsSubjects.AUCTION_BID_PLACED
             "ProxyBidTriggeredEvent" -> NatsSubjects.AUCTION_BID_PROXY
             "AuctionExtendedEvent" -> NatsSubjects.AUCTION_LOT_EXTENDED
@@ -287,6 +288,5 @@ class BidService @Inject constructor(
             "LotAwardedEvent" -> NatsSubjects.AUCTION_LOT_AWARDED
             else -> "auction.events.${event.eventType}"
         }
-        return NatsSubjects.withBrand(baseSubject, event.brand)
     }
 }

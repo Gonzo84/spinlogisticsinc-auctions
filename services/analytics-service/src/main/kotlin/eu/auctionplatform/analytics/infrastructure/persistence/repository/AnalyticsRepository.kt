@@ -95,10 +95,10 @@ class AnalyticsRepository @Inject constructor(
                 (report_date, new_registrations, total_users, new_buyers, new_sellers)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (report_date) DO UPDATE SET
-                new_registrations = EXCLUDED.new_registrations,
+                new_registrations = app.user_growth.new_registrations + EXCLUDED.new_registrations,
                 total_users       = EXCLUDED.total_users,
-                new_buyers        = EXCLUDED.new_buyers,
-                new_sellers       = EXCLUDED.new_sellers
+                new_buyers        = app.user_growth.new_buyers + EXCLUDED.new_buyers,
+                new_sellers       = app.user_growth.new_sellers + EXCLUDED.new_sellers
         """
 
         private const val GET_MONTHLY_REGISTRATIONS = """
@@ -122,6 +122,57 @@ class AnalyticsRepository @Inject constructor(
             UPDATE app.auction_metrics
                SET extension_count = extension_count + 1
              WHERE auction_id = ?
+        """
+
+        private const val UPSERT_DAILY_BID = """
+            INSERT INTO app.bid_volume (report_date, total_bids, unique_bidders)
+            VALUES (?, 1, 1)
+            ON CONFLICT (report_date) DO UPDATE SET
+                total_bids     = app.bid_volume.total_bids + 1,
+                unique_bidders = app.bid_volume.unique_bidders
+        """
+
+        private const val GET_DAILY_BID_VOLUME = """
+            SELECT report_date, total_bids, unique_bidders
+              FROM app.bid_volume
+             WHERE report_date >= ?
+             ORDER BY report_date ASC
+        """
+
+        private const val GET_CATEGORY_METRICS = """
+            SELECT category, lot_count, bid_count, revenue,
+                   sell_through_rate, avg_price
+              FROM app.category_metrics
+             ORDER BY bid_count DESC
+        """
+
+        private const val UPSERT_CATEGORY_METRICS = """
+            INSERT INTO app.category_metrics
+                (category, lot_count, bid_count, revenue, sell_through_rate, avg_price)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (category) DO UPDATE SET
+                lot_count         = EXCLUDED.lot_count,
+                bid_count         = EXCLUDED.bid_count,
+                revenue           = EXCLUDED.revenue,
+                sell_through_rate = EXCLUDED.sell_through_rate,
+                avg_price         = EXCLUDED.avg_price
+        """
+
+        private const val COUNT_TOTAL_USERS = """
+            SELECT COALESCE(SUM(new_registrations), 0) AS total
+              FROM app.user_growth
+        """
+
+        private const val COUNT_BIDS_24H = """
+            SELECT COALESCE(SUM(total_bids), 0) AS total
+              FROM app.bid_volume
+             WHERE report_date >= CURRENT_DATE - INTERVAL '1 day'
+        """
+
+        private const val SUM_REVENUE_30D = """
+            SELECT COALESCE(SUM(revenue_eur), 0) AS total
+              FROM app.daily_revenue
+             WHERE report_date >= CURRENT_DATE - INTERVAL '30 days'
         """
     }
 
@@ -382,6 +433,115 @@ class AnalyticsRepository @Inject constructor(
             }
         }
     }
+
+    /**
+     * Records a single bid in the daily bid_volume table.
+     * Accumulates total_bids on conflict.
+     */
+    fun recordDailyBid(auctionId: UUID) {
+        val today = LocalDate.now()
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(UPSERT_DAILY_BID).use { stmt ->
+                stmt.setObject(1, today)
+                stmt.executeUpdate()
+            }
+        }
+    }
+
+    /**
+     * Returns the daily bid volume for the specified number of lookback days.
+     *
+     * @param days Number of days to look back.
+     * @return List of daily bid volume entries.
+     */
+    fun getDailyBidVolume(days: Int): List<DailyBidVolumeEntry> {
+        val fromDate = LocalDate.now().minusDays(days.toLong())
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(GET_DAILY_BID_VOLUME).use { stmt ->
+                stmt.setObject(1, fromDate)
+                stmt.executeQuery().use { rs ->
+                    val entries = mutableListOf<DailyBidVolumeEntry>()
+                    while (rs.next()) {
+                        entries.add(
+                            DailyBidVolumeEntry(
+                                reportDate = rs.getObject("report_date", LocalDate::class.java),
+                                totalBids = rs.getLong("total_bids"),
+                                uniqueBidders = rs.getInt("unique_bidders")
+                            )
+                        )
+                    }
+                    return entries
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns all category metrics, ordered by bid count descending.
+     *
+     * @return List of category metric entries.
+     */
+    fun getCategoryMetrics(): List<CategoryMetricsEntry> {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(GET_CATEGORY_METRICS).use { stmt ->
+                stmt.executeQuery().use { rs ->
+                    val entries = mutableListOf<CategoryMetricsEntry>()
+                    while (rs.next()) {
+                        entries.add(
+                            CategoryMetricsEntry(
+                                category = rs.getString("category"),
+                                lotCount = rs.getInt("lot_count"),
+                                bidCount = rs.getInt("bid_count"),
+                                revenue = rs.getBigDecimal("revenue") ?: BigDecimal.ZERO,
+                                sellThroughRate = rs.getBigDecimal("sell_through_rate") ?: BigDecimal.ZERO,
+                                avgPrice = rs.getBigDecimal("avg_price") ?: BigDecimal.ZERO
+                            )
+                        )
+                    }
+                    return entries
+                }
+            }
+        }
+    }
+
+    /**
+     * Computes the total number of registered users from user_growth.
+     */
+    fun countTotalUsers(): Long {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(COUNT_TOTAL_USERS).use { stmt ->
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) rs.getLong("total") else 0L
+                }
+            }
+        }
+    }
+
+    /**
+     * Computes total bids in the last 24 hours from bid_volume.
+     */
+    fun countBids24h(): Long {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(COUNT_BIDS_24H).use { stmt ->
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) rs.getLong("total") else 0L
+                }
+            }
+        }
+    }
+
+    /**
+     * Computes total revenue in the last 30 days from daily_revenue.
+     */
+    fun sumRevenue30d(): BigDecimal {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SUM_REVENUE_30D).use { stmt ->
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) rs.getBigDecimal("total") ?: BigDecimal.ZERO else BigDecimal.ZERO
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -413,4 +573,25 @@ data class MonthlyRegistrationEntry(
     val buyers: Int,
     val sellers: Int,
     val total: Int
+)
+
+/**
+ * A single day's bid volume data.
+ */
+data class DailyBidVolumeEntry(
+    val reportDate: LocalDate,
+    val totalBids: Long,
+    val uniqueBidders: Int
+)
+
+/**
+ * Category-level metrics data.
+ */
+data class CategoryMetricsEntry(
+    val category: String,
+    val lotCount: Int,
+    val bidCount: Int,
+    val revenue: BigDecimal,
+    val sellThroughRate: BigDecimal,
+    val avgPrice: BigDecimal
 )

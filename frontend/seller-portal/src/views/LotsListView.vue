@@ -39,11 +39,13 @@ function getStatusSeverity(status: string): string | undefined {
     draft: 'secondary',
     pending: 'warn',
     pending_review: 'warn',
+    approved: 'success',
     active: 'success',
     sold: 'info',
     completed: 'info',
     unsold: 'danger',
     rejected: 'danger',
+    withdrawn: 'secondary',
     paid: 'success',
     processing: 'warn',
   }
@@ -62,6 +64,10 @@ const tabs: { key: LotStatus | 'all'; label: string; severity: string | undefine
 function getTabCount(key: string): number {
   if (key === 'all') {
     return Object.values(statusCounts.value).reduce((a, b) => a + b, 0)
+  }
+  // Include approved lots in the Active tab count
+  if (key === 'active') {
+    return (statusCounts.value.active ?? 0) + (statusCounts.value.approved ?? 0)
   }
   return statusCounts.value[key as LotStatus] ?? 0
 }
@@ -120,10 +126,12 @@ function getStatusLabel(status: LotStatus): string {
   const map: Record<LotStatus, string> = {
     draft: 'Draft',
     pending_review: 'Pending Review',
+    approved: 'Approved',
     active: 'Active',
     sold: 'Sold',
     unsold: 'Unsold',
     rejected: 'Rejected',
+    withdrawn: 'Withdrawn',
   }
   return map[status] ?? status
 }

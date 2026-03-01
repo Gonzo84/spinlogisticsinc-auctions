@@ -1,24 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import Button from 'primevue/button'
 import { useAuth } from '@/composables/useAuth'
+import { useNotifications } from '@/composables/useNotifications'
 
 const emit = defineEmits<{
   'toggle-sidebar': []
 }>()
 
 const { userName, companyName, logout } = useAuth()
+const {
+  notifications,
+  unreadCount,
+  fetchNotifications,
+  markAsRead,
+  markAllAsRead,
+} = useNotifications()
 
 const showProfileDropdown = ref(false)
 const showNotifications = ref(false)
 
-const notifications = ref([
-  { id: '1', title: 'Lot approved', message: 'Your lot "Industrial Pump" has been approved.', time: '5m ago', unread: true },
-  { id: '2', title: 'New bid received', message: 'A new bid of EUR 1,250 on "CNC Milling Machine".', time: '1h ago', unread: true },
-  { id: '3', title: 'Settlement processed', message: 'Payment of EUR 3,400 has been transferred.', time: '3h ago', unread: false },
-])
-
-const unreadCount = ref(2)
+onMounted(() => {
+  fetchNotifications()
+})
 
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
@@ -38,6 +42,19 @@ function closeAll() {
 function handleLogout() {
   closeAll()
   logout()
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now()
+  const date = new Date(dateStr).getTime()
+  const diffMs = now - date
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.floor(diffHr / 24)
+  return `${diffDay}d ago`
 }
 </script>
 
@@ -110,32 +127,42 @@ function handleLogout() {
               v-for="n in notifications"
               :key="n.id"
               :class="[
-                'flex gap-3 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-gray-50',
-                n.unread && 'bg-primary-50/50',
+                'flex gap-3 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-gray-50 cursor-pointer',
+                !n.read && 'bg-primary-50/50',
               ]"
+              @click="markAsRead(n.id)"
             >
               <div
                 :class="[
                   'mt-1 h-2 w-2 shrink-0 rounded-full',
-                  n.unread ? 'bg-primary-500' : 'bg-transparent',
+                  !n.read ? 'bg-primary-500' : 'bg-transparent',
                 ]"
               />
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-gray-900">
-                  {{ n.title }}
+                  {{ n.subject }}
                 </p>
                 <p class="mt-0.5 text-xs text-gray-500">
-                  {{ n.message }}
+                  {{ n.body || n.type }}
                 </p>
                 <p class="mt-1 text-xs text-gray-400">
-                  {{ n.time }}
+                  {{ formatTimeAgo(n.createdAt) }}
                 </p>
               </div>
             </div>
+            <div
+              v-if="notifications.length === 0"
+              class="px-4 py-6 text-center text-sm text-gray-400"
+            >
+              No notifications yet
+            </div>
           </div>
           <div class="border-t border-gray-100 px-4 py-2">
-            <button class="w-full text-center text-xs font-medium text-primary-600 hover:text-primary-700">
-              View all notifications
+            <button
+              class="w-full text-center text-xs font-medium text-primary-600 hover:text-primary-700"
+              @click="markAllAsRead()"
+            >
+              Mark all as read
             </button>
           </div>
         </div>

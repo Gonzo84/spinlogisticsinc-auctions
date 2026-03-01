@@ -17,7 +17,7 @@ export default defineNuxtConfig({
     autoImport: true,
   },
 
-  css: ['primeicons/primeicons.css'],
+  css: ['~/assets/css/main.css'],
 
   i18n: {
     locales: [

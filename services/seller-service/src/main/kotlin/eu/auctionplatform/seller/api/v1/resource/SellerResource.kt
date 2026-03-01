@@ -231,6 +231,77 @@ class SellerResource {
         return Response.ok(ApiResponse.ok(responses)).build()
     }
 
+    /**
+     * Retrieves the invoice URL for a specific settlement.
+     *
+     * Redirects to the payment-service invoice endpoint. If the payment-service
+     * is not available, returns a placeholder URL.
+     *
+     * **GET /api/v1/sellers/me/settlements/{id}/invoice**
+     *
+     * @param authorization The Bearer JWT token.
+     * @param id            The settlement identifier.
+     * @return 200 OK with the invoice URL.
+     */
+    @GET
+    @Path("/me/settlements/{id}/invoice")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun getSettlementInvoice(
+        @HeaderParam("Authorization") authorization: String,
+        @PathParam("id") id: UUID
+    ): Response {
+        resolveSellerIdFromToken(authorization) // Verify seller exists
+
+        // Redirect to payment-service invoice endpoint
+        val invoiceUrl = "http://localhost:8084/api/v1/payments/settlements/$id/invoice"
+        val body = mapOf("url" to invoiceUrl, "settlementId" to id.toString())
+
+        return Response.ok(ApiResponse.ok(body)).build()
+    }
+
+    /**
+     * Retrieves monthly settlement aggregations for the authenticated seller.
+     *
+     * **GET /api/v1/sellers/me/settlements/monthly**
+     *
+     * @param authorization The Bearer JWT token.
+     * @return 200 OK with monthly settlement aggregations (up to 12 months).
+     */
+    @GET
+    @Path("/me/settlements/monthly")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun getMonthlySettlements(
+        @HeaderParam("Authorization") authorization: String
+    ): Response {
+        val sellerId = resolveSellerIdFromToken(authorization)
+        val monthlyData = sellerService.getMonthlySettlements(sellerId)
+
+        return Response.ok(ApiResponse.ok(monthlyData)).build()
+    }
+
+    /**
+     * Retrieves lot status counts for the authenticated seller.
+     *
+     * Returns a map of status to count, more efficient than fetching
+     * all lots and counting client-side.
+     *
+     * **GET /api/v1/sellers/me/lots/status-counts**
+     *
+     * @param authorization The Bearer JWT token.
+     * @return 200 OK with a map of status to count.
+     */
+    @GET
+    @Path("/me/lots/status-counts")
+    @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun getLotStatusCounts(
+        @HeaderParam("Authorization") authorization: String
+    ): Response {
+        val sellerId = resolveSellerIdFromToken(authorization)
+        val counts = sellerService.getLotStatusCounts(sellerId)
+
+        return Response.ok(ApiResponse.ok(counts)).build()
+    }
+
     // -------------------------------------------------------------------------
     // Analytics
     // -------------------------------------------------------------------------

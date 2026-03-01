@@ -17,10 +17,12 @@ import eu.auctionplatform.user.api.dto.CompanyResponse
 import eu.auctionplatform.user.api.dto.DepositResponse
 import eu.auctionplatform.user.api.dto.toResponse
 import eu.auctionplatform.user.application.service.UserService
+import io.agroal.api.AgroalDataSource
 import jakarta.annotation.security.PermitAll
 import jakarta.annotation.security.RolesAllowed
 import jakarta.inject.Inject
 import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.HeaderParam
 import jakarta.ws.rs.POST
@@ -33,6 +35,8 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import eu.auctionplatform.user.domain.model.UserStatus
 import org.jboss.logging.Logger
+import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -52,6 +56,9 @@ class UserResource {
 
     @Inject
     lateinit var userService: UserService
+
+    @Inject
+    lateinit var dataSource: AgroalDataSource
 
     companion object {
         private val LOG: Logger = Logger.getLogger(UserResource::class.java)
@@ -236,17 +243,68 @@ class UserResource {
      * **GET /api/v1/users/me/purchases**
      *
      * @param authorization The Bearer token.
-     * @return 200 OK with paginated purchase list (empty until auction-engine integration).
+     * @param page          Page number (1-based, defaults to 1).
+     * @param pageSize      Items per page (defaults to 20).
+     * @return 200 OK with paginated purchase list.
      */
     @GET
     @Path("/me/purchases")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
-    fun getMyPurchases(@HeaderParam("Authorization") authorization: String): Response {
-        val pagedResponse = eu.auctionplatform.commons.dto.PagedResponse(
-            items = emptyList<Any>(),
-            total = 0,
-            page = 1,
-            pageSize = 20
+    fun getMyPurchases(
+        @HeaderParam("Authorization") authorization: String,
+        @QueryParam("page") page: Int?,
+        @QueryParam("pageSize") pageSize: Int?
+    ): Response {
+        val user = resolveCurrentUser(authorization)
+        val pageNum = (page ?: 1).coerceAtLeast(1)
+        val size = (pageSize ?: 20).coerceIn(1, 100)
+        val offset = (pageNum - 1) * size
+
+        val (items, total) = dataSource.connection.use { conn ->
+            val countSql = "SELECT COUNT(*) FROM app.user_purchases WHERE user_id = ?"
+            val totalCount = conn.prepareStatement(countSql).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.executeQuery().use { rs ->
+                    rs.next()
+                    rs.getLong(1)
+                }
+            }
+
+            val querySql = """
+                SELECT lot_id, auction_id, hammer_price, currency, status, awarded_at
+                FROM app.user_purchases
+                WHERE user_id = ?
+                ORDER BY awarded_at DESC
+                LIMIT ? OFFSET ?
+            """.trimIndent()
+            val rows = conn.prepareStatement(querySql).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.setInt(2, size)
+                stmt.setInt(3, offset)
+                stmt.executeQuery().use { rs ->
+                    val result = mutableListOf<Map<String, Any?>>()
+                    while (rs.next()) {
+                        result.add(mapOf(
+                            "lotId" to rs.getObject("lot_id")?.toString(),
+                            "auctionId" to rs.getObject("auction_id")?.toString(),
+                            "hammerPrice" to rs.getBigDecimal("hammer_price"),
+                            "currency" to rs.getString("currency"),
+                            "status" to rs.getString("status"),
+                            "awardedAt" to rs.getTimestamp("awarded_at")?.toInstant()?.toString()
+                        ))
+                    }
+                    result
+                }
+            }
+
+            rows to totalCount
+        }
+
+        val pagedResponse = PagedResponse(
+            items = items,
+            total = total,
+            page = pageNum,
+            pageSize = size
         )
         return Response.ok(ApiResponse.ok(pagedResponse)).build()
     }
@@ -257,17 +315,67 @@ class UserResource {
      * **GET /api/v1/users/me/bids**
      *
      * @param authorization The Bearer token.
-     * @return 200 OK with paginated bid list (empty until auction-engine integration).
+     * @param page          Page number (1-based, defaults to 1).
+     * @param pageSize      Items per page (defaults to 20).
+     * @return 200 OK with paginated bid list.
      */
     @GET
     @Path("/me/bids")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
-    fun getMyBids(@HeaderParam("Authorization") authorization: String): Response {
-        val pagedResponse = eu.auctionplatform.commons.dto.PagedResponse(
-            items = emptyList<Any>(),
-            total = 0,
-            page = 1,
-            pageSize = 20
+    fun getMyBids(
+        @HeaderParam("Authorization") authorization: String,
+        @QueryParam("page") page: Int?,
+        @QueryParam("pageSize") pageSize: Int?
+    ): Response {
+        val user = resolveCurrentUser(authorization)
+        val pageNum = (page ?: 1).coerceAtLeast(1)
+        val size = (pageSize ?: 20).coerceIn(1, 100)
+        val offset = (pageNum - 1) * size
+
+        val (items, total) = dataSource.connection.use { conn ->
+            val countSql = "SELECT COUNT(*) FROM app.user_bids WHERE user_id = ?"
+            val totalCount = conn.prepareStatement(countSql).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.executeQuery().use { rs ->
+                    rs.next()
+                    rs.getLong(1)
+                }
+            }
+
+            val querySql = """
+                SELECT auction_id, lot_id, amount, currency, bid_at
+                FROM app.user_bids
+                WHERE user_id = ?
+                ORDER BY bid_at DESC
+                LIMIT ? OFFSET ?
+            """.trimIndent()
+            val rows = conn.prepareStatement(querySql).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.setInt(2, size)
+                stmt.setInt(3, offset)
+                stmt.executeQuery().use { rs ->
+                    val result = mutableListOf<Map<String, Any?>>()
+                    while (rs.next()) {
+                        result.add(mapOf(
+                            "auctionId" to rs.getObject("auction_id")?.toString(),
+                            "lotId" to rs.getObject("lot_id")?.toString(),
+                            "amount" to rs.getBigDecimal("amount"),
+                            "currency" to rs.getString("currency"),
+                            "bidAt" to rs.getTimestamp("bid_at")?.toInstant()?.toString()
+                        ))
+                    }
+                    result
+                }
+            }
+
+            rows to totalCount
+        }
+
+        val pagedResponse = PagedResponse(
+            items = items,
+            total = total,
+            page = pageNum,
+            pageSize = size
         )
         return Response.ok(ApiResponse.ok(pagedResponse)).build()
     }
@@ -278,19 +386,135 @@ class UserResource {
      * **GET /api/v1/users/me/watchlist**
      *
      * @param authorization The Bearer token.
-     * @return 200 OK with paginated watchlist (empty until watchlist feature integration).
+     * @param page          Page number (1-based, defaults to 1).
+     * @param pageSize      Items per page (defaults to 20).
+     * @return 200 OK with paginated watchlist.
      */
     @GET
     @Path("/me/watchlist")
     @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
-    fun getMyWatchlist(@HeaderParam("Authorization") authorization: String): Response {
-        val pagedResponse = eu.auctionplatform.commons.dto.PagedResponse(
-            items = emptyList<Any>(),
-            total = 0,
-            page = 1,
-            pageSize = 20
+    fun getMyWatchlist(
+        @HeaderParam("Authorization") authorization: String,
+        @QueryParam("page") page: Int?,
+        @QueryParam("pageSize") pageSize: Int?
+    ): Response {
+        val user = resolveCurrentUser(authorization)
+        val pageNum = (page ?: 1).coerceAtLeast(1)
+        val size = (pageSize ?: 20).coerceIn(1, 100)
+        val offset = (pageNum - 1) * size
+
+        val (items, total) = dataSource.connection.use { conn ->
+            val countSql = "SELECT COUNT(*) FROM app.user_watchlist WHERE user_id = ?"
+            val totalCount = conn.prepareStatement(countSql).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.executeQuery().use { rs ->
+                    rs.next()
+                    rs.getLong(1)
+                }
+            }
+
+            val querySql = """
+                SELECT lot_id, added_at
+                FROM app.user_watchlist
+                WHERE user_id = ?
+                ORDER BY added_at DESC
+                LIMIT ? OFFSET ?
+            """.trimIndent()
+            val rows = conn.prepareStatement(querySql).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.setInt(2, size)
+                stmt.setInt(3, offset)
+                stmt.executeQuery().use { rs ->
+                    val result = mutableListOf<Map<String, Any?>>()
+                    while (rs.next()) {
+                        result.add(mapOf(
+                            "lotId" to rs.getObject("lot_id")?.toString(),
+                            "addedAt" to rs.getTimestamp("added_at")?.toInstant()?.toString()
+                        ))
+                    }
+                    result
+                }
+            }
+
+            rows to totalCount
+        }
+
+        val pagedResponse = PagedResponse(
+            items = items,
+            total = total,
+            page = pageNum,
+            pageSize = size
         )
         return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    /**
+     * Adds a lot to the authenticated user's watchlist.
+     *
+     * **POST /api/v1/users/me/watchlist/{lotId}**
+     *
+     * @param authorization The Bearer token.
+     * @param lotId         The lot UUID to add to the watchlist.
+     * @return 201 Created if added, 200 OK if already present.
+     */
+    @POST
+    @Path("/me/watchlist/{lotId}")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun addToWatchlist(
+        @HeaderParam("Authorization") authorization: String,
+        @PathParam("lotId") lotId: UUID
+    ): Response {
+        val user = resolveCurrentUser(authorization)
+
+        val inserted = dataSource.connection.use { conn ->
+            conn.prepareStatement(
+                """
+                INSERT INTO app.user_watchlist (user_id, lot_id)
+                VALUES (?, ?)
+                ON CONFLICT (user_id, lot_id) DO NOTHING
+                """.trimIndent()
+            ).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.setObject(2, lotId)
+                stmt.executeUpdate()
+            }
+        }
+
+        val status = if (inserted > 0) Response.Status.CREATED else Response.Status.OK
+        val result = mapOf("lotId" to lotId.toString(), "watched" to true)
+        return Response.status(status).entity(ApiResponse.ok(result)).build()
+    }
+
+    /**
+     * Removes a lot from the authenticated user's watchlist.
+     *
+     * **DELETE /api/v1/users/me/watchlist/{lotId}**
+     *
+     * @param authorization The Bearer token.
+     * @param lotId         The lot UUID to remove from the watchlist.
+     * @return 200 OK with the removal result.
+     */
+    @DELETE
+    @Path("/me/watchlist/{lotId}")
+    @RolesAllowed("buyer_active", "buyer_pending_kyc", "seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
+    fun removeFromWatchlist(
+        @HeaderParam("Authorization") authorization: String,
+        @PathParam("lotId") lotId: UUID
+    ): Response {
+        val user = resolveCurrentUser(authorization)
+
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(
+                "DELETE FROM app.user_watchlist WHERE user_id = ? AND lot_id = ?"
+            ).use { stmt ->
+                stmt.setObject(1, user.id)
+                stmt.setObject(2, lotId)
+                stmt.executeUpdate()
+            }
+        }
+
+        val result = mapOf("lotId" to lotId.toString(), "watched" to false)
+        return Response.ok(ApiResponse.ok(result)).build()
     }
 
     // -------------------------------------------------------------------------

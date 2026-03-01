@@ -23,7 +23,7 @@
           <div class="relative" ref="langDropdownRef">
             <button
               class="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              @click="showLangDropdown = !showLangDropdown"
+              @click.stop="toggleLangDropdown()"
             >
               <span class="text-base">{{ currentLocaleFlag }}</span>
               <span class="hidden sm:inline uppercase text-xs font-medium">{{ locale }}</span>
@@ -63,7 +63,7 @@
           <div v-if="isAuthenticated" class="relative" ref="notifDropdownRef">
             <button
               class="relative p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              @click="showNotifications = !showNotifications"
+              @click.stop="toggleNotifications()"
               :title="$t('nav.notifications')"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@
               class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               :aria-expanded="showUserDropdown"
               aria-haspopup="true"
-              @click="showUserDropdown = !showUserDropdown"
+              @click.stop="toggleUserDropdown()"
             >
               <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary text-sm font-bold">
                 {{ initials }}
@@ -284,6 +284,30 @@ const availableLocales: LocaleEntry[] = [
 const currentLocaleFlag = computed(() => {
   return availableLocales.find((l) => l.code === locale.value)?.flag || '\uD83C\uDDEC\uD83C\uDDE7'
 })
+
+function closeAllDropdowns() {
+  showLangDropdown.value = false
+  showNotifications.value = false
+  showUserDropdown.value = false
+}
+
+function toggleLangDropdown() {
+  const wasOpen = showLangDropdown.value
+  closeAllDropdowns()
+  showLangDropdown.value = !wasOpen
+}
+
+function toggleNotifications() {
+  const wasOpen = showNotifications.value
+  closeAllDropdowns()
+  showNotifications.value = !wasOpen
+}
+
+function toggleUserDropdown() {
+  const wasOpen = showUserDropdown.value
+  closeAllDropdowns()
+  showUserDropdown.value = !wasOpen
+}
 
 function switchLocale(code: string) {
   setLocale(code as typeof locale.value)

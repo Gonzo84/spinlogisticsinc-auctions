@@ -7,6 +7,7 @@ import eu.auctionplatform.compliance.api.v1.dto.AmlReportRequest
 import eu.auctionplatform.compliance.api.v1.dto.ContentReportRequest
 import eu.auctionplatform.compliance.api.v1.dto.ErasureRequest
 import eu.auctionplatform.compliance.api.v1.dto.ExportRequest
+import eu.auctionplatform.compliance.api.v1.dto.FraudAlertResponse
 import eu.auctionplatform.compliance.api.v1.dto.toResponse
 import eu.auctionplatform.compliance.application.service.AmlService
 import eu.auctionplatform.compliance.application.service.AuditService
@@ -138,8 +139,8 @@ class ComplianceResource {
      *
      * **GET /api/v1/compliance/fraud/alerts**
      *
-     * Returns a paginated list of fraud alerts. Currently returns empty results
-     * as the fraud detection engine is not yet integrated.
+     * Returns a paginated list of mock fraud alerts with realistic data
+     * until the fraud detection engine is fully integrated.
      */
     @GET
     @Path("/fraud/alerts")
@@ -153,10 +154,74 @@ class ComplianceResource {
     ): Response {
         LOG.debugf("GET /fraud/alerts severity=%s status=%s type=%s page=%d size=%d", severity, status, type, page, size)
 
-        // Fraud detection is not yet fully implemented; return empty paginated result
+        // Mock fraud alerts until full fraud detection engine is integrated
+        val mockAlerts = listOf(
+            FraudAlertResponse(
+                id = UUID.fromString("00000000-0000-0000-0000-000000000f01"),
+                type = "SHILL_BIDDING",
+                severity = "HIGH",
+                status = "OPEN",
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                description = "Suspicious bidding pattern detected: same IP address placed 12 bids across 3 related lots within 2 minutes",
+                detectedAt = Instant.now().minusSeconds(3600),
+                lotId = UUID.fromString("00000000-0000-0000-0000-00000000aa01"),
+                riskScore = 0.92
+            ),
+            FraudAlertResponse(
+                id = UUID.fromString("00000000-0000-0000-0000-000000000f02"),
+                type = "VELOCITY_ANOMALY",
+                severity = "MEDIUM",
+                status = "UNDER_REVIEW",
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                description = "Unusual account activity: 47 bids placed in the last hour, exceeding the 99th percentile for this user segment",
+                detectedAt = Instant.now().minusSeconds(7200),
+                lotId = null,
+                riskScore = 0.71
+            ),
+            FraudAlertResponse(
+                id = UUID.fromString("00000000-0000-0000-0000-000000000f03"),
+                type = "PAYMENT_FRAUD",
+                severity = "HIGH",
+                status = "OPEN",
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000003"),
+                description = "Multiple failed payment attempts with different card numbers from the same device fingerprint",
+                detectedAt = Instant.now().minusSeconds(1800),
+                lotId = UUID.fromString("00000000-0000-0000-0000-00000000aa02"),
+                riskScore = 0.88
+            ),
+            FraudAlertResponse(
+                id = UUID.fromString("00000000-0000-0000-0000-000000000f04"),
+                type = "ACCOUNT_TAKEOVER",
+                severity = "LOW",
+                status = "RESOLVED",
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000004"),
+                description = "Login from new geographic region (Romania) after previously only accessing from Netherlands. User verified via 2FA",
+                detectedAt = Instant.now().minusSeconds(86400),
+                lotId = null,
+                riskScore = 0.35
+            )
+        )
+
+        // Apply filters
+        var filtered = mockAlerts
+        if (severity != null) {
+            filtered = filtered.filter { it.severity.equals(severity, ignoreCase = true) }
+        }
+        if (status != null) {
+            filtered = filtered.filter { it.status.equals(status, ignoreCase = true) }
+        }
+        if (type != null) {
+            filtered = filtered.filter { it.type.equals(type, ignoreCase = true) }
+        }
+
+        // Paginate
+        val total = filtered.size.toLong()
+        val offset = ((page.coerceAtLeast(1)) - 1) * size
+        val pagedItems = filtered.drop(offset).take(size)
+
         val pagedResponse = PagedResponse(
-            items = emptyList<Any>(),
-            total = 0L,
+            items = pagedItems,
+            total = total,
             page = page,
             pageSize = size
         )

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment confirmed</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;">
+        <tr>
+            <td style="padding:24px;background-color:#059669;text-align:center;">
+                <h1 style="color:#ffffff;margin:0;font-size:24px;">Payment Confirmed</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:32px 24px;">
+                <p style="color:#4a5568;font-size:16px;line-height:1.6;">
+                    Your payment for <strong>{lotTitle}</strong> has been successfully received and confirmed.
+                </p>
+                <table style="width:100%;border-collapse:collapse;margin:24px 0;">
+                    <tr>
+                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#718096;">Amount paid</td>
+                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:bold;color:#059669;">&euro;{totalAmount}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:12px;color:#718096;">Payment ID</td>
+                        <td style="padding:12px;text-align:right;color:#718096;font-family:monospace;">{paymentId}</td>
+                    </tr>
+                </table>
+                <div style="text-align:center;margin:32px 0;">
+                    <a href="{ordersUrl}" style="display:inline-block;padding:14px 32px;background-color:#1e40af;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:bold;">
+                        View My Orders
+                    </a>
+                </div>
+                <p style="color:#a0aec0;font-size:13px;text-align:center;">
+                    You will receive pickup instructions shortly.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:16px 24px;background-color:#f7fafc;text-align:center;color:#a0aec0;font-size:12px;">
+                <p><a href="{preferencesUrl}" style="color:#1e40af;">Manage notifications</a></p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

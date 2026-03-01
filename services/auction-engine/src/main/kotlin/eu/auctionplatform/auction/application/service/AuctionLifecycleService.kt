@@ -319,10 +319,11 @@ class AuctionLifecycleService @Inject constructor(
     }
 
     /**
-     * Resolves the NATS subject for a given domain event, including brand prefix.
+     * Resolves the NATS subject for a given domain event.
+     * Brand is propagated via NATS message headers (set by OutboxPublisher), not subject prefix.
      */
     private fun resolveNatsSubject(event: DomainEvent): String {
-        val baseSubject = when (event.eventType) {
+        return when (event.eventType) {
             "AuctionCreatedEvent" -> "auction.lot.created"
             "BidPlacedEvent" -> NatsSubjects.AUCTION_BID_PLACED
             "ProxyBidTriggeredEvent" -> NatsSubjects.AUCTION_BID_PROXY
@@ -335,6 +336,5 @@ class AuctionLifecycleService @Inject constructor(
             "AutoBidExhaustedEvent" -> "auction.autobid.exhausted"
             else -> "auction.events.${event.eventType}"
         }
-        return NatsSubjects.withBrand(baseSubject, event.brand)
     }
 }

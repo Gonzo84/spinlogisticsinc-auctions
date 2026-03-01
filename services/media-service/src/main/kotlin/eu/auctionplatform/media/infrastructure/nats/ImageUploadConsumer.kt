@@ -1,21 +1,15 @@
 package eu.auctionplatform.media.infrastructure.nats
 
+import eu.auctionplatform.commons.messaging.NatsConsumer
 import eu.auctionplatform.commons.messaging.NatsSubjects
 import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.media.application.service.ImageProcessingService
 import io.nats.client.Connection
-import io.nats.client.JetStreamSubscription
 import io.nats.client.Message
-import io.nats.client.PullSubscribeOptions
-import io.nats.client.api.ConsumerConfiguration
-import io.quarkus.runtime.ShutdownEvent
-import io.quarkus.runtime.StartupEvent
+import io.quarkus.runtime.Startup
 import jakarta.enterprise.context.ApplicationScoped
-import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
-import org.eclipse.microprofile.config.ConfigProvider
 import org.jboss.logging.Logger
-import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -27,104 +21,62 @@ import java.util.concurrent.Executors
  * after a successful presigned upload). Upon receiving an event, this consumer
  * triggers the [ImageProcessingService] to run the full image processing pipeline.
  *
- * The consumer uses a durable pull subscription to ensure at-least-once delivery
- * and survives service restarts without losing messages.
+ * Uses the CDI-managed NATS [Connection] and an inner [NatsConsumer] for
+ * durable pull subscription with at-least-once delivery guarantees.
  */
 @ApplicationScoped
+@Startup
 class ImageUploadConsumer @Inject constructor(
+    private val connection: Connection,
     private val imageProcessingService: ImageProcessingService
 ) {
-
-    private var connection: Connection? = null
-    private var subscription: JetStreamSubscription? = null
-    private var executor: ExecutorService? = null
-
-    @Volatile
-    private var running = false
 
     companion object {
         private val LOG: Logger = Logger.getLogger(ImageUploadConsumer::class.java)
 
         private const val STREAM_NAME = "MEDIA"
         private const val DURABLE_NAME = "media-image-upload-consumer"
-        private const val BATCH_SIZE = 10
-        private val POLL_TIMEOUT: Duration = Duration.ofSeconds(5)
+    }
+
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "image-upload-consumer").apply { isDaemon = true }
     }
 
     /**
-     * Initialises and starts the consumer on application startup.
-     *
-     * The consumer loop runs on a dedicated background thread to avoid
-     * blocking the Quarkus startup sequence.
+     * Starts the consumer thread on application startup.
      */
-    fun onStart(@Observes event: StartupEvent) {
-        try {
-            val natsUrl = ConfigProvider.getConfig()
-                .getOptionalValue("nats.url", String::class.java)
-                .orElse("nats://localhost:4222")
-            connection = io.nats.client.Nats.connect(natsUrl)
-
-            val jetStream = connection!!.jetStream()
-            val consumerConfig = ConsumerConfiguration.builder()
-                .durable(DURABLE_NAME)
-                .filterSubject(NatsSubjects.MEDIA_IMAGE_UPLOADED)
-                .maxDeliver(5)
-                .build()
-
-            val pullOptions = PullSubscribeOptions.builder()
-                .stream(STREAM_NAME)
-                .configuration(consumerConfig)
-                .build()
-
-            subscription = jetStream.subscribe(NatsSubjects.MEDIA_IMAGE_UPLOADED, pullOptions)
-            running = true
-
-            executor = Executors.newSingleThreadExecutor { r ->
-                Thread(r, "image-upload-consumer").apply { isDaemon = true }
-            }
-
-            executor!!.submit { consumeLoop() }
-
-            LOG.infof("ImageUploadConsumer started (stream=%s, subject=%s)", STREAM_NAME, NatsSubjects.MEDIA_IMAGE_UPLOADED)
-        } catch (ex: Exception) {
-            LOG.errorf(ex, "Failed to start ImageUploadConsumer: %s", ex.message)
-        }
+    @jakarta.annotation.PostConstruct
+    fun init() {
+        LOG.info("Starting ImageUploadConsumer")
+        executor.submit { createImageUploadConsumer().start() }
     }
 
-    /**
-     * Gracefully shuts down the consumer on application stop.
-     */
-    fun onStop(@Observes event: ShutdownEvent) {
-        running = false
-        try {
-            subscription?.drain(Duration.ofSeconds(10))
-            connection?.close()
-            executor?.shutdownNow()
-            LOG.info("ImageUploadConsumer stopped")
-        } catch (ex: Exception) {
-            LOG.warnf("Error during ImageUploadConsumer shutdown: %s", ex.message)
-        }
+    @jakarta.annotation.PreDestroy
+    fun shutdown() {
+        LOG.info("Shutting down ImageUploadConsumer")
+        executor.shutdownNow()
     }
 
     // -----------------------------------------------------------------------
-    // Internal
+    // Consumer factory
     // -----------------------------------------------------------------------
 
-    private fun consumeLoop() {
-        while (running) {
-            try {
-                val messages = subscription?.fetch(BATCH_SIZE, POLL_TIMEOUT) ?: emptyList()
-                for (msg in messages) {
-                    processMessage(msg)
-                }
-            } catch (ex: InterruptedException) {
-                Thread.currentThread().interrupt()
-                running = false
-            } catch (ex: Exception) {
-                LOG.errorf(ex, "Error in ImageUploadConsumer loop: %s", ex.message)
+    private fun createImageUploadConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = connection,
+            streamName = STREAM_NAME,
+            durableName = DURABLE_NAME,
+            filterSubject = NatsSubjects.MEDIA_IMAGE_UPLOADED,
+            deadLetterSubject = "dlq.media.image.uploaded"
+        ) {
+            override fun handleMessage(message: Message) {
+                handleImageUpload(message)
             }
         }
-    }
+
+    // -----------------------------------------------------------------------
+    // Event handler
+    // -----------------------------------------------------------------------
 
     /**
      * Processes a single image upload notification.
@@ -132,22 +84,17 @@ class ImageUploadConsumer @Inject constructor(
      * Extracts the image ID from the event payload and delegates to the
      * image processing pipeline.
      */
-    private fun processMessage(message: Message) {
-        try {
-            val payload = String(message.data, Charsets.UTF_8)
-            LOG.debugf("Received image upload event: %s", payload)
+    @Suppress("UNCHECKED_CAST")
+    private fun handleImageUpload(message: Message) {
+        val payload = String(message.data, Charsets.UTF_8)
+        LOG.debugf("Received image upload event: %s", payload)
 
-            val eventData = JsonMapper.fromJson<Map<String, Any>>(payload)
-            val imageId = eventData["imageId"]?.toString()
-                ?: throw IllegalArgumentException("Missing imageId in upload event")
+        val eventData = JsonMapper.instance.readValue(payload, Map::class.java) as Map<String, Any>
+        val imageId = eventData["imageId"]?.toString()
+            ?: throw IllegalArgumentException("Missing imageId in upload event")
 
-            imageProcessingService.processImage(UUID.fromString(imageId))
+        imageProcessingService.processImage(UUID.fromString(imageId))
 
-            message.ack()
-            LOG.infof("Successfully processed image upload event for imageId=%s", imageId)
-        } catch (ex: Exception) {
-            LOG.errorf(ex, "Failed to process image upload event: %s", ex.message)
-            message.nak()
-        }
+        LOG.infof("Successfully processed image upload event for imageId=%s", imageId)
     }
 }

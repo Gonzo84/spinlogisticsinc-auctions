@@ -111,6 +111,22 @@ class LotResource {
     }
 
     /**
+     * Returns lot counts grouped by category slug.
+     *
+     * **GET /api/v1/lots/counts-by-category**
+     *
+     * @return 200 OK with a map of category slug to lot count.
+     */
+    @GET
+    @Path("/counts-by-category")
+    @PermitAll
+    fun countsByCategory(): Response {
+        val counts = lotService.countsByCategory()
+
+        return Response.ok(ApiResponse.ok(counts)).build()
+    }
+
+    /**
      * Retrieves a single lot by its identifier, including images.
      *
      * **GET /api/v1/lots/{id}**

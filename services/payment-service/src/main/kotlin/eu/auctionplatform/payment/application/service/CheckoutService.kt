@@ -1,16 +1,20 @@
 package eu.auctionplatform.payment.application.service
 
+import eu.auctionplatform.commons.util.JsonMapper
+import eu.auctionplatform.payment.domain.model.Settlement
 import eu.auctionplatform.payment.domain.model.Invoice
 import eu.auctionplatform.payment.domain.model.InvoiceType
 import eu.auctionplatform.payment.domain.model.Payment
 import eu.auctionplatform.payment.domain.model.PaymentStatus
 import eu.auctionplatform.payment.infrastructure.persistence.repository.InvoiceRepository
 import eu.auctionplatform.payment.infrastructure.persistence.repository.PaymentRepository
+import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.sql.Timestamp
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -40,7 +44,8 @@ class CheckoutService @Inject constructor(
     private val paymentRepository: PaymentRepository,
     private val invoiceRepository: InvoiceRepository,
     private val vatCalculationService: VatCalculationService,
-    private val settlementService: SettlementService
+    private val settlementService: SettlementService,
+    private val dataSource: AgroalDataSource
 ) {
 
     companion object {
@@ -162,13 +167,13 @@ class CheckoutService @Inject constructor(
         // Transition to PROCESSING
         paymentRepository.updateStatus(paymentId, PaymentStatus.PROCESSING)
 
+        // Simulate PSP interaction: generate a fake PSP reference.
         // In a real implementation, this would call the Adyen API:
         // - Create a payment session
         // - Return redirect URL or payment action for 3DS
         // - The actual result comes back via webhook
-        //
-        // For now, we simulate the PSP interaction by updating the payment method.
-        // The webhook handler will complete the flow.
+        val pspReference = "SIM-${UUID.randomUUID()}"
+        LOG.infof("Simulated PSP reference for payment %s: %s", paymentId, pspReference)
 
         return paymentRepository.findById(paymentId)
     }
@@ -247,10 +252,27 @@ class CheckoutService @Inject constructor(
             }
 
             // Create settlement for the seller — failure should not affect payment status
-            try {
+            val settlement = try {
                 settlementService.createSettlement(payment.id)
             } catch (e: Exception) {
                 LOG.errorf(e, "Failed to create settlement for payment %s: %s", payment.id, e.message)
+                null
+            }
+
+            // Write CheckoutCompletedEvent to outbox
+            try {
+                writeCheckoutCompletedToOutbox(payment, webhookData.paymentMethod ?: "unknown")
+            } catch (e: Exception) {
+                LOG.errorf(e, "Failed to write CheckoutCompletedEvent to outbox for payment %s: %s", payment.id, e.message)
+            }
+
+            // Write SettlementReadyEvent to outbox
+            if (settlement != null) {
+                try {
+                    writeSettlementReadyToOutbox(settlement, payment)
+                } catch (e: Exception) {
+                    LOG.errorf(e, "Failed to write SettlementReadyEvent to outbox for settlement %s: %s", settlement.id, e.message)
+                }
             }
 
             return true
@@ -321,6 +343,102 @@ class CheckoutService @Inject constructor(
     private fun generateInvoiceNumber(year: Int, typePrefix: String): String {
         val seq = invoiceSequence.incrementAndGet()
         return "INV-$year-$typePrefix${seq.toString().padStart(6, '0')}"
+    }
+
+    // -----------------------------------------------------------------------
+    // Outbox event writing
+    // -----------------------------------------------------------------------
+
+    /**
+     * Writes a CheckoutCompletedEvent to the outbox table for reliable
+     * publication to NATS via the [PaymentOutboxPoller].
+     */
+    private fun writeCheckoutCompletedToOutbox(payment: Payment, paymentMethod: String) {
+        val eventPayload = mapOf(
+            "eventId" to UUID.randomUUID().toString(),
+            "eventType" to "payment.checkout.completed",
+            "aggregateId" to payment.id.toString(),
+            "aggregateType" to "Payment",
+            "brand" to "platform",
+            "timestamp" to Instant.now().toString(),
+            "version" to 1,
+            "paymentId" to payment.id.toString(),
+            "buyerId" to payment.buyerId.toString(),
+            "lotId" to payment.lotId.toString(),
+            "auctionId" to payment.auctionId.toString(),
+            "hammerPrice" to payment.hammerPrice,
+            "buyerPremium" to payment.buyerPremium,
+            "vatAmount" to payment.vatAmount,
+            "totalAmount" to payment.totalAmount,
+            "currency" to payment.currency,
+            "paymentMethod" to paymentMethod
+        )
+
+        writeOutboxEntry(
+            aggregateId = payment.id,
+            eventType = "payment.checkout.completed",
+            natsSubject = "payment.checkout.completed",
+            payload = JsonMapper.toJson(eventPayload)
+        )
+
+        LOG.infof("Wrote CheckoutCompletedEvent to outbox for payment %s", payment.id)
+    }
+
+    /**
+     * Writes a SettlementReadyEvent to the outbox table for reliable
+     * publication to NATS via the [PaymentOutboxPoller].
+     */
+    private fun writeSettlementReadyToOutbox(settlement: Settlement, payment: Payment) {
+        val eventPayload = mapOf(
+            "eventId" to UUID.randomUUID().toString(),
+            "eventType" to "payment.settlement.ready",
+            "aggregateId" to settlement.id.toString(),
+            "aggregateType" to "Settlement",
+            "brand" to "platform",
+            "timestamp" to Instant.now().toString(),
+            "version" to 1,
+            "settlementId" to settlement.id.toString(),
+            "sellerId" to settlement.sellerId.toString(),
+            "paymentId" to settlement.paymentId.toString(),
+            "netAmount" to settlement.netAmount,
+            "commission" to settlement.commission,
+            "currency" to payment.currency
+        )
+
+        writeOutboxEntry(
+            aggregateId = settlement.id,
+            eventType = "payment.settlement.ready",
+            natsSubject = "payment.settlement.ready",
+            payload = JsonMapper.toJson(eventPayload)
+        )
+
+        LOG.infof("Wrote SettlementReadyEvent to outbox for settlement %s", settlement.id)
+    }
+
+    /**
+     * Inserts a row into the `app.outbox` table.
+     */
+    private fun writeOutboxEntry(
+        aggregateId: UUID,
+        eventType: String,
+        natsSubject: String,
+        payload: String
+    ) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(
+                """
+                INSERT INTO app.outbox (aggregate_id, event_type, payload, nats_subject, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """.trimIndent()
+            ).use { stmt ->
+                stmt.setObject(1, aggregateId)
+                stmt.setString(2, eventType)
+                stmt.setString(3, payload)
+                stmt.setString(4, natsSubject)
+                stmt.setTimestamp(5, Timestamp.from(Instant.now()))
+                stmt.executeUpdate()
+            }
+        }
     }
 }
 

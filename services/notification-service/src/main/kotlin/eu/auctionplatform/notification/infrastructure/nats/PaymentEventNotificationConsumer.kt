@@ -5,6 +5,7 @@ import eu.auctionplatform.commons.messaging.NatsSubjects
 import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.notification.application.service.NotificationService
 import eu.auctionplatform.notification.domain.model.NotificationType
+import eu.auctionplatform.notification.infrastructure.UserEmailResolver
 import io.nats.client.Connection
 import io.nats.client.Message
 import io.quarkus.runtime.Startup
@@ -32,7 +33,8 @@ import java.util.concurrent.Executors
 @Startup
 class PaymentEventNotificationConsumer @Inject constructor(
     private val connection: Connection,
-    private val notificationService: NotificationService
+    private val notificationService: NotificationService,
+    private val userEmailResolver: UserEmailResolver
 ) {
 
     companion object {
@@ -114,15 +116,19 @@ class PaymentEventNotificationConsumer @Inject constructor(
         val orderId = payload["orderId"]?.toString() ?: ""
         val auctionId = payload["auctionId"]?.toString() ?: ""
 
-        val data = mapOf(
+        val buyerUuid = UUID.fromString(buyerId)
+        val buyerEmail = userEmailResolver.resolveEmail(buyerUuid)
+
+        val data = mutableMapOf(
             "orderId" to orderId,
             "auctionId" to auctionId,
             "totalAmount" to totalAmount,
             "currency" to currency
         )
+        if (buyerEmail != null) data["email"] = buyerEmail
 
         notificationService.sendNotification(
-            userId = UUID.fromString(buyerId),
+            userId = buyerUuid,
             type = NotificationType.PAYMENT_RECEIVED,
             data = data
         )
@@ -148,14 +154,18 @@ class PaymentEventNotificationConsumer @Inject constructor(
         val currency = payload["currency"]?.toString() ?: "EUR"
         val settlementId = payload["settlementId"]?.toString() ?: ""
 
-        val data = mapOf(
+        val sellerUuid = UUID.fromString(sellerId)
+        val sellerEmail = userEmailResolver.resolveEmail(sellerUuid)
+
+        val data = mutableMapOf(
             "settlementId" to settlementId,
             "settlementAmount" to settlementAmount,
             "currency" to currency
         )
+        if (sellerEmail != null) data["email"] = sellerEmail
 
         notificationService.sendNotification(
-            userId = UUID.fromString(sellerId),
+            userId = sellerUuid,
             type = NotificationType.SETTLEMENT_PAID,
             data = data
         )

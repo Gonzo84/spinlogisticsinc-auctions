@@ -126,6 +126,24 @@ data class AuditLogEntryResponse(
     val source: String
 )
 
+/**
+ * Response representation of a fraud alert.
+ *
+ * Currently populated with mock data until the fraud detection engine
+ * is fully integrated.
+ */
+data class FraudAlertResponse(
+    val id: UUID,
+    val type: String,
+    val severity: String,
+    val status: String,
+    val userId: UUID,
+    val description: String,
+    val detectedAt: Instant,
+    val lotId: UUID?,
+    val riskScore: Double
+)
+
 // =============================================================================
 // Extension functions for domain -> response mapping
 // =============================================================================

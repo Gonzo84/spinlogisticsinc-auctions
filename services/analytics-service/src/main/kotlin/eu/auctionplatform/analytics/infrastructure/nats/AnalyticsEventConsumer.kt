@@ -9,103 +9,147 @@ import eu.auctionplatform.commons.messaging.NatsConsumer
 import eu.auctionplatform.commons.util.JsonMapper
 import io.nats.client.Connection
 import io.nats.client.Message
-import io.quarkus.runtime.ShutdownEvent
-import io.quarkus.runtime.StartupEvent
-import jakarta.enterprise.event.Observes
-import jakarta.inject.Singleton
+import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
+import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 // =============================================================================
-// Analytics Event Consumer -- NATS JetStream subscriber for ALL domain events
+// Analytics Event Consumer -- NATS JetStream subscribers for domain events
 // =============================================================================
 
 /**
- * Consumes domain events from all bounded contexts and maintains analytics
- * counters and aggregate tables.
+ * Consumes domain events from AUCTION, PAYMENT, and USER streams and maintains
+ * analytics counters and aggregate tables.
  *
- * Subscribed subject: `>` (all subjects on the ANALYTICS stream, which should
- * be configured to mirror relevant subjects from other streams).
+ * Creates three inner [NatsConsumer] instances, one per upstream stream:
+ * - **auctionConsumer** (AUCTION stream, `auction.>`) -- handles bid.placed,
+ *   lot.extended, lot.closed events
+ * - **paymentConsumer** (PAYMENT stream, `payment.>`) -- handles
+ *   checkout.completed events
+ * - **userConsumer** (USER stream, `user.>`) -- handles user.registered events
  *
- * Handles the following event types:
- * - `auction.bid.placed.*`         -- increments bid counters
- * - `auction.lot.extended.*`       -- increments extension counters
- * - `auction.lot.closed.*`         -- updates auction metrics
- * - `payment.checkout.completed.*` -- updates daily revenue
- * - `user.registered.*`            -- updates user growth
- *
- * Uses a durable pull consumer named "analytics-all-consumer" to ensure
- * at-least-once delivery and survive restarts.
+ * Each consumer runs on its own daemon thread with a dedicated durable name
+ * to survive restarts and ensure at-least-once delivery.
  */
-@Singleton
+@ApplicationScoped
 class AnalyticsEventConsumer @Inject constructor(
     private val natsConnection: Connection,
     private val analyticsRepository: AnalyticsRepository
-) : NatsConsumer(
-    connection = natsConnection,
-    streamName = "ANALYTICS",
-    durableName = DURABLE_NAME,
-    filterSubject = FILTER_SUBJECT,
-    maxRedeliveries = 5,
-    deadLetterSubject = "analytics.dlq",
-    batchSize = 50
 ) {
-
-    private var consumerThread: Thread? = null
 
     companion object {
         private val LOG: Logger = Logger.getLogger(AnalyticsEventConsumer::class.java)
-        /** Durable consumer name -- persists across restarts. */
-        const val DURABLE_NAME: String = "analytics-all-consumer"
-
-        /** Subject filter matching all domain events. */
-        const val FILTER_SUBJECT: String = ">"
     }
+
+    private val executor: ExecutorService = Executors.newFixedThreadPool(3)
 
     // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
 
     /**
-     * Starts the consumer loop in a dedicated daemon thread on application startup.
+     * Starts the three consumer threads on application startup.
      */
-    fun onStart(@Observes event: StartupEvent) {
-        LOG.infof("Starting AnalyticsEventConsumer [durable=%s]", DURABLE_NAME)
-        consumerThread = Thread({
-            start()
-        }, "analytics-event-consumer").apply {
-            isDaemon = true
-            start()
+    @PostConstruct
+    fun init() {
+        LOG.info("Starting analytics event consumers (AUCTION, PAYMENT, USER)")
+
+        executor.submit { createAuctionConsumer().start() }
+        executor.submit { createPaymentConsumer().start() }
+        executor.submit { createUserConsumer().start() }
+    }
+
+    /**
+     * Shuts down all consumer threads on application shutdown.
+     */
+    @PreDestroy
+    fun shutdown() {
+        LOG.info("Shutting down analytics event consumers")
+        executor.shutdownNow()
+    }
+
+    // -------------------------------------------------------------------------
+    // Consumer factories
+    // -------------------------------------------------------------------------
+
+    /**
+     * Creates a consumer for the AUCTION stream that handles bid.placed,
+     * lot.extended, and lot.closed events.
+     */
+    private fun createAuctionConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = natsConnection,
+            streamName = "AUCTION",
+            durableName = "analytics-auction-consumer",
+            filterSubject = "auction.>",
+            maxRedeliveries = 5,
+            deadLetterSubject = "dlq.analytics.auction",
+            batchSize = 50
+        ) {
+            override fun handleMessage(message: Message) {
+                handleAuctionEvent(message)
+            }
         }
-    }
 
     /**
-     * Signals the consumer loop to stop gracefully on application shutdown.
+     * Creates a consumer for the PAYMENT stream that handles
+     * checkout.completed events.
      */
-    fun onStop(@Observes event: ShutdownEvent) {
-        LOG.infof("Stopping AnalyticsEventConsumer [durable=%s]", DURABLE_NAME)
-        stop()
-        consumerThread?.interrupt()
-    }
+    private fun createPaymentConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = natsConnection,
+            streamName = "PAYMENT",
+            durableName = "analytics-payment-consumer",
+            filterSubject = "payment.>",
+            maxRedeliveries = 5,
+            deadLetterSubject = "dlq.analytics.payment",
+            batchSize = 50
+        ) {
+            override fun handleMessage(message: Message) {
+                handlePaymentEvent(message)
+            }
+        }
+
+    /**
+     * Creates a consumer for the USER stream that handles
+     * user.registered events.
+     */
+    private fun createUserConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = natsConnection,
+            streamName = "USER",
+            durableName = "analytics-user-consumer",
+            filterSubject = "user.>",
+            maxRedeliveries = 5,
+            deadLetterSubject = "dlq.analytics.user",
+            batchSize = 50
+        ) {
+            override fun handleMessage(message: Message) {
+                handleUserEvent(message)
+            }
+        }
 
     // -------------------------------------------------------------------------
-    // Message handling
+    // Stream-level routers
     // -------------------------------------------------------------------------
 
     /**
-     * Routes an incoming NATS message to the appropriate handler based on
-     * the subject pattern.
+     * Routes an incoming AUCTION stream message to the appropriate handler
+     * based on the subject pattern.
      */
-    override fun handleMessage(message: Message) {
+    private fun handleAuctionEvent(message: Message) {
         val subject = message.subject
         val payload = String(message.data, Charsets.UTF_8)
 
-        LOG.debugf("Received analytics event on subject [%s], payload size=%s bytes",
+        LOG.debugf("Received auction analytics event on subject [%s], payload size=%s bytes",
             subject, message.data.size)
 
         try {
@@ -113,13 +157,53 @@ class AnalyticsEventConsumer @Inject constructor(
                 subject.startsWith("auction.bid.placed") -> handleBidPlaced(payload)
                 subject.startsWith("auction.lot.extended") -> handleLotExtended(payload)
                 subject.startsWith("auction.lot.closed") -> handleLotClosed(payload)
-                subject.startsWith("payment.checkout.completed") -> handleCheckoutCompleted(payload)
-                subject.startsWith("user.registered") -> handleUserRegistered(payload)
-                else -> LOG.debugf("Unhandled analytics event on subject [%s] -- skipping", subject)
+                else -> LOG.debugf("Unhandled auction event on subject [%s] -- skipping", subject)
             }
         } catch (ex: Exception) {
-            LOG.errorf(ex, "Failed to process analytics event on [%s]: %s", subject, ex.message)
+            LOG.errorf(ex, "Failed to process auction analytics event on [%s]: %s", subject, ex.message)
             throw ex // re-throw so the base class handles nak/dead-letter
+        }
+    }
+
+    /**
+     * Routes an incoming PAYMENT stream message to the appropriate handler.
+     */
+    private fun handlePaymentEvent(message: Message) {
+        val subject = message.subject
+        val payload = String(message.data, Charsets.UTF_8)
+
+        LOG.debugf("Received payment analytics event on subject [%s], payload size=%s bytes",
+            subject, message.data.size)
+
+        try {
+            when {
+                subject.startsWith("payment.checkout.completed") -> handleCheckoutCompleted(payload)
+                else -> LOG.debugf("Unhandled payment event on subject [%s] -- skipping", subject)
+            }
+        } catch (ex: Exception) {
+            LOG.errorf(ex, "Failed to process payment analytics event on [%s]: %s", subject, ex.message)
+            throw ex
+        }
+    }
+
+    /**
+     * Routes an incoming USER stream message to the appropriate handler.
+     */
+    private fun handleUserEvent(message: Message) {
+        val subject = message.subject
+        val payload = String(message.data, Charsets.UTF_8)
+
+        LOG.debugf("Received user analytics event on subject [%s], payload size=%s bytes",
+            subject, message.data.size)
+
+        try {
+            when {
+                subject.startsWith("user.registered") -> handleUserRegistered(payload)
+                else -> LOG.debugf("Unhandled user event on subject [%s] -- skipping", subject)
+            }
+        } catch (ex: Exception) {
+            LOG.errorf(ex, "Failed to process user analytics event on [%s]: %s", subject, ex.message)
+            throw ex
         }
     }
 
@@ -140,6 +224,7 @@ class AnalyticsEventConsumer @Inject constructor(
         }
 
         analyticsRepository.incrementBidCount(auctionId)
+        analyticsRepository.recordDailyBid(auctionId)
         LOG.debugf("Incremented bid count for auction [%s]", auctionId)
     }
 
@@ -201,6 +286,10 @@ class AnalyticsEventConsumer @Inject constructor(
 
     /**
      * Handles user registration events by updating user growth.
+     *
+     * Note: The `accountType` field from user-service is BUSINESS or PRIVATE
+     * (not BUYER/SELLER). We always increment `new_registrations` regardless
+     * of account type.
      */
     private fun handleUserRegistered(payload: String) {
         val node = JsonMapper.instance.readTree(payload)
@@ -211,8 +300,8 @@ class AnalyticsEventConsumer @Inject constructor(
             reportDate = today,
             newRegistrations = 1,
             totalUsers = 0, // will be updated by periodic aggregation
-            newBuyers = if (accountType.equals("BUYER", ignoreCase = true)) 1 else 0,
-            newSellers = if (accountType.equals("SELLER", ignoreCase = true)) 1 else 0
+            newBuyers = 0,  // accountType is BUSINESS/PRIVATE, not BUYER/SELLER
+            newSellers = 0
         )
 
         analyticsRepository.upsertUserGrowth(entry)

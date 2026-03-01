@@ -5,6 +5,7 @@ import eu.auctionplatform.commons.messaging.NatsSubjects
 import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.notification.application.service.NotificationService
 import eu.auctionplatform.notification.domain.model.NotificationType
+import eu.auctionplatform.notification.infrastructure.UserEmailResolver
 import io.nats.client.Connection
 import io.nats.client.Message
 import io.quarkus.runtime.Startup
@@ -33,7 +34,8 @@ import java.util.concurrent.Executors
 @Startup
 class AuctionEventNotificationConsumer @Inject constructor(
     private val connection: Connection,
-    private val notificationService: NotificationService
+    private val notificationService: NotificationService,
+    private val userEmailResolver: UserEmailResolver
 ) {
 
     companion object {
@@ -43,9 +45,9 @@ class AuctionEventNotificationConsumer @Inject constructor(
         private const val DURABLE_NAME = "notification-auction-consumer"
 
         /** Filter subjects for all auction events this consumer cares about. */
-        private const val BID_PLACED_FILTER = "auction.bid.placed.>"
-        private const val BID_PROXY_FILTER = "auction.bid.proxy.>"
-        private const val LOT_CLOSED_FILTER = "auction.lot.closed.>"
+        private const val BID_PLACED_FILTER = "auction.bid.placed"
+        private const val BID_PROXY_FILTER = "auction.bid.proxy"
+        private const val LOT_CLOSED_FILTER = "auction.lot.closed"
     }
 
     private val executor: ExecutorService = Executors.newFixedThreadPool(3)
@@ -132,14 +134,20 @@ class AuctionEventNotificationConsumer @Inject constructor(
         val aggregateId = payload["aggregateId"]?.toString() ?: ""
         val previousHighBidderId = payload["previousHighBidderId"]?.toString()
 
+        // Resolve bidder email for email delivery
+        val bidderUuid = UUID.fromString(bidderId)
+        val bidderEmail = userEmailResolver.resolveEmail(bidderUuid)
+
         // Notify the bidder that their bid was confirmed
-        val bidConfirmData = mapOf(
+        val bidConfirmData = mutableMapOf(
             "auctionId" to aggregateId,
             "bidAmount" to bidAmount,
             "bidCurrency" to bidCurrency
         )
+        if (bidderEmail != null) bidConfirmData["email"] = bidderEmail
+
         notificationService.sendNotification(
-            userId = UUID.fromString(bidderId),
+            userId = bidderUuid,
             type = NotificationType.BID_CONFIRMED,
             data = bidConfirmData
         )
@@ -148,13 +156,18 @@ class AuctionEventNotificationConsumer @Inject constructor(
 
         // Notify the previous high bidder that they've been outbid
         if (!previousHighBidderId.isNullOrBlank() && previousHighBidderId != bidderId) {
-            val overbidData = mapOf(
+            val previousBidderUuid = UUID.fromString(previousHighBidderId)
+            val previousBidderEmail = userEmailResolver.resolveEmail(previousBidderUuid)
+
+            val overbidData = mutableMapOf(
                 "auctionId" to aggregateId,
                 "newBidAmount" to bidAmount,
                 "newBidCurrency" to bidCurrency
             )
+            if (previousBidderEmail != null) overbidData["email"] = previousBidderEmail
+
             notificationService.sendNotification(
-                userId = UUID.fromString(previousHighBidderId),
+                userId = previousBidderUuid,
                 type = NotificationType.OVERBID,
                 data = overbidData
             )
@@ -182,16 +195,20 @@ class AuctionEventNotificationConsumer @Inject constructor(
         val maxAutoBidAmount = payload["maxAutoBidAmount"]?.toString() ?: "0"
         val maxAutoBidCurrency = payload["maxAutoBidCurrency"]?.toString() ?: "EUR"
 
-        val data = mapOf(
+        val bidderUuid = UUID.fromString(bidderId)
+        val bidderEmail = userEmailResolver.resolveEmail(bidderUuid)
+
+        val data = mutableMapOf(
             "auctionId" to aggregateId,
             "bidAmount" to bidAmount,
             "bidCurrency" to bidCurrency,
             "maxAutoBidAmount" to maxAutoBidAmount,
             "maxAutoBidCurrency" to maxAutoBidCurrency
         )
+        if (bidderEmail != null) data["email"] = bidderEmail
 
         notificationService.sendNotification(
-            userId = UUID.fromString(bidderId),
+            userId = bidderUuid,
             type = NotificationType.AUTO_BID_TRIGGERED,
             data = data
         )
@@ -223,14 +240,18 @@ class AuctionEventNotificationConsumer @Inject constructor(
             return
         }
 
-        val data = mapOf(
+        val winnerUuid = UUID.fromString(winnerId)
+        val winnerEmail = userEmailResolver.resolveEmail(winnerUuid)
+
+        val data = mutableMapOf(
             "auctionId" to aggregateId,
             "finalBidAmount" to finalBidAmount,
             "finalBidCurrency" to finalBidCurrency
         )
+        if (winnerEmail != null) data["email"] = winnerEmail
 
         notificationService.sendNotification(
-            userId = UUID.fromString(winnerId),
+            userId = winnerUuid,
             type = NotificationType.AUCTION_WON,
             data = data
         )

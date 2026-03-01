@@ -28,10 +28,12 @@ export function useLots() {
   const statusCounts = ref<Record<LotStatus, number>>({
     draft: 0,
     pending_review: 0,
+    approved: 0,
     active: 0,
     sold: 0,
     unsold: 0,
     rejected: 0,
+    withdrawn: 0,
   })
 
   const activeLots = computed(() => lots.value.filter((l) => l.status === 'active'))
@@ -192,32 +194,75 @@ export function useLots() {
   }
 
   async function fetchStatusCounts(): Promise<Record<LotStatus, number>> {
-    // The /sellers/me/lots/status-counts endpoint doesn't exist.
-    // Instead, fetch all seller lots and compute counts locally.
     try {
-      const params: Record<string, unknown> = { page: 0, pageSize: 1000 }
-      if (sellerId.value) params.sellerId = sellerId.value
-      const raw = await get<ApiResponse<PagedResponse<RawLotData>> | PagedResponse<RawLotData>>('/lots', params)
-      const response = unwrapApiResponse<PagedResponse<RawLotData>>(raw)
-      const allLots = response.items ?? []
+      const raw = await get<
+        ApiResponse<Record<string, number>> | Record<string, number>
+      >('/sellers/me/lots/status-counts')
+      const data = unwrapApiResponse<Record<string, number>>(raw)
+      // Normalize backend keys (uppercase) to frontend LotStatus (lowercase)
       const counts: Record<LotStatus, number> = {
         draft: 0,
         pending_review: 0,
+        approved: 0,
         active: 0,
         sold: 0,
         unsold: 0,
         rejected: 0,
+        withdrawn: 0,
       }
-      for (const lot of allLots) {
-        const s = ((lot.status ?? 'draft').toLowerCase()) as LotStatus
-        if (s in counts) counts[s]++
+      for (const [key, value] of Object.entries(data)) {
+        const normalizedKey = key.toLowerCase() as LotStatus
+        if (normalizedKey in counts) {
+          counts[normalizedKey] = value
+        }
+      }
+      // If seller-service returned all zeros, fall back to catalog-service counts
+      const total = Object.values(counts).reduce((a, b) => a + b, 0)
+      if (total === 0) {
+        return await fetchStatusCountsFromCatalog()
       }
       statusCounts.value = counts
       return counts
     } catch {
-      error.value = null
-      return statusCounts.value
+      // If seller-service endpoint fails, fall back to catalog-service
+      try {
+        return await fetchStatusCountsFromCatalog()
+      } catch {
+        error.value = null
+        return statusCounts.value
+      }
     }
+  }
+
+  /** Fallback: fetch all lots from catalog and compute counts client-side */
+  async function fetchStatusCountsFromCatalog(): Promise<Record<LotStatus, number>> {
+    const counts: Record<LotStatus, number> = {
+      draft: 0,
+      pending_review: 0,
+      approved: 0,
+      active: 0,
+      sold: 0,
+      unsold: 0,
+      rejected: 0,
+      withdrawn: 0,
+    }
+    const params: Record<string, unknown> = { page: 0, pageSize: 1000 }
+    if (sellerId.value) params.sellerId = sellerId.value
+    try {
+      const raw = await get<ApiResponse<PagedResponse<RawLotData>> | PagedResponse<RawLotData>>('/lots', params)
+      const response = unwrapApiResponse<PagedResponse<RawLotData>>(raw)
+      const items = response.items ?? []
+      for (const item of items) {
+        const status = ((item.status ?? '').toLowerCase()) as LotStatus
+        if (status in counts) {
+          counts[status]++
+        }
+      }
+    } catch {
+      // ignore - return zero counts
+    }
+    statusCounts.value = counts
+    return counts
   }
 
   async function getPresignedUploadUrl(

@@ -42,3 +42,6 @@ export type {
 
 // Auth types
 export type { User, AuthState } from './auth'
+
+// Notification types
+export type { Notification, NotificationType } from './notification'

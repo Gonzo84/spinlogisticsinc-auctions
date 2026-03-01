@@ -32,7 +32,7 @@ class PaymentRepository @Inject constructor(
             id, buyer_id, seller_id, auction_id, lot_id, hammer_price, buyer_premium,
             buyer_premium_rate, vat_amount, vat_rate, vat_scheme, total_amount,
             currency, country, payment_method, psp_reference, status,
-            due_date, paid_at, created_at
+            due_date, paid_at, created_at, lot_title, buyer_name, seller_name
         """
 
         private const val INSERT_PAYMENT = """
@@ -40,8 +40,9 @@ class PaymentRepository @Inject constructor(
                 (id, buyer_id, seller_id, auction_id, lot_id, hammer_price, buyer_premium,
                  buyer_premium_rate, vat_amount, vat_rate, vat_scheme, total_amount,
                  currency, country, payment_method, psp_reference, status,
-                 due_date, paid_at, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 due_date, paid_at, created_at, updated_at,
+                 lot_title, buyer_name, seller_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         private const val SELECT_BY_ID = """
@@ -126,6 +127,9 @@ class PaymentRepository @Inject constructor(
                 stmt.setTimestamp(19, payment.paidAt?.let { Timestamp.from(it) })
                 stmt.setTimestamp(20, Timestamp.from(payment.createdAt))
                 stmt.setTimestamp(21, Timestamp.from(now))
+                stmt.setString(22, payment.lotTitle)
+                stmt.setString(23, payment.buyerName)
+                stmt.setString(24, payment.sellerName)
                 stmt.executeUpdate()
             }
         }
@@ -334,6 +338,9 @@ class PaymentRepository @Inject constructor(
         status = PaymentStatus.valueOf(getString("status")),
         dueDate = getTimestamp("due_date").toInstant(),
         paidAt = getTimestamp("paid_at")?.toInstant(),
-        createdAt = getTimestamp("created_at").toInstant()
+        createdAt = getTimestamp("created_at").toInstant(),
+        lotTitle = getString("lot_title"),
+        buyerName = getString("buyer_name"),
+        sellerName = getString("seller_name")
     )
 }

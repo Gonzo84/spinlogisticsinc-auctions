@@ -4,6 +4,7 @@ import eu.auctionplatform.commons.exception.ConflictException
 import eu.auctionplatform.commons.exception.NotFoundException
 import eu.auctionplatform.commons.exception.ValidationException
 import eu.auctionplatform.commons.util.IdGenerator
+import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.user.api.dto.AddCompanyRequest
 import eu.auctionplatform.user.api.dto.InitiateDepositRequest
 import eu.auctionplatform.user.api.dto.RegisterUserRequest
@@ -21,6 +22,7 @@ import eu.auctionplatform.user.infrastructure.persistence.repository.CompanyRepo
 import eu.auctionplatform.user.infrastructure.persistence.repository.DepositRepository
 import eu.auctionplatform.user.infrastructure.persistence.repository.KycRecordRepository
 import eu.auctionplatform.user.infrastructure.persistence.repository.UserRepository
+import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
@@ -52,6 +54,9 @@ class UserService {
 
     @Inject
     lateinit var kycRecordRepository: KycRecordRepository
+
+    @Inject
+    lateinit var dataSource: AgroalDataSource
 
     companion object {
         private val LOG: Logger = Logger.getLogger(UserService::class.java)
@@ -104,6 +109,8 @@ class UserService {
 
         val entity = UserEntity.fromDomain(user)
         userRepository.persist(entity)
+
+        writeUserRegisteredOutbox(user)
 
         LOG.infof("Registered new user: id=%s, email=%s, accountType=%s",
             user.id, user.email, user.accountType)
@@ -186,6 +193,8 @@ class UserService {
 
         val entity = UserEntity.fromDomain(user)
         userRepository.persist(entity)
+
+        writeUserRegisteredOutbox(user)
 
         LOG.infof("Auto-registered user: id=%s, email=%s", user.id, user.email)
 
@@ -510,5 +519,32 @@ class UserService {
             userId, previousStatus, newStatus, reason ?: "N/A")
 
         return entity.toDomain()
+    }
+
+    // -------------------------------------------------------------------------
+    // Outbox helpers
+    // -------------------------------------------------------------------------
+
+    private fun writeUserRegisteredOutbox(user: User) {
+        try {
+            dataSource.connection.use { conn ->
+                conn.prepareStatement("""
+                    INSERT INTO app.outbox (aggregate_id, event_type, payload, nats_subject)
+                    VALUES (?, 'UserRegisteredEvent', ?::text, 'user.registered')
+                """.trimIndent()).use { stmt ->
+                    stmt.setObject(1, user.id)
+                    stmt.setString(2, JsonMapper.toJson(mapOf(
+                        "userId" to user.id.toString(),
+                        "email" to user.email,
+                        "firstName" to user.firstName,
+                        "lastName" to user.lastName,
+                        "accountType" to user.accountType.name
+                    )))
+                    stmt.executeUpdate()
+                }
+            }
+        } catch (e: Exception) {
+            LOG.warnf("Failed to write outbox entry for user %s: %s", user.id, e.message)
+        }
     }
 }

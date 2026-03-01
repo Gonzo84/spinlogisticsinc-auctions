@@ -1,14 +1,17 @@
 package eu.auctionplatform.payment.application.service
 
+import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.payment.domain.model.Payment
 import eu.auctionplatform.payment.domain.model.PaymentStatus
 import eu.auctionplatform.payment.infrastructure.persistence.repository.PaymentRepository
+import io.agroal.api.AgroalDataSource
 import io.quarkus.scheduler.Scheduled
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.sql.Timestamp
 import java.time.Instant
 import java.util.UUID
 
@@ -48,7 +51,8 @@ data class PenaltyResult(
  */
 @ApplicationScoped
 class NonPaymentService @Inject constructor(
-    private val paymentRepository: PaymentRepository
+    private val paymentRepository: PaymentRepository,
+    private val dataSource: AgroalDataSource
 ) {
 
     companion object {
@@ -160,40 +164,121 @@ class NonPaymentService @Inject constructor(
     }
 
     // -----------------------------------------------------------------------
-    // Integration stubs (to be replaced with event publishing / REST calls)
+    // Outbox event publishing
     // -----------------------------------------------------------------------
 
     /**
-     * Blocks a buyer from future bidding.
+     * Blocks a buyer from future bidding by writing a NonPaymentPenaltyEvent
+     * to the transactional outbox.
      *
-     * In production, publishes a "user.blocked" event to the user service
-     * via the transactional outbox.
+     * The user service consumes this event to set the buyer status to BLOCKED.
      *
-     * @return true if the block request was sent successfully.
+     * @return true if the outbox entry was written successfully.
      */
     private fun blockBuyer(buyerId: UUID, paymentId: UUID, forfeitAmount: BigDecimal): Boolean {
         LOG.infof(
-            "Requesting buyer block: buyerId=%s, paymentId=%s, forfeit=%s",
+            "Publishing NonPaymentPenaltyEvent: buyerId=%s, paymentId=%s, forfeit=%s",
             buyerId, paymentId, forfeitAmount
         )
-        // TODO: Publish NonPaymentPenaltyEvent to NATS via outbox
-        return true
+
+        val payment = paymentRepository.findById(paymentId)
+
+        val eventPayload = mapOf(
+            "eventId" to UUID.randomUUID().toString(),
+            "eventType" to "payment.non-payment.penalty",
+            "aggregateId" to paymentId.toString(),
+            "aggregateType" to "Payment",
+            "brand" to "platform",
+            "timestamp" to Instant.now().toString(),
+            "version" to 1,
+            "paymentId" to paymentId.toString(),
+            "buyerId" to buyerId.toString(),
+            "lotId" to (payment?.lotId?.toString() ?: ""),
+            "auctionId" to (payment?.auctionId?.toString() ?: ""),
+            "forfeitAmount" to forfeitAmount,
+            "currency" to (payment?.currency ?: "EUR")
+        )
+
+        return try {
+            writeOutboxEntry(
+                aggregateId = paymentId,
+                eventType = "payment.non-payment.penalty",
+                natsSubject = "payment.non-payment.penalty",
+                payload = JsonMapper.toJson(eventPayload)
+            )
+            true
+        } catch (e: Exception) {
+            LOG.errorf(e, "Failed to write NonPaymentPenaltyEvent to outbox: %s", e.message)
+            false
+        }
     }
 
     /**
-     * Requests relisting of a lot after non-payment.
+     * Requests relisting of a lot after non-payment by writing a
+     * LotRelistRequestedEvent to the transactional outbox.
      *
-     * In production, publishes a "lot.relist-requested" event to the
-     * auction engine via the transactional outbox.
+     * The auction engine or catalog service consumes this event to return
+     * the lot to the seller for relisting.
      *
-     * @return true if the relist request was sent successfully.
+     * @return true if the outbox entry was written successfully.
      */
     private fun requestLotRelist(lotId: UUID, auctionId: UUID, paymentId: UUID): Boolean {
         LOG.infof(
-            "Requesting lot relist: lotId=%s, auctionId=%s, paymentId=%s",
+            "Publishing LotRelistRequestedEvent: lotId=%s, auctionId=%s, paymentId=%s",
             lotId, auctionId, paymentId
         )
-        // TODO: Publish LotRelistRequestedEvent to NATS via outbox
-        return true
+
+        val eventPayload = mapOf(
+            "eventId" to UUID.randomUUID().toString(),
+            "eventType" to "payment.lot.relist-requested",
+            "aggregateId" to lotId.toString(),
+            "aggregateType" to "Lot",
+            "brand" to "platform",
+            "timestamp" to Instant.now().toString(),
+            "version" to 1,
+            "lotId" to lotId.toString(),
+            "auctionId" to auctionId.toString(),
+            "paymentId" to paymentId.toString(),
+            "reason" to "NON_PAYMENT"
+        )
+
+        return try {
+            writeOutboxEntry(
+                aggregateId = lotId,
+                eventType = "payment.lot.relist-requested",
+                natsSubject = "payment.lot.relist-requested",
+                payload = JsonMapper.toJson(eventPayload)
+            )
+            true
+        } catch (e: Exception) {
+            LOG.errorf(e, "Failed to write LotRelistRequestedEvent to outbox: %s", e.message)
+            false
+        }
+    }
+
+    /**
+     * Inserts a row into the `app.outbox` table.
+     */
+    private fun writeOutboxEntry(
+        aggregateId: UUID,
+        eventType: String,
+        natsSubject: String,
+        payload: String
+    ) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(
+                """
+                INSERT INTO app.outbox (aggregate_id, event_type, payload, nats_subject, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """.trimIndent()
+            ).use { stmt ->
+                stmt.setObject(1, aggregateId)
+                stmt.setString(2, eventType)
+                stmt.setString(3, payload)
+                stmt.setString(4, natsSubject)
+                stmt.setTimestamp(5, Timestamp.from(Instant.now()))
+                stmt.executeUpdate()
+            }
+        }
     }
 }

@@ -3,13 +3,18 @@ package eu.auctionplatform.analytics.application.service
 import eu.auctionplatform.analytics.domain.model.AuctionMetrics
 import eu.auctionplatform.analytics.domain.model.PlatformMetrics
 import eu.auctionplatform.analytics.infrastructure.persistence.repository.AnalyticsRepository
+import eu.auctionplatform.analytics.infrastructure.persistence.repository.CategoryMetricsEntry
+import eu.auctionplatform.analytics.infrastructure.persistence.repository.DailyBidVolumeEntry
 import eu.auctionplatform.analytics.infrastructure.persistence.repository.DailyRevenueEntry
 import eu.auctionplatform.analytics.infrastructure.persistence.repository.MonthlyRegistrationEntry
 import eu.auctionplatform.analytics.infrastructure.persistence.repository.UserGrowthEntry
 import eu.auctionplatform.commons.exception.NotFoundException
+import io.quarkus.scheduler.Scheduled
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
+import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -109,5 +114,72 @@ class AnalyticsService {
     fun getMonthlyRegistrations(months: Int): List<MonthlyRegistrationEntry> {
         LOG.debugf("Fetching monthly registrations for last %d months", months)
         return analyticsRepository.getMonthlyRegistrations(months)
+    }
+
+    // -------------------------------------------------------------------------
+    // Category metrics
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns category popularity metrics.
+     *
+     * @return List of category metrics entries, ordered by bid count descending.
+     */
+    fun getCategoryMetrics(): List<CategoryMetricsEntry> {
+        LOG.debug("Fetching category metrics")
+        return analyticsRepository.getCategoryMetrics()
+    }
+
+    // -------------------------------------------------------------------------
+    // Daily bid volume
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns daily bid volume for the specified number of lookback days.
+     *
+     * @param days Number of days to look back.
+     * @return List of daily bid volume entries.
+     */
+    fun getDailyBidVolume(days: Int): List<DailyBidVolumeEntry> {
+        LOG.debugf("Fetching daily bid volume for last %d days", days)
+        return analyticsRepository.getDailyBidVolume(days)
+    }
+
+    // -------------------------------------------------------------------------
+    // Platform metrics scheduler
+    // -------------------------------------------------------------------------
+
+    /**
+     * Periodically computes and inserts a platform_metrics snapshot.
+     *
+     * Runs every 5 minutes. Aggregates total users from user_growth,
+     * total bids in last 24h from bid_volume, and total revenue in
+     * last 30 days from daily_revenue.
+     */
+    @Scheduled(every = "5m")
+    fun computePlatformMetrics() {
+        try {
+            val totalUsers = analyticsRepository.countTotalUsers()
+            val totalBids24h = analyticsRepository.countBids24h()
+            val totalRevenue30d = analyticsRepository.sumRevenue30d()
+
+            val metrics = PlatformMetrics(
+                activeAuctions = 0, // requires cross-service query; set to 0 for now
+                totalBids24h = totalBids24h,
+                totalRevenue30d = totalRevenue30d,
+                registeredUsers = totalUsers,
+                activeBuyers = 0,   // requires cross-service query; set to 0 for now
+                activeSellers = 0,  // requires cross-service query; set to 0 for now
+                calculatedAt = Instant.now()
+            )
+
+            analyticsRepository.insertPlatformMetrics(metrics)
+            LOG.debugf(
+                "Computed platform metrics snapshot: users=%d, bids24h=%d, revenue30d=%s",
+                totalUsers, totalBids24h, totalRevenue30d
+            )
+        } catch (ex: Exception) {
+            LOG.errorf(ex, "Failed to compute platform metrics snapshot: %s", ex.message)
+        }
     }
 }

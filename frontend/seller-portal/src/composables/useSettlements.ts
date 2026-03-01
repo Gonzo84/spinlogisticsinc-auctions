@@ -92,8 +92,13 @@ export function useSettlements() {
 
   async function downloadInvoice(settlementId: string): Promise<void> {
     try {
-      const { url } = await get<{ url: string }>(`/sellers/me/settlements/${settlementId}/invoice`)
-      window.open(url, '_blank')
+      const raw = await get<ApiResponse<{ url: string }> | { url: string }>(
+        `/sellers/me/settlements/${settlementId}/invoice`,
+      )
+      const data = unwrapApiResponse<{ url: string }>(raw)
+      if (data.url) {
+        window.open(data.url, '_blank')
+      }
     } catch {
       // Invoice download not available
       error.value = null
@@ -103,8 +108,27 @@ export function useSettlements() {
   async function fetchMonthlySettlements(): Promise<
     { month: string; amount: number; count: number }[]
   > {
-    // Monthly settlements endpoint doesn't exist - return empty
-    return []
+    try {
+      const raw = await get<
+        | ApiResponse<
+            { month: string; totalNet: number; settlementCount: number }[]
+          >
+        | { month: string; totalNet: number; settlementCount: number }[]
+      >('/sellers/me/settlements/monthly')
+      const data = unwrapApiResponse<
+        | { month: string; totalNet: number; settlementCount: number }[]
+        | { items?: { month: string; totalNet: number; settlementCount: number }[] }
+      >(raw)
+      const items = Array.isArray(data) ? data : (data?.items ?? [])
+      return items.map((item) => ({
+        month: item.month,
+        amount: item.totalNet ?? 0,
+        count: item.settlementCount ?? 0,
+      }))
+    } catch {
+      error.value = null
+      return []
+    }
   }
 
   return {

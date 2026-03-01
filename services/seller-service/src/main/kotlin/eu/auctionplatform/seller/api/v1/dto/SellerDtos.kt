@@ -164,6 +164,21 @@ data class MonthlyRevenue(
 )
 
 // -----------------------------------------------------------------------------
+// Monthly Settlement Aggregation
+// -----------------------------------------------------------------------------
+
+/**
+ * Monthly settlement aggregation response for the seller portal.
+ */
+data class MonthlySettlementResponse(
+    val month: String,
+    val totalNet: BigDecimal,
+    val totalHammer: BigDecimal,
+    val totalCommission: BigDecimal,
+    val settlementCount: Int
+)
+
+// -----------------------------------------------------------------------------
 // CO2 Report
 // -----------------------------------------------------------------------------
 

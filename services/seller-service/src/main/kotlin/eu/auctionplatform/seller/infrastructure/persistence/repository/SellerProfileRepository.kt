@@ -1,5 +1,7 @@
 package eu.auctionplatform.seller.infrastructure.persistence.repository
 
+import eu.auctionplatform.seller.api.v1.dto.CategoryBreakdown
+import eu.auctionplatform.seller.api.v1.dto.MonthlyRevenue
 import eu.auctionplatform.seller.domain.model.SellerDashboard
 import eu.auctionplatform.seller.domain.model.SellerProfile
 import eu.auctionplatform.seller.domain.model.SellerStatus
@@ -8,9 +10,11 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 /**
@@ -123,6 +127,107 @@ class SellerProfileRepository @Inject constructor(
 
         private const val EXISTS_BY_USER_ID = """
             SELECT COUNT(*) FROM app.seller_profiles WHERE user_id = ?
+        """
+
+        // -----------------------------------------------------------------------
+        // Seller lot projection queries (used by NATS consumers)
+        // -----------------------------------------------------------------------
+
+        private const val SELECT_SELLER_ID_BY_LOT_ID = """
+            SELECT seller_id FROM app.seller_lots WHERE id = ?
+        """
+
+        private const val SELECT_SELLER_PROFILE_ID_BY_USER_ID = """
+            SELECT id FROM app.seller_profiles WHERE user_id = ?
+        """
+
+        private const val INSERT_SELLER_LOT = """
+            INSERT INTO app.seller_lots
+                (id, seller_id, title, status, reserve_price, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+            ON CONFLICT (id) DO NOTHING
+        """
+
+        private const val UPDATE_LOT_STATUS = """
+            UPDATE app.seller_lots SET status = ?, updated_at = NOW() WHERE id = ?
+        """
+
+        private const val UPDATE_LOT_BID = """
+            UPDATE app.seller_lots
+               SET current_bid = ?, updated_at = NOW()
+             WHERE id = ?
+        """
+
+        private const val UPDATE_LOT_BID_WITH_COUNT = """
+            UPDATE app.seller_lots
+               SET current_bid = ?, bid_count = ?, updated_at = NOW()
+             WHERE id = ?
+        """
+
+        // -----------------------------------------------------------------------
+        // Seller settlement queries (used by NATS consumers)
+        // -----------------------------------------------------------------------
+
+        private const val INSERT_SETTLEMENT = """
+            INSERT INTO app.seller_settlements
+                (id, seller_id, lot_id, lot_title, hammer_price, commission,
+                 net_amount, currency, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        """
+
+        // -----------------------------------------------------------------------
+        // Analytics queries (top categories and monthly revenue)
+        // -----------------------------------------------------------------------
+
+        private const val SELECT_TOP_CATEGORIES = """
+            SELECT COALESCE(l.status, 'UNKNOWN') AS category_id,
+                   COUNT(*) AS lot_count,
+                   COALESCE(SUM(l.current_bid), 0) AS revenue
+              FROM app.seller_lots l
+             WHERE l.seller_id = ?
+             GROUP BY l.status
+             ORDER BY revenue DESC
+             LIMIT 5
+        """
+
+        private const val SELECT_MONTHLY_REVENUE = """
+            SELECT DATE_TRUNC('month', s.settled_at) AS month,
+                   SUM(s.net_amount) AS amount,
+                   COUNT(*) AS count
+              FROM app.seller_settlements s
+             WHERE s.seller_id = ? AND s.settled_at IS NOT NULL
+             GROUP BY month
+             ORDER BY month DESC
+             LIMIT 12
+        """
+
+        private const val SELECT_LOT_STATUS_COUNTS = """
+            SELECT status, COUNT(*) AS cnt
+              FROM app.seller_lots
+             WHERE seller_id = ?
+             GROUP BY status
+        """
+
+        private const val SELECT_MONTHLY_SETTLEMENTS = """
+            SELECT DATE_TRUNC('month', s.settled_at) AS month,
+                   SUM(s.net_amount) AS total_net,
+                   SUM(s.hammer_price) AS total_hammer,
+                   SUM(s.commission) AS total_commission,
+                   COUNT(*) AS settlement_count
+              FROM app.seller_settlements s
+             WHERE s.seller_id = ? AND s.settled_at IS NOT NULL
+             GROUP BY month
+             ORDER BY month DESC
+             LIMIT 12
+        """
+
+        // -----------------------------------------------------------------------
+        // CO2 insert (used by Co2EventSellerConsumer)
+        // -----------------------------------------------------------------------
+
+        private const val INSERT_SELLER_CO2 = """
+            INSERT INTO app.seller_co2 (seller_id, lot_id, co2_saved_kg, created_at)
+            VALUES (?, ?, ?, NOW())
         """
     }
 
@@ -349,15 +454,328 @@ class SellerProfileRepository @Inject constructor(
 
     /**
      * Records a settlement payment for a seller.
+     *
+     * @param sellerId The seller profile identifier.
+     * @param netAmount The net amount settled (after commission deduction).
      */
-    fun settlePayment(sellerId: UUID, amount: BigDecimal) {
+    fun settlePayment(sellerId: UUID, netAmount: BigDecimal) {
         dataSource.connection.use { conn ->
             conn.prepareStatement(SETTLE_PAYMENT).use { stmt ->
-                stmt.setBigDecimal(1, amount)
+                stmt.setBigDecimal(1, netAmount)
                 stmt.setObject(2, sellerId)
                 stmt.executeUpdate()
             }
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Seller lot projection (used by NATS consumers)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Finds the seller_id for a given lot from the seller_lots projection table.
+     *
+     * This is used by auction event consumers to resolve the seller when
+     * auction events do not carry a sellerId field.
+     *
+     * @param lotId The lot identifier (seller_lots.id).
+     * @return The seller profile ID, or null if the lot is not in the projection.
+     */
+    fun findSellerIdByLotId(lotId: UUID): UUID? {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_SELLER_ID_BY_LOT_ID).use { stmt ->
+                stmt.setObject(1, lotId)
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) rs.getObject("seller_id", UUID::class.java) else null
+                }
+            }
+        }
+    }
+
+    /**
+     * Finds the seller profile ID for a given user ID.
+     *
+     * Catalog events contain the userId as `sellerId`, but seller_lots.seller_id
+     * references seller_profiles.id, not user_id. This method resolves the mapping.
+     *
+     * @param userId The user identifier.
+     * @return The seller profile ID, or null if no profile exists.
+     */
+    fun findSellerProfileIdByUserId(userId: UUID): UUID? {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_SELLER_PROFILE_ID_BY_USER_ID).use { stmt ->
+                stmt.setObject(1, userId)
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) rs.getObject("id", UUID::class.java) else null
+                }
+            }
+        }
+    }
+
+    /**
+     * Inserts a lot into the seller_lots projection table.
+     *
+     * Uses ON CONFLICT DO NOTHING for idempotency (at-least-once delivery).
+     *
+     * @param lotId The lot identifier (from catalog-service).
+     * @param sellerId The seller profile identifier (seller_profiles.id).
+     * @param title The lot title.
+     * @param status The initial lot status.
+     * @param reservePrice The seller's reserve price.
+     */
+    fun insertSellerLot(
+        lotId: UUID,
+        sellerId: UUID,
+        title: String,
+        status: String,
+        reservePrice: BigDecimal?
+    ) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(INSERT_SELLER_LOT).use { stmt ->
+                stmt.setObject(1, lotId)
+                stmt.setObject(2, sellerId)
+                stmt.setString(3, title)
+                stmt.setString(4, status)
+                stmt.setBigDecimal(5, reservePrice)
+                stmt.executeUpdate()
+            }
+        }
+        LOG.debugf("Inserted seller lot projection [lotId=%s, sellerId=%s]", lotId, sellerId)
+    }
+
+    /**
+     * Updates the status of a lot in the seller_lots projection table.
+     *
+     * @param lotId The lot identifier.
+     * @param status The new status.
+     */
+    fun updateLotStatus(lotId: UUID, status: String) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(UPDATE_LOT_STATUS).use { stmt ->
+                stmt.setString(1, status)
+                stmt.setObject(2, lotId)
+                stmt.executeUpdate()
+            }
+        }
+    }
+
+    /**
+     * Updates the current bid (and optionally bid count) for a lot in
+     * the seller_lots projection table.
+     *
+     * @param lotId The lot identifier.
+     * @param currentBid The new current bid amount.
+     * @param bidCount The new bid count (null to leave unchanged).
+     */
+    fun updateLotBid(lotId: UUID, currentBid: BigDecimal, bidCount: Int?) {
+        if (bidCount != null) {
+            dataSource.connection.use { conn ->
+                conn.prepareStatement(UPDATE_LOT_BID_WITH_COUNT).use { stmt ->
+                    stmt.setBigDecimal(1, currentBid)
+                    stmt.setInt(2, bidCount)
+                    stmt.setObject(3, lotId)
+                    stmt.executeUpdate()
+                }
+            }
+        } else {
+            dataSource.connection.use { conn ->
+                conn.prepareStatement(UPDATE_LOT_BID).use { stmt ->
+                    stmt.setBigDecimal(1, currentBid)
+                    stmt.setObject(2, lotId)
+                    stmt.executeUpdate()
+                }
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Settlement records (used by NATS consumers)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Inserts a settlement record into the seller_settlements table.
+     *
+     * @param sellerId The seller profile identifier.
+     * @param lotId The lot identifier.
+     * @param lotTitle The lot title (for display, may be null).
+     * @param hammerPrice The winning bid / hammer price.
+     * @param commission The platform commission withheld.
+     * @param netAmount The net amount to be paid to the seller.
+     * @param currency ISO 4217 currency code.
+     * @param status Settlement status (e.g. "READY", "PENDING", "SETTLED").
+     */
+    fun insertSettlement(
+        sellerId: UUID,
+        lotId: UUID,
+        lotTitle: String?,
+        hammerPrice: BigDecimal,
+        commission: BigDecimal,
+        netAmount: BigDecimal,
+        currency: String,
+        status: String
+    ) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(INSERT_SETTLEMENT).use { stmt ->
+                stmt.setObject(1, UUID.randomUUID())
+                stmt.setObject(2, sellerId)
+                stmt.setObject(3, lotId)
+                stmt.setString(4, lotTitle)
+                stmt.setBigDecimal(5, hammerPrice)
+                stmt.setBigDecimal(6, commission)
+                stmt.setBigDecimal(7, netAmount)
+                stmt.setString(8, currency)
+                stmt.setString(9, status)
+                stmt.executeUpdate()
+            }
+        }
+        LOG.debugf("Inserted settlement record for seller %s (lot=%s, net=%s %s)",
+            sellerId, lotId, netAmount, currency)
+    }
+
+    // -----------------------------------------------------------------------
+    // Analytics queries
+    // -----------------------------------------------------------------------
+
+    /**
+     * Retrieves the top categories for a seller based on lot status breakdown
+     * and revenue from current bids.
+     *
+     * @param sellerId The seller profile identifier.
+     * @return Up to 5 category breakdowns ordered by revenue descending.
+     */
+    fun getTopCategories(sellerId: UUID): List<CategoryBreakdown> {
+        val categories = mutableListOf<CategoryBreakdown>()
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_TOP_CATEGORIES).use { stmt ->
+                stmt.setObject(1, sellerId)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        categories.add(
+                            CategoryBreakdown(
+                                category = rs.getString("category_id"),
+                                lotCount = rs.getInt("lot_count"),
+                                revenue = rs.getBigDecimal("revenue")?.setScale(2, RoundingMode.HALF_UP) ?: BigDecimal.ZERO
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        return categories
+    }
+
+    /**
+     * Retrieves monthly revenue data for a seller from settled settlements.
+     *
+     * @param sellerId The seller profile identifier.
+     * @return Up to 12 months of revenue data ordered by most recent first.
+     */
+    fun getMonthlyRevenue(sellerId: UUID): List<MonthlyRevenue> {
+        val months = mutableListOf<MonthlyRevenue>()
+        val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_MONTHLY_REVENUE).use { stmt ->
+                stmt.setObject(1, sellerId)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        val monthTs = rs.getTimestamp("month")
+                        val monthStr = if (monthTs != null) {
+                            monthTs.toLocalDateTime().format(monthFormatter)
+                        } else {
+                            "unknown"
+                        }
+                        months.add(
+                            MonthlyRevenue(
+                                month = monthStr,
+                                revenue = rs.getBigDecimal("amount")?.setScale(2, RoundingMode.HALF_UP) ?: BigDecimal.ZERO,
+                                lotsSold = rs.getInt("count")
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        return months
+    }
+
+    /**
+     * Retrieves lot status counts for a seller.
+     *
+     * @param sellerId The seller profile identifier.
+     * @return A map of status to count.
+     */
+    fun getLotStatusCounts(sellerId: UUID): Map<String, Int> {
+        val counts = mutableMapOf<String, Int>()
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_LOT_STATUS_COUNTS).use { stmt ->
+                stmt.setObject(1, sellerId)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        counts[rs.getString("status")] = rs.getInt("cnt")
+                    }
+                }
+            }
+        }
+        return counts
+    }
+
+    /**
+     * Retrieves monthly settlement aggregations for a seller.
+     *
+     * @param sellerId The seller profile identifier.
+     * @return Up to 12 months of settlement totals ordered by most recent first.
+     */
+    fun getMonthlySettlements(sellerId: UUID): List<MonthlySettlementRow> {
+        val rows = mutableListOf<MonthlySettlementRow>()
+        val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_MONTHLY_SETTLEMENTS).use { stmt ->
+                stmt.setObject(1, sellerId)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        val monthTs = rs.getTimestamp("month")
+                        val monthStr = if (monthTs != null) {
+                            monthTs.toLocalDateTime().format(monthFormatter)
+                        } else {
+                            "unknown"
+                        }
+                        rows.add(
+                            MonthlySettlementRow(
+                                month = monthStr,
+                                totalNet = rs.getBigDecimal("total_net") ?: BigDecimal.ZERO,
+                                totalHammer = rs.getBigDecimal("total_hammer") ?: BigDecimal.ZERO,
+                                totalCommission = rs.getBigDecimal("total_commission") ?: BigDecimal.ZERO,
+                                settlementCount = rs.getInt("settlement_count")
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        return rows
+    }
+
+    // -----------------------------------------------------------------------
+    // CO2 records (used by Co2EventSellerConsumer)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Inserts a CO2 savings record for a seller's lot.
+     *
+     * @param sellerId The seller profile identifier.
+     * @param lotId The lot identifier.
+     * @param co2SavedKg The CO2 saved in kilograms.
+     */
+    fun insertCo2Record(sellerId: UUID, lotId: UUID, co2SavedKg: BigDecimal) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(INSERT_SELLER_CO2).use { stmt ->
+                stmt.setObject(1, sellerId)
+                stmt.setObject(2, lotId)
+                stmt.setBigDecimal(3, co2SavedKg)
+                stmt.executeUpdate()
+            }
+        }
+        LOG.debugf("Inserted CO2 record for seller %s (lot=%s, co2=%s kg)", sellerId, lotId, co2SavedKg)
     }
 
     // -----------------------------------------------------------------------
@@ -376,3 +794,14 @@ class SellerProfileRepository @Inject constructor(
         createdAt = getTimestamp("created_at").toInstant()
     )
 }
+
+/**
+ * Row type for monthly settlement aggregation query results.
+ */
+data class MonthlySettlementRow(
+    val month: String,
+    val totalNet: BigDecimal,
+    val totalHammer: BigDecimal,
+    val totalCommission: BigDecimal,
+    val settlementCount: Int
+)

@@ -260,9 +260,18 @@ class AnalyticsResource {
     fun getCategoryPopularity(): Response {
         LOG.debug("GET /categories")
 
-        // Category analytics are not yet aggregated — return empty list.
-        // The frontend handles this gracefully by showing "No data available".
-        val response = emptyList<CategoryPopularityResponse>()
+        val entries = analyticsService.getCategoryMetrics()
+
+        val response = entries.map { entry ->
+            CategoryPopularityResponse(
+                category = entry.category,
+                lotCount = entry.lotCount,
+                bidCount = entry.bidCount,
+                revenue = entry.revenue,
+                sellThroughRate = entry.sellThroughRate,
+                avgPrice = entry.avgPrice
+            )
+        }
 
         return Response.ok(ApiResponse.ok(response)).build()
     }
@@ -288,9 +297,15 @@ class AnalyticsResource {
         val lookbackDays = days ?: 30
         LOG.debugf("GET /bids/daily days=%d", lookbackDays)
 
-        // Daily bid volume analytics are not yet aggregated — return empty list.
-        // The frontend handles this gracefully by showing "No data available".
-        val response = emptyList<DailyBidVolumeResponse>()
+        val entries = analyticsService.getDailyBidVolume(lookbackDays)
+
+        val response = entries.map { entry ->
+            DailyBidVolumeResponse(
+                date = entry.reportDate.toString(),
+                bids = entry.totalBids,
+                uniqueBidders = entry.uniqueBidders
+            )
+        }
 
         return Response.ok(ApiResponse.ok(response)).build()
     }

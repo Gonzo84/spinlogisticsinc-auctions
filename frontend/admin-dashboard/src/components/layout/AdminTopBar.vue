@@ -1,24 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { useNotifications } from '@/composables/useNotifications'
 
 const emit = defineEmits<{
   'toggle-sidebar': []
 }>()
 
 const { userName, fullName, isSuperAdmin, logout } = useAuth()
+const {
+  notifications,
+  unreadCount,
+  fetchNotifications,
+  markAsRead,
+  markAllAsRead,
+} = useNotifications()
 
 const showDropdown = ref(false)
 const showNotifications = ref(false)
 
-const notifications = ref([
-  { id: '1', title: 'Lot pending approval', message: '12 lots awaiting review', time: '2m ago', type: 'warning' },
-  { id: '2', title: 'Fraud alert', message: 'Shill bidding pattern detected on Auction #2847', time: '15m ago', type: 'danger' },
-  { id: '3', title: 'GDPR request', message: 'New data erasure request from user', time: '1h ago', type: 'info' },
-  { id: '4', title: 'Payment overdue', message: '3 payments past due date', time: '2h ago', type: 'warning' },
-])
-
-const unreadCount = ref(4)
+onMounted(() => {
+  fetchNotifications()
+})
 
 function toggleDropdown() {
   showDropdown.value = !showDropdown.value
@@ -36,6 +39,31 @@ function closeAll() {
 }
 
 const roleBadge = ref(isSuperAdmin.value ? 'Super Admin' : 'Admin')
+
+function notificationSeverity(type: string): string {
+  switch (type) {
+    case 'non_payment_warning':
+      return 'danger'
+    case 'payment_due':
+    case 'closing_soon':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now()
+  const date = new Date(dateStr).getTime()
+  const diffMs = now - date
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.floor(diffHr / 24)
+  return `${diffDay}d ago`
+}
 </script>
 
 <template>
@@ -127,28 +155,43 @@ const roleBadge = ref(isSuperAdmin.value ? 'Super Admin' : 'Admin')
             <div
               v-for="n in notifications"
               :key="n.id"
-              class="border-b border-gray-50 px-4 py-3 hover:bg-gray-50"
+              class="cursor-pointer border-b border-gray-50 px-4 py-3 hover:bg-gray-50"
+              @click="markAsRead(n.id)"
             >
               <div class="flex items-start gap-2">
                 <div
                   :class="[
                     'mt-0.5 h-2 w-2 shrink-0 rounded-full',
-                    n.type === 'danger' ? 'bg-red-500' : n.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500',
+                    notificationSeverity(n.type) === 'danger' ? 'bg-red-500' : notificationSeverity(n.type) === 'warning' ? 'bg-amber-500' : 'bg-blue-500',
                   ]"
                 />
                 <div>
                   <p class="text-sm font-medium text-gray-900">
-                    {{ n.title }}
+                    {{ n.subject }}
                   </p>
                   <p class="text-xs text-gray-500">
-                    {{ n.message }}
+                    {{ n.body || n.type }}
                   </p>
                   <p class="mt-1 text-xs text-gray-400">
-                    {{ n.time }}
+                    {{ formatTimeAgo(n.createdAt) }}
                   </p>
                 </div>
               </div>
             </div>
+            <div
+              v-if="notifications.length === 0"
+              class="px-4 py-6 text-center text-sm text-gray-400"
+            >
+              No notifications yet
+            </div>
+          </div>
+          <div class="border-t border-gray-100 px-4 py-2">
+            <button
+              class="w-full text-center text-xs font-medium text-blue-600 hover:text-blue-700"
+              @click="markAllAsRead()"
+            >
+              Mark all as read
+            </button>
           </div>
         </div>
       </div>

@@ -213,7 +213,16 @@ data class PaymentStatusResponse(
     val paidAt: Instant?,
 
     @JsonProperty("createdAt")
-    val createdAt: Instant
+    val createdAt: Instant,
+
+    @JsonProperty("lotTitle")
+    val lotTitle: String? = null,
+
+    @JsonProperty("buyerName")
+    val buyerName: String? = null,
+
+    @JsonProperty("sellerName")
+    val sellerName: String? = null
 )
 
 /**

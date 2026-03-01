@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-gray-900">{{ $t('home.featuredAuctions') }}</h2>
-        <div class="flex gap-2">
+        <div v-if="auctions.length > 0" class="flex gap-2">
           <button
             class="p-2 rounded-full border hover:bg-white transition-colors"
             :disabled="carouselIndex === 0"
@@ -24,7 +24,19 @@
           </button>
         </div>
       </div>
-      <div class="overflow-hidden">
+      <!-- Empty state when no featured auctions -->
+      <div v-if="auctions.length === 0" class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <p class="text-gray-500 text-lg mb-2">No featured auctions right now</p>
+        <p class="text-gray-400 text-sm">Check back soon for new lots going live.</p>
+        <NuxtLink to="/search" class="inline-block mt-4 text-primary font-medium hover:underline">
+          {{ $t('home.viewAll') }} &rarr;
+        </NuxtLink>
+      </div>
+      <!-- Carousel content -->
+      <div v-else class="overflow-hidden">
         <div
           class="flex gap-6 transition-transform duration-300"
           :style="{ transform: `translateX(-${carouselIndex * 33.33}%)` }"

@@ -5,6 +5,7 @@ import eu.auctionplatform.commons.messaging.NatsSubjects
 import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.notification.application.service.NotificationService
 import eu.auctionplatform.notification.domain.model.NotificationType
+import eu.auctionplatform.notification.infrastructure.UserEmailResolver
 import io.nats.client.Connection
 import io.nats.client.Message
 import io.quarkus.runtime.Startup
@@ -32,7 +33,8 @@ import java.util.concurrent.Executors
 @Startup
 class UserEventNotificationConsumer @Inject constructor(
     private val connection: Connection,
-    private val notificationService: NotificationService
+    private val notificationService: NotificationService,
+    private val userEmailResolver: UserEmailResolver
 ) {
 
     companion object {
@@ -148,12 +150,16 @@ class UserEventNotificationConsumer @Inject constructor(
             ?: return
         val firstName = payload["firstName"]?.toString() ?: ""
 
-        val data = mapOf(
+        val userUuid = UUID.fromString(userId)
+        val userEmail = payload["email"]?.toString() ?: userEmailResolver.resolveEmail(userUuid)
+
+        val data = mutableMapOf(
             "firstName" to firstName
         )
+        if (userEmail != null) data["email"] = userEmail
 
         notificationService.sendNotification(
-            userId = UUID.fromString(userId),
+            userId = userUuid,
             type = NotificationType.KYC_APPROVED,
             data = data
         )
