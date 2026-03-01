@@ -76,3 +76,34 @@ data class UserGrowthEntryResponse(
     val newBuyers: Int,
     val newSellers: Int
 )
+
+/**
+ * Monthly registration trend entry.
+ */
+data class RegistrationTrendResponse(
+    val month: String,
+    val buyers: Int,
+    val sellers: Int,
+    val total: Int
+)
+
+/**
+ * Category popularity entry.
+ */
+data class CategoryPopularityResponse(
+    val category: String,
+    val lotCount: Int,
+    val bidCount: Int,
+    val revenue: BigDecimal,
+    val sellThroughRate: BigDecimal,
+    val avgPrice: BigDecimal
+)
+
+/**
+ * Daily bid volume entry.
+ */
+data class DailyBidVolumeResponse(
+    val date: String,
+    val bids: Long,
+    val uniqueBidders: Int
+)

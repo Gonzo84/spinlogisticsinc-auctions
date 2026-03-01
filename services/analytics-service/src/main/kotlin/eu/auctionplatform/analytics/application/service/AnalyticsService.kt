@@ -4,6 +4,7 @@ import eu.auctionplatform.analytics.domain.model.AuctionMetrics
 import eu.auctionplatform.analytics.domain.model.PlatformMetrics
 import eu.auctionplatform.analytics.infrastructure.persistence.repository.AnalyticsRepository
 import eu.auctionplatform.analytics.infrastructure.persistence.repository.DailyRevenueEntry
+import eu.auctionplatform.analytics.infrastructure.persistence.repository.MonthlyRegistrationEntry
 import eu.auctionplatform.analytics.infrastructure.persistence.repository.UserGrowthEntry
 import eu.auctionplatform.commons.exception.NotFoundException
 import jakarta.enterprise.context.ApplicationScoped
@@ -93,5 +94,20 @@ class AnalyticsService {
     fun getUserGrowthReport(from: LocalDate, to: LocalDate): List<UserGrowthEntry> {
         LOG.debugf("Fetching user growth report from=%s to=%s", from, to)
         return analyticsRepository.getUserGrowthReport(from, to)
+    }
+
+    // -------------------------------------------------------------------------
+    // Registration trends (monthly)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns monthly registration trends for the specified number of months.
+     *
+     * @param months Number of months to look back.
+     * @return List of monthly registration entries.
+     */
+    fun getMonthlyRegistrations(months: Int): List<MonthlyRegistrationEntry> {
+        LOG.debugf("Fetching monthly registrations for last %d months", months)
+        return analyticsRepository.getMonthlyRegistrations(months)
     }
 }

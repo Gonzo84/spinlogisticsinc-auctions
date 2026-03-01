@@ -130,6 +130,41 @@ class ComplianceResource {
     }
 
     // -----------------------------------------------------------------------
+    // Fraud detection endpoints
+    // -----------------------------------------------------------------------
+
+    /**
+     * Lists fraud alerts with optional severity, status and type filters (admin only).
+     *
+     * **GET /api/v1/compliance/fraud/alerts**
+     *
+     * Returns a paginated list of fraud alerts. Currently returns empty results
+     * as the fraud detection engine is not yet integrated.
+     */
+    @GET
+    @Path("/fraud/alerts")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun getFraudAlerts(
+        @QueryParam("severity") severity: String?,
+        @QueryParam("status") status: String?,
+        @QueryParam("type") type: String?,
+        @QueryParam("page") @DefaultValue("1") page: Int,
+        @QueryParam("size") @DefaultValue("20") size: Int
+    ): Response {
+        LOG.debugf("GET /fraud/alerts severity=%s status=%s type=%s page=%d size=%d", severity, status, type, page, size)
+
+        // Fraud detection is not yet fully implemented; return empty paginated result
+        val pagedResponse = PagedResponse(
+            items = emptyList<Any>(),
+            total = 0L,
+            page = page,
+            pageSize = size
+        )
+
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    // -----------------------------------------------------------------------
     // AML endpoints
     // -----------------------------------------------------------------------
 

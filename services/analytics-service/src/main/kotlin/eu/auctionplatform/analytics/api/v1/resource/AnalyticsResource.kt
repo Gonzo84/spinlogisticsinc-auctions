@@ -1,8 +1,11 @@
 package eu.auctionplatform.analytics.api.v1.resource
 
 import eu.auctionplatform.analytics.api.v1.dto.AuctionMetricsResponse
+import eu.auctionplatform.analytics.api.v1.dto.CategoryPopularityResponse
+import eu.auctionplatform.analytics.api.v1.dto.DailyBidVolumeResponse
 import eu.auctionplatform.analytics.api.v1.dto.DailyRevenueEntryResponse
 import eu.auctionplatform.analytics.api.v1.dto.PlatformOverviewResponse
+import eu.auctionplatform.analytics.api.v1.dto.RegistrationTrendResponse
 import eu.auctionplatform.analytics.api.v1.dto.RevenueReportResponse
 import eu.auctionplatform.analytics.api.v1.dto.UserGrowthEntryResponse
 import eu.auctionplatform.analytics.api.v1.dto.UserGrowthReportResponse
@@ -201,6 +204,93 @@ class AnalyticsResource {
                 )
             }
         )
+
+        return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    // -------------------------------------------------------------------------
+    // Registration trends (monthly)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns monthly registration trends.
+     *
+     * **GET /api/v1/analytics/registrations?months=12**
+     *
+     * @param months Number of months to look back (default 12).
+     * @return 200 OK with a list of monthly registration trends.
+     */
+    @GET
+    @Path("/registrations")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun getRegistrationTrends(
+        @QueryParam("months") months: Int?
+    ): Response {
+        val lookbackMonths = months ?: 12
+        LOG.debugf("GET /registrations months=%d", lookbackMonths)
+
+        val entries = analyticsService.getMonthlyRegistrations(lookbackMonths)
+
+        val response = entries.map { entry ->
+            RegistrationTrendResponse(
+                month = entry.month,
+                buyers = entry.buyers,
+                sellers = entry.sellers,
+                total = entry.total
+            )
+        }
+
+        return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    // -------------------------------------------------------------------------
+    // Category popularity
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns category popularity data.
+     *
+     * **GET /api/v1/analytics/categories**
+     *
+     * @return 200 OK with a list of category popularity entries.
+     */
+    @GET
+    @Path("/categories")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun getCategoryPopularity(): Response {
+        LOG.debug("GET /categories")
+
+        // Category analytics are not yet aggregated — return empty list.
+        // The frontend handles this gracefully by showing "No data available".
+        val response = emptyList<CategoryPopularityResponse>()
+
+        return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    // -------------------------------------------------------------------------
+    // Daily bid volume
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns daily bid volume data.
+     *
+     * **GET /api/v1/analytics/bids/daily?days=30**
+     *
+     * @param days Number of days to look back (default 30).
+     * @return 200 OK with a list of daily bid volume entries.
+     */
+    @GET
+    @Path("/bids/daily")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun getDailyBidVolume(
+        @QueryParam("days") days: Int?
+    ): Response {
+        val lookbackDays = days ?: 30
+        LOG.debugf("GET /bids/daily days=%d", lookbackDays)
+
+        // Daily bid volume analytics are not yet aggregated — return empty list.
+        // The frontend handles this gracefully by showing "No data available".
+        val response = emptyList<DailyBidVolumeResponse>()
 
         return Response.ok(ApiResponse.ok(response)).build()
     }

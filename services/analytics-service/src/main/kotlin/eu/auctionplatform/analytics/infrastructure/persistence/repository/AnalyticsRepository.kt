@@ -101,6 +101,17 @@ class AnalyticsRepository @Inject constructor(
                 new_sellers       = EXCLUDED.new_sellers
         """
 
+        private const val GET_MONTHLY_REGISTRATIONS = """
+            SELECT TO_CHAR(report_date, 'YYYY-MM') AS month,
+                   COALESCE(SUM(new_buyers), 0) AS buyers,
+                   COALESCE(SUM(new_sellers), 0) AS sellers,
+                   COALESCE(SUM(new_registrations), 0) AS total
+              FROM app.user_growth
+             WHERE report_date >= ?
+             GROUP BY TO_CHAR(report_date, 'YYYY-MM')
+             ORDER BY month ASC
+        """
+
         private const val INCREMENT_BIDS = """
             UPDATE app.auction_metrics
                SET total_bids = total_bids + 1
@@ -243,6 +254,35 @@ class AnalyticsRepository @Inject constructor(
         }
     }
 
+    /**
+     * Returns monthly registration trends for the specified number of months.
+     *
+     * @param months Number of months to look back.
+     * @return List of monthly registration trend entries.
+     */
+    fun getMonthlyRegistrations(months: Int): List<MonthlyRegistrationEntry> {
+        val fromDate = LocalDate.now().minusMonths(months.toLong()).withDayOfMonth(1)
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(GET_MONTHLY_REGISTRATIONS).use { stmt ->
+                stmt.setObject(1, fromDate)
+                stmt.executeQuery().use { rs ->
+                    val entries = mutableListOf<MonthlyRegistrationEntry>()
+                    while (rs.next()) {
+                        entries.add(
+                            MonthlyRegistrationEntry(
+                                month = rs.getString("month"),
+                                buyers = rs.getInt("buyers"),
+                                sellers = rs.getInt("sellers"),
+                                total = rs.getInt("total")
+                            )
+                        )
+                    }
+                    return entries
+                }
+            }
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Write operations (used by event consumers)
     // -------------------------------------------------------------------------
@@ -363,4 +403,14 @@ data class UserGrowthEntry(
     val totalUsers: Long,
     val newBuyers: Int,
     val newSellers: Int
+)
+
+/**
+ * Monthly registration trend data.
+ */
+data class MonthlyRegistrationEntry(
+    val month: String,
+    val buyers: Int,
+    val sellers: Int,
+    val total: Int
 )

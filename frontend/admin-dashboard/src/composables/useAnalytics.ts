@@ -31,9 +31,12 @@ export function useAnalytics() {
     loading.value = true
     error.value = null
     try {
-      overview.value = await get<PlatformOverview>('/analytics/overview')
+      const raw = await get<PlatformOverview | { data: PlatformOverview }>('/analytics/overview')
+      overview.value = (raw as Record<string, unknown>)?.data
+        ? (raw as { data: PlatformOverview }).data
+        : raw as PlatformOverview
     } catch {
-      error.value = null
+      overview.value = null
     } finally {
       loading.value = false
     }
@@ -41,39 +44,47 @@ export function useAnalytics() {
 
   async function fetchMonthlyRevenue(months = 12): Promise<void> {
     try {
-      monthlyRevenue.value = await get<MonthlyRevenue[]>('/analytics/revenue', {
+      const raw = await get<MonthlyRevenue[] | { data: MonthlyRevenue[] }>('/analytics/revenue', {
         params: { months },
       })
+      const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: MonthlyRevenue[] }).data : [])
+      monthlyRevenue.value = result
     } catch {
-      error.value = null
+      monthlyRevenue.value = []
     }
   }
 
   async function fetchRegistrationTrends(months = 12): Promise<void> {
     try {
-      registrationTrends.value = await get<RegistrationTrend[]>('/analytics/registrations', {
+      const raw = await get<RegistrationTrend[] | { data: RegistrationTrend[] }>('/analytics/registrations', {
         params: { months },
       })
+      const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: RegistrationTrend[] }).data : [])
+      registrationTrends.value = result
     } catch {
-      error.value = null
+      registrationTrends.value = []
     }
   }
 
   async function fetchCategoryPopularity(): Promise<void> {
     try {
-      categoryPopularity.value = await get<CategoryPopularity[]>('/analytics/categories')
+      const raw = await get<CategoryPopularity[] | { data: CategoryPopularity[] }>('/analytics/categories')
+      const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: CategoryPopularity[] }).data : [])
+      categoryPopularity.value = result
     } catch {
-      error.value = null
+      categoryPopularity.value = []
     }
   }
 
   async function fetchDailyBidVolume(days = 30): Promise<void> {
     try {
-      dailyBidVolume.value = await get<DailyBidVolume[]>('/analytics/bids/daily', {
+      const raw = await get<DailyBidVolume[] | { data: DailyBidVolume[] }>('/analytics/bids/daily', {
         params: { days },
       })
+      const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: DailyBidVolume[] }).data : [])
+      dailyBidVolume.value = result
     } catch {
-      error.value = null
+      dailyBidVolume.value = []
     }
   }
 

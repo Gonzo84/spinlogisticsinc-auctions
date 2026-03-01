@@ -9,6 +9,7 @@ import eu.auctionplatform.payment.api.v1.dto.InvoiceResponse
 import eu.auctionplatform.payment.api.v1.dto.PaymentStatusResponse
 import eu.auctionplatform.payment.api.v1.dto.PaymentSubmitRequest
 import eu.auctionplatform.payment.api.v1.dto.PaymentSummary
+import eu.auctionplatform.payment.api.v1.dto.PaymentsSummaryResponse
 import eu.auctionplatform.payment.api.v1.dto.SettlementResponse
 import eu.auctionplatform.payment.application.service.CheckoutService
 import eu.auctionplatform.payment.application.service.LotCheckoutDetail
@@ -366,6 +367,44 @@ class PaymentResource @Inject constructor(
     // -----------------------------------------------------------------------
     // Admin endpoints
     // -----------------------------------------------------------------------
+
+    /**
+     * Returns aggregate payment summary statistics (admin only).
+     *
+     * **GET /api/v1/payments/summary**
+     *
+     * @return 200 OK with [PaymentsSummaryResponse].
+     */
+    @GET
+    @Path("/summary")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun getPaymentsSummary(): Response {
+        LOG.debug("GET /payments/summary")
+
+        val pending = paymentRepository.findByStatus(
+            eu.auctionplatform.payment.domain.model.PaymentStatus.PENDING
+        )
+        val completed = paymentRepository.findByStatus(
+            eu.auctionplatform.payment.domain.model.PaymentStatus.COMPLETED
+        )
+        val failed = paymentRepository.findByStatus(
+            eu.auctionplatform.payment.domain.model.PaymentStatus.FAILED
+        )
+
+        val totalPending = pending.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
+        val totalPaid = completed.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
+
+        val summary = PaymentsSummaryResponse(
+            totalPending = totalPending,
+            totalOverdue = BigDecimal.ZERO,
+            totalPaid = totalPaid,
+            totalDisputed = BigDecimal.ZERO,
+            pendingCount = pending.size,
+            overdueCount = 0
+        )
+
+        return Response.ok(summary).build()
+    }
 
     /**
      * Lists all payments (admin only).

@@ -1,13 +1,13 @@
 ---
 name: test-happy-path
-description: Run happy path tests for a given role (buyer/seller/admin/broker/all) using Chrome DevTools MCP, following HAPPY_PATHS.md
+description: Run happy path tests for a given role (buyer/seller/admin/broker/all) using Playwright MCP, following HAPPY_PATHS.md
 user-invocable: true
 disable-model-invocation: false
 ---
 
 # Happy Path Testing Skill
 
-Run browser-based happy path tests for the EU Auction Platform. Uses Chrome DevTools MCP for browser roles and Bash curl for the broker API-only path.
+Run browser-based happy path tests for the EU Auction Platform. Uses Playwright MCP for browser roles and Bash curl for the broker API-only path.
 
 **Argument:** `$ARGUMENTS` — one of `buyer`, `seller`, `admin`, `broker`, or `all` (default: `all`)
 
@@ -66,24 +66,45 @@ Read the file `HAPPY_PATHS.md` at the project root. This is the single source of
 ### Context Management (CRITICAL)
 
 To prevent context window overflow during long test runs:
-- **Save snapshots to files** using the `filePath` parameter on `take_snapshot` — do NOT let them render inline
-- **Save screenshots to files** using the `filePath` parameter on `take_screenshot`
-- **Only read snapshot files when needed** (e.g., to find a specific element UID) — don't read full snapshots for every step
-- **Keep console/network checks brief** — use `pageSize: 10` to limit results, only fetch full details for errors
+- **Save snapshots to files** using the `filename` parameter on `browser_snapshot` — do NOT let them render inline
+- **Save screenshots to files** using the `filename` parameter on `browser_take_screenshot`
+- **Only read snapshot files when needed** (e.g., to find a specific element `ref`) — don't read full snapshots for every step
+- **Keep console/network checks brief** — only fetch full details for errors
+
+### Playwright MCP Tool Reference
+
+| Action | Tool | Key Parameters |
+|--------|------|----------------|
+| Navigate | `mcp__playwright__browser_navigate` | `url` |
+| Accessibility snapshot | `mcp__playwright__browser_snapshot` | `filename` (optional, saves to file) |
+| Screenshot | `mcp__playwright__browser_take_screenshot` | `filename`, `type` ("png"/"jpeg"), `fullPage` |
+| Click element | `mcp__playwright__browser_click` | `ref` (from snapshot), `element` (description) |
+| Type into input | `mcp__playwright__browser_type` | `ref`, `text`, `submit` (optional) |
+| Fill form fields | `mcp__playwright__browser_fill_form` | `fields` array of `{name, type, ref, value}` |
+| Select dropdown | `mcp__playwright__browser_select_option` | `ref`, `values` array |
+| Press key | `mcp__playwright__browser_press_key` | `key` (e.g., "Enter", "Tab") |
+| Wait for text | `mcp__playwright__browser_wait_for` | `text`, `textGone`, or `time` |
+| Hover | `mcp__playwright__browser_hover` | `ref`, `element` |
+| Console messages | `mcp__playwright__browser_console_messages` | `level` ("error"/"warning"/"info"/"debug") |
+| Network requests | `mcp__playwright__browser_network_requests` | `includeStatic` (bool) |
+| Run JS code | `mcp__playwright__browser_evaluate` | `function` (JS string) |
+| Tab management | `mcp__playwright__browser_tabs` | `action` ("list"/"new"/"close"/"select"), `index` |
+
+**Element identification:** Playwright MCP uses `ref` attributes from `browser_snapshot` output to identify elements. Always take a snapshot first, find the element's `ref`, then use it in click/type/fill actions.
 
 ### General Testing Protocol
 
 For **each step** in the happy path:
 
 1. **Execute** the action using the appropriate tool:
-   - Browser roles (buyer/seller/admin): Use Chrome DevTools MCP tools (`navigate_page`, `take_snapshot`, `click`, `fill`, `fill_form`, `wait_for`)
+   - Browser roles (buyer/seller/admin): Use Playwright MCP tools (`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_fill_form`, `browser_wait_for`)
    - Broker: Use Bash curl commands as specified in HAPPY_PATHS.md Section 4
 
 2. **At every "Verify" checkpoint:**
-   - Take a page snapshot via `take_snapshot` with `filePath: "tests/test-screenshots/<role>-<step>-snapshot.txt"` — then Read the file to check for expected elements. This keeps raw snapshot data out of the conversation context.
-   - Check console for errors via `list_console_messages` (filter types: `["error", "warn"]`)
-   - Check network for failed requests via `list_network_requests` — look for 4xx/5xx status codes
-   - Take a screenshot via `take_screenshot` with `filePath: "tests/test-screenshots/<role>-<step>-<short-name>.png"`
+   - Take a page snapshot via `browser_snapshot` with `filename: "tests/test-screenshots/<role>-<step>-snapshot.md"` — then Read the file to check for expected elements. This keeps raw snapshot data out of the conversation context.
+   - Check console for errors via `browser_console_messages` with `level: "error"`
+   - Check network for failed requests via `browser_network_requests` with `includeStatic: false` — look for 4xx/5xx status codes
+   - Take a screenshot via `browser_take_screenshot` with `filename: "tests/test-screenshots/<role>-<step>-<short-name>.png"`
      - Example: `tests/test-screenshots/buyer-1.1-landing-page.png`
 
 3. **Record the result** for each step: **PASS**, **FAIL**, **PARTIAL**, or **SKIP**
@@ -216,7 +237,7 @@ Use today's date. For `all` mode, write one report per role.
 # <Role> Happy Path — Test Report
 
 **Date:** <YYYY-MM-DD>
-**Tester:** Claude Code (automated via Chrome DevTools MCP)
+**Tester:** Claude Code (automated via Playwright MCP)
 **Application:** <App name> (<URL>)
 **Environment:** <List running services and ports>
 
@@ -295,15 +316,15 @@ All test screenshots saved to: `tests/test-screenshots/`
 
 **CRITICAL: Close browser pages BEFORE killing processes.** This prevents stale browser windows from persisting after the subagent finishes.
 
-### 7a: Close all Chrome DevTools MCP browser pages
-1. Call `mcp__chrome-devtools__list_pages` to get all open pages
-2. For each page (except the last one), call `mcp__chrome-devtools__close_page` with its pageId
-3. For the last remaining page, call `mcp__chrome-devtools__navigate_page` with `type: "url"` and `url: "about:blank"`
+### 7a: Close all Playwright MCP browser tabs
+1. Call `mcp__playwright__browser_tabs` with `action: "list"` to get all open tabs
+2. For each tab (except the last one), call `mcp__playwright__browser_tabs` with `action: "close"` and the tab `index`
+3. For the last remaining tab, call `mcp__playwright__browser_navigate` with `url: "about:blank"`
 
-This ensures the MCP server's state is clean and no stale pages remain.
+This ensures the browser state is clean and no stale pages remain.
 
 ### 7b: Kill all services
-Use the `/kill-all` skill to stop and remove all services, kill frontend dev servers, and close any Chrome DevTools browser. Do **not** pass the `volumes` argument — volumes should persist for future test runs.
+Use the `/kill-all` skill to stop and remove all services, kill frontend dev servers, and close any browser. Do **not** pass the `volumes` argument — volumes should persist for future test runs.
 
 ---
 
@@ -315,4 +336,4 @@ Use the `/kill-all` skill to stop and remove all services, kill frontend dev ser
 - **If a step depends on a prior step that failed**, mark it as SKIP with the reason.
 - **For the broker path**, save curl output as evidence instead of screenshots.
 - **Cross-reference with known issues** in HAPPY_PATHS.md "Known Issues" section — note if a bug is pre-existing vs new.
-- **Keycloak login flow**: After navigating to the app, wait for Keycloak redirect. Use `fill_form` to enter credentials, then `click` the Sign In button. Use `wait_for` to confirm redirect back to the app.
+- **Keycloak login flow**: After navigating to the app, wait for Keycloak redirect. Take a `browser_snapshot`, find the username/password fields by `ref`, use `browser_fill_form` to enter credentials, then `browser_click` the Sign In button. Use `browser_wait_for` to confirm redirect back to the app.

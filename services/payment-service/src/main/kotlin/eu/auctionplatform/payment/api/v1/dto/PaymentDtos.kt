@@ -279,6 +279,31 @@ data class SettlementResponse(
 )
 
 /**
+ * Aggregate payment summary for the admin dashboard.
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class PaymentsSummaryResponse(
+
+    @JsonProperty("totalPending")
+    val totalPending: BigDecimal,
+
+    @JsonProperty("totalOverdue")
+    val totalOverdue: BigDecimal,
+
+    @JsonProperty("totalPaid")
+    val totalPaid: BigDecimal,
+
+    @JsonProperty("totalDisputed")
+    val totalDisputed: BigDecimal,
+
+    @JsonProperty("pendingCount")
+    val pendingCount: Int,
+
+    @JsonProperty("overdueCount")
+    val overdueCount: Int
+)
+
+/**
  * Deposit confirmation response.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)

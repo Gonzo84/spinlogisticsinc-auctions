@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, shallowRef, onMounted, onUnmounted, computed } from 'vue'
 import { useAuctions } from '@/composables/useAuctions'
 import { useAnalytics } from '@/composables/useAnalytics'
 import LiveBidChart from '@/components/charts/LiveBidChart.vue'
@@ -13,9 +13,10 @@ const { overview, fetchOverview, loading: analyticsLoading } = useAnalytics()
 
 const loading = computed(() => auctionsLoading.value || analyticsLoading.value)
 
-// Simulated live bid data
-const bidLabels = ref<string[]>([])
-const bidData = ref<number[]>([])
+// Simulated live bid data — use shallowRef to avoid deep reactivity
+// which can cause RangeError (Maximum call stack size exceeded) with Chart.js
+const bidLabels = shallowRef<string[]>([])
+const bidData = shallowRef<number[]>([])
 
 const alerts = ref([
   { id: '1', type: 'warning', message: '3 payments are overdue', link: '/payments', time: '5 min ago' },
@@ -34,21 +35,23 @@ onMounted(async () => {
 
   // Generate initial chart data
   const now = new Date()
+  const initLabels: string[] = []
+  const initData: number[] = []
   for (let i = 29; i >= 0; i--) {
     const t = new Date(now.getTime() - i * 60000)
-    bidLabels.value.push(t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
-    bidData.value.push(Math.floor(Math.random() * 50) + 10)
+    initLabels.push(t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
+    initData.push(Math.floor(Math.random() * 50) + 10)
   }
+  bidLabels.value = initLabels
+  bidData.value = initData
 
-  // Simulate live updates
+  // Simulate live updates — replace arrays to trigger shallowRef reactivity
   refreshInterval = setInterval(() => {
     const t = new Date()
-    bidLabels.value.push(t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
-    bidData.value.push(Math.floor(Math.random() * 50) + 10)
-    if (bidLabels.value.length > 30) {
-      bidLabels.value.shift()
-      bidData.value.shift()
-    }
+    const newLabels = [...bidLabels.value, t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })]
+    const newData = [...bidData.value, Math.floor(Math.random() * 50) + 10]
+    bidLabels.value = newLabels.length > 30 ? newLabels.slice(-30) : newLabels
+    bidData.value = newData.length > 30 ? newData.slice(-30) : newData
   }, 5000)
 })
 

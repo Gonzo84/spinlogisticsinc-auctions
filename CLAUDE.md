@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Code Conventions:** See [CONVENTIONS.md](./CONVENTIONS.md) for mandatory code style, patterns, and constraints. All agents MUST read and follow that file when generating or modifying code.
+> **Code Conventions:** See [CONVENTIONS.md](./CONVENTIONS.md) (~1400 lines) for mandatory code style, patterns, and constraints. All agents MUST read and follow that file when generating or modifying code. Covers Kotlin style, Vue SFC ordering, composable enforcement, API layer patterns, CSS/Tailwind, testing, Docker, and security.
 
 ## Build & Development Commands
 
@@ -16,9 +16,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew test                               # Run all unit tests
 ./gradlew :services:<name>:test              # Run tests for a single service
 ./gradlew integrationTest                    # Integration tests (requires Docker services)
-./gradlew detekt                             # Kotlin linting
 ./gradlew dependencyCheckAnalyze             # OWASP dependency security scan
+./scripts/security-audit.sh                  # Run OWASP + npm audit for all frontends
+./scripts/pre-commit.sh                      # Run detekt + ESLint on staged files
 ```
+
+> **Note:** Detekt is currently disabled in `build.gradle.kts` because detekt 1.23.x is incompatible with Kotlin 2.3.0. Config is ready at `config/detekt/detekt.yml` — re-enable when `dev.detekt` 2.0.0 reaches stable.
 
 ### Frontend (Vue 3 / Nuxt 3 - npm)
 
@@ -52,6 +55,7 @@ docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file d
 - **Cache:** Redis 7 (auction state, bid timers)
 - **Search:** Elasticsearch 8
 - **Object Storage:** MinIO (S3-compatible)
+- **Logging:** JBoss Logger (all services), structured format with traceId/spanId: `%d{HH:mm:ss} %-5p traceId=%X{traceId} spanId=%X{spanId} [%c{2.}] %s%e%n`
 - **Observability:** OpenTelemetry + Prometheus + Grafana + JSON structured logging
 
 ### Microservices (ports in Docker Compose)
@@ -85,16 +89,19 @@ api/             # JAX-RS REST resources, DTOs, request/response objects
 
 ### Shared Libraries (`shared/`)
 
-- **kotlin-commons** — Base types (Money, AggregateRoot, DomainEvent, ValueObject), ID value objects, ApiResponse/PagedResponse wrappers, NATS utilities, error handling
+- **kotlin-commons** — Base types (Money, AggregateRoot, DomainEvent, ValueObject), ID value objects, ApiResponse/PagedResponse wrappers, NATS utilities (NatsPublisher with traceId headers, NatsConsumer with exponential backoff), OutboxPoller abstract class, error handling
 - **nats-events** — Typed domain event classes used as message contracts between services
 
 ### Key Patterns
 
 - **Event Sourcing + CQRS** in auction-engine: events stored in `auction_events` table, projected to read models. Optimistic concurrency via event stream versioning.
-- **Outbox Pattern:** Domain events written to an outbox table transactionally, then published to NATS by a background poller. Guarantees at-least-once delivery.
+- **Outbox Pattern:** Domain events written to an outbox table transactionally, then published to NATS by a background poller (`OutboxPoller` abstract class in kotlin-commons with `SELECT...FOR UPDATE SKIP LOCKED`). Guarantees at-least-once delivery.
+- **TraceId Propagation:** `NatsPublisher` injects `trace-id` and `user-id` headers from `DomainEvent.metadata`. `NatsConsumer.extractTraceContext()` extracts them on the receiving side.
 - **API conventions:** All REST endpoints under `/api/v1/`, responses wrapped in `ApiResponse<T>`, errors follow RFC 7807 Problem Details. Pagination via `PagedResponse`.
 - **Database per service:** Each microservice owns its PostgreSQL database and schema. Migrations in `src/main/resources/db/migration/`.
-- **Casbin RBAC:** Each service has `casbin_model.conf` and `casbin_policy.csv` in resources. Role hierarchy: buyer, seller, broker, admin_ops, admin_super.
+- **Casbin RBAC:** Each service has `casbin_model.conf` and `casbin_policy.csv` in resources. Policies use keyMatch2 with `:param` patterns (not glob `*`/`**`). Role hierarchy: buyer, seller, broker, admin_ops, admin_super.
+- **Frontend Type Safety:** All 3 frontends enforce `no-explicit-any` via ESLint. Types are centralized in `src/types/` with barrel exports. All composable/store returns use `readonly()`.
+- **Pinia Setup Stores:** buyer-web uses Composition API (Setup) stores with `ref()`, `computed()`, and plain functions — not Options API.
 
 ### Infrastructure Services (dev ports)
 
@@ -114,8 +121,25 @@ PostgreSQL: 5432 | NATS: 4222 | Keycloak: 8180 | Redis: 6379 | MinIO: 9000 | Ela
 
 GitHub Actions pipeline (`.github/workflows/ci.yml`): lint → build → test → security scan → Docker image build (ghcr.io) → deploy staging/prod via Helm.
 
+### Testing
+
+Test infrastructure is set up for key services:
+
+```bash
+# Backend (Quarkus JUnit 5 + Testcontainers)
+./gradlew :services:auction-engine:test      # Domain tests (AuctionDomainTest)
+./gradlew :services:payment-service:test     # VAT calculation tests
+# TestFixtures.kt available in auction-engine, catalog, payment, user services
+
+# Frontend (Vitest)
+cd frontend/buyer-web && npx vitest          # vitest.config.ts configured
+cd frontend/seller-portal && npx vitest
+cd frontend/admin-dashboard && npx vitest
+```
+
 ### Deployment
 
-- Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar
+- Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)
+- Production nginx config with strict CSP: `infrastructure/config/nginx/nginx-spa-prod.conf`
 - Helm chart in `helm/auction-platform/` with per-environment values files
 - Kubernetes: HPA, PDB, NetworkPolicy, ServiceAccount templates included

@@ -58,7 +58,10 @@ A full-stack B2B auction platform for the European market, built with Kotlin/Qua
 | Search | Elasticsearch 8 (multi-language) |
 | Storage | MinIO (S3-compatible) |
 | Cache | Redis 7 |
+| Logging | JBoss Logger, structured format with traceId/spanId |
 | Observability | Prometheus, Grafana, OpenTelemetry |
+| Linting | Detekt (Kotlin, config ready), ESLint `no-explicit-any` (all frontends) |
+| Testing | JUnit 5 + Testcontainers (backend), Vitest (frontend) |
 | CI/CD | GitHub Actions (7-stage pipeline) |
 | Deployment | Helm charts, Kubernetes |
 | Container | Docker, multi-stage builds |
@@ -95,6 +98,11 @@ eu-auction-platform/
 │   └── compose/                 # Modular Docker Compose files (one per service)
 ├── helm/
 │   └── auction-platform/        # Helm chart with multi-env values
+├── config/
+│   └── detekt/detekt.yml        # Detekt rules (Kotlin linter)
+├── scripts/
+│   ├── pre-commit.sh            # Pre-commit hook (detekt + ESLint)
+│   └── security-audit.sh        # OWASP + npm audit runner
 ├── .github/
 │   └── workflows/ci.yml         # 7-stage CI/CD pipeline
 ├── docker/compose/docker-compose-infrastructure.yaml  # Infrastructure-only (dev)
@@ -102,6 +110,7 @@ eu-auction-platform/
 ├── start-platform.sh            # One-command: build + start everything
 ├── build.gradle.kts             # Root Gradle build
 ├── settings.gradle.kts          # Multi-project includes
+├── CONVENTIONS.md               # Code conventions (~1400 lines)
 └── gradle.properties            # Quarkus/Kotlin versions
 ```
 
@@ -224,10 +233,13 @@ npm run dev        # http://localhost:5175
 ./gradlew :services:<name>:test          # Test a specific service
 
 # Code Quality
-./gradlew detekt                         # Run Kotlin linter
+# Note: detekt is disabled in build.gradle.kts (incompatible with Kotlin 2.3.0)
+# Config ready at config/detekt/detekt.yml — re-enable with dev.detekt 2.0.0 stable
+./scripts/pre-commit.sh                  # Run detekt + ESLint on staged files
 
 # Security
 ./gradlew dependencyCheckAnalyze         # OWASP dependency check
+./scripts/security-audit.sh              # OWASP + npm audit for all frontends
 
 # Clean
 ./gradlew clean                          # Clean build outputs
@@ -331,9 +343,11 @@ helm install auction-platform ./helm/auction-platform --dry-run --debug
 
 ### Security
 - **Keycloak OIDC** with PKCE for all frontends
-- **Casbin RBAC** with role hierarchy (buyer, seller, broker, admin_ops, admin_super)
+- **Casbin RBAC** with keyMatch2 policies and role hierarchy (buyer, seller, broker, admin_ops, admin_super)
 - **Webhook HMAC validation** for Adyen and Onfido
 - **Rate limiting** at the gateway layer
+- **Content Security Policy** - Strict CSP headers via nginx production config
+- **Security audit script** - Combined OWASP dependency check + npm audit
 
 ## Test Users (Keycloak)
 
@@ -350,10 +364,11 @@ The Keycloak realm is pre-configured with test users:
 ## Observability
 
 - **Grafana Dashboards** - Platform overview, auction engine, payment pipeline (`http://localhost:3333`)
-- **Prometheus Metrics** - All services expose Micrometer metrics (`http://localhost:9090`)
-- **OpenTelemetry** - Distributed tracing across services
-- **JSON Logging** - Structured logs for all services
-- **Health Checks** - Liveness and readiness probes on every service (`/q/health`)
+- **Prometheus Metrics** - All services expose Micrometer metrics + Redis exporter (`http://localhost:9090`)
+- **OpenTelemetry** - Distributed tracing across services, standardized OTLP config in all 13 services
+- **Structured Logging** - JBoss Logger with `traceId=%X{traceId} spanId=%X{spanId}` format, optional JSON output via `LOG_JSON=true`
+- **TraceId Propagation** - Trace context flows through NATS message headers (`trace-id`, `user-id`)
+- **Health Checks** - Liveness and readiness probes on every service (`/q/health`), Docker healthchecks on Prometheus, Grafana, OTEL Collector, MailHog
 
 ## CI/CD Pipeline
 
@@ -368,6 +383,50 @@ The GitHub Actions pipeline runs in 7 stages:
 7. **Deploy Production** - Helm deploy on `main` / `release/*` branches
 
 ## Changelog
+
+### 2026-03-01 — Codebase Refactoring (10-phase overhaul)
+
+Full refactoring following `REFACTORING_PLAN.md` to bring the project to production-grade standards.
+
+**Code conventions & documentation:**
+- Expanded `CONVENTIONS.md` from 458 to 1402 lines covering Kotlin style, Vue SFC ordering, composable enforcement, API patterns, CSS/Tailwind, testing, Docker, security, and 3 appendices
+
+**Frontend (all 3 apps):**
+- Eliminated all TypeScript `any` types across buyer-web, seller-portal, and admin-dashboard
+- Centralized types in `src/types/` directories with barrel exports (`index.ts`)
+- Added `readonly()` to all composable and store return values
+- Converted buyer-web Pinia stores from Options API to Setup (Composition) stores
+- ESLint `no-explicit-any: 'error'` enforced in all 3 frontends
+- Added Vitest configuration for all 3 frontends
+
+**Backend (all 13 services):**
+- Migrated 74+ files from SLF4J to JBoss Logger (zero SLF4J imports remain)
+- Migrated all 13 Casbin policy files from glob patterns (`*`/`**`) to keyMatch2 (`:param`) patterns
+- Standardized structured logging format with `traceId`/`spanId` in all services
+- Standardized OpenTelemetry OTLP configuration across all services
+
+**Shared libraries (kotlin-commons):**
+- Added trace context propagation in `NatsPublisher` via `DomainEvent.metadata` headers
+- Added `NatsConsumer.extractTraceContext()` helper for consuming trace headers
+- Created `OutboxPoller` abstract class with `SELECT...FOR UPDATE SKIP LOCKED`
+- Added exponential backoff to `NatsConsumer.waitForStream()` (2s cap at 30s)
+
+**Infrastructure & Docker:**
+- Added Docker healthchecks to Prometheus, Grafana, OTEL Collector, MailHog
+- Changed all 13 NATS dependencies from `service_started` to `service_healthy`
+- Added Redis exporter service + Prometheus scrape job
+- Created multi-stage Dockerfile (`docker/Dockerfile.service-full`)
+- Created production nginx config with strict CSP headers
+
+**CI/CD & tooling:**
+- Created Detekt config (`config/detekt/detekt.yml`) — plugin disabled pending detekt 2.0 stable (incompatible with Kotlin 2.3.0)
+- Updated CI pipeline with frontend typecheck, lint `--max-warnings 0`, vue-tsc
+- Created pre-commit hook script (`scripts/pre-commit.sh`)
+- Created security audit script (`scripts/security-audit.sh`)
+
+**Testing infrastructure:**
+- Created test `application.properties` and `TestFixtures.kt` for auction-engine, catalog, payment, user services
+- Created domain tests: `AuctionDomainTest`, `VatCalculationTest`
 
 ### 2026-02-24 — Bug Audit & Fixes (20 bugs fixed)
 

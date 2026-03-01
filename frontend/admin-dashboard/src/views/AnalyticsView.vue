@@ -27,12 +27,12 @@ function formatPercent(value: number): string {
   return `${Math.round(value * 100) / 100}%`
 }
 
-const revenueLabels = computed(() => monthlyRevenue.value.map((m) => m.month))
-const revenueData = computed(() => monthlyRevenue.value.map((m) => m.revenue))
-const commissionData = computed(() => monthlyRevenue.value.map((m) => m.commission))
+const revenueLabels = computed(() => (Array.isArray(monthlyRevenue.value) ? monthlyRevenue.value : []).map((m) => m.month))
+const revenueData = computed(() => (Array.isArray(monthlyRevenue.value) ? monthlyRevenue.value : []).map((m) => m.revenue))
+const commissionData = computed(() => (Array.isArray(monthlyRevenue.value) ? monthlyRevenue.value : []).map((m) => m.commission))
 
-const registrationLabels = computed(() => registrationTrends.value.map((r) => r.month))
-const registrationData = computed(() => registrationTrends.value.map((r) => r.total))
+const registrationLabels = computed(() => (Array.isArray(registrationTrends.value) ? registrationTrends.value : []).map((r) => r.month))
+const registrationData = computed(() => (Array.isArray(registrationTrends.value) ? registrationTrends.value : []).map((r) => r.total))
 </script>
 
 <template>
