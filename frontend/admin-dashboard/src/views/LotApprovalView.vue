@@ -12,15 +12,17 @@ interface RawLotResponse {
   id?: string
   title?: string
   description?: string
+  brand?: string
   category?: string
   categoryId?: string
   sellerName?: string
   sellerId?: string
   startingBid?: number
   reservePrice?: number | null
-  location?: { city: string; country: string }
+  location?: { city: string; country: string; address?: string }
   locationCity?: string
   locationCountry?: string
+  locationAddress?: string
   imageCount?: number
   images?: unknown[]
   primaryImageUrl?: string
@@ -107,12 +109,14 @@ async function resolveSellerName(sellerId: string): Promise<string> {
   }
 }
 
-function normalizeLot(lot: RawLotResponse): PendingLot {
+function normalizeLot(lot: RawLotResponse, detailLoaded = false): PendingLot {
   return {
     id: lot.id ?? '',
     title: lot.title ?? '',
     description: lot.description ?? '',
+    brand: lot.brand ?? '',
     category: lot.category ?? lot.categoryId ?? '',
+    categoryId: lot.categoryId ?? '',
     sellerName: lot.sellerName ?? lot.sellerId ?? 'Unknown',
     sellerId: lot.sellerId ?? '',
     startingBid: lot.startingBid ?? 0,
@@ -120,11 +124,13 @@ function normalizeLot(lot: RawLotResponse): PendingLot {
     location: lot.location ?? {
       city: lot.locationCity ?? '',
       country: lot.locationCountry ?? '',
+      address: lot.locationAddress ?? undefined,
     },
     imageCount: lot.imageCount ?? (lot.images?.length ?? 0),
     primaryImage: lot.primaryImageUrl ?? lot.primaryImage ?? null,
     specifications: lot.specifications ?? {},
     submittedAt: lot.updatedAt ?? lot.createdAt ?? new Date().toISOString(),
+    detailLoaded,
   }
 }
 
@@ -137,7 +143,7 @@ async function fetchPendingLots() {
     const unwrapped = raw as ApiResponse<PagedResponse<RawLotResponse>>
     const response = unwrapped?.data && typeof unwrapped.data === 'object' && !Array.isArray(unwrapped.data) ? unwrapped.data : (raw as PagedResponse<RawLotResponse>)
     const items = response.items ?? []
-    pendingLots.value = items.map(normalizeLot)
+    pendingLots.value = items.map((item) => normalizeLot(item))
 
     // Resolve seller names and category names in parallel
     const uniqueSellerIds = [...new Set(pendingLots.value.map((l) => l.sellerId).filter(Boolean))]
@@ -149,7 +155,7 @@ async function fetchPendingLots() {
     pendingLots.value = pendingLots.value.map((lot) => ({
       ...lot,
       sellerName: sellerNameCache.get(lot.sellerId) ?? lot.sellerName,
-      category: resolveCategoryName(lot.category),
+      category: resolveCategoryName(lot.categoryId || lot.category),
     }))
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
@@ -163,8 +169,35 @@ async function fetchPendingLots() {
   }
 }
 
-function toggleExpand(lotId: string) {
-  expandedLotId.value = expandedLotId.value === lotId ? null : lotId
+const loadingDetail = ref<string | null>(null)
+
+async function toggleExpand(lotId: string) {
+  if (expandedLotId.value === lotId) {
+    expandedLotId.value = null
+    return
+  }
+  expandedLotId.value = lotId
+
+  // Fetch full lot details if not already loaded
+  const lot = pendingLots.value.find((l) => l.id === lotId)
+  if (lot && !lot.detailLoaded) {
+    loadingDetail.value = lotId
+    try {
+      const raw = await get<ApiResponse<RawLotResponse> | RawLotResponse>(`/lots/${lotId}`)
+      const detail: RawLotResponse = (raw as ApiResponse<RawLotResponse>)?.data ?? (raw as RawLotResponse)
+      const enriched = normalizeLot(detail, true)
+      // Preserve resolved seller name and category name from the list
+      pendingLots.value = pendingLots.value.map((l) =>
+        l.id === lotId
+          ? { ...enriched, sellerName: sellerNameCache.get(l.sellerId) ?? enriched.sellerName, category: categoryNameCache.get(l.categoryId) ?? enriched.category }
+          : l,
+      )
+    } catch {
+      // Detail fetch failed — keep what we have from the summary
+    } finally {
+      loadingDetail.value = null
+    }
+  }
 }
 
 async function approveLot(lotId: string) {
@@ -366,7 +399,7 @@ function formatDate(dateStr: string): string {
               {{ lot.title }}
             </h3>
             <p class="text-xs text-gray-500">
-              {{ lot.category }} &middot; {{ lot.sellerName }} &middot; {{ lot.location.city }}, {{ lot.location.country }}
+              <template v-if="lot.brand">{{ lot.brand }} &middot; </template>{{ lot.category }} &middot; {{ lot.sellerName }} &middot; {{ lot.location.city }}, {{ lot.location.country }}
             </p>
             <p class="text-xs text-gray-400">
               Submitted {{ formatDate(lot.submittedAt) }}
@@ -423,79 +456,136 @@ function formatDate(dateStr: string): string {
           v-if="expandedLotId === lot.id"
           class="border-t border-gray-100 bg-gray-50 p-4"
         >
-          <div class="grid gap-4 md:grid-cols-2">
-            <div>
-              <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
-                Description
-              </h4>
-              <p class="text-sm text-gray-700">
-                {{ lot.description }}
-              </p>
-            </div>
-            <div>
-              <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
-                Details
-              </h4>
-              <dl class="space-y-1 text-sm">
-                <div class="flex justify-between">
-                  <dt class="text-gray-500">
-                    Starting Bid
-                  </dt>
-                  <dd class="font-medium text-gray-900">
-                    {{ formatCurrency(lot.startingBid) }}
-                  </dd>
-                </div>
-                <div class="flex justify-between">
-                  <dt class="text-gray-500">
-                    Reserve Price
-                  </dt>
-                  <dd class="font-medium text-gray-900">
-                    {{ formatCurrency(lot.reservePrice) }}
-                  </dd>
-                </div>
-                <div class="flex justify-between">
-                  <dt class="text-gray-500">
-                    Images
-                  </dt>
-                  <dd class="font-medium text-gray-900">
-                    {{ lot.imageCount }}
-                  </dd>
-                </div>
-                <div class="flex justify-between">
-                  <dt class="text-gray-500">
-                    Seller
-                  </dt>
-                  <dd>
-                    <router-link
-                      :to="`/users/${lot.sellerId}`"
-                      class="font-medium text-primary-600 hover:text-primary-700"
-                    >
-                      {{ lot.sellerName }}
-                    </router-link>
-                  </dd>
-                </div>
-              </dl>
-            </div>
+          <!-- Loading indicator while fetching full details -->
+          <div
+            v-if="loadingDetail === lot.id"
+            class="flex items-center gap-2 py-4 text-sm text-gray-500"
+          >
+            <svg
+              class="h-4 w-4 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            Loading details...
           </div>
 
-          <!-- Specifications -->
-          <div
-            v-if="Object.keys(lot.specifications).length > 0"
-            class="mt-4"
-          >
-            <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
-              Specifications
-            </h4>
-            <div class="flex flex-wrap gap-2">
-              <span
-                v-for="(value, key) in lot.specifications"
-                :key="String(key)"
-                class="rounded-lg bg-white px-3 py-1 text-xs text-gray-700 border border-gray-200"
-              >
-                <span class="font-medium">{{ key }}:</span> {{ value }}
-              </span>
+          <template v-else>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div>
+                <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
+                  Description
+                </h4>
+                <p
+                  v-if="lot.description"
+                  class="whitespace-pre-line text-sm text-gray-700"
+                >
+                  {{ lot.description }}
+                </p>
+                <p
+                  v-else
+                  class="text-sm italic text-gray-400"
+                >
+                  No description provided
+                </p>
+              </div>
+              <div>
+                <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
+                  Details
+                </h4>
+                <dl class="space-y-1 text-sm">
+                  <div
+                    v-if="lot.brand"
+                    class="flex justify-between"
+                  >
+                    <dt class="text-gray-500">
+                      Brand
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ lot.brand }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Starting Bid
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ formatCurrency(lot.startingBid) }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Reserve Price
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ formatCurrency(lot.reservePrice) }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Location
+                    </dt>
+                    <dd class="font-medium text-gray-900 text-right">
+                      <span v-if="lot.location.address">{{ lot.location.address }}, </span>{{ lot.location.city }}, {{ lot.location.country }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Images
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ lot.imageCount }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Seller
+                    </dt>
+                    <dd>
+                      <router-link
+                        :to="`/users/${lot.sellerId}`"
+                        class="font-medium text-primary-600 hover:text-primary-700"
+                      >
+                        {{ lot.sellerName }}
+                      </router-link>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             </div>
-          </div>
+
+            <!-- Specifications -->
+            <div
+              v-if="Object.keys(lot.specifications).length > 0"
+              class="mt-4"
+            >
+              <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
+                Specifications
+              </h4>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  v-for="(value, key) in lot.specifications"
+                  :key="String(key)"
+                  class="rounded-lg bg-white px-3 py-1 text-xs text-gray-700 border border-gray-200"
+                >
+                  <span class="font-medium">{{ key }}:</span> {{ value }}
+                </span>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </div>

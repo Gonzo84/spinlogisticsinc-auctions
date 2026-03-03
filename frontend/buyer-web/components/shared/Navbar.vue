@@ -247,12 +247,21 @@
         <SearchBar />
       </div>
     </div>
+    <!-- Invisible backdrop: closes all dropdowns when clicking outside the header -->
+    <Teleport to="body">
+      <div
+        v-if="anyDropdownOpen"
+        class="fixed inset-0 z-[35]"
+        @click="closeAllDropdowns"
+      />
+    </Teleport>
   </header>
 </template>
 
 <script setup lang="ts">
 import { formatTimeAgo as getTimeAgo } from '~/utils/format'
 
+const route = useRoute()
 const { t, locale, setLocale } = useI18n()
 const { isAuthenticated, user, fullName, initials, login, logout } = useAuth()
 const { unreadCount, hasUnread, recentNotifications, getNotifications, markAsRead, markAllAsRead } = useNotifications()
@@ -342,28 +351,16 @@ function formatTimeAgo(dateStr: string): string {
   return t(key, { value })
 }
 
-// Close dropdowns on outside click
-function handleClickOutside(event: MouseEvent) {
-  const target = event.target as Node
-  if (langDropdownRef.value && !langDropdownRef.value.contains(target)) {
-    showLangDropdown.value = false
-  }
-  if (notifDropdownRef.value && !notifDropdownRef.value.contains(target)) {
-    showNotifications.value = false
-  }
-  if (userDropdownRef.value && !userDropdownRef.value.contains(target)) {
-    showUserDropdown.value = false
-  }
-}
+const anyDropdownOpen = computed(() => showLangDropdown.value || showNotifications.value || showUserDropdown.value)
+
+// Close dropdowns on route navigation
+watch(() => route.fullPath, () => {
+  closeAllDropdowns()
+})
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
   if (isAuthenticated.value) {
     getNotifications()
   }
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
 })
 </script>

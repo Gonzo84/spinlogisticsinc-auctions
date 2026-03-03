@@ -119,7 +119,7 @@ async function onLotSelected() {
       id: lot.id ?? summary.id,
       title: lot.title ?? summary.title,
       brand: lot.brand ?? summary.brand,
-      sellerId: lot.sellerId ?? '',
+      sellerId: lot.sellerId ?? summary.sellerId,
       startingBid: lot.startingBid ?? summary.startingBid,
       locationCountry: lot.locationCountry ?? summary.locationCountry,
       locationCity: lot.locationCity ?? summary.locationCity,
@@ -154,14 +154,25 @@ async function handleSubmit() {
   }
   if (!selectedLot.value) { submitting.value = false; return }
 
+  // Ensure required lot fields are present — fallback to summary data if detail fetch missed them
+  const lot = selectedLot.value
+  const sellerId = lot.sellerId || approvedLots.value.find(l => l.id === lot.id)?.sellerId || ''
+  const startingBid = lot.startingBid || approvedLots.value.find(l => l.id === lot.id)?.startingBid || 1
+
+  if (!sellerId) {
+    errors.value = { lot: 'Could not determine seller for this lot. Please re-select the lot.' }
+    submitting.value = false
+    return
+  }
+
   const payload: AuctionCreatePayload = {
-    lotId: selectedLot.value.id,
+    lotId: lot.id,
     brand: form.brand,
     startTime: form.startTime!.toISOString(),
     endTime: form.endTime!.toISOString(),
-    startingBid: selectedLot.value.startingBid,
+    startingBid,
     currency: form.currency,
-    sellerId: selectedLot.value.sellerId,
+    sellerId,
   }
 
   try {

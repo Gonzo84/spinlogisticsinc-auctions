@@ -32,16 +32,19 @@ export interface PendingLot {
   id: string
   title: string
   description: string
+  brand: string
   category: string
+  categoryId: string
   sellerName: string
   sellerId: string
   startingBid: number
   reservePrice: number | null
-  location: { city: string; country: string }
+  location: { city: string; country: string; address?: string }
   imageCount: number
   primaryImage: string | null
   specifications: Record<string, string>
   submittedAt: string
+  detailLoaded: boolean
 }
 
 export interface ApprovedLot {

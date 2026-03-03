@@ -194,39 +194,36 @@ export function useLots() {
   }
 
   async function fetchStatusCounts(): Promise<Record<LotStatus, number>> {
+    // Always use catalog-service as the authoritative source for lot status
+    // counts. The seller-service's seller_lots projection may have stale data
+    // if NATS event sync is incomplete.
     try {
-      const raw = await get<
-        ApiResponse<Record<string, number>> | Record<string, number>
-      >('/sellers/me/lots/status-counts')
-      const data = unwrapApiResponse<Record<string, number>>(raw)
-      // Normalize backend keys (uppercase) to frontend LotStatus (lowercase)
-      const counts: Record<LotStatus, number> = {
-        draft: 0,
-        pending_review: 0,
-        approved: 0,
-        active: 0,
-        sold: 0,
-        unsold: 0,
-        rejected: 0,
-        withdrawn: 0,
-      }
-      for (const [key, value] of Object.entries(data)) {
-        const normalizedKey = key.toLowerCase() as LotStatus
-        if (normalizedKey in counts) {
-          counts[normalizedKey] = value
-        }
-      }
-      // If seller-service returned all zeros, fall back to catalog-service counts
-      const total = Object.values(counts).reduce((a, b) => a + b, 0)
-      if (total === 0) {
-        return await fetchStatusCountsFromCatalog()
-      }
-      statusCounts.value = counts
-      return counts
+      return await fetchStatusCountsFromCatalog()
     } catch {
-      // If seller-service endpoint fails, fall back to catalog-service
+      // Fallback to seller-service if catalog-based counting fails
       try {
-        return await fetchStatusCountsFromCatalog()
+        const raw = await get<
+          ApiResponse<Record<string, number>> | Record<string, number>
+        >('/sellers/me/lots/status-counts')
+        const data = unwrapApiResponse<Record<string, number>>(raw)
+        const counts: Record<LotStatus, number> = {
+          draft: 0,
+          pending_review: 0,
+          approved: 0,
+          active: 0,
+          sold: 0,
+          unsold: 0,
+          rejected: 0,
+          withdrawn: 0,
+        }
+        for (const [key, value] of Object.entries(data)) {
+          const normalizedKey = key.toLowerCase() as LotStatus
+          if (normalizedKey in counts) {
+            counts[normalizedKey] = value
+          }
+        }
+        statusCounts.value = counts
+        return counts
       } catch {
         error.value = null
         return statusCounts.value

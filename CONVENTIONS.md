@@ -111,7 +111,6 @@ Use these terms consistently across all services:
 | Creation timestamp | `createdAt` | `created`, `createDate`, `timestamp` |
 | Update timestamp | `updatedAt` | `modified`, `lastModified` |
 | Authenticated user | `userId` / `subjectId` | `user`, `principal`, `sub` |
-| Multi-brand scope | `brand` | `tenant`, `org`, `workspace`, `namespace` |
 | Auction lot | `lot` | `item`, `product`, `listing` |
 | Bid amount | `amount` | `price`, `value`, `bidPrice` |
 | Currency | `currency` (ISO 4217) | `curr`, `currencyCode` |
@@ -160,6 +159,10 @@ Every component uses `<script setup lang="ts">`. No Options API. No `defineCompo
 **Vite SPAs (seller-portal, admin-dashboard):**
 
 ```vue
+<template>
+  <!-- template -->
+</template>
+
 <script setup lang="ts">
 // 1. Imports (Vue core -> third-party -> internal @/ paths)
 // 2. Props & emits (defineProps, defineEmits, defineModel)
@@ -169,10 +172,6 @@ Every component uses `<script setup lang="ts">`. No Options API. No `defineCompo
 // 6. Lifecycle hooks (onMounted, onUnmounted)
 // 7. defineExpose (if needed)
 </script>
-
-<template>
-  <!-- template -->
-</template>
 
 <style scoped>
 /* styles */
@@ -1049,7 +1048,7 @@ Default stream config:
 
 ### 10.3 Event Schema
 
-All domain events extend `BaseEvent` from `shared/nats-events` with fields: `eventId` (UUIDv7), `eventType` (dot-notation, e.g. `"auction.bid.placed"`), `aggregateId`, `aggregateType`, `brand`, `timestamp` (Instant), `version` (monotonic), `metadata` (optional trace context). Jackson polymorphic deserialization via `@JsonTypeInfo` on `eventType` field.
+All domain events extend `BaseEvent` from `shared/nats-events` with fields: `eventId` (UUIDv7), `eventType` (dot-notation, e.g. `"auction.bid.placed"`), `aggregateId`, `aggregateType`, `timestamp` (Instant), `version` (monotonic), `metadata` (optional trace context). Jackson polymorphic deserialization via `@JsonTypeInfo` on `eventType` field.
 
 ### 10.4 Event Rules
 

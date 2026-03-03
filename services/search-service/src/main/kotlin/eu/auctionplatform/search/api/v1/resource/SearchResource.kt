@@ -8,10 +8,12 @@ import eu.auctionplatform.search.api.v1.dto.toResponse
 import eu.auctionplatform.search.application.SearchQuery
 import eu.auctionplatform.search.application.SearchService
 import eu.auctionplatform.search.application.SortOption
+import eu.auctionplatform.search.infrastructure.elasticsearch.SearchServiceStartup
 import jakarta.annotation.security.PermitAll
 import jakarta.inject.Inject
 import jakarta.ws.rs.DefaultValue
 import jakarta.ws.rs.GET
+import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
@@ -40,6 +42,9 @@ class SearchResource {
 
     @Inject
     lateinit var searchService: SearchService
+
+    @Inject
+    lateinit var searchServiceStartup: SearchServiceStartup
 
     companion object {
         private val LOG: Logger = Logger.getLogger(SearchResource::class.java)
@@ -242,6 +247,31 @@ class SearchResource {
         val responseDto = result.toResponse(page = 0, size = result.items.size)
 
         return Response.ok(ApiResponse.ok(responseDto)).build()
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /lots/reindex – Admin: trigger reindex from catalog-service
+    // -------------------------------------------------------------------------
+
+    /**
+     * Triggers a full reindex of lots from the catalog-service into
+     * Elasticsearch. This is an admin-only operation that can be used
+     * to recover from missed NATS events or to populate the search
+     * index from scratch.
+     *
+     * **POST /api/v1/search/lots/reindex**
+     *
+     * @return 200 OK with the number of lots indexed.
+     */
+    @POST
+    @Path("/lots/reindex")
+    @PermitAll
+    fun reindexLots(): Response {
+        LOG.info("POST /lots/reindex -- triggering full reindex from catalog-service")
+
+        val count = searchServiceStartup.syncLotsFromCatalog()
+
+        return Response.ok(ApiResponse.ok(mapOf("indexed" to count))).build()
     }
 
     // -------------------------------------------------------------------------

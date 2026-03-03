@@ -129,6 +129,13 @@ elasticsearch:
     number-of-shards: ${ES_SHARDS:1}
     number-of-replicas: ${ES_REPLICAS:0}
 
+# -----------------------------------------------------------------------------
+# Search service – catalog sync
+# -----------------------------------------------------------------------------
+search:
+  catalog-service:
+    url: ${CATALOG_SERVICE_URL:http://localhost:8082}
+
 # =============================================================================
 # Profile: dev
 # =============================================================================
@@ -194,6 +201,9 @@ elasticsearch:
     index:
       number-of-shards: 2
       number-of-replicas: 1
+  search:
+    catalog-service:
+      url: ${CATALOG_SERVICE_URL:http://catalog-service:8082}
 
 # =============================================================================
 # Profile: prod
@@ -231,3 +241,6 @@ elasticsearch:
     index:
       number-of-shards: 5
       number-of-replicas: 2
+  search:
+    catalog-service:
+      url: ${CATALOG_SERVICE_URL:http://catalog-service:8082}

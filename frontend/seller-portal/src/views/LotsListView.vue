@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Select from 'primevue/select'
@@ -7,6 +8,8 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useLots } from '@/composables/useLots'
 import type { LotStatus, Lot, LotsFilter } from '@/types'
+
+const router = useRouter()
 
 const {
   lots,
@@ -354,36 +357,24 @@ function goToPage(page: number) {
       <Column header="Actions" headerStyle="text-align: right">
         <template #body="{ data }">
           <div class="flex items-center justify-end gap-1">
-            <router-link
-              :to="`/lots/${data.id}`"
-              custom
-              v-slot="{ navigate }"
-            >
-              <Button
-                text
-                icon="pi pi-eye"
-                size="small"
-                title="View details"
-                aria-label="View details"
-                @click="navigate"
-              />
-            </router-link>
+            <Button
+              text
+              icon="pi pi-eye"
+              size="small"
+              title="View details"
+              aria-label="View details"
+              @click="router.push(`/lots/${data.id}`)"
+            />
 
-            <router-link
-              v-if="data.status === 'draft'"
-              :to="`/lots/${data.id}/edit`"
-              custom
-              v-slot="{ navigate }"
-            >
-              <Button
-                text
-                icon="pi pi-pencil"
-                size="small"
-                title="Edit"
-                aria-label="Edit"
-                @click="navigate"
-              />
-            </router-link>
+            <Button
+              v-if="data.status === 'draft' || data.status === 'pending_review'"
+              text
+              icon="pi pi-pencil"
+              size="small"
+              title="Edit"
+              aria-label="Edit"
+              @click="router.push(`/lots/${data.id}/edit`)"
+            />
 
             <Button
               v-if="data.status === 'draft'"

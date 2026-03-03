@@ -174,17 +174,20 @@ class CatalogEventSellerConsumer @Inject constructor(
     }
 
     /**
-     * Handles `catalog.lot.status_changed` events by updating the status
+     * Handles `catalog.lot.status.changed` events by updating the status
      * in the seller_lots projection table.
      *
-     * Expected payload fields (from [LotStatusChangedEvent]):
+     * Expected payload fields (from catalog-service publishLotEvent):
      * - `lotId` -- lot whose status changed
-     * - `newStatus` -- new lifecycle status
+     * - `status` -- new lifecycle status
      */
     private fun handleLotStatusChanged(payload: String) {
         val node = JsonMapper.instance.readTree(payload)
         val lotIdStr = node.requiredText("lotId")
-        val newStatus = node.requiredText("newStatus")
+        // catalog-service publishes the field as "status", not "newStatus"
+        val newStatus = node.optionalText("status")
+            ?: node.optionalText("newStatus")
+            ?: throw IllegalArgumentException("Required field 'status' missing from catalog event payload")
 
         val lotId = UUID.fromString(lotIdStr)
 
