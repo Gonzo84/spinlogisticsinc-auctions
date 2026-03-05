@@ -381,51 +381,53 @@ class LotService {
      * @return A pair of the lot list and the total count matching the filter.
      */
     fun listLots(filter: LotListFilter): Pair<List<Lot>, Long> {
+        val sort = lotRepository.buildSort(filter.sortBy, filter.sortDir)
+
         return when {
             filter.sellerId != null -> {
-                val lots = lotRepository.findBySellerId(filter.sellerId, filter.page, filter.pageSize)
+                val lots = lotRepository.findBySellerId(filter.sellerId, sort, filter.page, filter.pageSize)
                     .map { it.toDomain() }
                 val total = lotRepository.countBySellerId(filter.sellerId)
                 Pair(lots, total)
             }
             filter.auctionId != null -> {
-                val lots = lotRepository.findByAuctionId(filter.auctionId, filter.page, filter.pageSize)
+                val lots = lotRepository.findByAuctionId(filter.auctionId, sort, filter.page, filter.pageSize)
                     .map { it.toDomain() }
                 val total = lotRepository.countByAuctionId(filter.auctionId)
                 Pair(lots, total)
             }
             filter.categoryId != null -> {
-                val lots = lotRepository.findByCategoryId(filter.categoryId, filter.page, filter.pageSize)
+                val lots = lotRepository.findByCategoryId(filter.categoryId, sort, filter.page, filter.pageSize)
                     .map { it.toDomain() }
                 val total = lotRepository.countByCategoryId(filter.categoryId)
                 Pair(lots, total)
             }
             filter.brand != null -> {
-                val lots = lotRepository.findByBrand(filter.brand, filter.page, filter.pageSize)
+                val lots = lotRepository.findByBrand(filter.brand, sort, filter.page, filter.pageSize)
                     .map { it.toDomain() }
                 val total = lotRepository.countByBrand(filter.brand)
                 Pair(lots, total)
             }
             filter.status != null -> {
-                val lots = lotRepository.findByStatus(filter.status, filter.page, filter.pageSize)
+                val lots = lotRepository.findByStatus(filter.status, sort, filter.page, filter.pageSize)
                     .map { it.toDomain() }
                 val total = lotRepository.countByStatus(filter.status)
                 Pair(lots, total)
             }
             filter.country != null -> {
-                val lots = lotRepository.findByCountry(filter.country, null, filter.page, filter.pageSize)
+                val lots = lotRepository.findByCountry(filter.country, null, sort, filter.page, filter.pageSize)
                     .map { it.toDomain() }
                 val total = lotRepository.countByCountry(filter.country)
                 Pair(lots, total)
             }
             !filter.search.isNullOrBlank() -> {
-                val lots = lotRepository.findBySearch(filter.search, filter.page, filter.pageSize)
+                val lots = lotRepository.findBySearch(filter.search, sort, filter.page, filter.pageSize)
                     .map { it.toDomain() }
                 val total = lotRepository.countBySearch(filter.search)
                 Pair(lots, total)
             }
             else -> {
-                val lots = lotRepository.findAll()
+                val lots = lotRepository.findAll(sort)
                     .page(io.quarkus.panache.common.Page.of(filter.page, filter.pageSize))
                     .list()
                     .map { it.toDomain() }

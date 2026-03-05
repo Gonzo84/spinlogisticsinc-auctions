@@ -16,6 +16,27 @@ import java.util.UUID
 @ApplicationScoped
 class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
 
+    companion object {
+        /** Allowed sort field names (whitelist to prevent SQL injection). */
+        private val ALLOWED_SORT_FIELDS = setOf("createdAt", "title", "startingBid", "updatedAt")
+    }
+
+    /**
+     * Builds a [Sort] from optional sort parameters.
+     *
+     * Only allows whitelisted field names to prevent SQL injection.
+     * Defaults to `createdAt` descending when no valid sort is provided.
+     *
+     * @param sortBy  The field name to sort by (must be in [ALLOWED_SORT_FIELDS]).
+     * @param sortDir The sort direction (`"asc"` or `"desc"`). Defaults to descending.
+     * @return A Panache [Sort] instance.
+     */
+    fun buildSort(sortBy: String?, sortDir: String?): Sort {
+        val field = if (sortBy != null && sortBy in ALLOWED_SORT_FIELDS) sortBy else "createdAt"
+        val direction = if (sortDir?.lowercase() == "asc") Sort.Direction.Ascending else Sort.Direction.Descending
+        return Sort.by(field, direction)
+    }
+
     /**
      * Returns lots for a given seller, ordered by creation time descending.
      *
@@ -35,15 +56,16 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
         list("auctionId = ?1 order by title asc", auctionId)
 
     /**
-     * Returns lots in a specific category with pagination.
+     * Returns lots in a specific category with pagination and sorting.
      *
      * @param categoryId The category identifier.
+     * @param sort       The sort order to apply.
      * @param page       The page to retrieve (0-based).
      * @param pageSize   The number of items per page.
      * @return List of lot entities in the category.
      */
-    fun findByCategoryId(categoryId: UUID, page: Int, pageSize: Int): List<LotEntity> =
-        find("categoryId = ?1 and status != ?2", Sort.descending("createdAt"), categoryId, LotStatus.WITHDRAWN)
+    fun findByCategoryId(categoryId: UUID, sort: Sort, page: Int, pageSize: Int): List<LotEntity> =
+        find("categoryId = ?1 and status != ?2", sort, categoryId, LotStatus.WITHDRAWN)
             .page(Page.of(page, pageSize))
             .list()
 
@@ -57,15 +79,16 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
         count("categoryId = ?1 and status != ?2", categoryId, LotStatus.WITHDRAWN)
 
     /**
-     * Returns lots with a given status, paginated.
+     * Returns lots with a given status, paginated and sorted.
      *
      * @param status   The lot status to filter by.
+     * @param sort     The sort order to apply.
      * @param page     The page to retrieve (0-based).
      * @param pageSize The number of items per page.
      * @return List of lot entities with the given status.
      */
-    fun findByStatus(status: LotStatus, page: Int, pageSize: Int): List<LotEntity> =
-        find("status", Sort.descending("createdAt"), status)
+    fun findByStatus(status: LotStatus, sort: Sort, page: Int, pageSize: Int): List<LotEntity> =
+        find("status", sort, status)
             .page(Page.of(page, pageSize))
             .list()
 
@@ -76,15 +99,16 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
         count("status", status)
 
     /**
-     * Returns lots matching a brand, with pagination.
+     * Returns lots matching a brand, with pagination and sorting.
      *
      * @param brand    The brand/tenant code.
+     * @param sort     The sort order to apply.
      * @param page     The page to retrieve (0-based).
      * @param pageSize The number of items per page.
      * @return List of lot entities for the brand.
      */
-    fun findByBrand(brand: String, page: Int, pageSize: Int): List<LotEntity> =
-        find("brand = ?1 and status != ?2", Sort.descending("createdAt"), brand, LotStatus.WITHDRAWN)
+    fun findByBrand(brand: String, sort: Sort, page: Int, pageSize: Int): List<LotEntity> =
+        find("brand = ?1 and status != ?2", sort, brand, LotStatus.WITHDRAWN)
             .page(Page.of(page, pageSize))
             .list()
 
@@ -95,21 +119,22 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
         count("brand = ?1 and status != ?2", brand, LotStatus.WITHDRAWN)
 
     /**
-     * Returns lots matching a country and optional status filter, with pagination.
+     * Returns lots matching a country and optional status filter, with pagination and sorting.
      *
      * @param country  ISO 3166-1 alpha-2 country code.
      * @param status   Optional status filter (null = all non-withdrawn).
+     * @param sort     The sort order to apply.
      * @param page     The page to retrieve (0-based).
      * @param pageSize The number of items per page.
      * @return List of lot entities matching the criteria.
      */
-    fun findByCountry(country: String, status: LotStatus?, page: Int, pageSize: Int): List<LotEntity> {
+    fun findByCountry(country: String, status: LotStatus?, sort: Sort, page: Int, pageSize: Int): List<LotEntity> {
         return if (status != null) {
-            find("locationCountry = ?1 and status = ?2", Sort.descending("createdAt"), country, status)
+            find("locationCountry = ?1 and status = ?2", sort, country, status)
                 .page(Page.of(page, pageSize))
                 .list()
         } else {
-            find("locationCountry = ?1 and status != ?2", Sort.descending("createdAt"), country, LotStatus.WITHDRAWN)
+            find("locationCountry = ?1 and status != ?2", sort, country, LotStatus.WITHDRAWN)
                 .page(Page.of(page, pageSize))
                 .list()
         }
@@ -125,15 +150,16 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
         count("locationCountry = ?1 and status != ?2", country, LotStatus.WITHDRAWN)
 
     /**
-     * Returns lots for a given seller with pagination, ordered by creation time descending.
+     * Returns lots for a given seller with pagination and sorting.
      *
      * @param sellerId The seller's user identifier.
+     * @param sort     The sort order to apply.
      * @param page     The page to retrieve (0-based).
      * @param pageSize The number of items per page.
      * @return List of lot entities owned by the seller.
      */
-    fun findBySellerId(sellerId: UUID, page: Int, pageSize: Int): List<LotEntity> =
-        find("sellerId = ?1", Sort.descending("createdAt"), sellerId)
+    fun findBySellerId(sellerId: UUID, sort: Sort, page: Int, pageSize: Int): List<LotEntity> =
+        find("sellerId = ?1", sort, sellerId)
             .page(Page.of(page, pageSize))
             .list()
 
@@ -147,15 +173,16 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
         count("sellerId", sellerId)
 
     /**
-     * Returns lots assigned to a specific auction event with pagination.
+     * Returns lots assigned to a specific auction event with pagination and sorting.
      *
      * @param auctionId The auction event identifier.
+     * @param sort      The sort order to apply.
      * @param page      The page to retrieve (0-based).
      * @param pageSize  The number of items per page.
      * @return List of lot entities in the auction.
      */
-    fun findByAuctionId(auctionId: UUID, page: Int, pageSize: Int): List<LotEntity> =
-        find("auctionId = ?1", Sort.ascending("title"), auctionId)
+    fun findByAuctionId(auctionId: UUID, sort: Sort, page: Int, pageSize: Int): List<LotEntity> =
+        find("auctionId = ?1", sort, auctionId)
             .page(Page.of(page, pageSize))
             .list()
 
@@ -195,18 +222,19 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
     }
 
     /**
-     * Full-text search on title and description (case-insensitive) with pagination.
+     * Full-text search on title and description (case-insensitive) with pagination and sorting.
      *
      * @param searchTerm The search keyword.
+     * @param sort       The sort order to apply.
      * @param page       The page to retrieve (0-based).
      * @param pageSize   The number of items per page.
      * @return List of matching lot entities.
      */
-    fun findBySearch(searchTerm: String, page: Int, pageSize: Int): List<LotEntity> {
+    fun findBySearch(searchTerm: String, sort: Sort, page: Int, pageSize: Int): List<LotEntity> {
         val pattern = "%${searchTerm.lowercase()}%"
         return find(
             "status != ?1 and (lower(title) like ?2 or lower(description) like ?2)",
-            Sort.descending("createdAt"),
+            sort,
             LotStatus.WITHDRAWN,
             pattern
         )

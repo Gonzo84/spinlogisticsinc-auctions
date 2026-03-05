@@ -43,6 +43,8 @@ export interface AuctionFilters {
   dateTo: string
   page: number
   pageSize: number
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
 }
 
 export interface BidActivity {

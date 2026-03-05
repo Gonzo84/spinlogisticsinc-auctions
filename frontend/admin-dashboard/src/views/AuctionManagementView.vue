@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuctions } from '@/composables/useAuctions'
 import Tag from 'primevue/tag'
@@ -23,6 +23,27 @@ const statusOptions = [
 const router = useRouter()
 
 const { auctions, totalCount, loading, error, filters, fetchAuctions } = useAuctions()
+
+const sortField = ref('')
+const sortOrder = ref<1 | -1 | 0>(0)
+
+function onSort(event: { sortField?: string | ((item: unknown) => string); sortOrder?: number | null }) {
+  const field = typeof event.sortField === 'string' ? event.sortField : ''
+  sortField.value = field
+  sortOrder.value = (event.sortOrder ?? 0) as 1 | -1 | 0
+  const sortMap: Record<string, string> = {
+    title: 'title',
+    brand: 'brand',
+    lotCount: 'lotCount',
+    totalBids: 'totalBids',
+    startDate: 'startDate',
+    endDate: 'endDate',
+  }
+  filters.sortBy = sortMap[field] || field
+  filters.sortDir = (event.sortOrder ?? 0) === 1 ? 'asc' : 'desc'
+  filters.page = 1
+  fetchAuctions()
+}
 
 onMounted(() => {
   fetchAuctions()
@@ -150,7 +171,10 @@ function clearFilters() {
         :totalRecords="totalCount"
         :lazy="true"
         :first="(filters.page - 1) * filters.pageSize"
+        :sortField="sortField"
+        :sortOrder="sortOrder"
         @page="goToPage($event.page + 1)"
+        @sort="onSort"
         stripedRows
         removableSort
       >

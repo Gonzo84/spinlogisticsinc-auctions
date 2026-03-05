@@ -66,11 +66,14 @@ export function useAuctions() {
       const params: PaginationParams = {
         page: filters.page,
         pageSize: filters.pageSize,
+        size: filters.pageSize,
       }
-      if (filters.status) params.status = filters.status
+      if (filters.status) params.status = filters.status.toUpperCase()
       if (filters.brand) params.brand = filters.brand
       if (filters.dateFrom) params.dateFrom = filters.dateFrom
       if (filters.dateTo) params.dateTo = filters.dateTo
+      if (filters.sortBy) params.sortBy = filters.sortBy
+      if (filters.sortDir) params.sortDir = filters.sortDir
 
       const response = await get<PagedResponse<RawAuctionResponse>>('/auctions', { params })
       const items = response.items ?? []

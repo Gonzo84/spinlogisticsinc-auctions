@@ -46,7 +46,7 @@ export function useLots() {
       page: frontendPage - 1,
       pageSize: filters.pageSize ?? 20,
     }
-    if (filters.status) params.status = filters.status
+    if (filters.status) params.status = filters.status.toUpperCase()
     if (filters.search) params.search = filters.search
     if (filters.sortBy) params.sortBy = filters.sortBy
     if (filters.sortDir) params.sortDir = filters.sortDir

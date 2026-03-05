@@ -78,6 +78,8 @@ class LotResource {
         @QueryParam("sellerId") sellerId: UUID?,
         @QueryParam("auctionId") auctionId: UUID?,
         @QueryParam("search") search: String?,
+        @QueryParam("sortBy") sortBy: String?,
+        @QueryParam("sortDir") sortDir: String?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("pageSize") @DefaultValue("20") pageSize: Int
     ): Response {
@@ -89,6 +91,8 @@ class LotResource {
             sellerId = sellerId,
             auctionId = auctionId,
             search = search,
+            sortBy = sortBy,
+            sortDir = sortDir,
             page = page,
             pageSize = pageSize
         )

@@ -5,6 +5,7 @@ import { useAuctions, type AuctionCreatePayload } from '@/composables/useAuction
 import { useApi } from '@/composables/useApi'
 import type { ApprovedLot } from '@/types/lot'
 import type { ApiResponse, PagedResponse } from '@/types/api'
+import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import DatePicker from 'primevue/datepicker'
@@ -20,6 +21,7 @@ interface RawLotSummary {
 }
 
 const router = useRouter()
+const toast = useToast()
 const { createAuction, loading, error } = useAuctions()
 const { get } = useApi()
 
@@ -178,7 +180,12 @@ async function handleSubmit() {
   try {
     const auction = await createAuction(payload)
     if (auction) {
-      // Use path-based navigation as primary, with named route as fallback
+      toast.add({
+        severity: 'success',
+        summary: 'Auction Created',
+        detail: `Auction for "${selectedLot.value?.title}" has been created successfully.`,
+        life: 4000,
+      })
       await router.push('/auctions')
     }
   } catch {

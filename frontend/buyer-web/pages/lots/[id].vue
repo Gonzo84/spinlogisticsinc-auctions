@@ -303,6 +303,7 @@
 import type { Auction } from '~/types/auction'
 import { formatCurrency, formatDate } from '~/utils/format'
 import { getCountryFlag } from '~/utils/constants'
+import { unwrapApiResponse } from '~/utils/api-response'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -323,6 +324,7 @@ const { data: lot, pending, error } = await useAsyncData(
 onMounted(() => {
   if (lotId.value) {
     subscribeToAuction(lotId.value)
+    checkWatchlistStatus()
   }
 })
 
@@ -340,8 +342,33 @@ function openFullscreen() {
   isFullscreen.value = true
 }
 
-function toggleWatchlist() {
-  isWatched.value = !isWatched.value
+async function toggleWatchlist() {
+  const { $api } = useNuxtApp()
+  const api = $api as typeof $fetch
+  try {
+    if (isWatched.value) {
+      await api(`/users/me/watchlist/${lotId.value}`, { method: 'DELETE' })
+      isWatched.value = false
+    } else {
+      await api(`/users/me/watchlist/${lotId.value}`, { method: 'POST' })
+      isWatched.value = true
+    }
+  } catch {
+    // Silently fail - don't break the UX
+  }
+}
+
+async function checkWatchlistStatus() {
+  try {
+    const { $api } = useNuxtApp()
+    const api = $api as typeof $fetch
+    const raw = await api<Record<string, unknown>>('/users/me/watchlist')
+    const data = unwrapApiResponse(raw)
+    const items = Array.isArray(data.items) ? data.items : []
+    isWatched.value = items.some((item: Record<string, unknown>) => item.lotId === lotId.value)
+  } catch {
+    // Not logged in or error - leave as false
+  }
 }
 
 async function shareLot() {

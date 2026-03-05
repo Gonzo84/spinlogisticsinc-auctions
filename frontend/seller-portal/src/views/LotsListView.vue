@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Select from 'primevue/select'
@@ -10,6 +10,7 @@ import { useLots } from '@/composables/useLots'
 import type { LotStatus, Lot, LotsFilter } from '@/types'
 
 const router = useRouter()
+const route = useRoute()
 
 const {
   lots,
@@ -98,6 +99,7 @@ watch(searchQuery, () => {
 })
 
 onMounted(async () => {
+  if (route.query.search) searchQuery.value = route.query.search as string
   await Promise.all([fetchStatusCounts(), loadLots(), fetchCategories()])
 })
 

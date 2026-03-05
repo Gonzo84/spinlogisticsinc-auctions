@@ -78,7 +78,14 @@ onMounted(() => {
   fetchWatchlist()
 })
 
-function removeFromWatchlist(lotId: string) {
+async function removeFromWatchlist(lotId: string) {
+  try {
+    const { $api } = useNuxtApp()
+    const api = $api as typeof $fetch
+    await api(`/users/me/watchlist/${lotId}`, { method: 'DELETE' })
+  } catch {
+    // Continue with UI removal even if API fails
+  }
   watchlist.value = watchlist.value.filter((l) => l.id !== lotId)
 }
 
@@ -89,7 +96,29 @@ async function fetchWatchlist() {
     const api = $api as typeof $fetch
     const raw = await api<Record<string, unknown>>('/users/me/watchlist')
     const data = unwrapApiResponse(raw)
-    watchlist.value = (Array.isArray(data.items) ? data.items : []) as WatchlistLot[]
+    const items = (Array.isArray(data.items) ? data.items : []) as Array<{ lotId?: string; addedAt?: string }>
+
+    // Fetch lot details for each watchlist item
+    const lotDetails = await Promise.all(
+      items
+        .filter(item => item.lotId)
+        .map(async (item) => {
+          try {
+            const lotRaw = await api<Record<string, unknown>>(`/lots/${item.lotId}`)
+            const lot = unwrapApiResponse(lotRaw)
+            return {
+              id: (lot as Record<string, unknown>).id as string ?? item.lotId!,
+              title: (lot as Record<string, unknown>).title as string ?? '',
+              imageUrl: ((lot as Record<string, unknown>).primaryImageUrl as string) ?? ((lot as Record<string, unknown>).images as Array<{ url: string }> | undefined)?.[0]?.url ?? '',
+              startingBid: (lot as Record<string, unknown>).startingBid as number ?? 0,
+              location: `${(lot as Record<string, unknown>).locationCity ?? ''}, ${(lot as Record<string, unknown>).locationCountry ?? ''}`,
+            } satisfies WatchlistLot
+          } catch {
+            return null
+          }
+        })
+    )
+    watchlist.value = lotDetails.filter((l): l is WatchlistLot => l !== null)
   } catch {
     watchlist.value = []
   } finally {

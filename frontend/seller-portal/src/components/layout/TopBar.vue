@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useAuth } from '@/composables/useAuth'
 import { useNotifications } from '@/composables/useNotifications'
+
+const router = useRouter()
 
 const emit = defineEmits<{
   'toggle-sidebar': []
@@ -17,6 +20,7 @@ const {
   markAllAsRead,
 } = useNotifications()
 
+const searchQuery = ref('')
 const showProfileDropdown = ref(false)
 const showNotifications = ref(false)
 
@@ -86,9 +90,11 @@ function formatTimeAgo(dateStr: string): string {
           />
         </svg>
         <input
+          v-model="searchQuery"
           type="text"
           placeholder="Search lots, settlements..."
           class="input pl-10"
+          @keydown.enter="router.push({ path: '/lots', query: { search: searchQuery } })"
         >
       </div>
     </div>

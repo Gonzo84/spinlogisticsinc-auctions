@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useApi } from '@/composables/useApi'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import type { PendingLot } from '@/types/lot'
 import type { ApiResponse, PagedResponse } from '@/types/api'
 import Dialog from 'primevue/dialog'
@@ -52,6 +54,8 @@ interface RawUserResponse {
 }
 
 const { get, post } = useApi()
+const confirm = useConfirm()
+const toast = useToast()
 
 const pendingLots = ref<PendingLot[]>([])
 const loading = ref(false)
@@ -200,7 +204,7 @@ async function toggleExpand(lotId: string) {
   }
 }
 
-async function approveLot(lotId: string) {
+async function doApproveLot(lotId: string) {
   try {
     await post(`/lots/${lotId}/approve`, {})
     // Optimistically remove from the list
@@ -220,6 +224,25 @@ async function approveLot(lotId: string) {
     // Re-fetch to ensure UI is in sync
     await fetchPendingLots()
   }
+}
+
+function approveLot(lotId: string) {
+  const lot = pendingLots.value.find((l) => l.id === lotId)
+  confirm.require({
+    message: `Are you sure you want to approve "${lot?.title ?? 'this lot'}"?`,
+    header: 'Approve Lot',
+    icon: 'pi pi-check-circle',
+    acceptClass: 'p-button-success',
+    accept: async () => {
+      await doApproveLot(lotId)
+      toast.add({
+        severity: 'success',
+        summary: 'Lot Approved',
+        detail: `"${lot?.title}" has been approved successfully.`,
+        life: 3000,
+      })
+    },
+  })
 }
 
 function openRejectDialog(lotId: string) {

@@ -115,7 +115,8 @@ class CategoryService {
                 message = "Category with id '$categoryId' not found."
             )
 
-        val lots = lotRepository.findByCategoryId(categoryId, page, pageSize).map { it.toDomain() }
+        val defaultSort = lotRepository.buildSort(null, null)
+        val lots = lotRepository.findByCategoryId(categoryId, defaultSort, page, pageSize).map { it.toDomain() }
         val total = lotRepository.countByCategoryId(categoryId)
 
         return Pair(lots, total)

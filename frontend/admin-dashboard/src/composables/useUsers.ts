@@ -64,8 +64,64 @@ export function useUsers() {
     loading.value = true
     error.value = null
     try {
-      currentUser.value = await get<UserDetail>(`/users/${id}`)
+      const raw = await get<ApiResponse<Record<string, unknown>> | UserDetail>(`/users/${id}`)
+      // Unwrap ApiResponse wrapper if present: { data: { user, company, deposit } }
+      const unwrapped = (raw as ApiResponse<Record<string, unknown>>)?.data ?? raw
+      const profile = unwrapped as Record<string, unknown>
+      const user = (profile?.user ?? profile) as Record<string, unknown>
+      currentUser.value = {
+        id: (user?.id as string) ?? id,
+        email: (user?.email as string) ?? '',
+        firstName: (user?.firstName as string) ?? '',
+        lastName: (user?.lastName as string) ?? '',
+        companyName: (user?.companyName as string) ?? ((profile?.company as Record<string, unknown>)?.name as string) ?? '',
+        accountType: (user?.accountType as UserDetail['accountType']) ?? 'buyer',
+        status: (user?.status as UserDetail['status']) ?? 'active',
+        kycStatus: (user?.kycStatus as UserDetail['kycStatus']) ?? 'not_started',
+        depositStatus: (user?.depositStatus as UserDetail['depositStatus']) ?? 'none',
+        registeredAt: (user?.registeredAt as string) ?? (user?.createdAt as string) ?? '',
+        lastLoginAt: (user?.lastLoginAt as string) ?? '',
+        phone: (user?.phone as string) ?? '',
+        vatNumber: (user?.vatNumber as string) ?? ((profile?.company as Record<string, unknown>)?.vatNumber as string) ?? '',
+        address: (user?.address as UserDetail['address']) ?? { street: '', city: '', postalCode: '', country: '' },
+        kycHistory: (user?.kycHistory as UserDetail['kycHistory']) ?? [],
+        bidHistory: (user?.bidHistory as UserDetail['bidHistory']) ?? [],
+        paymentHistory: (user?.paymentHistory as UserDetail['paymentHistory']) ?? [],
+      }
     } catch (err: unknown) {
+      // If 404, try looking up by Keycloak ID (sellerId from catalog is a Keycloak UUID)
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        try {
+          const raw = await get<ApiResponse<Record<string, unknown>>>(`/users/by-keycloak-id/${id}`)
+          // Response is ApiResponse<UserProfileResponse> with shape { data: { user, company, deposit } }
+          const data = raw?.data ?? raw
+          const profile = data as Record<string, unknown>
+          const user = (profile?.user ?? profile) as Record<string, unknown>
+          currentUser.value = {
+            id: (user?.id as string) ?? id,
+            email: (user?.email as string) ?? '',
+            firstName: (user?.firstName as string) ?? '',
+            lastName: (user?.lastName as string) ?? '',
+            companyName: (user?.companyName as string) ?? ((profile?.company as Record<string, unknown>)?.name as string) ?? '',
+            accountType: (user?.accountType as UserDetail['accountType']) ?? 'buyer',
+            status: (user?.status as UserDetail['status']) ?? 'active',
+            kycStatus: (user?.kycStatus as UserDetail['kycStatus']) ?? 'not_started',
+            depositStatus: (user?.depositStatus as UserDetail['depositStatus']) ?? 'none',
+            registeredAt: (user?.registeredAt as string) ?? (user?.createdAt as string) ?? '',
+            lastLoginAt: (user?.lastLoginAt as string) ?? '',
+            phone: (user?.phone as string) ?? '',
+            vatNumber: (user?.vatNumber as string) ?? ((profile?.company as Record<string, unknown>)?.vatNumber as string) ?? '',
+            address: (user?.address as UserDetail['address']) ?? { street: '', city: '', postalCode: '', country: '' },
+            kycHistory: (user?.kycHistory as UserDetail['kycHistory']) ?? [],
+            bidHistory: (user?.bidHistory as UserDetail['bidHistory']) ?? [],
+            paymentHistory: (user?.paymentHistory as UserDetail['paymentHistory']) ?? [],
+          }
+          return
+        } catch (fallbackErr: unknown) {
+          error.value = extractErrorMessage(fallbackErr, 'Failed to fetch user')
+          return
+        }
+      }
       error.value = extractErrorMessage(err, 'Failed to fetch user')
     } finally {
       loading.value = false
