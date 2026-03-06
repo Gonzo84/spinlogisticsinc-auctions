@@ -5,7 +5,6 @@ import { useLots } from '@/composables/useLots'
 import { useSettlements } from '@/composables/useSettlements'
 import { useAnalytics } from '@/composables/useAnalytics'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
-import Tag from 'primevue/tag'
 
 const { userName } = useAuth()
 const { statusCounts, fetchStatusCounts, fetchLots } = useLots()
@@ -54,19 +53,7 @@ function formatCurrency(value: number): string {
       <div class="kpi-card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-green-100 p-2">
-            <svg
-              class="h-5 w-5 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-              />
-            </svg>
+            <i class="pi pi-box text-green-600" style="font-size: 1.25rem" />
           </div>
           <span class="kpi-change-up">+3 this week</span>
         </div>
@@ -82,19 +69,7 @@ function formatCurrency(value: number): string {
       <div class="kpi-card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-blue-100 p-2">
-            <svg
-              class="h-5 w-5 text-blue-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-              />
-            </svg>
+            <i class="pi pi-chart-line text-blue-600" style="font-size: 1.25rem" />
           </div>
           <span class="kpi-change-up">+12%</span>
         </div>
@@ -110,19 +85,7 @@ function formatCurrency(value: number): string {
       <div class="kpi-card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-purple-100 p-2">
-            <svg
-              class="h-5 w-5 text-purple-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <i class="pi pi-check-circle text-purple-600" style="font-size: 1.25rem" />
           </div>
           <span class="kpi-change-up">+5 this month</span>
         </div>
@@ -138,19 +101,7 @@ function formatCurrency(value: number): string {
       <div class="kpi-card">
         <div class="flex items-center justify-between">
           <div class="rounded-lg bg-amber-100 p-2">
-            <svg
-              class="h-5 w-5 text-amber-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <i class="pi pi-dollar text-amber-600" style="font-size: 1.25rem" />
           </div>
           <span class="kpi-change-up">+8.3%</span>
         </div>
@@ -207,66 +158,22 @@ function formatCurrency(value: number): string {
                 activity.type === 'settlement' && 'bg-amber-100',
               ]"
             >
-              <!-- Bid icon -->
-              <svg
+              <i
                 v-if="activity.type === 'bid'"
-                class="h-4 w-4 text-blue-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-              <!-- Approved icon -->
-              <svg
+                class="pi pi-chart-line text-blue-600"
+              />
+              <i
                 v-else-if="activity.type === 'approved'"
-                class="h-4 w-4 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <!-- Sold icon -->
-              <svg
+                class="pi pi-check text-green-600"
+              />
+              <i
                 v-else-if="activity.type === 'sold'"
-                class="h-4 w-4 text-purple-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <!-- Settlement icon -->
-              <svg
+                class="pi pi-check-circle text-purple-600"
+              />
+              <i
                 v-else
-                class="h-4 w-4 text-amber-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 8v1"
-                />
-              </svg>
+                class="pi pi-dollar text-amber-600"
+              />
             </div>
             <div class="min-w-0 flex-1">
               <p class="text-sm font-medium text-gray-900">
@@ -297,19 +204,7 @@ function formatCurrency(value: number): string {
             class="card-hover flex flex-col items-center gap-2 p-4 text-center"
           >
             <div class="rounded-lg bg-primary-100 p-2">
-              <svg
-                class="h-5 w-5 text-primary-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+              <i class="pi pi-plus text-primary-600" style="font-size: 1.25rem" />
             </div>
             <span class="text-sm font-medium text-gray-700">Create Lot</span>
           </router-link>
@@ -319,19 +214,7 @@ function formatCurrency(value: number): string {
             class="card-hover flex flex-col items-center gap-2 p-4 text-center"
           >
             <div class="rounded-lg bg-green-100 p-2">
-              <svg
-                class="h-5 w-5 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                />
-              </svg>
+              <i class="pi pi-list text-green-600" style="font-size: 1.25rem" />
             </div>
             <span class="text-sm font-medium text-gray-700">View Lots</span>
           </router-link>
@@ -341,19 +224,7 @@ function formatCurrency(value: number): string {
             class="card-hover flex flex-col items-center gap-2 p-4 text-center"
           >
             <div class="rounded-lg bg-amber-100 p-2">
-              <svg
-                class="h-5 w-5 text-amber-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"
-                />
-              </svg>
+              <i class="pi pi-receipt text-amber-600" style="font-size: 1.25rem" />
             </div>
             <span class="text-sm font-medium text-gray-700">Settlements</span>
           </router-link>
@@ -363,19 +234,7 @@ function formatCurrency(value: number): string {
             class="card-hover flex flex-col items-center gap-2 p-4 text-center"
           >
             <div class="rounded-lg bg-emerald-100 p-2">
-              <svg
-                class="h-5 w-5 text-emerald-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <i class="pi pi-globe text-emerald-600" style="font-size: 1.25rem" />
             </div>
             <span class="text-sm font-medium text-gray-700">CO2 Report</span>
           </router-link>

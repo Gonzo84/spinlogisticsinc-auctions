@@ -79,30 +79,21 @@
               :class="viewMode === 'grid' ? 'bg-primary-50 text-primary' : 'text-gray-400 hover:text-gray-600'"
               @click="viewMode = 'grid'"
             >
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
+              <i class="pi pi-th-large text-xl" />
             </button>
             <button
               class="p-2 rounded-md transition-colors"
               :class="viewMode === 'list' ? 'bg-primary-50 text-primary' : 'text-gray-400 hover:text-gray-600'"
               @click="viewMode = 'list'"
             >
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-              </svg>
+              <i class="pi pi-list text-xl" />
             </button>
           </div>
         </div>
 
         <!-- Loading State -->
-        <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-          <div v-for="i in 6" :key="i" class="bg-white rounded-xl border p-4 animate-pulse">
-            <div class="aspect-[4/3] bg-gray-200 rounded-lg mb-4" />
-            <div class="h-4 bg-gray-200 rounded mb-2 w-3/4" />
-            <div class="h-4 bg-gray-200 rounded mb-4 w-1/2" />
-            <div class="h-6 bg-gray-200 rounded w-1/3" />
-          </div>
+        <div v-if="loading" class="flex items-center justify-center py-24">
+          <ProgressSpinner />
         </div>
 
         <!-- Results Grid -->
@@ -122,9 +113,7 @@
 
         <!-- No Results -->
         <div v-else class="text-center py-16">
-          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <i class="pi pi-search text-6xl text-gray-300 mb-4" />
           <h3 class="text-lg font-medium text-gray-900 mb-2">{{ $t('search.noResults') }}</h3>
           <p class="text-gray-500 mb-6">{{ $t('search.noResultsHint') }}</p>
           <Button :label="$t('search.clearFilters')" @click="clearAllFilters" />

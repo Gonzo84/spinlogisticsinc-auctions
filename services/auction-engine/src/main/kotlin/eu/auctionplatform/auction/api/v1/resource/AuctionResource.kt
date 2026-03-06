@@ -497,6 +497,7 @@ class AuctionResource @Inject constructor(
             lotId = model.lotId.toString(),
             brand = model.brand,
             status = model.status,
+            startTime = model.startTime,
             endTime = model.endTime,
             currentHighBid = model.currentHighBid,
             bidCount = model.bidCount,

@@ -9,26 +9,20 @@
             :disabled="carouselIndex === 0"
             @click="carouselIndex = Math.max(0, carouselIndex - 1)"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
+            <i class="pi pi-chevron-left w-5 h-5" />
           </button>
           <button
             class="p-2 rounded-full border hover:bg-white transition-colors"
             :disabled="carouselIndex >= auctions.length - 3"
             @click="carouselIndex = Math.min(auctions.length - 3, carouselIndex + 1)"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
+            <i class="pi pi-chevron-right w-5 h-5" />
           </button>
         </div>
       </div>
       <!-- Empty state when no featured auctions -->
       <div v-if="auctions.length === 0" class="text-center py-12">
-        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-        </svg>
+        <i class="pi pi-box text-6xl text-gray-300 mb-4" />
         <p class="text-gray-500 text-lg mb-2">No featured auctions right now</p>
         <p class="text-gray-400 text-sm">Check back soon for new lots going live.</p>
         <NuxtLink to="/search" class="inline-block mt-4 text-primary font-medium hover:underline">

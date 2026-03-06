@@ -3,9 +3,7 @@
     <!-- Header -->
     <div class="mb-8">
       <NuxtLink to="/my/purchases" class="text-sm text-gray-500 hover:text-primary flex items-center gap-1 mb-4">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
+        <i class="pi pi-chevron-left text-xs" />
         {{ $t('checkout.backToPurchases') }}
       </NuxtLink>
       <h1 class="text-2xl font-bold text-gray-900">{{ $t('checkout.title') }}</h1>
@@ -27,9 +25,7 @@
               'bg-gray-200 text-gray-500': index > currentStep,
             }"
           >
-            <svg v-if="index < currentStep" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
+            <i v-if="index < currentStep" class="pi pi-check text-sm" />
             <span v-else>{{ index + 1 }}</span>
           </div>
           <span
@@ -48,10 +44,8 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="bg-white border rounded-xl p-8 animate-pulse">
-      <div class="h-6 bg-gray-200 rounded w-1/3 mb-4" />
-      <div class="h-4 bg-gray-200 rounded w-2/3 mb-2" />
-      <div class="h-4 bg-gray-200 rounded w-1/2" />
+    <div v-if="loading" class="flex justify-center py-16">
+      <ProgressSpinner style="width: 50px; height: 50px" />
     </div>
 
     <!-- Step 1: Verify Purchase Details -->
@@ -305,9 +299,7 @@
           >
             <RadioButton v-model="paymentMethod" value="bank_transfer" />
             <div class="flex items-center gap-3">
-              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+              <i class="pi pi-building-columns text-xl text-gray-400" />
               <div>
                 <p class="text-sm font-medium">{{ $t('checkout.bankTransfer') }}</p>
                 <p class="text-xs text-gray-500">{{ $t('checkout.bankTransferHint') }}</p>
@@ -321,9 +313,7 @@
           >
             <RadioButton v-model="paymentMethod" value="ideal" />
             <div class="flex items-center gap-3">
-              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
+              <i class="pi pi-wallet text-xl text-gray-400" />
               <div>
                 <p class="text-sm font-medium">iDEAL</p>
                 <p class="text-xs text-gray-500">{{ $t('checkout.idealHint') }}</p>
@@ -337,9 +327,7 @@
           >
             <RadioButton v-model="paymentMethod" value="card" />
             <div class="flex items-center gap-3">
-              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
+              <i class="pi pi-credit-card text-xl text-gray-400" />
               <div>
                 <p class="text-sm font-medium">{{ $t('checkout.creditCard') }}</p>
                 <p class="text-xs text-gray-500">Visa, Mastercard, AMEX</p>
@@ -362,10 +350,7 @@
           @click="handlePayment"
         >
           <span v-if="processing" class="flex items-center gap-2">
-            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
+            <i class="pi pi-spinner pi-spin" />
             {{ $t('checkout.processing') }}
           </span>
           <span v-else>

@@ -2,8 +2,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
-import Button from 'primevue/button'
-import Tag from 'primevue/tag'
 import { useLots } from '@/composables/useLots'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 
@@ -14,6 +12,11 @@ const { currentLot, lotBids, loading, error, fetchLot, fetchLotBids, submitForRe
 
 const lotId = computed(() => route.params.id as string)
 const selectedImageIndex = ref(0)
+
+const breadcrumbItems = computed(() => [
+  { label: 'My Lots', route: '/lots' },
+  { label: lot.value?.title ?? 'Lot Detail' },
+])
 
 // Resolve category UUID to human-readable name whenever lot data changes
 function resolveCategoryName() {
@@ -164,28 +167,18 @@ function selectImage(index: number) {
   <div>
     <!-- Breadcrumb -->
     <div class="mb-6">
-      <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link
-          to="/lots"
-          class="hover:text-primary-600"
-        >
-          My Lots
-        </router-link>
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="text-gray-700">{{ lot?.title ?? 'Lot Detail' }}</span>
-      </div>
+      <Breadcrumb :model="breadcrumbItems">
+        <template #item="{ item }">
+          <router-link
+            v-if="item.route"
+            :to="item.route"
+            class="text-sm text-gray-500 hover:text-primary-600"
+          >
+            {{ item.label }}
+          </router-link>
+          <span v-else class="text-sm text-gray-700">{{ item.label }}</span>
+        </template>
+      </Breadcrumb>
     </div>
 
     <!-- Loading -->
@@ -193,43 +186,25 @@ function selectImage(index: number) {
       v-if="loading && !lot"
       class="py-12 text-center"
     >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+      <ProgressSpinner strokeWidth="4" style="width: 2rem; height: 2rem" />
     </div>
 
     <!-- Error -->
-    <div
+    <Message
       v-else-if="error && !lot"
-      class="card border-red-200 bg-red-50 py-8 text-center"
+      severity="error"
+      :closable="false"
+      class="mb-4"
     >
-      <p class="text-red-600">
-        {{ error }}
-      </p>
+      {{ error }}
       <Button
         label="Retry"
         severity="secondary"
         size="small"
-        class="mt-3"
+        class="ml-3"
         @click="fetchLot(lotId)"
       />
-    </div>
+    </Message>
 
     <!-- Lot content -->
     <div v-else-if="lot">
@@ -317,19 +292,7 @@ function selectImage(index: number) {
             class="card flex items-center justify-center py-12"
           >
             <div class="text-center">
-              <svg
-                class="mx-auto h-12 w-12 text-gray-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+              <i class="pi pi-image mx-auto text-gray-300" style="font-size: 3rem" />
               <p class="mt-2 text-sm text-gray-500">
                 No images uploaded
               </p>
@@ -448,24 +411,7 @@ function selectImage(index: number) {
                   Viewers
                 </dt>
                 <dd class="flex items-center gap-1 text-sm font-medium text-gray-900">
-                  <svg
-                    class="h-4 w-4 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    />
-                  </svg>
+                  <i class="pi pi-eye text-gray-400" />
                   {{ lot.viewerCount }}
                 </dd>
               </div>
@@ -509,24 +455,7 @@ function selectImage(index: number) {
               Location
             </h2>
             <div class="flex items-start gap-2">
-              <svg
-                class="mt-0.5 h-5 w-5 shrink-0 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+              <i class="pi pi-map-marker mt-0.5 shrink-0 text-gray-400" style="font-size: 1.25rem" />
               <div>
                 <p
                   v-if="lot.location.address"

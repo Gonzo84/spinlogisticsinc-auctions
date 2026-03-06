@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { useCo2 } from '@/composables/useCo2'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 
@@ -81,35 +78,17 @@ async function handleDownload(format: 'pdf' | 'csv') {
       v-if="loading && !summary"
       class="py-12 text-center"
     >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+      <ProgressSpinner strokeWidth="4" />
     </div>
 
     <!-- Error -->
-    <div
+    <Message
       v-else-if="error"
-      class="card border-red-200 bg-red-50 text-center"
+      severity="error"
+      :closable="false"
+      class="mb-4"
     >
-      <p class="text-sm text-red-600">
-        {{ error }}
-      </p>
+      {{ error }}
       <Button
         label="Retry"
         severity="secondary"
@@ -117,7 +96,7 @@ async function handleDownload(format: 'pdf' | 'csv') {
         class="mt-3"
         @click="fetchAll()"
       />
-    </div>
+    </Message>
 
     <template v-else-if="summary">
       <!-- Impact summary cards -->
@@ -125,19 +104,7 @@ async function handleDownload(format: 'pdf' | 'csv') {
         <div class="card bg-gradient-to-br from-emerald-50 to-white">
           <div class="flex items-center gap-3">
             <div class="rounded-xl bg-emerald-100 p-3">
-              <svg
-                class="h-6 w-6 text-emerald-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <i class="pi pi-globe text-2xl text-emerald-600" />
             </div>
             <div>
               <p class="text-2xl font-bold text-emerald-700">
@@ -153,19 +120,7 @@ async function handleDownload(format: 'pdf' | 'csv') {
         <div class="card bg-gradient-to-br from-green-50 to-white">
           <div class="flex items-center gap-3">
             <div class="rounded-xl bg-green-100 p-3">
-              <svg
-                class="h-6 w-6 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-                />
-              </svg>
+              <i class="pi pi-box text-2xl text-green-600" />
             </div>
             <div>
               <p class="text-2xl font-bold text-green-700">
@@ -181,19 +136,7 @@ async function handleDownload(format: 'pdf' | 'csv') {
         <div class="card bg-gradient-to-br from-teal-50 to-white">
           <div class="flex items-center gap-3">
             <div class="rounded-xl bg-teal-100 p-3">
-              <svg
-                class="h-6 w-6 text-teal-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"
-                />
-              </svg>
+              <i class="pi pi-sparkles text-2xl text-teal-600" />
             </div>
             <div>
               <p class="text-2xl font-bold text-teal-700">
@@ -209,19 +152,7 @@ async function handleDownload(format: 'pdf' | 'csv') {
         <div class="card bg-gradient-to-br from-cyan-50 to-white">
           <div class="flex items-center gap-3">
             <div class="rounded-xl bg-cyan-100 p-3">
-              <svg
-                class="h-6 w-6 text-cyan-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
+              <i class="pi pi-bolt text-2xl text-cyan-600" />
             </div>
             <div>
               <p class="text-2xl font-bold text-cyan-700">
@@ -266,12 +197,11 @@ async function handleDownload(format: 'pdf' | 'csv') {
                 <span class="text-sm font-medium text-gray-700">{{ cat.category }}</span>
                 <span class="text-sm font-bold text-emerald-700">{{ formatWeight(cat.co2AvoidedKg) }}</span>
               </div>
-              <div class="h-2 overflow-hidden rounded-full bg-gray-200">
-                <div
-                  class="h-full rounded-full bg-emerald-500"
-                  :style="{ width: cat.percentage + '%' }"
-                />
-              </div>
+              <ProgressBar
+                :value="cat.percentage"
+                :showValue="false"
+                class="[&_.p-progressbar-value]:!bg-emerald-500"
+              />
               <p class="mt-1 text-xs text-gray-500">
                 {{ cat.lotCount }} lots &middot; {{ cat.percentage.toFixed(1) }}%
               </p>

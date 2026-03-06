@@ -1,10 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import Button from 'primevue/button'
-import Tag from 'primevue/tag'
-import Select from 'primevue/select'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { useSettlements } from '@/composables/useSettlements'
 import type { SettlementStatus, SettlementFilter } from '@/types'
 
@@ -22,6 +17,11 @@ const {
 const filterStatus = ref<SettlementStatus | ''>('')
 const filterDateFrom = ref('')
 const filterDateTo = ref('')
+const dateFromModel = ref<Date | null>(null)
+const dateToModel = ref<Date | null>(null)
+
+watch(dateFromModel, (d) => { filterDateFrom.value = d ? d.toISOString().split('T')[0] : '' })
+watch(dateToModel, (d) => { filterDateTo.value = d ? d.toISOString().split('T')[0] : '' })
 
 const statusOptions = [
   { label: 'All statuses', value: '' },
@@ -157,36 +157,40 @@ async function handleDownloadInvoice(settlementId: string) {
         </div>
         <div class="flex-1">
           <label class="label">Date From</label>
-          <input
-            v-model="filterDateFrom"
-            type="date"
-            class="input"
-          >
+          <DatePicker
+            v-model="dateFromModel"
+            dateFormat="yy-mm-dd"
+            placeholder="Start date"
+            showIcon
+            class="w-full"
+          />
         </div>
         <div class="flex-1">
           <label class="label">Date To</label>
-          <input
-            v-model="filterDateTo"
-            type="date"
-            class="input"
-          >
+          <DatePicker
+            v-model="dateToModel"
+            dateFormat="yy-mm-dd"
+            placeholder="End date"
+            showIcon
+            class="w-full"
+          />
         </div>
         <Button
           label="Clear Filters"
           severity="secondary"
-          @click="filterStatus = ''; filterDateFrom = ''; filterDateTo = ''"
+          @click="filterStatus = ''; filterDateFrom = ''; filterDateTo = ''; dateFromModel = null; dateToModel = null"
         />
       </div>
     </div>
 
     <!-- Error -->
-    <div
+    <Message
       v-if="error"
-      class="card border-red-200 bg-red-50 text-center"
+      severity="error"
+      :closable="false"
+      class="mb-4"
     >
-      <p class="text-sm text-red-600">
-        {{ error }}
-      </p>
+      {{ error }}
       <Button
         label="Retry"
         severity="secondary"
@@ -194,7 +198,7 @@ async function handleDownloadInvoice(settlementId: string) {
         class="mt-3"
         @click="loadData()"
       />
-    </div>
+    </Message>
 
     <!-- Settlements table -->
     <DataTable
@@ -266,10 +270,10 @@ async function handleDownloadInvoice(settlementId: string) {
           <div class="text-right">
             <Button
               v-if="data.invoiceUrl"
+              v-tooltip="'Download invoice'"
               text
               icon="pi pi-download"
               size="small"
-              title="Download invoice"
               aria-label="Download invoice"
               class="text-primary-600"
               @click="handleDownloadInvoice(data.id)"
@@ -279,19 +283,7 @@ async function handleDownloadInvoice(settlementId: string) {
       </Column>
       <template #empty>
         <div class="py-12 text-center">
-          <svg
-            class="mx-auto h-12 w-12 text-gray-300"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <i class="pi pi-dollar mx-auto text-5xl text-gray-300" />
           <h3 class="mt-4 text-lg font-medium text-gray-900">
             No settlements found
           </h3>

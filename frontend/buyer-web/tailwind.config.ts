@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss'
 import sharedPreset from '@auction-platform/design-tokens/tailwind'
+import primeui from 'tailwindcss-primeui'
 
 export default <Config>{
   presets: [sharedPreset],
@@ -20,5 +21,5 @@ export default <Config>{
       },
     },
   },
-  plugins: [],
+  plugins: [primeui],
 }

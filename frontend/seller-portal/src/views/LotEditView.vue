@@ -14,6 +14,12 @@ const lotId = computed(() => route.params.id as string)
 const submitError = ref<string | null>(null)
 const initialDataReady = ref(false)
 
+const breadcrumbItems = computed(() => [
+  { label: 'My Lots', route: '/lots' },
+  { label: currentLot.value?.title ?? 'Lot', route: `/lots/${lotId.value}` },
+  { label: 'Edit' },
+])
+
 const initialData = computed<Partial<LotFormData> | undefined>(() => {
   if (!currentLot.value) return undefined
   const lot = currentLot.value
@@ -61,47 +67,18 @@ function handleCancel() {
   <div>
     <!-- Breadcrumb -->
     <div class="mb-6">
-      <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link
-          to="/lots"
-          class="hover:text-primary-600"
-        >
-          My Lots
-        </router-link>
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <router-link
-          :to="`/lots/${lotId}`"
-          class="hover:text-primary-600"
-        >
-          {{ currentLot?.title ?? 'Lot' }}
-        </router-link>
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="text-gray-700">Edit</span>
-      </div>
+      <Breadcrumb :model="breadcrumbItems">
+        <template #item="{ item }">
+          <router-link
+            v-if="item.route"
+            :to="item.route"
+            class="text-sm text-gray-500 hover:text-primary-600"
+          >
+            {{ item.label }}
+          </router-link>
+          <span v-else class="text-sm text-gray-700">{{ item.label }}</span>
+        </template>
+      </Breadcrumb>
       <h1 class="mt-2 text-2xl font-bold text-gray-900">
         Edit Lot
       </h1>
@@ -112,36 +89,18 @@ function handleCancel() {
       v-if="loading && !initialDataReady"
       class="py-12 text-center"
     >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+      <ProgressSpinner strokeWidth="4" style="width: 2rem; height: 2rem" />
     </div>
 
     <!-- Error banner -->
-    <div
+    <Message
       v-if="submitError"
-      class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4"
+      severity="error"
+      :closable="false"
+      class="mb-6"
     >
-      <p class="text-sm font-medium text-red-800">
-        {{ submitError }}
-      </p>
-    </div>
+      {{ submitError }}
+    </Message>
 
     <!-- Form -->
     <div

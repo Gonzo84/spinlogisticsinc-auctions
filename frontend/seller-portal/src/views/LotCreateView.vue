@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLots } from '@/composables/useLots'
 import type { LotFormData } from '@/types'
@@ -10,6 +10,11 @@ const router = useRouter()
 const { createLot, loading } = useLots()
 
 const submitError = ref<string | null>(null)
+
+const breadcrumbItems = computed(() => [
+  { label: 'My Lots', route: '/lots' },
+  { label: 'Create Lot' },
+])
 
 async function handleSubmit(data: LotFormData) {
   submitError.value = null
@@ -31,28 +36,18 @@ function handleCancel() {
   <div>
     <!-- Page header -->
     <div class="mb-6">
-      <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link
-          to="/lots"
-          class="hover:text-primary-600"
-        >
-          My Lots
-        </router-link>
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="text-gray-700">Create Lot</span>
-      </div>
+      <Breadcrumb :model="breadcrumbItems">
+        <template #item="{ item }">
+          <router-link
+            v-if="item.route"
+            :to="item.route"
+            class="text-sm text-gray-500 hover:text-primary-600"
+          >
+            {{ item.label }}
+          </router-link>
+          <span v-else class="text-sm text-gray-700">{{ item.label }}</span>
+        </template>
+      </Breadcrumb>
       <h1 class="mt-2 text-2xl font-bold text-gray-900">
         Create New Lot
       </h1>
@@ -62,31 +57,14 @@ function handleCancel() {
     </div>
 
     <!-- Error banner -->
-    <div
+    <Message
       v-if="submitError"
-      class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4"
+      severity="error"
+      :closable="false"
+      class="mb-6"
     >
-      <div class="flex items-start gap-3">
-        <svg
-          class="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-        <div>
-          <p class="text-sm font-medium text-red-800">
-            {{ submitError }}
-          </p>
-        </div>
-      </div>
-    </div>
+      {{ submitError }}
+    </Message>
 
     <!-- Form -->
     <div class="mx-auto max-w-3xl">

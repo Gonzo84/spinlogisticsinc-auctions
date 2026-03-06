@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { useSystemHealth } from '@/composables/useSystemHealth'
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import { useConfirm } from 'primevue/useconfirm'
 
 const {
   health,
@@ -15,6 +13,8 @@ const {
   getStatusBg,
   getStatusDot,
 } = useSystemHealth()
+
+const confirm = useConfirm()
 
 let refreshInterval: ReturnType<typeof setInterval>
 
@@ -32,13 +32,17 @@ function formatUptime(uptime: string): string {
   return uptime
 }
 
-async function handleRestart(serviceName: string) {
-  if (confirm(`Restart ${serviceName}? This may temporarily interrupt service.`)) {
-    const ok = await restartService(serviceName)
-    if (ok) {
-      setTimeout(fetchHealth, 2000)
-    }
-  }
+function handleRestart(serviceName: string) {
+  confirm.require({
+    message: `Restart ${serviceName}? This may temporarily interrupt service.`,
+    header: 'Restart Service',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      const ok = await restartService(serviceName)
+      if (ok) setTimeout(fetchHealth, 2000)
+    },
+  })
 }
 
 const memoryPercent = () => {
@@ -82,49 +86,20 @@ const memoryPercent = () => {
     </div>
 
     <!-- Loading -->
-    <div
-      v-if="loading && !health"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+    <div v-if="loading && !health" class="flex justify-center py-12">
+      <ProgressSpinner strokeWidth="4" />
     </div>
 
     <!-- Error -->
-    <div
-      v-else-if="error && !health"
-      class="card border-red-200 bg-red-50 text-center"
-    >
-      <p class="text-sm text-red-600">
-        {{ error }}
-      </p>
-      <Button
-        label="Retry"
-        severity="secondary"
-        size="small"
-        class="mt-3"
-        @click="fetchHealth"
-      />
+    <Message v-if="error && !health" severity="error" :closable="false">
+      {{ error }}
+      <template #icon><i class="pi pi-exclamation-circle" /></template>
+    </Message>
+    <div v-if="error && !health" class="flex justify-center mt-2">
+      <Button label="Retry" severity="secondary" size="small" @click="fetchHealth" />
     </div>
 
-    <template v-else-if="health">
+    <template v-if="health">
       <!-- System Metrics -->
       <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="card">
@@ -137,15 +112,7 @@ const memoryPercent = () => {
           >
             {{ health.metrics.cpuUsagePercent.toFixed(1) }}%
           </p>
-          <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
-            <div
-              :class="[
-                'h-full rounded-full transition-all',
-                health.metrics.cpuUsagePercent > 80 ? 'bg-red-500' : health.metrics.cpuUsagePercent > 60 ? 'bg-amber-500' : 'bg-green-500',
-              ]"
-              :style="{ width: health.metrics.cpuUsagePercent + '%' }"
-            />
-          </div>
+          <ProgressBar :value="health.metrics.cpuUsagePercent" :showValue="false" class="mt-2" />
         </div>
 
         <div class="card">
@@ -161,15 +128,7 @@ const memoryPercent = () => {
           <p class="text-xs text-gray-400">
             of {{ health.metrics.memoryTotalMb }} MB ({{ memoryPercent() }}%)
           </p>
-          <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
-            <div
-              :class="[
-                'h-full rounded-full transition-all',
-                memoryPercent() > 80 ? 'bg-red-500' : memoryPercent() > 60 ? 'bg-amber-500' : 'bg-green-500',
-              ]"
-              :style="{ width: memoryPercent() + '%' }"
-            />
-          </div>
+          <ProgressBar :value="memoryPercent()" :showValue="false" class="mt-2" />
         </div>
 
         <div class="card">
@@ -182,15 +141,7 @@ const memoryPercent = () => {
           >
             {{ health.metrics.diskUsagePercent.toFixed(1) }}%
           </p>
-          <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
-            <div
-              :class="[
-                'h-full rounded-full',
-                health.metrics.diskUsagePercent > 85 ? 'bg-red-500' : 'bg-green-500',
-              ]"
-              :style="{ width: health.metrics.diskUsagePercent + '%' }"
-            />
-          </div>
+          <ProgressBar :value="health.metrics.diskUsagePercent" :showValue="false" class="mt-2" />
         </div>
 
         <div class="card">
@@ -224,13 +175,14 @@ const memoryPercent = () => {
                   {{ service.name }}
                 </h3>
               </div>
-              <button
+              <Button
                 v-if="service.status !== 'healthy'"
-                class="text-xs text-primary-600 hover:text-primary-700"
+                label="Restart"
+                text
+                size="small"
+                severity="danger"
                 @click="handleRestart(service.name)"
-              >
-                Restart
-              </button>
+              />
             </div>
             <dl class="mt-3 space-y-1 text-xs">
               <div class="flex justify-between">
@@ -370,18 +322,8 @@ const memoryPercent = () => {
           <Column header="Pool Usage">
             <template #body="{ data }">
               <div class="flex items-center gap-2">
-                <div class="h-2 w-20 overflow-hidden rounded-full bg-gray-200">
-                  <div
-                    :class="[
-                      'h-full rounded-full',
-                      (data.activeConnections / data.maxConnections) > 0.8 ? 'bg-red-500' : 'bg-green-500',
-                    ]"
-                    :style="{ width: (data.activeConnections / data.maxConnections * 100) + '%' }"
-                  />
-                </div>
-                <span class="text-xs text-gray-500">
-                  {{ Math.round(data.activeConnections / data.maxConnections * 100) }}%
-                </span>
+                <ProgressBar :value="Math.round(data.activeConnections / data.maxConnections * 100)" :showValue="false" style="width: 5rem" />
+                <span class="text-xs text-gray-500">{{ Math.round(data.activeConnections / data.maxConnections * 100) }}%</span>
               </div>
             </template>
           </Column>

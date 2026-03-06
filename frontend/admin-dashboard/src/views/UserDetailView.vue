@@ -4,13 +4,7 @@ import { useRoute } from 'vue-router'
 import { useUsers } from '@/composables/useUsers'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import Tag from 'primevue/tag'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import Textarea from 'primevue/textarea'
 
 const confirm = useConfirm()
 const toast = useToast()
@@ -26,9 +20,14 @@ const {
 
 const userId = computed(() => route.params.id as string)
 
-const activeTab = ref<'profile' | 'kyc' | 'bids' | 'payments'>('profile')
+const activeTab = ref<string>('profile')
 const showBlockDialog = ref(false)
 const blockReason = ref('')
+
+const breadcrumbItems = computed(() => [
+  { label: 'Users', to: '/users' },
+  { label: currentUser.value ? `${currentUser.value.firstName} ${currentUser.value.lastName}` : 'User Detail' },
+])
 
 onMounted(() => {
   fetchUser(userId.value)
@@ -75,66 +74,30 @@ function handleUnblock() {
 <template>
   <div>
     <!-- Breadcrumb -->
-    <div class="mb-6">
-      <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link
-          to="/users"
-          class="hover:text-primary-600"
-        >
-          Users
+    <Breadcrumb :model="breadcrumbItems" class="mb-6">
+      <template #item="{ item }">
+        <router-link v-if="item.to" :to="item.to" class="text-primary-600 hover:text-primary-700">
+          {{ item.label }}
         </router-link>
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="text-gray-700">
-          {{ currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User Detail' }}
-        </span>
-      </div>
-    </div>
+        <span v-else class="text-gray-700">{{ item.label }}</span>
+      </template>
+    </Breadcrumb>
 
     <!-- Loading -->
-    <div
-      v-if="loading && !currentUser"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+    <div v-if="loading && !currentUser" class="flex justify-center py-12">
+      <ProgressSpinner strokeWidth="4" />
     </div>
 
     <template v-else-if="currentUser">
       <!-- Header -->
       <div class="page-header">
         <div class="flex items-center gap-4">
-          <div class="flex h-14 w-14 items-center justify-center rounded-full bg-admin-100 text-xl font-bold text-admin-700">
-            {{ currentUser.firstName.charAt(0) }}{{ currentUser.lastName.charAt(0) }}
-          </div>
+          <Avatar
+            :label="`${currentUser.firstName.charAt(0)}${currentUser.lastName.charAt(0)}`"
+            size="xlarge"
+            shape="circle"
+            class="bg-admin-100 text-admin-700 text-xl font-bold"
+          />
           <div>
             <div class="flex items-center gap-2">
               <h1 class="page-title">
@@ -165,251 +128,228 @@ function handleUnblock() {
       </div>
 
       <!-- Tabs -->
-      <div class="mb-6 border-b border-gray-200">
-        <nav class="-mb-px flex gap-6">
-          <button
-            v-for="tab in ['profile', 'kyc', 'bids', 'payments'] as const"
-            :key="tab"
-            :class="[
-              'border-b-2 pb-3 pt-1 text-sm font-medium capitalize transition-colors',
-              activeTab === tab
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-            ]"
-            @click="activeTab = tab"
-          >
-            {{ tab === 'kyc' ? 'KYC' : tab }}
-          </button>
-        </nav>
-      </div>
+      <Tabs v-model:value="activeTab">
+        <TabList>
+          <Tab value="profile">Profile</Tab>
+          <Tab value="kyc">KYC</Tab>
+          <Tab value="bids">Bids</Tab>
+          <Tab value="payments">Payments</Tab>
+        </TabList>
+        <TabPanels>
+          <!-- Profile Tab -->
+          <TabPanel value="profile">
+            <div class="grid gap-6 lg:grid-cols-2">
+              <div class="card">
+                <h2 class="section-title">
+                  Personal Information
+                </h2>
+                <dl class="space-y-3 text-sm">
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Full Name
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ currentUser.firstName }} {{ currentUser.lastName }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Email
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ currentUser.email }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Phone
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ currentUser.phone || '--' }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Company
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ currentUser.companyName || '--' }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      VAT Number
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ currentUser.vatNumber || '--' }}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
 
-      <!-- Profile Tab -->
-      <div
-        v-if="activeTab === 'profile'"
-        class="grid gap-6 lg:grid-cols-2"
-      >
-        <div class="card">
-          <h2 class="section-title">
-            Personal Information
-          </h2>
-          <dl class="space-y-3 text-sm">
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Full Name
-              </dt>
-              <dd class="font-medium text-gray-900">
-                {{ currentUser.firstName }} {{ currentUser.lastName }}
-              </dd>
+              <div class="card">
+                <h2 class="section-title">
+                  Address & Account
+                </h2>
+                <dl class="space-y-3 text-sm">
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Address
+                    </dt>
+                    <dd class="text-right font-medium text-gray-900">
+                      {{ currentUser.address.street }}<br>
+                      {{ currentUser.address.postalCode }} {{ currentUser.address.city }}<br>
+                      {{ currentUser.address.country }}
+                    </dd>
+                  </div>
+                  <hr class="border-gray-100">
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Account Type
+                    </dt>
+                    <dd><Tag :value="formatStatusLabel(currentUser.accountType)" :severity="getStatusSeverity(currentUser.accountType)" /></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Deposit Status
+                    </dt>
+                    <dd><Tag :value="formatStatusLabel(currentUser.depositStatus)" :severity="getStatusSeverity(currentUser.depositStatus)" /></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Registered
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ formatDate(currentUser.registeredAt) }}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-gray-500">
+                      Last Login
+                    </dt>
+                    <dd class="font-medium text-gray-900">
+                      {{ formatDate(currentUser.lastLoginAt) }}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Email
-              </dt>
-              <dd class="font-medium text-gray-900">
-                {{ currentUser.email }}
-              </dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Phone
-              </dt>
-              <dd class="font-medium text-gray-900">
-                {{ currentUser.phone || '--' }}
-              </dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Company
-              </dt>
-              <dd class="font-medium text-gray-900">
-                {{ currentUser.companyName || '--' }}
-              </dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                VAT Number
-              </dt>
-              <dd class="font-medium text-gray-900">
-                {{ currentUser.vatNumber || '--' }}
-              </dd>
-            </div>
-          </dl>
-        </div>
+          </TabPanel>
 
-        <div class="card">
-          <h2 class="section-title">
-            Address & Account
-          </h2>
-          <dl class="space-y-3 text-sm">
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Address
-              </dt>
-              <dd class="text-right font-medium text-gray-900">
-                {{ currentUser.address.street }}<br>
-                {{ currentUser.address.postalCode }} {{ currentUser.address.city }}<br>
-                {{ currentUser.address.country }}
-              </dd>
-            </div>
-            <hr class="border-gray-100">
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Account Type
-              </dt>
-              <dd><Tag :value="formatStatusLabel(currentUser.accountType)" :severity="getStatusSeverity(currentUser.accountType)" /></dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Deposit Status
-              </dt>
-              <dd><Tag :value="formatStatusLabel(currentUser.depositStatus)" :severity="getStatusSeverity(currentUser.depositStatus)" /></dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Registered
-              </dt>
-              <dd class="font-medium text-gray-900">
-                {{ formatDate(currentUser.registeredAt) }}
-              </dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-500">
-                Last Login
-              </dt>
-              <dd class="font-medium text-gray-900">
-                {{ formatDate(currentUser.lastLoginAt) }}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </div>
+          <!-- KYC Tab -->
+          <TabPanel value="kyc">
+            <div class="card">
+              <div class="mb-4 flex items-center justify-between">
+                <h2 class="section-title mb-0">
+                  KYC History
+                </h2>
+                <Tag :value="formatStatusLabel(currentUser.kycStatus)" :severity="getStatusSeverity(currentUser.kycStatus)" />
+              </div>
 
-      <!-- KYC Tab -->
-      <div
-        v-if="activeTab === 'kyc'"
-        class="card"
-      >
-        <div class="mb-4 flex items-center justify-between">
-          <h2 class="section-title mb-0">
-            KYC History
-          </h2>
-          <Tag :value="formatStatusLabel(currentUser.kycStatus)" :severity="getStatusSeverity(currentUser.kycStatus)" />
-        </div>
+              <div
+                v-if="currentUser.kycHistory.length === 0"
+                class="py-8 text-center text-sm text-gray-500"
+              >
+                No KYC events recorded.
+              </div>
 
-        <div
-          v-if="currentUser.kycHistory.length === 0"
-          class="py-8 text-center text-sm text-gray-500"
-        >
-          No KYC events recorded.
-        </div>
-
-        <div
-          v-else
-          class="space-y-4"
-        >
-          <div
-            v-for="event in currentUser.kycHistory"
-            :key="event.id"
-            class="flex items-start gap-4 rounded-lg bg-gray-50 p-4"
-          >
-            <div class="mt-1">
-              <Tag :value="formatStatusLabel(event.status)" :severity="getStatusSeverity(event.status)" />
+              <Timeline v-else :value="currentUser.kycHistory" align="left">
+                <template #marker="{ item }">
+                  <Tag :value="formatStatusLabel(item.status)" :severity="getStatusSeverity(item.status)" />
+                </template>
+                <template #content="{ item }">
+                  <div class="text-sm">
+                    <p class="text-gray-700">{{ item.note }}</p>
+                    <p class="mt-1 text-xs text-gray-400">by {{ item.performedBy }} &middot; {{ formatDate(item.timestamp) }}</p>
+                  </div>
+                </template>
+              </Timeline>
             </div>
-            <div class="flex-1">
-              <p class="text-sm text-gray-700">
-                {{ event.note }}
-              </p>
-              <p class="mt-1 text-xs text-gray-400">
-                by {{ event.performedBy }} &middot; {{ formatDate(event.timestamp) }}
-              </p>
+          </TabPanel>
+
+          <!-- Bids Tab -->
+          <TabPanel value="bids">
+            <div class="card">
+              <h2 class="section-title">
+                Bid History
+              </h2>
+              <DataTable :value="currentUser.bidHistory" stripedRows>
+                <template #empty>
+                  <div class="text-center py-8 text-gray-500">No bid history.</div>
+                </template>
+                <Column field="auctionTitle" header="Auction">
+                  <template #body="{ data }">
+                    <span class="text-gray-600">{{ data.auctionTitle }}</span>
+                  </template>
+                </Column>
+                <Column field="lotTitle" header="Lot">
+                  <template #body="{ data }">
+                    <span class="font-medium text-gray-900">{{ data.lotTitle }}</span>
+                  </template>
+                </Column>
+                <Column field="amount" header="Amount" headerStyle="text-align: right" bodyStyle="text-align: right">
+                  <template #body="{ data }">
+                    <span class="font-medium">{{ formatCurrency(data.amount) }}</span>
+                  </template>
+                </Column>
+                <Column field="status" header="Status">
+                  <template #body="{ data }">
+                    <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+                  </template>
+                </Column>
+                <Column field="timestamp" header="Date">
+                  <template #body="{ data }">
+                    <span class="text-gray-500">{{ formatDate(data.timestamp) }}</span>
+                  </template>
+                </Column>
+              </DataTable>
             </div>
-          </div>
-        </div>
-      </div>
+          </TabPanel>
 
-      <!-- Bids Tab -->
-      <div
-        v-if="activeTab === 'bids'"
-        class="card"
-      >
-        <h2 class="section-title">
-          Bid History
-        </h2>
-        <DataTable :value="currentUser.bidHistory" stripedRows>
-          <template #empty>
-            <div class="text-center py-8 text-gray-500">No bid history.</div>
-          </template>
-          <Column field="auctionTitle" header="Auction">
-            <template #body="{ data }">
-              <span class="text-gray-600">{{ data.auctionTitle }}</span>
-            </template>
-          </Column>
-          <Column field="lotTitle" header="Lot">
-            <template #body="{ data }">
-              <span class="font-medium text-gray-900">{{ data.lotTitle }}</span>
-            </template>
-          </Column>
-          <Column field="amount" header="Amount" headerStyle="text-align: right" bodyStyle="text-align: right">
-            <template #body="{ data }">
-              <span class="font-medium">{{ formatCurrency(data.amount) }}</span>
-            </template>
-          </Column>
-          <Column field="status" header="Status">
-            <template #body="{ data }">
-              <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
-            </template>
-          </Column>
-          <Column field="timestamp" header="Date">
-            <template #body="{ data }">
-              <span class="text-gray-500">{{ formatDate(data.timestamp) }}</span>
-            </template>
-          </Column>
-        </DataTable>
-      </div>
-
-      <!-- Payments Tab -->
-      <div
-        v-if="activeTab === 'payments'"
-        class="card"
-      >
-        <h2 class="section-title">
-          Payment History
-        </h2>
-        <DataTable
-          :value="currentUser.paymentHistory"
-          :rowClass="(rowData: any) => rowData.status === 'overdue' ? 'bg-red-50' : ''"
-          stripedRows
-        >
-          <template #empty>
-            <div class="text-center py-8 text-gray-500">No payment history.</div>
-          </template>
-          <Column field="lotTitle" header="Lot">
-            <template #body="{ data }">
-              <span class="font-medium text-gray-900">{{ data.lotTitle }}</span>
-            </template>
-          </Column>
-          <Column field="amount" header="Amount" headerStyle="text-align: right" bodyStyle="text-align: right">
-            <template #body="{ data }">
-              <span class="font-medium">{{ formatCurrency(data.amount) }}</span>
-            </template>
-          </Column>
-          <Column field="status" header="Status">
-            <template #body="{ data }">
-              <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
-            </template>
-          </Column>
-          <Column field="dueDate" header="Due Date">
-            <template #body="{ data }">
-              <span class="text-gray-500">{{ formatDate(data.dueDate) }}</span>
-            </template>
-          </Column>
-          <Column field="paidDate" header="Paid Date">
-            <template #body="{ data }">
-              <span class="text-gray-500">{{ formatDate(data.paidDate) }}</span>
-            </template>
-          </Column>
-        </DataTable>
-      </div>
+          <!-- Payments Tab -->
+          <TabPanel value="payments">
+            <div class="card">
+              <h2 class="section-title">
+                Payment History
+              </h2>
+              <DataTable
+                :value="currentUser.paymentHistory"
+                :rowClass="(rowData: any) => rowData.status === 'overdue' ? 'bg-red-50' : ''"
+                stripedRows
+              >
+                <template #empty>
+                  <div class="text-center py-8 text-gray-500">No payment history.</div>
+                </template>
+                <Column field="lotTitle" header="Lot">
+                  <template #body="{ data }">
+                    <span class="font-medium text-gray-900">{{ data.lotTitle }}</span>
+                  </template>
+                </Column>
+                <Column field="amount" header="Amount" headerStyle="text-align: right" bodyStyle="text-align: right">
+                  <template #body="{ data }">
+                    <span class="font-medium">{{ formatCurrency(data.amount) }}</span>
+                  </template>
+                </Column>
+                <Column field="status" header="Status">
+                  <template #body="{ data }">
+                    <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+                  </template>
+                </Column>
+                <Column field="dueDate" header="Due Date">
+                  <template #body="{ data }">
+                    <span class="text-gray-500">{{ formatDate(data.dueDate) }}</span>
+                  </template>
+                </Column>
+                <Column field="paidDate" header="Paid Date">
+                  <template #body="{ data }">
+                    <span class="text-gray-500">{{ formatDate(data.paidDate) }}</span>
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </template>
 
     <!-- Block Dialog -->

@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import ConfirmDialog from 'primevue/confirmdialog'
-import Toast from 'primevue/toast'
 import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import AdminTopBar from '@/components/layout/AdminTopBar.vue'
 

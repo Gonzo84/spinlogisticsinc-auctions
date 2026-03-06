@@ -18,4 +18,24 @@ export const globalPT = {
       class: 'font-medium',
     },
   },
+  datatable: {
+    root: {
+      class: 'text-sm',
+    },
+  },
+  message: {
+    root: {
+      class: 'mb-4',
+    },
+  },
+  breadcrumb: {
+    root: {
+      class: 'mb-4 text-sm',
+    },
+  },
+  progressspinner: {
+    root: {
+      class: 'mx-auto',
+    },
+  },
 }

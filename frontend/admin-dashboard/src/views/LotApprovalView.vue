@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { useApi } from '@/composables/useApi'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import type { PendingLot } from '@/types/lot'
 import type { ApiResponse, PagedResponse } from '@/types/api'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import Textarea from 'primevue/textarea'
 
 interface RawLotResponse {
   id?: string
@@ -60,7 +57,9 @@ const toast = useToast()
 const pendingLots = ref<PendingLot[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const expandedLotId = ref<string | null>(null)
+
+// Accordion expand state
+const expandedLotIds = ref<string[]>([])
 
 // Cache for seller name lookups to avoid repeated API calls
 const sellerNameCache = new Map<string, string>()
@@ -175,34 +174,36 @@ async function fetchPendingLots() {
 
 const loadingDetail = ref<string | null>(null)
 
-async function toggleExpand(lotId: string) {
-  if (expandedLotId.value === lotId) {
-    expandedLotId.value = null
-    return
-  }
-  expandedLotId.value = lotId
-
-  // Fetch full lot details if not already loaded
+async function fetchLotDetail(lotId: string) {
   const lot = pendingLots.value.find((l) => l.id === lotId)
-  if (lot && !lot.detailLoaded) {
-    loadingDetail.value = lotId
-    try {
-      const raw = await get<ApiResponse<RawLotResponse> | RawLotResponse>(`/lots/${lotId}`)
-      const detail: RawLotResponse = (raw as ApiResponse<RawLotResponse>)?.data ?? (raw as RawLotResponse)
-      const enriched = normalizeLot(detail, true)
-      // Preserve resolved seller name and category name from the list
-      pendingLots.value = pendingLots.value.map((l) =>
-        l.id === lotId
-          ? { ...enriched, sellerName: sellerNameCache.get(l.sellerId) ?? enriched.sellerName, category: categoryNameCache.get(l.categoryId) ?? enriched.category }
-          : l,
-      )
-    } catch {
-      // Detail fetch failed — keep what we have from the summary
-    } finally {
-      loadingDetail.value = null
-    }
+  if (!lot || lot.detailLoaded) return
+
+  loadingDetail.value = lotId
+  try {
+    const raw = await get<ApiResponse<RawLotResponse> | RawLotResponse>(`/lots/${lotId}`)
+    const detail: RawLotResponse = (raw as ApiResponse<RawLotResponse>)?.data ?? (raw as RawLotResponse)
+    const enriched = normalizeLot(detail, true)
+    // Preserve resolved seller name and category name from the list
+    pendingLots.value = pendingLots.value.map((l) =>
+      l.id === lotId
+        ? { ...enriched, sellerName: sellerNameCache.get(l.sellerId) ?? enriched.sellerName, category: categoryNameCache.get(l.categoryId) ?? enriched.category }
+        : l,
+    )
+  } catch {
+    // Detail fetch failed — keep what we have from the summary
+  } finally {
+    loadingDetail.value = null
   }
 }
+
+// Watch accordion expand state to fetch details for newly opened panels
+watch(expandedLotIds, (newIds, oldIds) => {
+  const prev = oldIds ?? []
+  const newlyOpened = newIds.filter(id => !prev.includes(id))
+  for (const id of newlyOpened) {
+    fetchLotDetail(id)
+  }
+})
 
 async function doApproveLot(lotId: string) {
   try {
@@ -298,9 +299,8 @@ function formatDate(dateStr: string): string {
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
-          {{ pendingLots.length }} pending
-        </span>
+        <Badge :value="pendingLots.length" severity="warn" />
+        <span class="text-sm font-medium text-gray-600">pending</span>
         <Button
           label="Refresh"
           icon="pi pi-refresh"
@@ -312,39 +312,15 @@ function formatDate(dateStr: string): string {
     </div>
 
     <!-- Loading -->
-    <div
-      v-if="loading"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+    <div v-if="loading" class="flex justify-center py-12">
+      <ProgressSpinner strokeWidth="4" />
     </div>
 
     <!-- Error -->
-    <div
-      v-else-if="error"
-      class="card border-red-200 bg-red-50 text-center"
-    >
-      <p class="text-sm text-red-600">
+    <div v-else-if="error">
+      <Message severity="error" :closable="false">
         {{ error }}
-      </p>
+      </Message>
     </div>
 
     <!-- Empty -->
@@ -373,136 +349,74 @@ function formatDate(dateStr: string): string {
       </p>
     </div>
 
-    <!-- Lot cards -->
-    <div
-      v-else
-      class="space-y-4"
-    >
-      <div
-        v-for="lot in pendingLots"
-        :key="lot.id"
-        class="card overflow-hidden p-0"
-      >
-        <!-- Summary row -->
-        <div
-          class="flex cursor-pointer items-center gap-4 p-4 hover:bg-gray-50"
-          @click="toggleExpand(lot.id)"
-        >
-          <!-- Thumbnail -->
-          <div class="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-            <img
-              v-if="lot.primaryImage"
-              :src="lot.primaryImage"
-              :alt="lot.title"
-              class="h-full w-full object-cover"
-            >
-            <div
-              v-else
-              class="flex h-full w-full items-center justify-center"
-            >
-              <svg
-                class="h-6 w-6 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
+    <!-- Lot cards as Accordion -->
+    <Accordion v-else :multiple="true" v-model:value="expandedLotIds">
+      <AccordionPanel v-for="lot in pendingLots" :key="lot.id" :value="lot.id">
+        <AccordionHeader>
+          <div class="flex items-center gap-4 w-full">
+            <!-- Thumbnail -->
+            <div class="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+              <img
+                v-if="lot.primaryImage"
+                :src="lot.primaryImage"
+                :alt="lot.title"
+                class="h-full w-full object-cover"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+              <div
+                v-else
+                class="flex h-full w-full items-center justify-center"
+              >
+                <i class="pi pi-image text-gray-400 text-xl" />
+              </div>
+            </div>
+
+            <!-- Info -->
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm font-semibold text-gray-900">
+                {{ lot.title }}
+              </h3>
+              <p class="text-xs text-gray-500">
+                <template v-if="lot.brand">{{ lot.brand }} &middot; </template>{{ lot.category }} &middot; {{ lot.sellerName }} &middot; {{ lot.location.city }}, {{ lot.location.country }}
+              </p>
+              <p class="text-xs text-gray-400">
+                Submitted {{ formatDate(lot.submittedAt) }}
+              </p>
+            </div>
+
+            <!-- Price -->
+            <div class="hidden text-right sm:block">
+              <p class="text-sm font-medium text-gray-900">
+                {{ formatCurrency(lot.startingBid) }}
+              </p>
+              <p class="text-xs text-gray-500">
+                Starting bid
+              </p>
+            </div>
+
+            <!-- Actions (stop propagation to prevent accordion toggle) -->
+            <div class="flex gap-2" @click.stop>
+              <Button
+                label="Approve"
+                severity="success"
+                size="small"
+                @click="approveLot(lot.id)"
+              />
+              <Button
+                label="Reject"
+                severity="danger"
+                size="small"
+                @click="openRejectDialog(lot.id)"
+              />
             </div>
           </div>
-
-          <!-- Info -->
-          <div class="min-w-0 flex-1">
-            <h3 class="text-sm font-semibold text-gray-900">
-              {{ lot.title }}
-            </h3>
-            <p class="text-xs text-gray-500">
-              <template v-if="lot.brand">{{ lot.brand }} &middot; </template>{{ lot.category }} &middot; {{ lot.sellerName }} &middot; {{ lot.location.city }}, {{ lot.location.country }}
-            </p>
-            <p class="text-xs text-gray-400">
-              Submitted {{ formatDate(lot.submittedAt) }}
-            </p>
-          </div>
-
-          <!-- Price -->
-          <div class="hidden text-right sm:block">
-            <p class="text-sm font-medium text-gray-900">
-              {{ formatCurrency(lot.startingBid) }}
-            </p>
-            <p class="text-xs text-gray-500">
-              Starting bid
-            </p>
-          </div>
-
-          <!-- Actions -->
-          <div
-            class="flex gap-2"
-            @click.stop
-          >
-            <Button
-              label="Approve"
-              severity="success"
-              size="small"
-              @click="approveLot(lot.id)"
-            />
-            <Button
-              label="Reject"
-              severity="danger"
-              size="small"
-              @click="openRejectDialog(lot.id)"
-            />
-          </div>
-
-          <!-- Expand icon -->
-          <svg
-            :class="['h-5 w-5 text-gray-400 transition-transform', expandedLotId === lot.id && 'rotate-180']"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
-
-        <!-- Expanded details -->
-        <div
-          v-if="expandedLotId === lot.id"
-          class="border-t border-gray-100 bg-gray-50 p-4"
-        >
+        </AccordionHeader>
+        <AccordionContent>
           <!-- Loading indicator while fetching full details -->
           <div
             v-if="loadingDetail === lot.id"
             class="flex items-center gap-2 py-4 text-sm text-gray-500"
           >
-            <svg
-              class="h-4 w-4 animate-spin"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              />
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
+            <ProgressSpinner style="width: 1rem; height: 1rem" strokeWidth="4" />
             Loading details...
           </div>
 
@@ -609,9 +523,9 @@ function formatDate(dateStr: string): string {
               </div>
             </div>
           </template>
-        </div>
-      </div>
-    </div>
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
 
     <!-- Reject Dialog -->
     <Dialog

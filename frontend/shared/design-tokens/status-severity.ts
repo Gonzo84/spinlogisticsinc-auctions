@@ -10,11 +10,16 @@ const statusSeverityMap: Record<string, string> = {
   paid: 'success',
   verified: 'success',
   resolved: 'success',
+  healthy: 'success',
+  released: 'success',
 
   // Info states
   sold: 'info',
   completed: 'info',
   exported: 'info',
+  held: 'info',
+  refunded: 'info',
+  scheduled: 'info',
 
   // Warning states
   pending: 'warn',
@@ -23,12 +28,20 @@ const statusSeverityMap: Record<string, string> = {
   review: 'warn',
   investigating: 'warn',
   in_progress: 'warn',
+  closing: 'warn',
+  degraded: 'warn',
+  disputed: 'warn',
 
   // Secondary states
   draft: 'secondary',
   inactive: 'secondary',
   new: 'secondary',
   dismissed: 'secondary',
+  closed: 'secondary',
+  withdrawn: 'secondary',
+  not_started: 'secondary',
+  false_positive: 'secondary',
+  unknown: 'secondary',
 
   // Danger states
   rejected: 'danger',
@@ -39,6 +52,19 @@ const statusSeverityMap: Record<string, string> = {
   failed: 'danger',
   expired: 'danger',
   overdue: 'danger',
+  forfeited: 'danger',
+  down: 'danger',
+  high: 'danger',
+  suspended: 'danger',
+
+  // Severity levels
+  medium: 'warn',
+  low: 'info',
+
+  // Account types
+  buyer: 'info',
+  seller: 'success',
+  both: 'warn',
 }
 
 export function getStatusSeverity(status: string): string | undefined {

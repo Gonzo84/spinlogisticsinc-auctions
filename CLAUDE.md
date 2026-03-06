@@ -48,7 +48,7 @@ docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file d
 ### Tech Stack
 
 - **Backend:** Kotlin 2.3.0, Java 21, Quarkus 3.30.6
-- **Frontend:** Vue 3 + Pinia + TailwindCSS. Buyer-web uses Nuxt 3 (SSR); seller-portal and admin-dashboard are Vite SPAs
+- **Frontend:** Vue 3 + Pinia + TailwindCSS + PrimeVue 4 (Aura theme). Buyer-web uses Nuxt 3 (SSR); seller-portal and admin-dashboard are Vite SPAs. Shared design tokens in `frontend/shared/design-tokens/` (preset.ts, pt.ts, status-severity.ts). PrimeVue auto-imported via `unplugin-vue-components` (Vite SPAs) and `@primevue/nuxt-module` (buyer-web).
 - **Messaging:** NATS JetStream (event-driven communication between services)
 - **Auth:** Keycloak (OIDC/JWT) + Casbin RBAC per service
 - **Database:** PostgreSQL 16 (one database per service, Flyway migrations)
@@ -136,6 +136,14 @@ cd frontend/buyer-web && npx vitest          # vitest.config.ts configured
 cd frontend/seller-portal && npx vitest
 cd frontend/admin-dashboard && npx vitest
 ```
+
+### Critical Gotchas
+
+1. **Auction-engine has separate list vs detail DTOs.** `AuctionSummaryResponse` (used by list endpoint) has fewer fields than `AuctionDetailResponse`. When adding a field to the detail DTO, always check if the summary DTO also needs it. The `toSummaryResponse()` mapping in `AuctionResource.kt` must also be updated.
+
+2. **CSS layer order for PrimeVue + Tailwind is non-negotiable.** Must be `tailwind-base, primevue, tailwind-utilities` in both `preset.ts` and each frontend's CSS entry point. Wrong order causes PrimeVue styles to be overridden by Tailwind reset or vice versa.
+
+3. **`preset.ts` component overrides need a type assertion.** PrimeVue's Aura preset types don't include all component keys (e.g., `datepicker`, `accordion`). Cast the components object with `as Record<string, Record<string, Record<string, string>>>` in `definePreset()`.
 
 ### Deployment
 

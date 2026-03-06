@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { useAnalytics } from '@/composables/useAnalytics'
 import RevenueChart from '@/components/charts/RevenueChart.vue'
 import SellThroughChart from '@/components/charts/SellThroughChart.vue'
@@ -64,35 +61,17 @@ const revenueChartData = computed(() =>
       v-if="loading && !overview"
       class="py-12 text-center"
     >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+      <ProgressSpinner strokeWidth="4" />
     </div>
 
     <!-- Error -->
-    <div
+    <Message
       v-else-if="error"
-      class="card border-red-200 bg-red-50 text-center"
+      severity="error"
+      :closable="false"
+      class="mb-4"
     >
-      <p class="text-sm text-red-600">
-        {{ error }}
-      </p>
+      {{ error }}
       <Button
         label="Retry"
         severity="secondary"
@@ -100,7 +79,7 @@ const revenueChartData = computed(() =>
         class="mt-3"
         @click="fetchAll()"
       />
-    </div>
+    </Message>
 
     <template v-else>
       <!-- Overview KPI Cards -->
@@ -278,15 +257,12 @@ const revenueChartData = computed(() =>
           </Column>
           <Column header="Performance">
             <template #body="{ data }">
-              <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-100">
-                <div
-                  :class="[
-                    'h-full rounded-full',
-                    data.ratio >= 1 ? 'bg-green-500' : 'bg-red-400',
-                  ]"
-                  :style="{ width: Math.min(data.ratio * 100, 150) + '%' }"
-                />
-              </div>
+              <ProgressBar
+                :value="Math.min(data.ratio * 100, 100)"
+                :showValue="false"
+                :class="data.ratio >= 1 ? '[&_.p-progressbar-value]:!bg-green-500' : '[&_.p-progressbar-value]:!bg-red-400'"
+                class="w-24"
+              />
             </template>
           </Column>
           <template #empty>

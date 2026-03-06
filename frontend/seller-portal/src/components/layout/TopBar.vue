@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Button from 'primevue/button'
 import { useAuth } from '@/composables/useAuth'
 import { useNotifications } from '@/composables/useNotifications'
 
@@ -21,31 +20,33 @@ const {
 } = useNotifications()
 
 const searchQuery = ref('')
-const showProfileDropdown = ref(false)
-const showNotifications = ref(false)
+const notifPopover = ref()
+const profileMenu = ref()
 
 onMounted(() => {
   fetchNotifications()
 })
 
-function toggleNotifications() {
-  showNotifications.value = !showNotifications.value
-  showProfileDropdown.value = false
+function toggleNotifPopover(event: Event) {
+  notifPopover.value.toggle(event)
 }
 
-function toggleProfile() {
-  showProfileDropdown.value = !showProfileDropdown.value
-  showNotifications.value = false
-}
+const profileItems = ref([
+  {
+    label: 'Settings',
+    icon: 'pi pi-cog',
+    command: () => router.push('/profile'),
+  },
+  {
+    label: 'Sign out',
+    icon: 'pi pi-sign-out',
+    class: 'text-red-600',
+    command: () => logout(),
+  },
+])
 
-function closeAll() {
-  showProfileDropdown.value = false
-  showNotifications.value = false
-}
-
-function handleLogout() {
-  closeAll()
-  logout()
+function toggleProfileMenu(event: Event) {
+  profileMenu.value.toggle(event)
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -75,54 +76,42 @@ function formatTimeAgo(dateStr: string): string {
 
     <!-- Search bar -->
     <div class="hidden flex-1 md:block md:max-w-md lg:max-w-lg">
-      <div class="relative">
-        <svg
-          class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-        <input
+      <IconField>
+        <InputIcon class="pi pi-search" />
+        <InputText
           v-model="searchQuery"
-          type="text"
           placeholder="Search lots, settlements..."
-          class="input pl-10"
+          class="w-full"
           @keydown.enter="router.push({ path: '/lots', query: { search: searchQuery } })"
-        >
-      </div>
+        />
+      </IconField>
     </div>
 
     <!-- Right side -->
     <div class="flex items-center gap-2">
       <!-- Notifications -->
-      <div class="relative">
+      <OverlayBadge
+        v-if="unreadCount > 0"
+        :value="unreadCount"
+        severity="danger"
+      >
         <Button
           text
           icon="pi pi-bell"
           aria-label="Notifications"
-          class="relative p-2"
-          @click="toggleNotifications"
-        >
-          <span
-            v-if="unreadCount > 0"
-            class="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
-          >
-            {{ unreadCount }}
-          </span>
-        </Button>
+          @click="toggleNotifPopover"
+        />
+      </OverlayBadge>
+      <Button
+        v-else
+        text
+        icon="pi pi-bell"
+        aria-label="Notifications"
+        @click="toggleNotifPopover"
+      />
 
-        <!-- Notifications dropdown -->
-        <div
-          v-if="showNotifications"
-          class="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-gray-200 bg-white shadow-lg"
-        >
+      <Popover ref="notifPopover">
+        <div class="w-80">
           <div class="border-b border-gray-100 px-4 py-3">
             <h3 class="text-sm font-semibold text-gray-900">
               Notifications
@@ -164,119 +153,48 @@ function formatTimeAgo(dateStr: string): string {
             </div>
           </div>
           <div class="border-t border-gray-100 px-4 py-2">
-            <button
-              class="w-full text-center text-xs font-medium text-primary-600 hover:text-primary-700"
+            <Button
+              label="Mark all as read"
+              link
+              size="small"
+              class="w-full"
               @click="markAllAsRead()"
-            >
-              Mark all as read
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Profile dropdown -->
-      <div class="relative">
-        <button
-          class="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-100"
-          @click="toggleProfile"
-        >
-          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-seller-100 text-sm font-semibold text-seller-700">
-            {{ userName.charAt(0).toUpperCase() }}
-          </div>
-          <div class="hidden text-left md:block">
-            <p class="text-sm font-medium text-gray-900">
-              {{ userName }}
-            </p>
-            <p
-              v-if="companyName"
-              class="text-xs text-gray-500"
-            >
-              {{ companyName }}
-            </p>
-          </div>
-          <svg
-            class="hidden h-4 w-4 text-gray-400 md:block"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M19 9l-7 7-7-7"
             />
-          </svg>
-        </button>
-
-        <div
-          v-if="showProfileDropdown"
-          class="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
-        >
-          <div class="border-b border-gray-100 px-4 py-3">
-            <p class="text-sm font-medium text-gray-900">
-              {{ userName }}
-            </p>
-            <p
-              v-if="companyName"
-              class="text-xs text-gray-500"
-            >
-              {{ companyName }}
-            </p>
           </div>
-          <router-link
-            to="/profile"
-            class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            @click="closeAll"
-          >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            Settings
-          </router-link>
-          <button
-            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-            @click="handleLogout"
-          >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            Sign out
-          </button>
         </div>
-      </div>
-    </div>
+      </Popover>
 
-    <!-- Click-away overlay -->
-    <div
-      v-if="showNotifications || showProfileDropdown"
-      class="fixed inset-0 z-40"
-      @click="closeAll"
-    />
+      <!-- Profile -->
+      <Button
+        text
+        rounded
+        class="flex items-center gap-2"
+        @click="toggleProfileMenu"
+      >
+        <Avatar
+          :label="userName.charAt(0).toUpperCase()"
+          shape="circle"
+          class="bg-seller-100 text-seller-700"
+        />
+        <div class="hidden text-left md:block">
+          <p class="text-sm font-medium text-gray-900">
+            {{ userName }}
+          </p>
+          <p
+            v-if="companyName"
+            class="text-xs text-gray-500"
+          >
+            {{ companyName }}
+          </p>
+        </div>
+        <i class="pi pi-chevron-down hidden text-xs text-gray-400 md:block" />
+      </Button>
+
+      <Menu
+        ref="profileMenu"
+        :model="profileItems"
+        popup
+      />
+    </div>
   </header>
 </template>

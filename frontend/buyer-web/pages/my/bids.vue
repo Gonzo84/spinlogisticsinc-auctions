@@ -21,24 +21,13 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="space-y-4">
-      <div v-for="i in 3" :key="i" class="bg-white border rounded-xl p-6 animate-pulse">
-        <div class="flex gap-4">
-          <div class="w-20 h-20 bg-gray-200 rounded-lg" />
-          <div class="flex-1">
-            <div class="h-4 bg-gray-200 rounded w-2/3 mb-2" />
-            <div class="h-3 bg-gray-200 rounded w-1/3 mb-3" />
-            <div class="h-6 bg-gray-200 rounded w-1/4" />
-          </div>
-        </div>
-      </div>
+    <div v-if="loading" class="flex justify-center py-16">
+      <ProgressSpinner style="width: 50px; height: 50px" />
     </div>
 
     <!-- Empty State -->
     <div v-else-if="filteredBids.length === 0" class="text-center py-16">
-      <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
+      <i class="pi pi-clipboard text-gray-300 mb-4" style="font-size: 3.5rem" />
       <h3 class="text-lg font-medium text-gray-900 mb-2">{{ $t('bids.empty') }}</h3>
       <p class="text-gray-500 mb-6">{{ $t('bids.emptyHint') }}</p>
       <NuxtLink to="/search" class="px-6 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary-800 transition-colors">

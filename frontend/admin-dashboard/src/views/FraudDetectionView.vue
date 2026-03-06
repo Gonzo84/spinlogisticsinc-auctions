@@ -3,13 +3,7 @@ import { onMounted, watch, ref } from 'vue'
 import { useCompliance } from '@/composables/useCompliance'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import Tag from 'primevue/tag'
-import Dialog from 'primevue/dialog'
 import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
-import Button from 'primevue/button'
-import Select from 'primevue/select'
-import Textarea from 'primevue/textarea'
-import Checkbox from 'primevue/checkbox'
 
 const severityOptions = [
   { label: 'All', value: '' },
@@ -48,7 +42,7 @@ const {
   dismissAlert,
 } = useCompliance()
 
-const expandedAlertId = ref<string | null>(null)
+const expandedAlertIds = ref<string[]>([])
 const showResolveDialog = ref(false)
 const resolvingAlertId = ref<string | null>(null)
 const resolution = ref('')
@@ -62,10 +56,6 @@ watch([() => fraudFilters.severity, () => fraudFilters.status, () => fraudFilter
   fraudFilters.page = 1
   fetchFraudAlerts()
 })
-
-function toggleExpand(id: string) {
-  expandedAlertId.value = expandedAlertId.value === id ? null : id
-}
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '--'
@@ -153,9 +143,7 @@ function clearFilters() {
           Review and investigate suspicious bidding patterns and activities.
         </p>
       </div>
-      <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
-        {{ fraudAlerts.filter((a) => a.status === 'new').length }} new alerts
-      </span>
+      <Badge :value="fraudAlerts.filter((a) => a.status === 'new').length" severity="danger" />
     </div>
 
     <!-- Filters -->
@@ -203,29 +191,8 @@ function clearFilters() {
     </div>
 
     <!-- Loading -->
-    <div
-      v-if="loading"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+    <div v-if="loading" class="flex justify-center py-12">
+      <ProgressSpinner strokeWidth="4" />
     </div>
 
     <!-- Empty -->
@@ -255,81 +222,29 @@ function clearFilters() {
     </div>
 
     <!-- Alert cards -->
-    <div
-      v-else
-      class="space-y-4"
-    >
-      <div
-        v-for="alert in fraudAlerts"
-        :key="alert.id"
-        :class="['card overflow-hidden border-l-4 p-0', getSeverityColor(alert.severity)]"
-      >
-        <!-- Alert summary -->
-        <div
-          class="flex cursor-pointer items-center gap-4 p-4 hover:bg-gray-50"
-          @click="toggleExpand(alert.id)"
-        >
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <h3 class="text-sm font-semibold text-gray-900">
-                {{ alert.title }}
-              </h3>
-              <Tag :value="formatStatusLabel(alert.severity)" :severity="getStatusSeverity(alert.severity)" />
-              <Tag :value="formatStatusLabel(alert.status)" :severity="getStatusSeverity(alert.status)" />
+    <Accordion v-else :multiple="true" v-model:value="expandedAlertIds">
+      <AccordionPanel v-for="alert in fraudAlerts" :key="alert.id" :value="alert.id"
+        :class="['border-l-4', getSeverityColor(alert.severity)]">
+        <AccordionHeader>
+          <div class="flex items-center gap-4 w-full">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-semibold text-gray-900">{{ alert.title }}</h3>
+                <Tag :value="formatStatusLabel(alert.severity)" :severity="getStatusSeverity(alert.severity)" />
+                <Tag :value="formatStatusLabel(alert.status)" :severity="getStatusSeverity(alert.status)" />
+              </div>
+              <p class="mt-1 text-xs text-gray-500">
+                {{ getTypeLabel(alert.type) }} &middot; Detected {{ formatDate(alert.detectedAt) }}
+              </p>
             </div>
-            <p class="mt-1 text-xs text-gray-500">
-              {{ getTypeLabel(alert.type) }} &middot; Detected {{ formatDate(alert.detectedAt) }}
-            </p>
+            <div class="flex gap-2" @click.stop>
+              <Button v-if="alert.status === 'new'" label="Investigate" severity="warn" size="small" @click="handleInvestigate(alert.id)" />
+              <Button v-if="alert.status === 'new' || alert.status === 'investigating'" label="Resolve" severity="success" size="small" @click="openResolveDialog(alert.id)" />
+              <Button v-if="alert.status === 'new'" label="Dismiss" severity="secondary" size="small" @click="handleDismiss(alert.id)" />
+            </div>
           </div>
-
-          <!-- Quick actions -->
-          <div
-            class="flex gap-2"
-            @click.stop
-          >
-            <Button
-              v-if="alert.status === 'new'"
-              label="Investigate"
-              severity="warn"
-              size="small"
-              @click="handleInvestigate(alert.id)"
-            />
-            <Button
-              v-if="alert.status === 'new' || alert.status === 'investigating'"
-              label="Resolve"
-              severity="success"
-              size="small"
-              @click="openResolveDialog(alert.id)"
-            />
-            <Button
-              v-if="alert.status === 'new'"
-              label="Dismiss"
-              severity="secondary"
-              size="small"
-              @click="handleDismiss(alert.id)"
-            />
-          </div>
-
-          <svg
-            :class="['h-5 w-5 text-gray-400 transition-transform', expandedAlertId === alert.id && 'rotate-180']"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
-
-        <!-- Expanded details -->
-        <div
-          v-if="expandedAlertId === alert.id"
-          class="border-t border-gray-100 bg-gray-50 p-4"
-        >
+        </AccordionHeader>
+        <AccordionContent>
           <div class="grid gap-4 md:grid-cols-2">
             <div>
               <h4 class="mb-2 text-xs font-semibold uppercase text-gray-500">
@@ -391,9 +306,9 @@ function clearFilters() {
               by {{ alert.resolvedBy }} &middot; {{ formatDate(alert.resolvedAt) }}
             </p>
           </div>
-        </div>
-      </div>
-    </div>
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
 
     <!-- Resolve Dialog -->
     <Dialog

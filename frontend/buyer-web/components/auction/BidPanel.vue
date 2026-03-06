@@ -36,15 +36,11 @@
           v-if="lot.reserveMet"
           class="flex items-center gap-1.5 text-sm text-secondary"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
+          <i class="pi pi-check text-sm" />
           {{ $t('auction.reserveMet') }}
         </div>
         <div v-else class="flex items-center gap-1.5 text-sm text-accent">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
+          <i class="pi pi-exclamation-triangle text-sm" />
           {{ $t('auction.reserveNotMet') }}
         </div>
       </div>
@@ -53,9 +49,7 @@
     <!-- Login Prompt (for unauthenticated users) -->
     <div v-if="!isAuthenticated" class="p-4">
       <div class="text-center py-4">
-        <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
+        <i class="pi pi-lock text-4xl text-gray-300 mb-3" />
         <p class="text-sm text-gray-600 mb-3">{{ $t('auction.loginToBid') }}</p>
         <Button
           :label="$t('nav.login')"
@@ -74,20 +68,12 @@
     <!-- Bid Section (for authenticated users, active auction) -->
     <div v-else-if="lot.status === 'active' || lot.status === 'extended'" class="p-4 space-y-4">
       <!-- Deposit Warning -->
-      <div
-        v-if="lot.depositRequired && !depositPaid"
-        class="flex items-start gap-2 p-3 bg-accent-50 border border-accent-200 rounded-lg"
-      >
-        <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-        </svg>
-        <div>
-          <p class="text-sm font-medium text-accent-800">{{ $t('auction.depositRequired') }}</p>
-          <p class="text-xs text-accent-700 mt-0.5">
-            {{ $t('auction.depositAmount', { amount: formatCurrency(lot.depositAmount || 0) }) }}
-          </p>
-        </div>
-      </div>
+      <Message v-if="lot.depositRequired && !depositPaid" severity="warn" :closable="false">
+        <p class="text-sm font-medium">{{ $t('auction.depositRequired') }}</p>
+        <p class="text-xs mt-0.5">
+          {{ $t('auction.depositAmount', { amount: formatCurrency(lot.depositAmount || 0) }) }}
+        </p>
+      </Message>
 
       <!-- Bid Input -->
       <div>
@@ -104,7 +90,7 @@
           :placeholder="formatCurrency(minBidAmount)"
           @keydown.enter="handlePlaceBid"
         />
-        <p v-if="bidError" class="text-xs text-warning mt-1">{{ bidError }}</p>
+        <InlineMessage v-if="bidError" severity="error" class="mt-1">{{ bidError }}</InlineMessage>
         <p class="text-xs text-gray-400 mt-1">
           {{ $t('auction.minimumBid') }}: {{ formatCurrency(minBidAmount) }}
         </p>
@@ -134,24 +120,9 @@
       />
 
       <!-- Success message (inline) -->
-      <Transition
-        enter-active-class="transition ease-out duration-200"
-        enter-from-class="opacity-0 -translate-y-2"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition ease-in duration-150"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showSuccess"
-          class="flex items-center gap-2 p-3 bg-secondary-50 border border-secondary-200 rounded-lg text-secondary-800 text-sm"
-        >
-          <svg class="w-5 h-5 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          {{ $t('auction.bidPlaced') }}
-        </div>
-      </Transition>
+      <Message v-if="showSuccess" severity="success" :closable="false">
+        {{ $t('auction.bidPlaced') }}
+      </Message>
 
       <!-- Toast notification (fixed position, always visible) -->
       <Teleport to="body">
@@ -167,9 +138,7 @@
             v-if="showSuccess"
             class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 bg-secondary-600 text-white rounded-xl shadow-xl"
           >
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
+            <i class="pi pi-check-circle text-xl shrink-0" />
             <span class="font-semibold">{{ $t('auction.bidPlaced') }}</span>
           </div>
         </Transition>
@@ -179,21 +148,10 @@
       <div class="border-t pt-4">
         <div class="flex items-center justify-between mb-2">
           <label class="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <i class="pi pi-sync text-sm text-gray-400" />
             {{ $t('auction.autoBid') }}
           </label>
-          <button
-            class="relative w-11 h-6 rounded-full transition-colors"
-            :class="autoBidEnabled ? 'bg-primary' : 'bg-gray-300'"
-            @click="toggleAutoBid"
-          >
-            <span
-              class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-              :class="autoBidEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'"
-            />
-          </button>
+          <ToggleSwitch v-model="autoBidEnabled" @update:model-value="onToggleAutoBid" />
         </div>
 
         <Transition
@@ -334,11 +292,9 @@ async function handleCancelAutoBid() {
   }
 }
 
-async function toggleAutoBid() {
-  if (autoBidEnabled.value && hasAutoBid.value) {
+async function onToggleAutoBid(newVal: boolean) {
+  if (!newVal && hasAutoBid.value) {
     await handleCancelAutoBid()
-  } else {
-    autoBidEnabled.value = !autoBidEnabled.value
   }
 }
 

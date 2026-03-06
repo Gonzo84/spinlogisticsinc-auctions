@@ -3,7 +3,8 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
-import { themeConfig } from '@auction-platform/design-tokens'
+import Tooltip from 'primevue/tooltip'
+import { themeConfig, globalPT } from '@auction-platform/design-tokens'
 import Keycloak from 'keycloak-js'
 import App from './App.vue'
 import router from './router'
@@ -57,8 +58,9 @@ if (
 const app = createApp(App)
 app.provide('keycloak', keycloak)
 app.use(createPinia())
-app.use(PrimeVue, { theme: themeConfig })
+app.use(PrimeVue, { theme: themeConfig, pt: globalPT })
 app.use(ConfirmationService)
 app.use(ToastService)
+app.directive('tooltip', Tooltip)
 app.use(router)
 app.mount('#app')

@@ -3,14 +3,7 @@ import { onMounted, watch, ref } from 'vue'
 import { useCompliance } from '@/composables/useCompliance'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import Tag from 'primevue/tag'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import Select from 'primevue/select'
-import Textarea from 'primevue/textarea'
 
 const gdprTypeOptions = [
   { label: 'All types', value: '' },
@@ -105,7 +98,6 @@ function clearFilters() {
 }
 
 const pendingCount = () => gdprRequests.value.filter((r) => r.status === 'pending').length
-const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
 </script>
 
 <template>
@@ -120,39 +112,20 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
-          {{ pendingCount() }} pending
-        </span>
+        <Badge :value="pendingCount()" severity="warn" />
       </div>
     </div>
 
     <!-- Info banner -->
-    <div class="card mb-6 border-blue-200 bg-blue-50">
-      <div class="flex items-start gap-3">
-        <svg
-          class="mt-0.5 h-5 w-5 shrink-0 text-blue-500"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <div>
-          <p class="text-sm font-medium text-blue-800">
-            GDPR Compliance Reminder
-          </p>
-          <p class="mt-1 text-xs text-blue-700">
-            Data export requests must be fulfilled within 30 days. Erasure requests require verification
-            that no active auctions or pending payments exist before processing.
-          </p>
-        </div>
+    <InlineMessage severity="info" class="mb-6 w-full">
+      <div>
+        <p class="text-sm font-medium">GDPR Compliance Reminder</p>
+        <p class="mt-1 text-xs">
+          Data export requests must be fulfilled within 30 days. Erasure requests require verification
+          that no active auctions or pending payments exist before processing.
+        </p>
       </div>
-    </div>
+    </InlineMessage>
 
     <!-- Filters -->
     <div class="card mb-6">
@@ -241,16 +214,8 @@ const totalPages = () => Math.ceil(gdprTotalCount.value / gdprFilters.pageSize)
         </Column>
         <Column field="type" header="Type">
           <template #body="{ data }">
-            <span
-              :class="[
-                'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                data.type === 'export'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-red-100 text-red-800',
-              ]"
-            >
-              {{ data.type === 'export' ? 'Data Export' : 'Data Erasure' }}
-            </span>
+            <Tag :value="data.type === 'export' ? 'Data Export' : 'Data Erasure'"
+                 :severity="data.type === 'export' ? 'info' : 'danger'" />
           </template>
         </Column>
         <Column field="status" header="Status">

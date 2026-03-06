@@ -6,9 +6,6 @@ import { useApi } from '@/composables/useApi'
 import type { ApprovedLot } from '@/types/lot'
 import type { ApiResponse, PagedResponse } from '@/types/api'
 import { useToast } from 'primevue/usetoast'
-import Button from 'primevue/button'
-import Select from 'primevue/select'
-import DatePicker from 'primevue/datepicker'
 
 interface RawLotSummary {
   id?: string
@@ -41,6 +38,11 @@ const CURRENCY_OPTIONS = [
   { label: 'EUR', value: 'EUR' },
   { label: 'USD', value: 'USD' },
   { label: 'GBP', value: 'GBP' },
+]
+
+const breadcrumbItems = [
+  { label: 'Auctions', to: '/auctions' },
+  { label: 'Create Auction' },
 ]
 
 const form = reactive({
@@ -203,42 +205,23 @@ function handleCancel() {
 <template>
   <div>
     <div class="mb-6">
-      <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link
-          to="/auctions"
-          class="hover:text-primary-600"
-        >
-          Auctions
-        </router-link>
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="text-gray-700">Create Auction</span>
-      </div>
+      <Breadcrumb :model="breadcrumbItems">
+        <template #item="{ item }">
+          <router-link v-if="item.to" :to="item.to" class="text-primary-600 hover:text-primary-700">
+            {{ item.label }}
+          </router-link>
+          <span v-else class="text-gray-700">{{ item.label }}</span>
+        </template>
+      </Breadcrumb>
       <h1 class="mt-2 page-title">
         Create Auction
       </h1>
     </div>
 
     <!-- Error banner -->
-    <div
-      v-if="error"
-      class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4"
-    >
-      <p class="text-sm font-medium text-red-800">
-        {{ error }}
-      </p>
-    </div>
+    <Message v-if="error" severity="error" :closable="false" class="mb-6">
+      {{ error }}
+    </Message>
 
     <div class="mx-auto max-w-2xl">
       <form

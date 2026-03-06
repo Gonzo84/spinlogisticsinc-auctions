@@ -1,4 +1,4 @@
-import { themeConfig } from '@auction-platform/design-tokens'
+import { themeConfig, globalPT } from '@auction-platform/design-tokens'
 
 export default defineNuxtConfig({
   ssr: true,
@@ -13,7 +13,7 @@ export default defineNuxtConfig({
   ],
 
   primevue: {
-    options: { theme: themeConfig },
+    options: { theme: themeConfig, pt: globalPT },
     autoImport: true,
   },
 

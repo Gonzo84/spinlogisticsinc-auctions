@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
 import { usePayments } from '@/composables/usePayments'
-import Tag from 'primevue/tag'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 
 const paymentStatusOptions = [
   { label: 'All statuses', value: '' },
@@ -34,6 +27,12 @@ const {
 const showSettleDialog = ref(false)
 const settlingPaymentId = ref<string | null>(null)
 const bankReference = ref('')
+
+const dateFromModel = ref<Date | null>(filters.dateFrom ? new Date(filters.dateFrom) : null)
+const dateToModel = ref<Date | null>(filters.dateTo ? new Date(filters.dateTo) : null)
+
+watch(dateFromModel, (val) => { filters.dateFrom = val ? val.toISOString().split('T')[0] : '' })
+watch(dateToModel, (val) => { filters.dateTo = val ? val.toISOString().split('T')[0] : '' })
 
 onMounted(async () => {
   await Promise.all([fetchPayments(), fetchSummary()])
@@ -95,9 +94,10 @@ function clearFilters() {
   filters.search = ''
   filters.dateFrom = ''
   filters.dateTo = ''
+  dateFromModel.value = null
+  dateToModel.value = null
 }
 
-const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
 </script>
 
 <template>
@@ -182,19 +182,11 @@ const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
         </div>
         <div>
           <label class="label">From</label>
-          <input
-            v-model="filters.dateFrom"
-            type="date"
-            class="input"
-          >
+          <DatePicker v-model="dateFromModel" dateFormat="yy-mm-dd" class="w-full" />
         </div>
         <div>
           <label class="label">To</label>
-          <input
-            v-model="filters.dateTo"
-            type="date"
-            class="input"
-          >
+          <DatePicker v-model="dateToModel" dateFormat="yy-mm-dd" class="w-full" />
         </div>
         <Button
           label="Clear"
@@ -282,18 +274,18 @@ const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
             <div class="flex justify-end gap-1">
               <Button
                 v-if="data.status === 'pending' || data.status === 'overdue'"
+                v-tooltip="'Manual settle'"
                 label="Settle"
                 severity="success"
                 size="small"
-                title="Manual settle"
                 @click="openSettleDialog(data.id)"
               />
               <Button
                 v-if="data.status === 'overdue'"
+                v-tooltip="'Send reminder'"
                 label="Remind"
                 severity="warn"
                 size="small"
-                title="Send reminder"
                 @click="handleSendReminder(data.id)"
               />
             </div>

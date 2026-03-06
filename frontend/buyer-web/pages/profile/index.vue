@@ -17,9 +17,7 @@
       <!-- Profile Header -->
       <div class="bg-white border rounded-xl p-6 mb-6">
         <div class="flex items-center gap-4">
-          <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary text-xl font-bold">
-            {{ initials }}
-          </div>
+          <Avatar :label="initials" size="xlarge" shape="circle" class="bg-primary-100 text-primary font-bold" />
           <div>
             <h2 class="text-lg font-semibold text-gray-900">{{ fullName }}</h2>
             <p class="text-sm text-gray-500">{{ user.email }}</p>
@@ -121,17 +119,7 @@
                 <p class="text-sm font-medium text-gray-700">{{ $t('profile.emailNotifications') }}</p>
                 <p class="text-xs text-gray-500">{{ $t('profile.emailNotificationsHint') }}</p>
               </div>
-              <button
-                type="button"
-                class="relative w-11 h-6 rounded-full transition-colors"
-                :class="notifPrefs.email ? 'bg-primary' : 'bg-gray-300'"
-                @click="notifPrefs.email = !notifPrefs.email"
-              >
-                <span
-                  class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  :class="notifPrefs.email ? 'translate-x-[22px]' : 'translate-x-0.5'"
-                />
-              </button>
+              <ToggleSwitch v-model="notifPrefs.email" />
             </label>
 
             <label class="flex items-center justify-between cursor-pointer">
@@ -139,17 +127,7 @@
                 <p class="text-sm font-medium text-gray-700">{{ $t('profile.overbidAlerts') }}</p>
                 <p class="text-xs text-gray-500">{{ $t('profile.overbidAlertsHint') }}</p>
               </div>
-              <button
-                type="button"
-                class="relative w-11 h-6 rounded-full transition-colors"
-                :class="notifPrefs.overbid ? 'bg-primary' : 'bg-gray-300'"
-                @click="notifPrefs.overbid = !notifPrefs.overbid"
-              >
-                <span
-                  class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  :class="notifPrefs.overbid ? 'translate-x-[22px]' : 'translate-x-0.5'"
-                />
-              </button>
+              <ToggleSwitch v-model="notifPrefs.overbid" />
             </label>
 
             <label class="flex items-center justify-between cursor-pointer">
@@ -157,17 +135,7 @@
                 <p class="text-sm font-medium text-gray-700">{{ $t('profile.auctionClosing') }}</p>
                 <p class="text-xs text-gray-500">{{ $t('profile.auctionClosingHint') }}</p>
               </div>
-              <button
-                type="button"
-                class="relative w-11 h-6 rounded-full transition-colors"
-                :class="notifPrefs.closing ? 'bg-primary' : 'bg-gray-300'"
-                @click="notifPrefs.closing = !notifPrefs.closing"
-              >
-                <span
-                  class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  :class="notifPrefs.closing ? 'translate-x-[22px]' : 'translate-x-0.5'"
-                />
-              </button>
+              <ToggleSwitch v-model="notifPrefs.closing" />
             </label>
 
             <label class="flex items-center justify-between cursor-pointer">
@@ -175,45 +143,20 @@
                 <p class="text-sm font-medium text-gray-700">{{ $t('profile.pushNotifications') }}</p>
                 <p class="text-xs text-gray-500">{{ $t('profile.pushNotificationsHint') }}</p>
               </div>
-              <button
-                type="button"
-                class="relative w-11 h-6 rounded-full transition-colors"
-                :class="notifPrefs.push ? 'bg-primary' : 'bg-gray-300'"
-                @click="notifPrefs.push = !notifPrefs.push"
-              >
-                <span
-                  class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  :class="notifPrefs.push ? 'translate-x-[22px]' : 'translate-x-0.5'"
-                />
-              </button>
+              <ToggleSwitch v-model="notifPrefs.push" />
             </label>
           </div>
         </div>
 
         <!-- Success Message -->
-        <Transition
-          enter-active-class="transition ease-out duration-200"
-          enter-from-class="opacity-0 -translate-y-2"
-          enter-to-class="opacity-100 translate-y-0"
-          leave-active-class="transition ease-in duration-150"
-          leave-from-class="opacity-100"
-          leave-to-class="opacity-0"
-        >
-          <div
-            v-if="showSuccess"
-            class="flex items-center gap-2 p-4 bg-secondary-50 border border-secondary-200 rounded-lg text-secondary-800"
-          >
-            <svg class="w-5 h-5 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <span class="text-sm font-medium">{{ $t('profile.saved') }}</span>
-          </div>
-        </Transition>
+        <Message v-if="showSuccess" severity="success" :closable="false">
+          {{ $t('profile.saved') }}
+        </Message>
 
         <!-- Error Message -->
-        <div v-if="saveError" class="p-4 bg-warning-50 border border-warning-200 rounded-lg text-sm text-warning-800">
+        <Message v-if="saveError" severity="error" :closable="false">
           {{ saveError }}
-        </div>
+        </Message>
 
         <!-- Save Button -->
         <div class="flex justify-end">
@@ -223,10 +166,7 @@
             :disabled="saving"
           >
             <span v-if="saving" class="flex items-center gap-2">
-              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
+              <i class="pi pi-spinner pi-spin" />
               {{ $t('common.saving') }}
             </span>
             <span v-else>{{ $t('profile.saveChanges') }}</span>

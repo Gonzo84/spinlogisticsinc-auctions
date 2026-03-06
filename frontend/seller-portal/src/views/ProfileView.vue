@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, nextTick } from 'vue'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Checkbox from 'primevue/checkbox'
-import Select from 'primevue/select'
 import { useAuth } from '@/composables/useAuth'
 import { useApi } from '@/composables/useApi'
 
 const { userName, userEmail, companyName } = useAuth()
 const { get, loading } = useApi()
 
-const activeTab = ref<'company' | 'bank' | 'notifications'>('company')
+const activeTab = ref<string>('company')
 
 const companyForm = reactive({
   companyName: '',
@@ -127,9 +123,12 @@ async function saveNotifications() {
     <!-- User info card -->
     <div class="card mb-6">
       <div class="flex items-center gap-4">
-        <div class="flex h-14 w-14 items-center justify-center rounded-full bg-seller-100 text-xl font-bold text-seller-700">
-          {{ userName.charAt(0).toUpperCase() }}
-        </div>
+        <Avatar
+          :label="userName.charAt(0).toUpperCase()"
+          size="xlarge"
+          shape="circle"
+          class="bg-seller-100 text-seller-700"
+        />
         <div>
           <p class="text-lg font-semibold text-gray-900">
             {{ userName }}
@@ -148,65 +147,35 @@ async function saveNotifications() {
     </div>
 
     <!-- Success/Error banner -->
-    <div
+    <Message
       v-if="saveSuccess"
-      class="mb-4 rounded-lg border border-green-200 bg-green-50 p-3"
+      severity="success"
+      :closable="false"
+      class="mb-4"
     >
-      <p class="text-sm font-medium text-green-800">
-        Settings saved successfully.
-      </p>
-    </div>
-    <div
+      Settings saved successfully.
+    </Message>
+    <Message
       v-if="saveError"
-      class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3"
+      severity="error"
+      :closable="false"
+      class="mb-4"
     >
-      <p class="text-sm font-medium text-red-800">
-        {{ saveError }}
-      </p>
-    </div>
+      {{ saveError }}
+    </Message>
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200">
-      <nav class="-mb-px flex gap-6">
-        <button
-          :class="[
-            'border-b-2 pb-3 pt-1 text-sm font-medium transition-colors',
-            activeTab === 'company'
-              ? 'border-primary-500 text-primary-600'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-          ]"
-          @click="activeTab = 'company'"
-        >
-          Company Details
-        </button>
-        <button
-          :class="[
-            'border-b-2 pb-3 pt-1 text-sm font-medium transition-colors',
-            activeTab === 'bank'
-              ? 'border-primary-500 text-primary-600'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-          ]"
-          @click="activeTab = 'bank'"
-        >
-          Bank Settings
-        </button>
-        <button
-          :class="[
-            'border-b-2 pb-3 pt-1 text-sm font-medium transition-colors',
-            activeTab === 'notifications'
-              ? 'border-primary-500 text-primary-600'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-          ]"
-          @click="activeTab = 'notifications'"
-        >
-          Notifications
-        </button>
-      </nav>
-    </div>
+    <Tabs v-model:value="activeTab">
+      <TabList>
+        <Tab value="company">Company Details</Tab>
+        <Tab value="bank">Bank Settings</Tab>
+        <Tab value="notifications">Notifications</Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel value="company">
 
     <!-- Company Details Tab -->
     <form
-      v-if="activeTab === 'company'"
       class="card"
       @submit.prevent="saveCompany"
     >
@@ -348,9 +317,11 @@ async function saveNotifications() {
       </div>
     </form>
 
+        </TabPanel>
+        <TabPanel value="bank">
+
     <!-- Bank Settings Tab -->
     <form
-      v-if="activeTab === 'bank'"
       class="card"
       @submit.prevent="saveBank"
     >
@@ -424,11 +395,9 @@ async function saveNotifications() {
           />
         </div>
       </div>
-      <div class="mt-4 rounded-lg bg-amber-50 p-3">
-        <p class="text-xs text-amber-700">
-          Changes to bank details require re-verification and may take up to 2 business days to take effect.
-        </p>
-      </div>
+      <InlineMessage severity="warn" class="mt-4 w-full">
+        Changes to bank details require re-verification and may take up to 2 business days to take effect.
+      </InlineMessage>
       <div class="mt-6 flex justify-end">
         <Button
           type="submit"
@@ -439,9 +408,11 @@ async function saveNotifications() {
       </div>
     </form>
 
+        </TabPanel>
+        <TabPanel value="notifications">
+
     <!-- Notifications Tab -->
     <form
-      v-if="activeTab === 'notifications'"
       class="card"
       @submit.prevent="saveNotifications"
     >
@@ -558,5 +529,9 @@ async function saveNotifications() {
         />
       </div>
     </form>
+
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   </div>
 </template>

@@ -4,14 +4,8 @@ import { useRoute } from 'vue-router'
 import { useAuctions } from '@/composables/useAuctions'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import Tag from 'primevue/tag'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
 import LiveBidChart from '@/components/charts/LiveBidChart.vue'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import Textarea from 'primevue/textarea'
 
 const confirm = useConfirm()
 const toast = useToast()
@@ -30,6 +24,11 @@ const {
 } = useAuctions()
 
 const auctionId = computed(() => route.params.id as string)
+
+const breadcrumbItems = computed(() => [
+  { label: 'Auctions', to: '/auctions' },
+  { label: currentAuction.value?.title ?? 'Detail' },
+])
 
 const showCancelDialog = ref(false)
 const cancelReason = ref('')
@@ -97,55 +96,18 @@ const bidChartData = computed(() =>
 <template>
   <div>
     <!-- Breadcrumb -->
-    <div class="mb-6">
-      <div class="flex items-center gap-2 text-sm text-gray-500">
-        <router-link
-          to="/auctions"
-          class="hover:text-primary-600"
-        >
-          Auctions
+    <Breadcrumb :model="breadcrumbItems" class="mb-6">
+      <template #item="{ item }">
+        <router-link v-if="item.to" :to="item.to" class="text-primary-600 hover:text-primary-700">
+          {{ item.label }}
         </router-link>
-        <svg
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <span class="text-gray-700">{{ currentAuction?.title ?? 'Detail' }}</span>
-      </div>
-    </div>
+        <span v-else class="text-gray-700">{{ item.label }}</span>
+      </template>
+    </Breadcrumb>
 
     <!-- Loading -->
-    <div
-      v-if="loading && !currentAuction"
-      class="py-12 text-center"
-    >
-      <svg
-        class="mx-auto h-8 w-8 animate-spin text-primary-600"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        />
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
+    <div v-if="loading && !currentAuction" class="flex justify-center py-12">
+      <ProgressSpinner strokeWidth="4" />
     </div>
 
     <template v-else-if="currentAuction">

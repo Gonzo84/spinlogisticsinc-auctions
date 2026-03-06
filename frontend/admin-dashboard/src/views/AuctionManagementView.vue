@@ -2,12 +2,6 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuctions } from '@/composables/useAuctions'
-import Tag from 'primevue/tag'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
 
 const statusOptions = [
@@ -26,6 +20,12 @@ const { auctions, totalCount, loading, error, filters, fetchAuctions } = useAuct
 
 const sortField = ref('')
 const sortOrder = ref<1 | -1 | 0>(0)
+
+// Date model wrappers for PrimeVue DatePicker (needs Date objects, not strings)
+const dateFromModel = ref<Date | null>(filters.dateFrom ? new Date(filters.dateFrom) : null)
+const dateToModel = ref<Date | null>(filters.dateTo ? new Date(filters.dateTo) : null)
+watch(dateFromModel, (val) => { filters.dateFrom = val ? val.toISOString().split('T')[0] : '' })
+watch(dateToModel, (val) => { filters.dateTo = val ? val.toISOString().split('T')[0] : '' })
 
 function onSort(event: { sortField?: string | ((item: unknown) => string); sortOrder?: number | null }) {
   const field = typeof event.sortField === 'string' ? event.sortField : ''
@@ -70,13 +70,13 @@ function goToPage(page: number) {
   fetchAuctions()
 }
 
-const totalPages = () => Math.ceil(totalCount.value / filters.pageSize)
-
 function clearFilters() {
   filters.status = ''
   filters.brand = ''
   filters.dateFrom = ''
   filters.dateTo = ''
+  dateFromModel.value = null
+  dateToModel.value = null
 }
 </script>
 
@@ -122,19 +122,19 @@ function clearFilters() {
         </div>
         <div class="flex-1">
           <label class="label">Date From</label>
-          <input
-            v-model="filters.dateFrom"
-            type="date"
-            class="input"
-          >
+          <DatePicker
+            v-model="dateFromModel"
+            dateFormat="yy-mm-dd"
+            class="w-full"
+          />
         </div>
         <div class="flex-1">
           <label class="label">Date To</label>
-          <input
-            v-model="filters.dateTo"
-            type="date"
-            class="input"
-          >
+          <DatePicker
+            v-model="dateToModel"
+            dateFormat="yy-mm-dd"
+            class="w-full"
+          />
         </div>
         <Button
           label="Clear"
@@ -145,20 +145,19 @@ function clearFilters() {
     </div>
 
     <!-- Error -->
-    <div
-      v-if="error"
-      class="card border-red-200 bg-red-50 text-center"
-    >
-      <p class="text-sm text-red-600">
+    <div v-if="error">
+      <Message severity="error" :closable="false">
         {{ error }}
-      </p>
-      <Button
-        label="Retry"
-        severity="secondary"
-        size="small"
-        class="mt-3"
-        @click="fetchAuctions"
-      />
+        <template #icon><i class="pi pi-exclamation-circle" /></template>
+      </Message>
+      <div class="text-center mt-3">
+        <Button
+          label="Retry"
+          severity="secondary"
+          size="small"
+          @click="fetchAuctions"
+        />
+      </div>
     </div>
 
     <!-- Table -->
@@ -226,6 +225,7 @@ function clearFilters() {
         <Column header="Actions" headerStyle="text-align: right" bodyStyle="text-align: right" style="width: 100px">
           <template #body="{ data }">
             <Button
+              v-tooltip="'View auction details'"
               label="View"
               severity="secondary"
               size="small"

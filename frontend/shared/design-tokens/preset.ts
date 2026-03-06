@@ -112,7 +112,53 @@ export const AuctionPlatformPreset = definePreset(Aura, {
         borderRadius: '{border.radius.xl}',
       },
     },
-  },
+    datepicker: {
+      root: {
+        borderRadius: '{border.radius.lg}',
+      },
+    },
+    textarea: {
+      root: {
+        borderRadius: '{border.radius.lg}',
+      },
+    },
+    drawer: {
+      root: {
+        borderRadius: '0',
+      },
+    },
+    message: {
+      root: {
+        borderRadius: '{border.radius.lg}',
+      },
+    },
+    accordion: {
+      root: {
+        borderRadius: '{border.radius.lg}',
+      },
+    },
+    tabs: {
+      root: {
+        borderRadius: '{border.radius.lg}',
+      },
+    },
+    progressbar: {
+      root: {
+        borderRadius: '{border.radius.xl}',
+        height: '0.5rem',
+      },
+    },
+    avatar: {
+      root: {
+        borderRadius: '{border.radius.xl}',
+      },
+    },
+    badge: {
+      root: {
+        borderRadius: '{border.radius.xl}',
+      },
+    },
+  } as Record<string, Record<string, Record<string, string>>>,
 })
 
 export const themeConfig = {
@@ -122,7 +168,7 @@ export const themeConfig = {
     darkModeSelector: '.app-dark',
     cssLayer: {
       name: 'primevue',
-      order: 'theme, base, primevue',
+      order: 'tailwind-base, primevue, tailwind-utilities',
     },
   },
 }

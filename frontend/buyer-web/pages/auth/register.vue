@@ -5,9 +5,7 @@
       <div class="text-center mb-8">
         <NuxtLink to="/" class="inline-flex items-center gap-2 mb-6">
           <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            <i class="pi pi-bolt text-white text-xl" />
           </div>
           <span class="text-xl font-bold text-gray-900">EU Auction</span>
         </NuxtLink>
@@ -24,9 +22,7 @@
             : 'text-gray-500 hover:text-gray-700'"
           @click="accountType = 'business'"
         >
-          <svg class="w-5 h-5 inline-block mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
+          <i class="pi pi-building inline-block mr-1.5 -mt-0.5" />
           {{ $t('auth.business') }}
         </button>
         <button
@@ -36,9 +32,7 @@
             : 'text-gray-500 hover:text-gray-700'"
           @click="accountType = 'private'"
         >
-          <svg class="w-5 h-5 inline-block mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
+          <i class="pi pi-user inline-block mr-1.5 -mt-0.5" />
           {{ $t('auth.private') }}
         </button>
       </div>
@@ -177,9 +171,9 @@
         </label>
 
         <!-- Error -->
-        <div v-if="registerError" class="p-3 bg-warning-50 border border-warning-200 rounded-lg text-sm text-warning-800">
+        <Message v-if="registerError" severity="error" :closable="false">
           {{ registerError }}
-        </div>
+        </Message>
 
         <!-- Submit -->
         <Button

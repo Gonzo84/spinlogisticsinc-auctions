@@ -99,6 +99,10 @@ data class AuctionSummaryResponse(
     @JsonProperty("status")
     val status: String,
 
+    /** Scheduled start time (UTC). */
+    @JsonProperty("startTime")
+    val startTime: Instant,
+
     /** Current end time (UTC). */
     @JsonProperty("endTime")
     val endTime: Instant,

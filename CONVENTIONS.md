@@ -465,13 +465,15 @@ This project uses **Tailwind CSS** (utility-first), not BEM.
 - `warning` -- red (#dc2626)
 - Font: Inter (body), JetBrains Mono (code)
 
-**Reusable classes** defined in `@layer components`:
+**Reusable classes** defined in `@layer components` (Tailwind-only; for PrimeVue component usage see section 3.11):
 ```css
-.btn-primary { @apply bg-primary-600 text-white hover:bg-primary-700 ...; }
 .card        { @apply rounded-xl border border-gray-200 bg-white p-6 shadow-sm; }
-.input       { @apply block w-full rounded-lg border border-gray-300 ...; }
-.badge       { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+.label       { @apply block text-sm font-medium text-gray-700 mb-1; }
+.page-header { @apply flex items-center justify-between mb-6; }
+.page-title  { @apply text-2xl font-bold text-gray-900; }
 ```
+
+> **Deprecated:** `.btn-primary` (use PrimeVue Button), `.input` (use PrimeVue InputText), `.badge` (use PrimeVue Tag/Badge).
 
 **Rules:**
 - **Scoped styles** on every component: `<style scoped>`.
@@ -480,7 +482,116 @@ This project uses **Tailwind CSS** (utility-first), not BEM.
 - **Responsive**: Mobile-first breakpoints (`sm:`, `md:`, `lg:`).
 - No CSS preprocessor: Plain CSS with Tailwind directives.
 
-### 3.11 Linting & Formatting
+### 3.11 PrimeVue Component Library
+
+This project uses **PrimeVue 4.x** (styled mode with Aura theme) as the primary UI component library. Tailwind CSS is used for layout, spacing, and custom elements only.
+
+#### When to Use PrimeVue vs Custom Tailwind
+
+| Need | Use |
+|------|-----|
+| Form inputs (text, number, date, select, textarea) | PrimeVue: InputText, InputNumber, DatePicker, Select, Textarea |
+| Data display (tables, pagination, sorting) | PrimeVue: DataTable, Column, Paginator |
+| Buttons (all variants) | PrimeVue: Button |
+| Status indicators | PrimeVue: Tag with `getStatusSeverity()` from design-tokens |
+| Dialogs, confirmations | PrimeVue: Dialog, ConfirmDialog, `useConfirm()` |
+| Notifications | PrimeVue: Toast, `useToast()` |
+| Navigation | PrimeVue: Breadcrumb, Menu, Drawer (mobile sidebar) |
+| Tabs, accordions | PrimeVue: Tabs/TabPanel, Accordion/AccordionPanel |
+| Loading indicators | PrimeVue: ProgressSpinner, ProgressBar, Skeleton |
+| Error/info messages | PrimeVue: Message, InlineMessage |
+| Tooltips | PrimeVue: `v-tooltip` directive |
+| Avatars, badges | PrimeVue: Avatar, Badge, OverlayBadge |
+| Layout cards (KPI, summary) | Custom Tailwind `.card` class |
+| Page layout (grid, flex) | Tailwind utilities |
+| Charts | Chart.js via vue-chartjs (not PrimeVue Chart wrapper) |
+| Complex custom widgets | Custom Vue components with Tailwind |
+
+#### Auto-Import (Vite SPAs)
+
+PrimeVue components are auto-imported via `unplugin-vue-components` + `@primevue/auto-import-resolver`. No manual imports needed in `<script setup>`.
+
+```typescript
+// vite.config.ts
+import Components from 'unplugin-vue-components/vite'
+import { PrimeVueResolver } from '@primevue/auto-import-resolver'
+
+plugins: [
+  vue(),
+  Components({ resolvers: [PrimeVueResolver()], dts: true }),
+]
+```
+
+For Nuxt (buyer-web), use `@primevue/nuxt-module` with `autoImport: true`.
+
+#### CSS Layer Order (Non-Negotiable)
+
+```css
+@layer tailwind-base, primevue, tailwind-utilities;
+
+@layer tailwind-base { @tailwind base; }
+@layer tailwind-utilities { @tailwind components; @tailwind utilities; }
+```
+
+This ensures Tailwind utilities can override PrimeVue styles when needed.
+
+#### Shared Design Tokens
+
+All frontends import from `@auction-platform/design-tokens`:
+- `themeConfig` + `AuctionPlatformPreset`: PrimeVue theme preset (Aura base + custom overrides)
+- `globalPT`: Global pass-through classes (font-medium buttons, shadow-sm cards)
+- `getStatusSeverity(status)`: Maps status strings to PrimeVue severity
+- `formatStatusLabel(status)`: Formats status strings for display
+
+#### Status Badge Pattern (Mandatory)
+
+```vue
+<Tag :value="formatStatusLabel(item.status)"
+     :severity="getStatusSeverity(item.status)" />
+```
+
+Never create custom status badge components. Always use Tag + shared severity mapping.
+
+#### Form Validation Pattern
+
+New forms SHOULD use `@primevue/forms` with Zod resolver:
+
+```vue
+<Form :resolver="zodResolver(schema)" :initialValues="defaults" @submit="onSubmit">
+  <FormField v-slot="$field" name="fieldName">
+    <label class="label">Label</label>
+    <InputText class="w-full" />
+    <Message v-if="$field.invalid" severity="error" size="small" variant="simple">
+      {{ $field.error?.message }}
+    </Message>
+  </FormField>
+</Form>
+```
+
+#### DataTable Pattern
+
+```vue
+<DataTable :value="items" :loading="loading" lazy paginator
+  :rows="pageSize" :totalRecords="totalItems"
+  @page="onPage" @sort="onSort" stripedRows>
+  <Column field="name" header="Name" sortable />
+  <Column field="status" header="Status">
+    <template #body="{ data }">
+      <Tag :value="formatStatusLabel(data.status)"
+           :severity="getStatusSeverity(data.status)" />
+    </template>
+  </Column>
+  <Column header="Actions" style="width: 8rem">
+    <template #body="{ data }">
+      <Button v-tooltip="'View'" icon="pi pi-eye" text rounded
+        @click="router.push(`/items/${data.id}`)" />
+    </template>
+  </Column>
+  <template #empty>No items found.</template>
+</DataTable>
+```
+
+### 3.12 Linting & Formatting
 
 ```
 Prettier: no semicolons, single quotes, 100-char width, trailing commas
@@ -1331,6 +1442,10 @@ These are real bugs that were found and fixed. AI agents MUST be aware of them:
 - Do NOT modify Flyway migrations after they have been applied to any environment.
 - Do NOT use string concatenation in SQL queries -- always use parameterized queries.
 - Do NOT use wildcard CORS origins (`*`) with credentials.
+- Do NOT create custom implementations for UI patterns that PrimeVue provides (spinners, badges, breadcrumbs, tabs, accordions, progress bars, etc.).
+- Do NOT use native HTML form inputs (`<input>`, `<select>`, `<textarea>`) -- use PrimeVue equivalents (InputText, Select, Textarea, DatePicker, InputNumber).
+- Do NOT mix PrimeVue styled components with custom Tailwind styling for the same concern (e.g., don't add custom border-radius to a Button that already gets it from the theme preset).
+- Do NOT create custom status badge components -- use PrimeVue `Tag` with `getStatusSeverity()` from `@auction-platform/design-tokens`.
 
 ---
 
