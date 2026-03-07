@@ -14,9 +14,9 @@
     "noNotifications": "Nessuna notifica al momento"
   },
   "home": {
-    "pageTitle": "Aste di attrezzature industriali",
-    "heroTitle": "Acquista attrezzature industriali all'asta",
-    "heroSubtitle": "Migliaia di macchine, veicoli e utensili da tutta Europa. Fai offerte online, ritira in loco.",
+    "pageTitle": "Aste di container e attrezzature",
+    "heroTitle": "Container e attrezzature industriali all'asta",
+    "heroSubtitle": "Container ufficio, residenziali, sanitari e marittimi, oltre ad attrezzature edili. Sfoglia, offri, ritira.",
     "browseByCountry": "Sfoglia per paese",
     "categories": "Categorie",
     "featuredAuctions": "Aste in evidenza",
@@ -37,14 +37,32 @@
     "step4Desc": "Ritira l'attrezzatura presso il venditore o organizza il trasporto."
   },
   "categories": {
+    "officeContainers": "Container ufficio",
+    "shippingContainers": "Container marittimi",
+    "sanitaryContainers": "Container sanitari",
+    "storageContainers": "Container di stoccaggio",
+    "modularStructures": "Strutture modulari",
+    "climateControl": "Climatizzazione",
+    "constructionEquipment": "Attrezzature edili",
+    "fencing": "Recinzioni",
     "transport": "Trasporti",
     "agriculture": "Agricoltura",
     "construction": "Edilizia",
-    "metalworking": "Lavorazione dei metalli",
-    "woodworking": "Lavorazione del legno",
+    "metalworking": "Lavorazione metalli",
+    "woodworking": "Lavorazione legno",
     "foodProcessing": "Industria alimentare",
     "electronics": "Elettronica",
-    "warehouse": "Magazzinaggio"
+    "warehouse": "Magazzino"
+  },
+  "countries": {
+    "SI": "Slovenia",
+    "HR": "Croazia",
+    "AT": "Austria",
+    "DE": "Germania",
+    "IT": "Italia",
+    "BA": "Bosnia ed Erzegovina",
+    "RS": "Serbia",
+    "HU": "Ungheria"
   },
   "auction": {
     "currentBid": "Offerta attuale",
@@ -85,7 +103,7 @@
   "search": {
     "title": "Sfoglia le aste",
     "titleWithQuery": "Risultati per \"{query}\"",
-    "placeholder": "Cerca attrezzature, marchi, categorie...",
+    "placeholder": "Cerca container, attrezzature, categorie...",
     "resultsFor": "Risultati per \"{query}\"",
     "browseAll": "Sfoglia tutti i lotti",
     "results": "{count} risultati",
@@ -236,7 +254,7 @@
   },
   "auth": {
     "createAccount": "Crea il tuo account",
-    "registerSubtitle": "Unisciti a migliaia di acquirenti in tutta Europa",
+    "registerSubtitle": "Unisciti agli acquirenti dell'Europa centrale",
     "registerPageTitle": "Registrazione",
     "callbackPageTitle": "Accesso in corso...",
     "business": "Azienda",
@@ -310,7 +328,7 @@
     "dismiss": "Ignora"
   },
   "footer": {
-    "about": "La principale piattaforma europea di aste online B2B per attrezzature industriali. Acquista macchine, veicoli e utensili da venditori affidabili in tutta l'UE.",
+    "about": "SPC - La principale piattaforma B2B di aste per container e attrezzature industriali nell'Europa centrale. 10+ anni di esperienza, 900+ clienti soddisfatti.",
     "quickLinks": "Link rapidi",
     "browseAuctions": "Sfoglia le aste",
     "closingSoon": "In chiusura",
@@ -326,11 +344,9 @@
     "privacy": "Informativa sulla privacy",
     "cookies": "Politica sui cookie",
     "auctionTerms": "Condizioni d'asta",
-    "copyright": "\u00a9 {year} EU Auction Platform. Tutti i diritti riservati.",
+    "copyright": "\u00a9 {year} SPC d.o.o. Tutti i diritti riservati.",
     "vatNotice": "Tutti i prezzi sono al netto dell'IVA, salvo diversa indicazione.",
-    "linkedin": "LinkedIn",
-    "twitter": "Twitter",
-    "youtube": "YouTube"
+    "linkedin": "LinkedIn"
   },
   "error": {
     "backToHome": "Torna alla Home",

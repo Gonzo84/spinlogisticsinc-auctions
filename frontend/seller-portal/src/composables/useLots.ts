@@ -125,15 +125,48 @@ export function useLots() {
 
   const categories = ref<Category[]>([])
 
+  /** Flatten a category tree into a flat list including all nested children */
+  function flattenCategoryTree(nodes: Record<string, unknown>[]): Category[] {
+    const result: Category[] = []
+    for (const node of nodes) {
+      result.push({
+        id: (node.id as string) ?? '',
+        parentId: (node.parentId as string) ?? null,
+        name: (node.name as string) ?? '',
+        slug: (node.slug as string) ?? '',
+        icon: (node.icon as string) ?? '',
+        level: (node.level as number) ?? 0,
+        sortOrder: (node.sortOrder as number) ?? 0,
+        active: (node.active as boolean) ?? true,
+      })
+      const children = node.children as Record<string, unknown>[] | undefined
+      if (children && Array.isArray(children) && children.length > 0) {
+        result.push(...flattenCategoryTree(children))
+      }
+    }
+    return result
+  }
+
   async function fetchCategories(): Promise<Category[]> {
     try {
-      const raw = await get<ApiResponse<Category[]> | Category[]>('/categories')
-      const data = unwrapApiResponse<Category[] | { items?: Category[] }>(raw)
-      categories.value = Array.isArray(data) ? data : (data?.items ?? [])
+      // Use /categories/tree to get the full hierarchy (including subcategories)
+      // so we can resolve any categoryId (root or child) to its name
+      const raw = await get<ApiResponse<Record<string, unknown>[]> | Record<string, unknown>[]>('/categories/tree')
+      const data = unwrapApiResponse<Record<string, unknown>[] | { items?: Record<string, unknown>[] }>(raw)
+      const treeNodes = Array.isArray(data) ? data : (data?.items ?? [])
+      categories.value = flattenCategoryTree(treeNodes)
       return categories.value
     } catch {
-      error.value = null
-      return []
+      // Fallback to flat root categories if tree endpoint fails
+      try {
+        const raw = await get<ApiResponse<Category[]> | Category[]>('/categories')
+        const data = unwrapApiResponse<Category[] | { items?: Category[] }>(raw)
+        categories.value = Array.isArray(data) ? data : (data?.items ?? [])
+        return categories.value
+      } catch {
+        error.value = null
+        return []
+      }
     }
   }
 

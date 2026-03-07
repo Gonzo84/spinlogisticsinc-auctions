@@ -11,6 +11,7 @@ enum class Brand(val code: String) {
     TROOSTWIJK("troostwijk"),
     SURPLEX("surplex"),
     INDUSTRIAL_AUCTIONS("industrial-auctions"),
+    SPC("spc"),
     CUSTOM("custom");
 
     companion object {

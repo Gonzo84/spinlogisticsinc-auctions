@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<{
   valueFormatter?: (value: number) => string
 }>(), {
   label: 'Revenue (EUR)',
-  color: '#2563eb',
+  color: '#004d71',
   height: 300,
   valueFormatter: undefined,
 })

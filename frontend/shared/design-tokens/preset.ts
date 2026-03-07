@@ -4,25 +4,25 @@ import Aura from '@primeuix/themes/aura'
 export const AuctionPlatformPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '{blue.50}',
-      100: '{blue.100}',
-      200: '{blue.200}',
-      300: '{blue.300}',
-      400: '{blue.400}',
-      500: '{blue.500}',
-      600: '{blue.600}',
-      700: '{blue.700}',
-      800: '{blue.800}',
-      900: '{blue.900}',
-      950: '{blue.950}',
+      50: '#e6f2f8',
+      100: '#b3d9e8',
+      200: '#80bfd8',
+      300: '#4da6c8',
+      400: '#268db5',
+      500: '#0077a3',
+      600: '#006a92',
+      700: '#004d71',
+      800: '#003e5a',
+      900: '#002f44',
+      950: '#001f2e',
     },
     colorScheme: {
       light: {
         primary: {
-          color: '{primary.600}',
+          color: '{primary.700}',
           contrastColor: '#ffffff',
-          hoverColor: '{primary.700}',
-          activeColor: '{primary.800}',
+          hoverColor: '{primary.800}',
+          activeColor: '{primary.900}',
         },
         highlight: {
           background: '{primary.50}',
@@ -78,13 +78,13 @@ export const AuctionPlatformPreset = definePreset(Aura, {
   components: {
     button: {
       root: {
-        borderRadius: '{border.radius.lg}',
+        borderRadius: '9999px',
       },
     },
     card: {
       root: {
         borderRadius: '{border.radius.xl}',
-        shadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+        shadow: '6px 6px 9px rgba(0, 0, 0, 0.12)',
       },
     },
     datatable: {
@@ -99,27 +99,27 @@ export const AuctionPlatformPreset = definePreset(Aura, {
     },
     inputtext: {
       root: {
-        borderRadius: '{border.radius.lg}',
+        borderRadius: '{border.radius.xl}',
       },
     },
     select: {
       root: {
-        borderRadius: '{border.radius.lg}',
+        borderRadius: '{border.radius.xl}',
       },
     },
     tag: {
       root: {
-        borderRadius: '{border.radius.xl}',
+        borderRadius: '9999px',
       },
     },
     datepicker: {
       root: {
-        borderRadius: '{border.radius.lg}',
+        borderRadius: '{border.radius.xl}',
       },
     },
     textarea: {
       root: {
-        borderRadius: '{border.radius.lg}',
+        borderRadius: '{border.radius.xl}',
       },
     },
     drawer: {
@@ -155,7 +155,7 @@ export const AuctionPlatformPreset = definePreset(Aura, {
     },
     badge: {
       root: {
-        borderRadius: '{border.radius.xl}',
+        borderRadius: '9999px',
       },
     },
   } as Record<string, Record<string, Record<string, string>>>,

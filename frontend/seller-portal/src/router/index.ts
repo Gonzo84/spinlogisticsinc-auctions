@@ -70,7 +70,7 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const title = to.meta.title
-  document.title = title ? `${title} - Seller Portal` : 'Seller Portal'
+  document.title = title ? `${title} - SPC Prodaja` : 'Portal za prodajalce - SPC Aukcije'
   next()
 })
 

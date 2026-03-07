@@ -14,9 +14,9 @@
     "noNotifications": "No notifications yet"
   },
   "home": {
-    "pageTitle": "Industrial Equipment Auctions",
-    "heroTitle": "Find Industrial Equipment at Auction",
-    "heroSubtitle": "Thousands of machines, vehicles and tools from across Europe. Bid online, collect locally.",
+    "pageTitle": "Auctions for Containers & Equipment",
+    "heroTitle": "Containers & Industrial Equipment at Auction",
+    "heroSubtitle": "Office, residential, sanitary and shipping containers plus construction equipment. Browse, bid, collect.",
     "browseByCountry": "Browse by country",
     "categories": "Categories",
     "featuredAuctions": "Featured Auctions",
@@ -28,15 +28,23 @@
     "co2Description": "Total CO\u2082 avoided through equipment reuse on our platform",
     "howItWorks": "How It Works",
     "step1Title": "Browse & Search",
-    "step1Desc": "Find equipment by category, country or keyword across thousands of lots.",
+    "step1Desc": "Find containers and equipment by category, country or keyword.",
     "step2Title": "Place Your Bid",
     "step2Desc": "Bid online in real time or set an auto-bid to compete automatically.",
     "step3Title": "Win & Pay",
-    "step3Desc": "Pay securely with bank transfer, iDEAL or credit card.",
+    "step3Desc": "Pay securely with bank transfer or credit card.",
     "step4Title": "Collect",
     "step4Desc": "Pick up your equipment at the seller's location or arrange transport."
   },
   "categories": {
+    "officeContainers": "Office Containers",
+    "shippingContainers": "Shipping Containers",
+    "sanitaryContainers": "Sanitary Containers",
+    "storageContainers": "Storage Containers",
+    "modularStructures": "Modular Structures",
+    "climateControl": "Climate Control",
+    "constructionEquipment": "Construction Equipment",
+    "fencing": "Fencing",
     "transport": "Transport",
     "agriculture": "Agriculture",
     "construction": "Construction",
@@ -45,6 +53,16 @@
     "foodProcessing": "Food Processing",
     "electronics": "Electronics",
     "warehouse": "Warehouse"
+  },
+  "countries": {
+    "SI": "Slovenia",
+    "HR": "Croatia",
+    "AT": "Austria",
+    "DE": "Germany",
+    "IT": "Italy",
+    "BA": "Bosnia and Herzegovina",
+    "RS": "Serbia",
+    "HU": "Hungary"
   },
   "auction": {
     "currentBid": "Current bid",
@@ -85,7 +103,7 @@
   "search": {
     "title": "Browse Auctions",
     "titleWithQuery": "Results for \"{query}\"",
-    "placeholder": "Search equipment, brands, categories...",
+    "placeholder": "Search containers, equipment, categories...",
     "resultsFor": "Results for \"{query}\"",
     "browseAll": "Browse All Lots",
     "results": "{count} results",
@@ -202,7 +220,7 @@
     "privateVat": "Private",
     "privateVatHint": "Individual buyer",
     "vatNumber": "VAT Number",
-    "vatNumberPlaceholder": "e.g. NL123456789B01",
+    "vatNumberPlaceholder": "e.g. SI49185675",
     "validateVat": "Validate",
     "vatValid": "Valid",
     "vatInvalid": "Invalid VAT number",
@@ -229,14 +247,14 @@
     "paymentMethod": "Select payment method",
     "bankTransfer": "Bank Transfer",
     "bankTransferHint": "Manual transfer within 5 business days",
-    "idealHint": "Instant payment via your Dutch bank",
+    "idealHint": "Instant payment via your bank",
     "creditCard": "Credit Card",
     "processing": "Processing...",
     "payNow": "Pay Now"
   },
   "auth": {
     "createAccount": "Create your account",
-    "registerSubtitle": "Join thousands of buyers across Europe",
+    "registerSubtitle": "Join buyers across Central Europe",
     "registerPageTitle": "Register",
     "callbackPageTitle": "Signing in...",
     "business": "Business",
@@ -310,7 +328,7 @@
     "dismiss": "Dismiss"
   },
   "footer": {
-    "about": "Europe's leading B2B online auction platform for industrial equipment. Buy machines, vehicles, and tools from trusted sellers across the EU.",
+    "about": "SPC - Central Europe's leading B2B auction platform for containers and industrial equipment. 10+ years of experience, 900+ satisfied customers.",
     "quickLinks": "Quick Links",
     "browseAuctions": "Browse Auctions",
     "closingSoon": "Closing Soon",
@@ -326,11 +344,9 @@
     "privacy": "Privacy Policy",
     "cookies": "Cookie Policy",
     "auctionTerms": "Auction Terms",
-    "copyright": "\u00a9 {year} EU Auction Platform. All rights reserved.",
+    "copyright": "\u00a9 {year} SPC d.o.o. All rights reserved.",
     "vatNotice": "All prices exclude VAT unless stated otherwise.",
-    "linkedin": "LinkedIn",
-    "twitter": "Twitter",
-    "youtube": "YouTube"
+    "linkedin": "LinkedIn"
   },
   "error": {
     "backToHome": "Back to Home",

@@ -141,7 +141,7 @@ const registrationData = computed(() => (Array.isArray(registrationTrends.value)
             :labels="registrationLabels"
             :data="registrationData"
             label="New Registrations"
-            color="#2563eb"
+            color="#004d71"
             :height="280"
           />
         </div>

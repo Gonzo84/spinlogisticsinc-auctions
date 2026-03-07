@@ -85,8 +85,8 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const title = to.meta.title
   document.title = title
-    ? `${title} - Admin Dashboard`
-    : 'Admin Dashboard - EU Auction Platform'
+    ? `${title} - SPC Admin`
+    : 'Nadzorna plošča - SPC Aukcije'
   next()
 })
 

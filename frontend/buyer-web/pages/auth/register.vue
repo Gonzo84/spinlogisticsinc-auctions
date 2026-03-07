@@ -4,10 +4,8 @@
       <!-- Header -->
       <div class="text-center mb-8">
         <NuxtLink to="/" class="inline-flex items-center gap-2 mb-6">
-          <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <i class="pi pi-bolt text-white text-xl" />
-          </div>
-          <span class="text-xl font-bold text-gray-900">EU Auction</span>
+          <img src="/images/spc-logo.png" alt="SPC" class="h-10 w-auto" />
+          <span class="text-xl font-bold text-gray-900">SPC Aukcije</span>
         </NuxtLink>
         <h1 class="text-2xl font-bold text-gray-900">{{ $t('auth.createAccount') }}</h1>
         <p class="text-gray-500 mt-1">{{ $t('auth.registerSubtitle') }}</p>

@@ -18,6 +18,10 @@
     @apply min-h-screen bg-gray-50 font-sans text-gray-900;
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Raleway', 'Open Sans', system-ui, sans-serif;
+  }
+
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-primary-500;
   }

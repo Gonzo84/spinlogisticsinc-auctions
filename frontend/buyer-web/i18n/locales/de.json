@@ -14,9 +14,9 @@
     "noNotifications": "Noch keine Benachrichtigungen"
   },
   "home": {
-    "pageTitle": "Industrieauktionen",
-    "heroTitle": "Industrieausr\u00fcstung auf Auktion kaufen",
-    "heroSubtitle": "Tausende Maschinen, Fahrzeuge und Werkzeuge aus ganz Europa. Online bieten, lokal abholen.",
+    "pageTitle": "Auktionen für Container und Ausrüstung",
+    "heroTitle": "Container und Industrieausrüstung auf Auktion",
+    "heroSubtitle": "Büro-, Wohn-, Sanitär- und Seecontainer sowie Baumaschinen. Stöbern, bieten, abholen.",
     "browseByCountry": "Nach Land durchsuchen",
     "categories": "Kategorien",
     "featuredAuctions": "Ausgew\u00e4hlte Auktionen",
@@ -37,14 +37,32 @@
     "step4Desc": "Holen Sie Ihre Ausr\u00fcstung beim Verk\u00e4ufer ab oder organisieren Sie den Transport."
   },
   "categories": {
+    "officeContainers": "Bürocontainer",
+    "shippingContainers": "Seecontainer",
+    "sanitaryContainers": "Sanitärcontainer",
+    "storageContainers": "Lagercontainer",
+    "modularStructures": "Modulare Gebäude",
+    "climateControl": "Klimatechnik",
+    "constructionEquipment": "Baumaschinen",
+    "fencing": "Bauzäune",
     "transport": "Transport",
     "agriculture": "Landwirtschaft",
-    "construction": "Bau",
+    "construction": "Bauwesen",
     "metalworking": "Metallbearbeitung",
     "woodworking": "Holzbearbeitung",
     "foodProcessing": "Lebensmittelverarbeitung",
     "electronics": "Elektronik",
-    "warehouse": "Lager"
+    "warehouse": "Lagerhaltung"
+  },
+  "countries": {
+    "SI": "Slowenien",
+    "HR": "Kroatien",
+    "AT": "Österreich",
+    "DE": "Deutschland",
+    "IT": "Italien",
+    "BA": "Bosnien und Herzegowina",
+    "RS": "Serbien",
+    "HU": "Ungarn"
   },
   "auction": {
     "currentBid": "Aktuelles Gebot",
@@ -85,7 +103,7 @@
   "search": {
     "title": "Auktionen Durchsuchen",
     "titleWithQuery": "Ergebnisse f\u00fcr \"{query}\"",
-    "placeholder": "Ausr\u00fcstung, Marken, Kategorien suchen...",
+    "placeholder": "Container, Ausrüstung, Kategorien suchen...",
     "resultsFor": "Ergebnisse f\u00fcr \"{query}\"",
     "browseAll": "Alle Lose Durchsuchen",
     "results": "{count} Ergebnisse",
@@ -236,7 +254,7 @@
   },
   "auth": {
     "createAccount": "Konto erstellen",
-    "registerSubtitle": "Schlie\u00dfen Sie sich Tausenden von K\u00e4ufern in ganz Europa an",
+    "registerSubtitle": "Schließen Sie sich Käufern in Mitteleuropa an",
     "registerPageTitle": "Registrieren",
     "callbackPageTitle": "Anmeldung...",
     "business": "Gesch\u00e4ftlich",
@@ -310,7 +328,7 @@
     "dismiss": "Schlie\u00dfen"
   },
   "footer": {
-    "about": "Europas f\u00fchrendes B2B-Online-Auktionsplattform f\u00fcr Industrieausr\u00fcstung. Kaufen Sie Maschinen, Fahrzeuge und Werkzeuge von vertrauensw\u00fcrdigen Verk\u00e4ufern in der EU.",
+    "about": "SPC - Zentraleuropas führende B2B-Auktionsplattform für Container und Industrieausrüstung. 10+ Jahre Erfahrung, 900+ zufriedene Kunden.",
     "quickLinks": "Schnelllinks",
     "browseAuctions": "Auktionen Durchsuchen",
     "closingSoon": "Bald Endend",
@@ -326,11 +344,9 @@
     "privacy": "Datenschutzerkl\u00e4rung",
     "cookies": "Cookie-Richtlinie",
     "auctionTerms": "Auktionsbedingungen",
-    "copyright": "\u00a9 {year} EU Auction Platform. Alle Rechte vorbehalten.",
+    "copyright": "\u00a9 {year} SPC d.o.o. Alle Rechte vorbehalten.",
     "vatNotice": "Alle Preise verstehen sich zzgl. MwSt., sofern nicht anders angegeben.",
-    "linkedin": "LinkedIn",
-    "twitter": "Twitter",
-    "youtube": "YouTube"
+    "linkedin": "LinkedIn"
   },
   "error": {
     "backToHome": "Zur\u00fcck zur Startseite",

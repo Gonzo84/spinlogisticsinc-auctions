@@ -7,13 +7,13 @@ disable-model-invocation: false
 
 # Happy Path Testing Skill
 
-Run browser-based happy path tests for the EU Auction Platform. Uses Playwright MCP for browser roles and Bash curl for the broker API-only path.
+Run browser-based happy path tests for the SPC Auction Platform. Uses Playwright MCP for browser roles and Bash curl for the broker API-only path.
 
 **Argument:** `$ARGUMENTS` — one of `buyer`, `seller`, `admin`, `broker`, `demo`, or `all` (default: `all`)
 
 **Happy path documents location:** `docs/happy-paths/`
 - `docs/happy-paths/HAPPY_PATHS.md` — role-based tests (buyer, seller, admin, broker)
-- `docs/happy-paths/HAPPY_PATH_DEMO.md` — presentation demo flow (cross-role, 7 steps)
+- `docs/happy-paths/HAPPY_PATH_DEMO.md` — SPC pitch demo flow (cross-role, 8 steps: homepage, seller, admin, buyer, competitive bidding & anti-sniping, post-auction settlement & payment, compliance, CO2)
 
 ---
 
@@ -25,12 +25,12 @@ Determine which role(s) to test from `$ARGUMENTS`:
 - `seller` — run only the Seller Happy Path (Section 2 of `docs/happy-paths/HAPPY_PATHS.md`)
 - `admin` — run only the Admin Happy Path (Section 3 of `docs/happy-paths/HAPPY_PATHS.md`)
 - `broker` — run only the Broker Happy Path (Section 4 of `docs/happy-paths/HAPPY_PATHS.md`, API-only via curl)
-- `demo` — run the Presentation Demo Flow (`docs/happy-paths/HAPPY_PATH_DEMO.md`), steps 1-7 cross-role
-- `all` or empty — run all four role-based paths in order: buyer → seller → admin → broker
+- `demo` — run the SPC Pitch Demo Flow (`docs/happy-paths/HAPPY_PATH_DEMO.md`), steps 1-8 cross-role
+- `all` or empty — run all four role-based paths in order: buyer -> seller -> admin -> broker
 
 Store the list of roles to test. For each role, you will produce a separate report file.
 
-When `demo` is selected, follow `docs/happy-paths/HAPPY_PATH_DEMO.md` instead of `HAPPY_PATHS.md`. The demo flow tests across all 3 portals in a single sequential flow (7 steps), producing a single report file named `tests/demo-happy-path-report-<YYYY-MM-DD>.md`.
+When `demo` is selected, follow `docs/happy-paths/HAPPY_PATH_DEMO.md` instead of `HAPPY_PATHS.md`. The demo flow tests across all 3 portals in a single sequential flow (8 steps), producing a single report file named `tests/demo-happy-path-report-<YYYY-MM-DD>.md`.
 
 ---
 
@@ -67,7 +67,7 @@ mkdir -p tests/test-screenshots
 Read the appropriate test plan from `docs/happy-paths/`:
 
 - **Role-based testing** (`buyer`, `seller`, `admin`, `broker`, `all`): Read `docs/happy-paths/HAPPY_PATHS.md`. Each section (1-4) maps to a role. Follow the numbered steps and **Verify** checkpoints exactly as written.
-- **Demo flow testing** (`demo`): Read `docs/happy-paths/HAPPY_PATH_DEMO.md`. Follow Steps 1-7 sequentially across all 3 portals. This tests the exact presentation demo flow.
+- **Demo flow testing** (`demo`): Read `docs/happy-paths/HAPPY_PATH_DEMO.md`. Follow Steps 1-8 sequentially across all 3 portals. This tests the exact SPC pitch demo flow with SPC-specific products (containers, climate equipment, construction machinery). Steps 5-6 involve competitive bidding, anti-sniping, and post-auction payment/settlement — these use a mix of browser UI and API calls (curl).
 
 ---
 
@@ -131,13 +131,13 @@ Follow `docs/happy-paths/HAPPY_PATHS.md` Section 1, steps 1.1 through 1.7:
 
 | Step | Name | Actions |
 |------|------|---------|
-| 1.1 | Landing Page | Navigate to localhost:3000. Verify hero, search bar, featured lots, navbar, footer |
-| 1.2 | Authentication | Click Login → Keycloak → enter credentials → verify redirect back, navbar shows user menu |
-| 1.3 | Browse & Search | Use search bar → verify results page, lot cards, filters |
-| 1.4 | View Lot Detail | Click a lot card → verify detail page fields, bid panel |
-| 1.5 | Place a Bid | Enter bid amount on an ACTIVE lot, click Place Bid → verify confirmation |
+| 1.1 | Landing Page | Navigate to localhost:3000. Verify hero, search bar, featured lots (SPC products), navbar, footer |
+| 1.2 | Authentication | Click Login -> Keycloak -> enter credentials -> verify redirect back, navbar shows user menu |
+| 1.3 | Browse & Search | Use search bar (try "kontejner" or "container") -> verify results page with SPC lots, lot cards, filters |
+| 1.4 | View Lot Detail | Click an SPC lot card -> verify detail page fields, bid panel |
+| 1.5 | Place a Bid | Enter bid amount on an ACTIVE lot, click Place Bid -> verify confirmation |
 | 1.6 | Navigation Pages | Visit My Bids, Watchlist, Profile from user menu |
-| 1.7 | Logout | Click avatar → Logout → verify redirect, Login button reappears |
+| 1.7 | Logout | Click avatar -> Logout -> verify redirect, Login button reappears |
 
 ### 4b: Seller Happy Path (Browser — http://localhost:5174)
 
@@ -145,19 +145,19 @@ Follow `docs/happy-paths/HAPPY_PATHS.md` Section 1, steps 1.1 through 1.7:
 
 Follow `docs/happy-paths/HAPPY_PATHS.md` Section 2, steps 2.1 through 2.11:
 
-| Step | Name | Actions                                                                                                                                                                                                    |
-|------|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 2.1 | Authentication | Navigate to localhost:5174 → Keycloak login → verify dashboard                                                                                                                                             |
-| 2.2 | Dashboard | Verify KPI cards, recent activity, quick actions, status overview                                                                                                                                          |
-| 2.3 | Create a New Lot | Fill lot form with a random industryc machine, for example:(Title: "Caterpillar D6 Bulldozer 2019", Brand: "Caterpillar", Starting Bid: 45000, etc.), but try to be as random as possible → verify success |
-| 2.4 | Submit for Review | Click Submit for Review → verify status changes to PENDING_REVIEW                                                                                                                                          |
-| 2.5 | My Lots Page | Verify paginated list, lot details, pagination                                                                                                                                                             |
-| 2.6 | Edit a Lot | Edit a field, save → verify changes reflected                                                                                                                                                              |
-| 2.7 | Settlements | Navigate to Settlements → verify page loads                                                                                                                                                                |
-| 2.8 | Analytics | Navigate to Analytics → verify page loads                                                                                                                                                                  |
-| 2.9 | CO2 Report | Navigate to CO2 Report → verify page loads                                                                                                                                                                 |
-| 2.10 | Profile | Navigate to Profile → verify form tabs                                                                                                                                                                     |
-| 2.11 | Logout | Logout → verify session ended                                                                                                                                                                              |
+| Step | Name | Actions |
+|------|------|---------|
+| 2.1 | Authentication | Navigate to localhost:5174 -> Keycloak login -> verify dashboard |
+| 2.2 | Dashboard | Verify KPI cards, recent activity, quick actions, status overview |
+| 2.3 | Create a New Lot | Fill lot form with an SPC-relevant product (e.g., "Skladiscni kontejner 10ft", "Razvlazilec Master DH 26", or any container/equipment), Location: Ljubljana SI -> verify success |
+| 2.4 | Submit for Review | Click Submit for Review -> verify status changes to PENDING_REVIEW |
+| 2.5 | My Lots Page | Verify paginated list, lot details, pagination |
+| 2.6 | Edit a Lot | Edit a field, save -> verify changes reflected |
+| 2.7 | Settlements | Navigate to Settlements -> verify page loads |
+| 2.8 | Analytics | Navigate to Analytics -> verify page loads |
+| 2.9 | CO2 Report | Navigate to CO2 Report -> verify page loads |
+| 2.10 | Profile | Navigate to Profile -> verify form tabs |
+| 2.11 | Logout | Logout -> verify session ended |
 
 ### 4c: Admin Happy Path (Browser — http://localhost:5175)
 
@@ -167,17 +167,17 @@ Follow `docs/happy-paths/HAPPY_PATHS.md` Section 3, steps 3.1 through 3.10:
 
 | Step | Name | Actions |
 |------|------|---------|
-| 3.1 | Authentication | Navigate to localhost:5175 → Keycloak login → verify dashboard |
+| 3.1 | Authentication | Navigate to localhost:5175 -> Keycloak login -> verify dashboard |
 | 3.2 | Dashboard Overview | Verify sidebar navigation links |
-| 3.3 | Lot Approval | Navigate to Lot Approval → approve a pending lot → verify status change |
-| 3.3b | Create Auction | Navigate to Auctions → Create Auction → select approved lot → set times → submit → verify lot becomes ACTIVE |
-| 3.4 | Auction Management | Navigate to Auctions → verify table with created auction, filters, Create Auction button |
-| 3.5 | User Management | Navigate to Users → verify page loads |
-| 3.6 | Payment Management | Navigate to Payments → verify page loads |
-| 3.7 | Fraud Detection | Navigate to Fraud Detection → verify table and filters |
-| 3.8 | GDPR Compliance | Navigate to GDPR → verify table and action buttons |
-| 3.9 | Analytics | Navigate to Analytics → verify KPIs and charts |
-| 3.10 | System Health | Navigate to System Health → verify service health cards |
+| 3.3 | Lot Approval | Navigate to Lot Approval -> approve a pending lot -> verify status change |
+| 3.3b | Create Auction | Navigate to Auctions -> Create Auction -> select approved lot -> set times -> submit -> verify lot becomes ACTIVE |
+| 3.4 | Auction Management | Navigate to Auctions -> verify table with created auction, filters, Create Auction button |
+| 3.5 | User Management | Navigate to Users -> verify page loads |
+| 3.6 | Payment Management | Navigate to Payments -> verify page loads |
+| 3.7 | Fraud Detection | Navigate to Fraud Detection -> verify table and filters |
+| 3.8 | GDPR Compliance | Navigate to GDPR -> verify table and action buttons |
+| 3.9 | Analytics | Navigate to Analytics -> verify KPIs and charts |
+| 3.10 | System Health | Navigate to System Health -> verify service health cards |
 
 ### 4d: Broker Happy Path (API-only — via curl)
 
@@ -205,6 +205,55 @@ curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/brokers/l
 ```
 
 Verify HTTP status codes and response shapes match `docs/happy-paths/HAPPY_PATHS.md` expectations.
+
+### 4e: Demo Flow — Competitive Bidding & Anti-Sniping (Steps 5-6)
+
+When running the `demo` mode, Steps 5-6 of `HAPPY_PATH_DEMO.md` require special handling:
+
+**Step 5 — Competitive Bidding & Anti-Sniping:**
+
+This step combines browser UI testing with API calls. The flow is:
+
+1. **Setup (5.0):** Use Bash curl to create a short-duration auction (~4 minutes). Store the `AUCTION_ID`, `BUYER1_TOKEN`, and `BUYER2_TOKEN` as shell variables for subsequent steps.
+
+2. **Multi-buyer simulation:** Since Playwright MCP uses a single browser profile, simulate the second buyer (buyer2@test.com) via API calls using curl. Buyer 1 interacts via the browser UI, Buyer 2 bids via curl.
+
+3. **Anti-sniping verification (5.3):** This requires waiting until the auction's countdown timer shows < 2:00 remaining. Use `browser_evaluate` to read the timer value, or calculate the wait time from the auction's end time. Then:
+   - Place a bid via curl as Buyer 2
+   - Check the API response for `"extensionApplied": true`
+   - Refresh the browser page and verify the timer has been extended
+
+4. **Auction close (5.5):** Wait for the auction's end time to pass (the `AuctionClosingScheduler` auto-closes every 1s). Poll the auction status via curl until it shows "CLOSED". Timeout after 5 minutes.
+
+   ```bash
+   # Poll for auction close (max 5 min)
+   for i in $(seq 1 300); do
+     STATUS=$(curl -sf -H "Authorization: Bearer $ADMIN_TOKEN" \
+       "http://localhost:8080/api/v1/auctions/$AUCTION_ID" | jq -r '.data.status')
+     if [ "$STATUS" = "CLOSED" ]; then break; fi
+     sleep 1
+   done
+   ```
+
+**Step 6 — Post-Auction Settlement & Payment:**
+
+This step is primarily API-driven via Bash curl:
+
+1. **Award (6.1):** `POST /api/v1/auctions/{id}/award` — if the endpoint doesn't exist, report as a bug with root cause "missing REST endpoint" and file `services/auction-engine/src/main/kotlin/.../AuctionResource.kt`.
+
+2. **Checkout (6.2):** `POST /api/v1/payments/checkout` with the winning buyer's token.
+
+3. **Pay (6.3):** `POST /api/v1/payments/checkout/{id}/pay` — submit payment.
+
+4. **Admin payments page (6.4):** Switch to admin-dashboard browser and navigate to Payments page — verify via Playwright MCP.
+
+5. **Settle (6.5):** `PATCH /api/v1/payments/{id}/settle` via curl.
+
+6. **Seller settlements page (6.6):** Switch to seller-portal browser and navigate to Settlements page — verify via Playwright MCP.
+
+For API-only steps, record curl responses as evidence and verify HTTP status codes and response body shapes. A 404 or 500 on any of these endpoints is a bug.
+
+**buyer2@test.com prerequisite:** If buyer2@test.com doesn't exist in Keycloak and the token request fails, mark Step 5 as PARTIAL with note "Second buyer user not configured in Keycloak". Fall back to single-buyer anti-sniping testing (buyer places bids via UI, check if timer extends when bid is within the last 2 minutes).
 
 ---
 
@@ -347,3 +396,4 @@ Use the `/kill-all` skill to stop and remove all services, kill frontend dev ser
 - **For the broker path**, save curl output as evidence instead of screenshots.
 - **Cross-reference with known issues** in `docs/happy-paths/HAPPY_PATHS.md` "Known Issues" section — note if a bug is pre-existing vs new.
 - **Keycloak login flow**: After navigating to the app, wait for Keycloak redirect. Take a `browser_snapshot`, find the username/password fields by `ref`, use `browser_fill_form` to enter credentials, then `browser_click` the Sign In button. Use `browser_wait_for` to confirm redirect back to the app.
+- **SPC product context**: When creating lots during testing, use SPC-relevant products (containers, climate equipment, fencing, modular structures) rather than generic industrial equipment. Search queries should use terms like "kontejner", "container", "grelec" (heater), "ograja" (fence).

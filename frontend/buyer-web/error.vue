@@ -67,6 +67,6 @@ function retry() {
 }
 
 useHead({
-  title: `${props.error?.statusCode || 'Error'} | EU Auction Platform`,
+  title: `${props.error?.statusCode || 'Error'} | SPC Aukcije`,
 })
 </script>

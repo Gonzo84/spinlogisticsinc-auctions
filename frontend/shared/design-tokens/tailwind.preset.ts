@@ -4,18 +4,18 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
-          DEFAULT: '#2563eb',
+          50: '#e6f2f8',
+          100: '#b3d9e8',
+          200: '#80bfd8',
+          300: '#4da6c8',
+          400: '#268db5',
+          500: '#0077a3',
+          600: '#006a92',
+          700: '#004d71',
+          800: '#003e5a',
+          900: '#002f44',
+          950: '#001f2e',
+          DEFAULT: '#004d71',
         },
         success: {
           50: '#f0fdf4',
@@ -83,7 +83,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        sans: ['Open Sans', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        heading: ['Raleway', 'Open Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'Cascadia Code', 'Fira Code', 'monospace'],
       },
       animation: {

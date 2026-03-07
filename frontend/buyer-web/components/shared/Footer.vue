@@ -5,16 +5,47 @@
         <!-- About -->
         <div>
           <div class="flex items-center gap-2 mb-4">
-            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <i class="pi pi-bolt text-lg text-white" />
-            </div>
-            <span class="text-lg font-bold text-white">EU Auction</span>
+            <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto brightness-0 invert" />
+            <span class="text-lg font-bold text-white">SPC Aukcije</span>
           </div>
           <p class="text-sm leading-relaxed text-gray-400 mb-4">
             {{ $t('footer.about') }}
           </p>
+          <!-- Contact Info -->
+          <div class="space-y-1.5 text-sm text-gray-400 mb-4">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-phone w-4 h-4" />
+              <a href="tel:+38617777666" class="hover:text-white transition-colors">+386 1 77 77 666</a>
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-envelope w-4 h-4" />
+              <a href="mailto:info@spc.si" class="hover:text-white transition-colors">info@spc.si</a>
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-map-marker w-4 h-4" />
+              <span>Premrlova ulica 11, 1000 Ljubljana</span>
+            </div>
+          </div>
           <!-- Social Links -->
           <div class="flex items-center gap-3">
+            <a
+              href="https://facebook.com/SPContainer"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="w-9 h-9 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-colors"
+              title="Facebook"
+            >
+              <i class="pi pi-facebook w-4 h-4" />
+            </a>
+            <a
+              href="https://instagram.com/spcontainers"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="w-9 h-9 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-colors"
+              title="Instagram"
+            >
+              <i class="pi pi-instagram w-4 h-4" />
+            </a>
             <a
               href="https://linkedin.com"
               target="_blank"
@@ -23,24 +54,6 @@
               :title="$t('footer.linkedin')"
             >
               <i class="pi pi-linkedin w-4 h-4" />
-            </a>
-            <a
-              href="https://twitter.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="w-9 h-9 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-colors"
-              :title="$t('footer.twitter')"
-            >
-              <i class="pi pi-twitter w-4 h-4" />
-            </a>
-            <a
-              href="https://youtube.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="w-9 h-9 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-colors"
-              :title="$t('footer.youtube')"
-            >
-              <i class="pi pi-youtube w-4 h-4" />
             </a>
           </div>
         </div>

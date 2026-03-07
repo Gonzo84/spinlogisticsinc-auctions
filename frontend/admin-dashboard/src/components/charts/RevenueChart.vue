@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<{
   height?: number
 }>(), {
   label: 'Revenue (EUR)',
-  color: '#2563eb',
+  color: '#004d71',
   height: 300,
 })
 

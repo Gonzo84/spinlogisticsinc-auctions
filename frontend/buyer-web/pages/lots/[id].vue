@@ -286,6 +286,7 @@ const relatedLots = ref<Auction[]>([])
 const { data: lot, pending, error } = await useAsyncData(
   `lot-${lotId.value}`,
   () => getAuction(lotId.value),
+  { server: false },
 )
 
 const breadcrumbHome = { icon: 'pi pi-home', to: '/' }

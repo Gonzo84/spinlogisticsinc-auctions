@@ -329,6 +329,7 @@ class AuctionResource @Inject constructor(
     fun listAuctions(
         @QueryParam("status") status: String?,
         @QueryParam("brand") brand: String?,
+        @QueryParam("lotId") lotId: String?,
         @QueryParam("page") @DefaultValue("1") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int
     ): Response {
@@ -336,7 +337,7 @@ class AuctionResource @Inject constructor(
         val effectivePage = page.coerceAtLeast(1)
 
         // Query the read model with JDBC for filtered, paginated results
-        val results = queryAuctions(status, brand, effectivePage, effectiveSize)
+        val results = queryAuctions(status, brand, lotId, effectivePage, effectiveSize)
 
         val summaries = results.first.map { toSummaryResponse(it) }
         val total = results.second
@@ -380,6 +381,7 @@ class AuctionResource @Inject constructor(
     private fun queryAuctions(
         status: String?,
         brand: String?,
+        lotId: String?,
         page: Int,
         size: Int
     ): Pair<List<AuctionReadModel>, Long> {
@@ -393,6 +395,10 @@ class AuctionResource @Inject constructor(
         if (!brand.isNullOrBlank()) {
             conditions.add("brand = ?")
             params.add(brand)
+        }
+        if (!lotId.isNullOrBlank()) {
+            conditions.add("lot_id = ?::uuid")
+            params.add(lotId)
         }
 
         val whereClause = if (conditions.isEmpty()) "" else "WHERE ${conditions.joinToString(" AND ")}"

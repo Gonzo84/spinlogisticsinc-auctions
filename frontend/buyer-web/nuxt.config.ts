@@ -21,15 +21,15 @@ export default defineNuxtConfig({
 
   i18n: {
     locales: [
-      { code: 'en', name: 'English', file: 'en.json' },
-      { code: 'nl', name: 'Nederlands', file: 'nl.json' },
+      { code: 'sl', name: 'Slovenščina', file: 'sl.json' },
+      { code: 'hr', name: 'Hrvatski', file: 'hr.json' },
       { code: 'de', name: 'Deutsch', file: 'de.json' },
-      { code: 'fr', name: 'Fran\u00e7ais', file: 'fr.json' },
-      { code: 'pl', name: 'Polski', file: 'pl.json' },
+      { code: 'en', name: 'English', file: 'en.json' },
       { code: 'it', name: 'Italiano', file: 'it.json' },
-      { code: 'ro', name: 'Rom\u00e2n\u0103', file: 'ro.json' },
+      { code: 'sr', name: 'Srpski', file: 'sr.json' },
+      { code: 'hu', name: 'Magyar', file: 'hu.json' },
     ],
-    defaultLocale: 'en',
+    defaultLocale: 'sl',
     // @ts-expect-error lazy is valid but not in generated types for this i18n version
     lazy: true,
     strategy: 'prefix_except_default',
@@ -56,20 +56,25 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'EU Auction Platform - Buy Industrial Equipment',
+      title: 'SPC Aukcije - Kontejnerji in oprema na dražbi',
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       meta: [
-        { name: 'description', content: 'B2B online auction platform for industrial equipment across Europe' },
+        { name: 'description', content: 'SPC Aukcije - B2B platforma za spletne dražbe kontejnerjev, klimatske opreme in gradbenih strojev. Dražite in kupujte rabljeno industrijsko opremo v srednji Evropi.' },
         { name: 'format-detection', content: 'telephone=no' },
+        { property: 'og:site_name', content: 'SPC Aukcije' },
+        { property: 'og:locale', content: 'sl_SI' },
+        { property: 'og:locale:alternate', content: 'hr_HR' },
+        { property: 'og:locale:alternate', content: 'de_DE' },
+        { property: 'og:locale:alternate', content: 'en_GB' },
       ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Raleway:wght@500;600;700&display=swap' },
       ],
       htmlAttrs: {
-        lang: 'en',
+        lang: 'sl',
       },
     },
   },

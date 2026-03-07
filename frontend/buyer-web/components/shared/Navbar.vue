@@ -4,10 +4,8 @@
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
-          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <i class="pi pi-bolt text-lg text-white" />
-          </div>
-          <span class="text-lg font-bold text-gray-900 hidden sm:block">EU Auction</span>
+          <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto" />
+          <span class="text-lg font-bold text-gray-900 hidden sm:block">SPC Aukcije</span>
         </NuxtLink>
 
         <!-- Search Bar (desktop) -->
@@ -262,17 +260,17 @@ interface LocaleEntry {
 }
 
 const availableLocales: LocaleEntry[] = [
-  { code: 'en', name: 'English', flag: '\uD83C\uDDEC\uD83C\uDDE7' },
-  { code: 'nl', name: 'Nederlands', flag: '\uD83C\uDDF3\uD83C\uDDF1' },
+  { code: 'sl', name: 'Slovenščina', flag: '\uD83C\uDDF8\uD83C\uDDEE' },
+  { code: 'hr', name: 'Hrvatski', flag: '\uD83C\uDDED\uD83C\uDDF7' },
   { code: 'de', name: 'Deutsch', flag: '\uD83C\uDDE9\uD83C\uDDEA' },
-  { code: 'fr', name: 'Fran\u00e7ais', flag: '\uD83C\uDDEB\uD83C\uDDF7' },
-  { code: 'pl', name: 'Polski', flag: '\uD83C\uDDF5\uD83C\uDDF1' },
+  { code: 'en', name: 'English', flag: '\uD83C\uDDEC\uD83C\uDDE7' },
   { code: 'it', name: 'Italiano', flag: '\uD83C\uDDEE\uD83C\uDDF9' },
-  { code: 'ro', name: 'Rom\u00e2n\u0103', flag: '\uD83C\uDDF7\uD83C\uDDF4' },
+  { code: 'sr', name: 'Srpski', flag: '\uD83C\uDDF7\uD83C\uDDF8' },
+  { code: 'hu', name: 'Magyar', flag: '\uD83C\uDDED\uD83C\uDDFA' },
 ]
 
 const currentLocaleFlag = computed(() => {
-  return availableLocales.find((l) => l.code === locale.value)?.flag || '\uD83C\uDDEC\uD83C\uDDE7'
+  return availableLocales.find((l) => l.code === locale.value)?.flag || '\uD83C\uDDF8\uD83C\uDDEE'
 })
 
 function closeAllDropdowns() {

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
-# seed-demo-data.sh — Populate the platform with realistic demo data via API
+# seed-demo-data.sh — Populate the platform with SPC demo data via API
 #
 # Idempotent: safe to run multiple times. Creates lots, auctions, and bids
-# for a compelling live demo of the EU B2B auction platform.
+# tailored for SPC (Storitveno Prodajni Center) pitch demo:
+# containers, climate control equipment, construction machinery, fencing.
 #
 # Prerequisites:
 #   - Docker infrastructure running (Keycloak, PostgreSQL, NATS, etc.)
@@ -77,25 +78,33 @@ api_call() {
 }
 
 # ---------------------------------------------------------------------------
-# Category IDs (from V001 migration seed data)
+# Category IDs (SPC-specific categories from V003 migration)
+#
+# SPC Product Line          -> SPC Category (V003)
+# Office/Residential Cont.  -> Office Containers (30..0001)
+# Shipping Containers       -> Shipping Containers (30..0002)
+# Sanitary Containers       -> Sanitary Containers (30..0003)
+# Modular Structures        -> Modular Structures (30..0005)
+# Climate Control           -> Climate Control (30..0006)
+# Construction Equipment    -> Construction Equipment (30..0007)
+# Fencing & Accessories     -> Fencing & Barriers (30..0008)
+# Mini Excavators           -> Construction Equipment (30..0007)
 # ---------------------------------------------------------------------------
-CAT_EXCAVATORS="20000000-0000-0000-0000-000000000001"
-CAT_CRANES="20000000-0000-0000-0000-000000000003"
-CAT_CNC="20000000-0000-0000-0000-000000000014"
-CAT_FORKLIFTS="20000000-0000-0000-0000-000000000012"
-CAT_TRUCKS="20000000-0000-0000-0000-000000000010"
-CAT_WELDING="20000000-0000-0000-0000-000000000017"
-CAT_TRACTORS="20000000-0000-0000-0000-000000000006"
-CAT_FOOD="10000000-0000-0000-0000-000000000006"
-CAT_ENERGY="10000000-0000-0000-0000-000000000012"
-CAT_PRINTING="10000000-0000-0000-0000-000000000007"
+CAT_OFFICE_CONTAINERS="30000000-0000-0000-0000-000000000001"
+CAT_SHIPPING_CONTAINERS="30000000-0000-0000-0000-000000000002"
+CAT_SANITARY_CONTAINERS="30000000-0000-0000-0000-000000000003"
+CAT_MODULAR_STRUCTURES="30000000-0000-0000-0000-000000000005"
+CAT_CLIMATE_CONTROL="30000000-0000-0000-0000-000000000006"
+CAT_CONSTRUCTION="30000000-0000-0000-0000-000000000007"
+CAT_FENCING="30000000-0000-0000-0000-000000000008"
+CAT_EXCAVATORS="30000000-0000-0000-0000-000000000007"
 
 # =============================================================================
 # MAIN
 # =============================================================================
 echo ""
 echo "============================================="
-echo "  Tradex Demo Data Seeder"
+echo "  SPC Aukcije — Demo Data Seeder"
 echo "============================================="
 echo ""
 
@@ -123,9 +132,9 @@ api_call GET "/users/me" "$BUYER_TOKEN" > /dev/null
 log_ok "User profiles ready"
 
 # ---------------------------------------------------------------------------
-# Step 3: Create demo lots
+# Step 3: Create SPC demo lots
 # ---------------------------------------------------------------------------
-log_info "Creating demo lots..."
+log_info "Creating SPC demo lots..."
 
 declare -a LOT_IDS=()
 
@@ -137,7 +146,7 @@ create_lot() {
     local reserve_price="$5"
     local city="$6"
     local country="$7"
-    local brand="${8:-troostwijk}"
+    local brand="${8:-spc}"
     local specs="${9:-{}}"
 
     local payload
@@ -177,125 +186,125 @@ EOJSON
     fi
 }
 
-# Lot 1: Caterpillar Excavator
+# ---- Lot 1: Office Container 6m (ACTIVE auction, has bids) ----
 create_lot \
-    "Caterpillar 320F L Hydraulic Excavator" \
-    "Well-maintained 2019 Caterpillar 320F L hydraulic excavator with 4,200 operating hours. Full service history available. Equipped with climate-controlled cab, GPS, and quick coupler. Ready for immediate deployment. EU Stage V emission compliant." \
+    "Pisarniski kontejner 6m — Custom Office Container" \
+    "Insulated office container SPC K6, dimensions 6058 x 2438 x 2800 mm. Galvanized steel frame powder-coated RAL 7021. 60mm polyurethane wall insulation (U=0.37 W/m2K), 70mm stone wool roof insulation. Includes aluminum entry door, 2x PVC double-glazed windows, full electrical system (distribution box, 3-phase 32A connection, LED lighting, switches, outlets). Vinyl flooring, 250 kg/m2 floor load capacity. Stackable up to 3 units. Ready for immediate delivery from Ljubljana warehouse." \
+    "$CAT_OFFICE_CONTAINERS" \
+    4500 \
+    5800 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Manufacturer": "SPC d.o.o.", "Model": "SPC K6", "Dimensions": "6058 x 2438 x 2800 mm", "Wall Insulation": "60mm PUR (U=0.37)", "Roof Insulation": "70mm Stone Wool", "Floor Capacity": "250 kg/m2", "Electrical": "3-phase 32A", "Condition": "New", "Stackable": "Up to 3 units"}'
+
+# ---- Lot 2: Shipping Container 20ft HC (ACTIVE auction, 48h) ----
+create_lot \
+    "Ladijski zabojnik 20ft HC — Used Shipping Container" \
+    "Used 20ft High Cube shipping container in good structural condition. External dimensions 6058 x 2438 x 2896 mm. Double-wing cargo doors, wooden floor. Minor surface rust patched and treated. Wind and water tight certified. Ideal for storage, conversion, or shipping. Available for pickup or delivery from Ljubljana IOC Rudnik." \
+    "$CAT_SHIPPING_CONTAINERS" \
+    2800 \
+    3500 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Type": "20ft High Cube", "Dimensions": "6058 x 2438 x 2896 mm", "Doors": "Double-wing cargo", "Floor": "Wood", "Condition": "Used — Good", "Certification": "Wind & Water Tight", "Year": "2018"}'
+
+# ---- Lot 3: Sanitary Container (ACTIVE auction, ending soon — anti-sniping demo) ----
+create_lot \
+    "Sanitarni kontejner z tusem — Sanitary Unit SPC SAN C01" \
+    "Complete sanitary container SPC SAN C01 with 2 WC cabins, 2 ceramic sinks, 1 urinal, and shower section. Dimensions 3130 x 2400 x 2715 mm. 4 entry doors, 2 sanitary windows. Full mechanical and electrical installations including 5L water heater. Hot-dip galvanized steel frame. Ideal for construction sites, events, and temporary facilities. Manufactured in-house at SPC Ljubljana." \
+    "$CAT_SANITARY_CONTAINERS" \
+    7200 \
+    8500 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Manufacturer": "SPC d.o.o.", "Model": "SPC SAN C01", "Dimensions": "3130 x 2400 x 2715 mm", "WC Cabins": "2", "Sinks": "2 ceramic", "Urinals": "1", "Shower": "Yes", "Water Heater": "5L", "Doors": "4", "Condition": "New"}'
+
+# ---- Lot 4: Dehumidifier (ACTIVE auction, has bids) ----
+create_lot \
+    "Master Climate DH 92 razvlazilec — Industrial Dehumidifier" \
+    "Master Climate Solutions DH 92 professional condensation dehumidifier. Dehumidification capacity 80 litres/24h at 30C/80% RH. Air flow 1,000 m3/h. Operating range 5-35C. Built-in hygrostat, continuous drainage option. Robust steel housing on wheels. Ideal for construction drying, water damage restoration, warehouse humidity control. Low operating hours, excellent condition." \
+    "$CAT_CLIMATE_CONTROL" \
+    850 \
+    1200 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Manufacturer": "Master Climate Solutions", "Model": "DH 92", "Capacity": "80 L/24h", "Air Flow": "1,000 m3/h", "Operating Range": "5-35C", "Power": "1,500 W", "Weight": "55 kg", "Condition": "Used — Excellent"}'
+
+# ---- Lot 5: Diesel Heater (no auction) ----
+create_lot \
+    "Dieselski grelec 30kW — Master B 100 CED Diesel Heater" \
+    "Master B 100 CED direct-fired diesel heater with 30 kW heating capacity. Air flow 1,850 m3/h, fuel consumption 2.5 L/h. Built-in thermostat, flame safety device, tip-over switch. Stainless steel combustion chamber. Portable on integrated wheels. Perfect for construction site heating, workshop warming, temporary event spaces. Recently serviced, runs perfectly." \
+    "$CAT_CLIMATE_CONTROL" \
+    650 \
+    900 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Manufacturer": "Master", "Model": "B 100 CED", "Heating Capacity": "30 kW", "Air Flow": "1,850 m3/h", "Fuel": "Diesel", "Consumption": "2.5 L/h", "Weight": "23 kg", "Condition": "Used — Serviced"}'
+
+# ---- Lot 6: Metal Fencing Set (no auction) ----
+create_lot \
+    "Kovinska ograja ECONOMICO 30m komplet — Metal Fence Set" \
+    "Complete 30-meter temporary metal fencing set ECONOMICO. Includes 15 mesh fence panels (2m x 1.1m each), 16 concrete bases (25 kg each), and 30 fixing clamps. Hot-dip galvanized steel, weather resistant. Easy assembly without tools — panels slide into bases. Ideal for construction site security, events, temporary barriers. Available for purchase or rental." \
+    "$CAT_FENCING" \
+    1200 \
+    1600 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Type": "ECONOMICO Mesh Fence", "Total Length": "30 m", "Panel Size": "2.0 x 1.1 m", "Panels": "15", "Bases": "16 (25 kg each)", "Clamps": "30", "Material": "Hot-dip galvanized steel", "Assembly": "Tool-free"}'
+
+# ---- Lot 7: Modular Double Office (no auction) ----
+create_lot \
+    "Modularna pisarna 2x 20ft — Double Office Module SPC DV K6" \
+    "Double modular office container SPC DV K6, composed of two 20ft modules joined side-by-side. Total interior area approximately 28 m2. Galvanized steel frame, 60mm PUR insulated walls, 70mm stone wool roof insulation. Includes 2x aluminum doors, 4x PVC double-glazed windows, full electrical system with LED lighting. Optional sanitary corner available. Stackable up to 3 units high. Manufactured by SPC in Ljubljana." \
+    "$CAT_MODULAR_STRUCTURES" \
+    12500 \
+    15000 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Manufacturer": "SPC d.o.o.", "Model": "SPC DV K6", "Configuration": "Double (2x 20ft)", "Interior Area": "~28 m2", "Wall Insulation": "60mm PUR", "Roof Insulation": "70mm Stone Wool", "Windows": "4x PVC double-glazed", "Doors": "2x Aluminum", "Stackable": "Up to 3 units"}'
+
+# ---- Lot 8: Mini Excavator (no auction — cross-border lot from Zagreb) ----
+create_lot \
+    "Caterpillar mini bager 1.5t (2019) — Mini Excavator" \
+    "Caterpillar 301.5 mini excavator, 2019 model with 1,800 operating hours. Operating weight 1,500 kg, digging depth 2.3 m. Rubber tracks, expandable undercarriage, ROPS/FOPS canopy. Equipped with standard bucket (300mm) and quick coupler. Full service history at authorized dealer. Low hours, excellent condition for landscaping, utility work, or confined spaces. Located in Zagreb, delivery to Slovenia available." \
     "$CAT_EXCAVATORS" \
-    15000 \
-    45000 \
-    "Rotterdam" \
-    "NL" \
-    "troostwijk" \
-    '{"Manufacturer": "Caterpillar", "Model": "320F L", "Year": "2019", "Operating Hours": "4,200 h", "Engine Power": "122 kW", "Operating Weight": "22,200 kg", "Emission Standard": "EU Stage V"}'
-
-# Lot 2: Siemens CNC Machine
-create_lot \
-    "Siemens SINUMERIK 840D CNC Milling Center" \
-    "High-precision 5-axis CNC milling center with Siemens SINUMERIK 840D control. Table size 800x500mm. Includes tool magazine (30 positions), chip conveyor, and coolant system. Calibration certificate current until 2027." \
-    "$CAT_CNC" \
-    25000 \
-    85000 \
-    "Stuttgart" \
-    "DE" \
-    "surplex" \
-    '{"Manufacturer": "DMG Mori", "Control": "Siemens SINUMERIK 840D", "Axes": "5", "Table Size": "800 x 500 mm", "Spindle Speed": "12,000 RPM", "Year": "2020", "Condition": "Excellent"}'
-
-# Lot 3: ABB Industrial Robot
-create_lot \
-    "ABB IRB 6700 Industrial Robot with Controller" \
-    "ABB IRB 6700-150/3.2 industrial robot arm with IRC5 controller. Payload capacity 150 kg, reach 3.2m. Previously used in automotive welding line. Complete with pendant, cables, and software license. Low cycle count." \
-    "$CAT_WELDING" \
-    20000 \
-    65000 \
-    "Eindhoven" \
-    "NL" \
-    "troostwijk" \
-    '{"Manufacturer": "ABB", "Model": "IRB 6700-150/3.2", "Payload": "150 kg", "Reach": "3.2 m", "Controller": "IRC5", "Year": "2021", "Axes": "6"}'
-
-# Lot 4: Liebherr Mobile Crane
-create_lot \
-    "Liebherr LTM 1100-5.2 Mobile Crane" \
-    "Liebherr LTM 1100-5.2 all-terrain mobile crane. Maximum lifting capacity 100 tonnes, maximum boom length 52m. EU road-legal, 5-axle carrier. Full service documentation. VarioBase Plus equipped." \
-    "$CAT_CRANES" \
-    50000 \
-    180000 \
-    "Antwerp" \
-    "BE" \
-    "troostwijk" \
-    '{"Manufacturer": "Liebherr", "Model": "LTM 1100-5.2", "Max Capacity": "100 t", "Max Boom": "52 m", "Year": "2018", "Axles": "5", "Mileage": "45,000 km"}'
-
-# Lot 5: Trumpf Laser Cutter
-create_lot \
-    "Trumpf TruLaser 3030 Fiber Laser Cutting Machine" \
-    "Trumpf TruLaser 3030 fiber laser cutting system. 6kW laser source, cutting area 3000x1500mm. Processes steel up to 25mm, stainless up to 20mm, aluminum up to 15mm. Includes LiftMaster loading system and dust extraction." \
-    "$CAT_CNC" \
-    30000 \
-    120000 \
-    "Milan" \
-    "IT" \
-    "surplex" \
-    '{"Manufacturer": "Trumpf", "Model": "TruLaser 3030", "Laser Power": "6 kW", "Cutting Area": "3000 x 1500 mm", "Max Steel": "25 mm", "Year": "2020", "Laser Type": "Fiber"}'
-
-# Lot 6: Toyota Forklift
-create_lot \
-    "Toyota 8FBE18T Electric Forklift" \
-    "Toyota 8FBE18T 3-wheel electric counterbalance forklift. Capacity 1,800 kg, lift height 4.7m. New battery installed January 2025. Side shift and fork positioner included. Indoor use only, excellent condition." \
-    "$CAT_FORKLIFTS" \
-    3000 \
-    12000 \
-    "Warsaw" \
-    "PL" \
-    "industrial-auctions" \
-    '{"Manufacturer": "Toyota", "Model": "8FBE18T", "Capacity": "1,800 kg", "Lift Height": "4.7 m", "Drive": "Electric", "Year": "2020", "Battery": "New (2025)"}'
-
-# Lot 7: Volvo Truck
-create_lot \
-    "Volvo FH 500 6x2 Tractor Unit" \
-    "Volvo FH 500 Euro 6 tractor unit. I-Shift automatic gearbox, dual fuel tanks (2x400L). Adaptive cruise control, lane departure warning, EBS. Full Volvo service history. Ready for international transport." \
-    "$CAT_TRUCKS" \
     18000 \
-    55000 \
-    "Gothenburg" \
-    "SE" \
-    "troostwijk" \
-    '{"Manufacturer": "Volvo", "Model": "FH 500", "Configuration": "6x2", "Engine": "D13K Euro 6", "Power": "500 hp", "Mileage": "380,000 km", "Year": "2020"}'
+    24000 \
+    "Zagreb" \
+    "HR" \
+    "spc" \
+    '{"Manufacturer": "Caterpillar", "Model": "301.5", "Year": "2019", "Operating Hours": "1,800 h", "Operating Weight": "1,500 kg", "Digging Depth": "2.3 m", "Tracks": "Rubber", "Bucket": "300 mm", "Condition": "Excellent"}'
 
-# Lot 8: John Deere Tractor
+# ---- Lot 9: AC Unit (pending approval — admin demo) ----
 create_lot \
-    "John Deere 6250R Premium Tractor" \
-    "John Deere 6250R with CommandPRO joystick and AutoPowr transmission. 250 hp, front PTO, front loader ready. StarFire 6000 GPS receiver with AutoTrac. 2,800 engine hours. Excellent condition for arable or livestock operations." \
-    "$CAT_TRACTORS" \
-    35000 \
-    95000 \
-    "Rennes" \
-    "FR" \
-    "troostwijk" \
-    '{"Manufacturer": "John Deere", "Model": "6250R", "Power": "250 hp", "Transmission": "AutoPowr", "Engine Hours": "2,800 h", "Year": "2021", "GPS": "StarFire 6000"}'
+    "Klimatska naprava 5kW — Portable Air Conditioning Unit" \
+    "Industrial portable air conditioning unit with 5 kW cooling capacity. Suitable for containers, temporary offices, server rooms, and workshops. Includes condensate pump and 3m flexible exhaust duct. Digital thermostat with timer function. Energy class A. Low noise operation (52 dB). Ready for plug-and-play use with standard 230V power." \
+    "$CAT_CLIMATE_CONTROL" \
+    1100 \
+    1500 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Type": "Portable AC", "Cooling Capacity": "5 kW", "Power Supply": "230V", "Noise Level": "52 dB", "Energy Class": "A", "Exhaust Duct": "3 m flexible", "Weight": "38 kg", "Condition": "Used — Good"}'
 
-# Lot 9: Industrial Packaging Line (for admin pending approval demo)
+# ---- Lot 10: Container House 40ft (pending approval — admin demo) ----
 create_lot \
-    "Krones Modulfill PET Bottling Line" \
-    "Complete Krones Modulfill PET bottling line. Capacity 12,000 bottles/hour. Includes rinser, filler, capper, labeller, and shrink wrapper. Recently overhauled with new seals and bearings. Ideal for beverage or food-grade applications." \
-    "$CAT_FOOD" \
-    40000 \
-    150000 \
-    "Munich" \
-    "DE" \
-    "surplex" \
-    '{"Manufacturer": "Krones", "Model": "Modulfill", "Capacity": "12,000 bph", "Type": "PET Bottling", "Year": "2019", "Condition": "Overhauled"}'
-
-# Lot 10: Solar Panel Installation Equipment
-create_lot \
-    "SMA Sunny Central 2500-EV Solar Inverter Station" \
-    "SMA Sunny Central 2500-EV central inverter with medium voltage transformer. 2,500 kW rated power. Complete containerized solution. Previously deployed in a 10 MW solar farm. Full commissioning documentation available." \
-    "$CAT_ENERGY" \
-    15000 \
-    60000 \
-    "Valencia" \
-    "ES" \
-    "industrial-auctions" \
-    '{"Manufacturer": "SMA", "Model": "Sunny Central 2500-EV", "Rated Power": "2,500 kW", "Type": "Central Inverter", "Year": "2020", "Installation": "Containerized"}'
+    "Kontejnerska hisa 40ft — Premium Container House" \
+    "Premium 40ft container house conversion. Fully insulated living space with bedroom, kitchen area, bathroom with shower, and living/office area. Total area approximately 30 m2. Triple-glazed windows, underfloor heating preparation, LED lighting throughout. External cladding in timber composite. Connected to standard utilities (water, electricity, sewage). Turnkey solution — delivered fully finished. Ideal as holiday home, guest house, home office, or temporary accommodation." \
+    "$CAT_MODULAR_STRUCTURES" \
+    22000 \
+    28000 \
+    "Ljubljana" \
+    "SI" \
+    "spc" \
+    '{"Type": "Container House Conversion", "Base": "40ft HC Container", "Area": "~30 m2", "Rooms": "Bedroom, Kitchen, Bathroom, Living/Office", "Insulation": "Full (walls, roof, floor)", "Windows": "Triple-glazed", "Heating": "Underfloor preparation", "Cladding": "Timber composite", "Condition": "New — Turnkey"}'
 
 echo ""
 log_info "Created ${#LOT_IDS[@]} lots"
@@ -365,7 +374,7 @@ create_auction() {
     payload=$(cat <<EOJSON
 {
     "lotId": "$lot_id",
-    "brand": "troostwijk",
+    "brand": "spc",
     "sellerId": "00000000-0000-0000-0000-000000000002",
     "startTime": "$start_time",
     "endTime": "$end_time",
@@ -387,21 +396,22 @@ EOJSON
     fi
 }
 
-# Create auctions for the first several approved lots
+# Create auctions for SPC lots:
+# Lot 0: Office container — active 24h
 if [ ${#LOT_IDS[@]} -ge 1 ]; then
-    create_auction "${LOT_IDS[0]}" "$START_TIME" "$END_TIME_1" 15000    # Caterpillar - active
+    create_auction "${LOT_IDS[0]}" "$START_TIME" "$END_TIME_1" 4500
 fi
+# Lot 1: Shipping container — active 48h
 if [ ${#LOT_IDS[@]} -ge 2 ]; then
-    create_auction "${LOT_IDS[1]}" "$START_TIME" "$END_TIME_2" 25000    # Siemens CNC - active
+    create_auction "${LOT_IDS[1]}" "$START_TIME" "$END_TIME_2" 2800
 fi
+# Lot 2: Sanitary container — ending soon (anti-sniping demo!)
 if [ ${#LOT_IDS[@]} -ge 3 ]; then
-    create_auction "${LOT_IDS[2]}" "$START_TIME" "$END_TIME_SOON" 20000 # ABB Robot - ending soon!
+    create_auction "${LOT_IDS[2]}" "$START_TIME" "$END_TIME_SOON" 7200
 fi
+# Lot 3: Dehumidifier — active 24h
 if [ ${#LOT_IDS[@]} -ge 4 ]; then
-    create_auction "${LOT_IDS[3]}" "$START_TIME" "$END_TIME_1" 50000    # Liebherr Crane - active
-fi
-if [ ${#LOT_IDS[@]} -ge 5 ]; then
-    create_auction "${LOT_IDS[4]}" "$START_TIME" "$END_TIME_2" 30000    # Trumpf Laser - active
+    create_auction "${LOT_IDS[3]}" "$START_TIME" "$END_TIME_1" 850
 fi
 
 echo ""
@@ -431,27 +441,27 @@ place_bid() {
     fi
 }
 
-# Place bids on the Caterpillar auction (auction 0)
+# Bids on Office Container (auction 0): EUR 4,600 -> 4,700 -> 4,900
 if [ ${#AUCTION_IDS[@]} -ge 1 ]; then
-    place_bid "${AUCTION_IDS[0]}" 16000 "$BUYER_TOKEN" "Caterpillar - Bid 1"
+    place_bid "${AUCTION_IDS[0]}" 4600 "$BUYER_TOKEN" "Office Container - Bid 1"
     sleep 0.5
-    place_bid "${AUCTION_IDS[0]}" 18000 "$BUYER_TOKEN" "Caterpillar - Bid 2"
+    place_bid "${AUCTION_IDS[0]}" 4700 "$BUYER_TOKEN" "Office Container - Bid 2"
     sleep 0.5
-    place_bid "${AUCTION_IDS[0]}" 20000 "$BUYER_TOKEN" "Caterpillar - Bid 3"
+    place_bid "${AUCTION_IDS[0]}" 4900 "$BUYER_TOKEN" "Office Container - Bid 3"
 fi
 
-# Place bids on the ABB Robot auction (auction 2) - this is the "ending soon" one
+# Bids on Sanitary Container (auction 2 — ending soon): EUR 7,300 -> 7,500
 if [ ${#AUCTION_IDS[@]} -ge 3 ]; then
-    place_bid "${AUCTION_IDS[2]}" 21000 "$BUYER_TOKEN" "ABB Robot - Bid 1"
+    place_bid "${AUCTION_IDS[2]}" 7300 "$BUYER_TOKEN" "Sanitary Container - Bid 1"
     sleep 0.5
-    place_bid "${AUCTION_IDS[2]}" 23000 "$BUYER_TOKEN" "ABB Robot - Bid 2"
+    place_bid "${AUCTION_IDS[2]}" 7500 "$BUYER_TOKEN" "Sanitary Container - Bid 2"
 fi
 
-# Place bids on the Liebherr Crane auction (auction 3)
+# Bids on Dehumidifier (auction 3): EUR 900 -> 950
 if [ ${#AUCTION_IDS[@]} -ge 4 ]; then
-    place_bid "${AUCTION_IDS[3]}" 55000 "$BUYER_TOKEN" "Liebherr Crane - Bid 1"
+    place_bid "${AUCTION_IDS[3]}" 900 "$BUYER_TOKEN" "Dehumidifier - Bid 1"
     sleep 0.5
-    place_bid "${AUCTION_IDS[3]}" 60000 "$BUYER_TOKEN" "Liebherr Crane - Bid 2"
+    place_bid "${AUCTION_IDS[3]}" 950 "$BUYER_TOKEN" "Dehumidifier - Bid 2"
 fi
 
 # ---------------------------------------------------------------------------
@@ -459,11 +469,12 @@ fi
 # ---------------------------------------------------------------------------
 log_info "Adding watchlist items for buyer..."
 
-if [ ${#LOT_IDS[@]} -ge 3 ]; then
+# Watchlist: Office Container (lot 0), Sanitary Container (lot 2), Modular Office (lot 6)
+if [ ${#LOT_IDS[@]} -ge 7 ]; then
     api_call POST "/users/me/watchlist/${LOT_IDS[0]}" "$BUYER_TOKEN" > /dev/null 2>&1 || true
     api_call POST "/users/me/watchlist/${LOT_IDS[2]}" "$BUYER_TOKEN" > /dev/null 2>&1 || true
-    api_call POST "/users/me/watchlist/${LOT_IDS[4]}" "$BUYER_TOKEN" > /dev/null 2>&1 || true
-    log_ok "Added 3 lots to buyer watchlist"
+    api_call POST "/users/me/watchlist/${LOT_IDS[6]}" "$BUYER_TOKEN" > /dev/null 2>&1 || true
+    log_ok "Added 3 lots to buyer watchlist (Office Container, Sanitary Container, Modular Office)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -471,14 +482,23 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "============================================="
-echo -e "${GREEN}  Demo data seeded successfully!${NC}"
+echo -e "${GREEN}  SPC demo data seeded successfully!${NC}"
 echo "============================================="
 echo ""
 echo "Summary:"
-echo "  - ${#LOT_IDS[@]} lots created (${APPROVED_COUNT} approved, $((TOTAL - APPROVED_COUNT)) pending)"
+echo "  - ${#LOT_IDS[@]} SPC lots created (${APPROVED_COUNT} approved, $((TOTAL - APPROVED_COUNT)) pending)"
 echo "  - ${#AUCTION_IDS[@]} auctions created (1 ending soon for anti-sniping demo)"
 echo "  - Bids placed on active auctions"
 echo "  - Buyer watchlist populated"
+echo ""
+echo "SPC Product Lines Seeded:"
+echo "  - Office containers (Pisarniski kontejner 6m)"
+echo "  - Shipping containers (Ladijski zabojnik 20ft HC)"
+echo "  - Sanitary containers (Sanitarni kontejner SPC SAN C01)"
+echo "  - Climate control (Dehumidifier, Diesel Heater, AC Unit)"
+echo "  - Construction equipment (Metal Fencing ECONOMICO)"
+echo "  - Modular structures (Double Office, Container House)"
+echo "  - Construction machinery (Caterpillar Mini Excavator)"
 echo ""
 echo "Demo accounts:"
 echo "  Buyer:  buyer@test.com  / password123"

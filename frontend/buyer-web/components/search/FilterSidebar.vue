@@ -197,14 +197,14 @@ const hasActiveFilters = computed(() => {
 const categoryCounts = ref<Record<string, number>>({})
 
 const categorySlugs = [
-  { slug: 'transport', icon: '\uD83D\uDE9A', nameKey: 'categories.transport' },
-  { slug: 'agriculture', icon: '\uD83D\uDE9C', nameKey: 'categories.agriculture' },
-  { slug: 'construction', icon: '\uD83C\uDFD7\uFE0F', nameKey: 'categories.construction' },
-  { slug: 'metalworking', icon: '\u2699\uFE0F', nameKey: 'categories.metalworking' },
-  { slug: 'woodworking', icon: '\uD83E\uDEB5', nameKey: 'categories.woodworking' },
-  { slug: 'food-processing', icon: '\uD83C\uDFED', nameKey: 'categories.foodProcessing' },
-  { slug: 'electronics', icon: '\uD83D\uDD0C', nameKey: 'categories.electronics' },
-  { slug: 'warehouse', icon: '\uD83D\uDCE6', nameKey: 'categories.warehouse' },
+  { slug: 'office-containers', icon: '\uD83C\uDFE2', nameKey: 'categories.officeContainers' },
+  { slug: 'shipping-containers', icon: '\uD83D\uDCE6', nameKey: 'categories.shippingContainers' },
+  { slug: 'sanitary-containers', icon: '\uD83D\uDEBF', nameKey: 'categories.sanitaryContainers' },
+  { slug: 'storage-containers', icon: '\uD83D\uDD12', nameKey: 'categories.storageContainers' },
+  { slug: 'modular-structures', icon: '\uD83C\uDFD7\uFE0F', nameKey: 'categories.modularStructures' },
+  { slug: 'climate-control', icon: '\u2744\uFE0F', nameKey: 'categories.climateControl' },
+  { slug: 'construction-equipment', icon: '\uD83D\uDD27', nameKey: 'categories.constructionEquipment' },
+  { slug: 'fencing', icon: '\uD83D\uDEE1\uFE0F', nameKey: 'categories.fencing' },
 ]
 
 const categories = computed(() =>
@@ -236,17 +236,24 @@ onMounted(() => {
   fetchCategoryCounts()
 })
 
-const countries = [
-  { code: 'NL', flag: '\uD83C\uDDF3\uD83C\uDDF1', name: 'Netherlands' },
-  { code: 'DE', flag: '\uD83C\uDDE9\uD83C\uDDEA', name: 'Germany' },
-  { code: 'FR', flag: '\uD83C\uDDEB\uD83C\uDDF7', name: 'France' },
-  { code: 'BE', flag: '\uD83C\uDDE7\uD83C\uDDEA', name: 'Belgium' },
-  { code: 'PL', flag: '\uD83C\uDDF5\uD83C\uDDF1', name: 'Poland' },
-  { code: 'IT', flag: '\uD83C\uDDEE\uD83C\uDDF9', name: 'Italy' },
-  { code: 'RO', flag: '\uD83C\uDDF7\uD83C\uDDF4', name: 'Romania' },
-  { code: 'ES', flag: '\uD83C\uDDEA\uD83C\uDDF8', name: 'Spain' },
-  { code: 'AT', flag: '\uD83C\uDDE6\uD83C\uDDF9', name: 'Austria' },
+const countryEntries = [
+  { code: 'SI', flag: '\uD83C\uDDF8\uD83C\uDDEE' },
+  { code: 'HR', flag: '\uD83C\uDDED\uD83C\uDDF7' },
+  { code: 'AT', flag: '\uD83C\uDDE6\uD83C\uDDF9' },
+  { code: 'DE', flag: '\uD83C\uDDE9\uD83C\uDDEA' },
+  { code: 'IT', flag: '\uD83C\uDDEE\uD83C\uDDF9' },
+  { code: 'BA', flag: '\uD83C\uDDE7\uD83C\uDDE6' },
+  { code: 'RS', flag: '\uD83C\uDDF7\uD83C\uDDF8' },
+  { code: 'HU', flag: '\uD83C\uDDED\uD83C\uDDFA' },
 ]
+
+const countries = computed(() =>
+  countryEntries.map((c) => ({
+    code: c.code,
+    flag: c.flag,
+    name: t(`countries.${c.code}`),
+  }))
+)
 
 const priceRanges = [
   { label: '< 1K', min: 0, max: 1000 },

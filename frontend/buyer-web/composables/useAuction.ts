@@ -32,6 +32,31 @@ export function useAuction() {
         }
       }
 
+      // If lot has no auctionId, try to find an auction by lotId
+      if (!auctionData) {
+        try {
+          const lotUuid = lotRaw.id ?? id
+          const auctionList = await api<Record<string, unknown>>(`/auctions`, {
+            params: { lotId: lotUuid, size: 1 },
+          })
+          const items = (auctionList.items ?? []) as Record<string, unknown>[]
+          if (items.length > 0) {
+            // Fetch the full auction detail using the found auctionId
+            const foundAuctionId = items[0].auctionId ?? items[0].id
+            if (foundAuctionId) {
+              try {
+                auctionData = unwrapApiResponse(await api<Record<string, unknown>>(`/auctions/${foundAuctionId}`))
+              } catch {
+                // Use summary data as fallback
+                auctionData = items[0]
+              }
+            }
+          }
+        } catch {
+          // No auction found for this lot - that's fine
+        }
+      }
+
       const auction = mapAuctionResponse(auctionData ?? lotRaw, lotRaw)
       auctionStore.setAuction(auction)
       return auction

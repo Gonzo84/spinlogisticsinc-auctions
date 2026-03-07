@@ -87,13 +87,11 @@ function isActive(path: string): boolean {
   >
     <!-- Logo -->
     <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-4">
-      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-admin-600 text-white">
-        <i class="pi pi-shield text-lg" />
-      </div>
+      <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto shrink-0" />
       <span
         v-if="!collapsed"
         class="text-lg font-bold text-gray-900"
-      >Admin</span>
+      >SPC Admin</span>
     </div>
 
     <!-- Navigation -->

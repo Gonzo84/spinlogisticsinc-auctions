@@ -1,14 +1,12 @@
 export const COUNTRY_FLAGS: Record<string, string> = {
-  NL: '\uD83C\uDDF3\uD83C\uDDF1',
-  DE: '\uD83C\uDDE9\uD83C\uDDEA',
-  FR: '\uD83C\uDDEB\uD83C\uDDF7',
-  BE: '\uD83C\uDDE7\uD83C\uDDEA',
-  PL: '\uD83C\uDDF5\uD83C\uDDF1',
-  IT: '\uD83C\uDDEE\uD83C\uDDF9',
-  RO: '\uD83C\uDDF7\uD83C\uDDF4',
-  ES: '\uD83C\uDDEA\uD83C\uDDF8',
+  SI: '\uD83C\uDDF8\uD83C\uDDEE',
+  HR: '\uD83C\uDDED\uD83C\uDDF7',
   AT: '\uD83C\uDDE6\uD83C\uDDF9',
-  GB: '\uD83C\uDDEC\uD83C\uDDE7',
+  DE: '\uD83C\uDDE9\uD83C\uDDEA',
+  IT: '\uD83C\uDDEE\uD83C\uDDF9',
+  BA: '\uD83C\uDDE7\uD83C\uDDE6',
+  RS: '\uD83C\uDDF7\uD83C\uDDF8',
+  HU: '\uD83C\uDDED\uD83C\uDDFA',
 }
 
 export function getCountryFlag(code: string): string {
@@ -22,15 +20,14 @@ export interface CountryEntry {
 }
 
 export const COUNTRIES: CountryEntry[] = [
-  { code: 'NL', flag: COUNTRY_FLAGS.NL, name: 'Netherlands' },
-  { code: 'DE', flag: COUNTRY_FLAGS.DE, name: 'Germany' },
-  { code: 'FR', flag: COUNTRY_FLAGS.FR, name: 'France' },
-  { code: 'BE', flag: COUNTRY_FLAGS.BE, name: 'Belgium' },
-  { code: 'PL', flag: COUNTRY_FLAGS.PL, name: 'Poland' },
-  { code: 'IT', flag: COUNTRY_FLAGS.IT, name: 'Italy' },
-  { code: 'RO', flag: COUNTRY_FLAGS.RO, name: 'Romania' },
-  { code: 'ES', flag: COUNTRY_FLAGS.ES, name: 'Spain' },
-  { code: 'AT', flag: COUNTRY_FLAGS.AT, name: 'Austria' },
+  { code: 'SI', flag: COUNTRY_FLAGS.SI, name: 'Slovenija' },
+  { code: 'HR', flag: COUNTRY_FLAGS.HR, name: 'Hrvatska' },
+  { code: 'AT', flag: COUNTRY_FLAGS.AT, name: 'Avstrija' },
+  { code: 'DE', flag: COUNTRY_FLAGS.DE, name: 'Nemčija' },
+  { code: 'IT', flag: COUNTRY_FLAGS.IT, name: 'Italija' },
+  { code: 'BA', flag: COUNTRY_FLAGS.BA, name: 'BiH' },
+  { code: 'RS', flag: COUNTRY_FLAGS.RS, name: 'Srbija' },
+  { code: 'HU', flag: COUNTRY_FLAGS.HU, name: 'Madžarska' },
 ]
 
 export interface CategoryEntry {
@@ -40,14 +37,14 @@ export interface CategoryEntry {
 }
 
 export const CATEGORIES: CategoryEntry[] = [
-  { slug: 'transport', icon: '\uD83D\uDE9A', i18nKey: 'categories.transport' },
-  { slug: 'agriculture', icon: '\uD83D\uDE9C', i18nKey: 'categories.agriculture' },
-  { slug: 'construction', icon: '\uD83C\uDFD7\uFE0F', i18nKey: 'categories.construction' },
-  { slug: 'metalworking', icon: '\u2699\uFE0F', i18nKey: 'categories.metalworking' },
-  { slug: 'woodworking', icon: '\uD83E\uDEB5', i18nKey: 'categories.woodworking' },
-  { slug: 'food-processing', icon: '\uD83C\uDFED', i18nKey: 'categories.foodProcessing' },
-  { slug: 'electronics', icon: '\uD83D\uDD0C', i18nKey: 'categories.electronics' },
-  { slug: 'warehouse', icon: '\uD83D\uDCE6', i18nKey: 'categories.warehouse' },
+  { slug: 'office-containers', icon: '\uD83C\uDFE2', i18nKey: 'categories.officeContainers' },
+  { slug: 'shipping-containers', icon: '\uD83D\uDCE6', i18nKey: 'categories.shippingContainers' },
+  { slug: 'sanitary-containers', icon: '\uD83D\uDEBF', i18nKey: 'categories.sanitaryContainers' },
+  { slug: 'storage-containers', icon: '\uD83D\uDD12', i18nKey: 'categories.storageContainers' },
+  { slug: 'modular-structures', icon: '\uD83C\uDFD7\uFE0F', i18nKey: 'categories.modularStructures' },
+  { slug: 'climate-control', icon: '\u2744\uFE0F', i18nKey: 'categories.climateControl' },
+  { slug: 'construction-equipment', icon: '\uD83D\uDD27', i18nKey: 'categories.constructionEquipment' },
+  { slug: 'fencing', icon: '\uD83D\uDEE1\uFE0F', i18nKey: 'categories.fencing' },
 ]
 
 export const DISTANCE_OPTIONS = [0, 50, 100, 250, 500, 1000]
