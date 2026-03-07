@@ -100,6 +100,7 @@ const { data: featuredAuctions } = await useAsyncData('featured-auctions', async
   return await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 9 })
 }, {
   default: () => [],
+  server: false,
 })
 
 const { data: newLots } = await useAsyncData('new-lots', async () => {
@@ -110,6 +111,7 @@ const { data: newLots } = await useAsyncData('new-lots', async () => {
   return [...activeLots, ...approvedLots].slice(0, 8)
 }, {
   default: () => [],
+  server: false,
 })
 
 function selectCountry(code: string) {

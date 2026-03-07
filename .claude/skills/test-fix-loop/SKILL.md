@@ -8,7 +8,7 @@ user-invocable: true
 
 Continuously alternate between testing and fixing bugs until a test run produces zero fixable bugs.
 
-**Argument:** `$ARGUMENTS` — optional role filter (`buyer`, `seller`, `admin`, `broker`, `all`). Default: `all`.
+**Argument:** `$ARGUMENTS` — optional mode (`demo`, `buyer`, `seller`, `admin`, `broker`, `all`). Default: `demo`.
 
 ---
 
@@ -50,13 +50,13 @@ Continuously alternate between testing and fixing bugs until a test run produces
 
 ## Step 1: Initialize
 
-Set the role from `$ARGUMENTS` (default `all`). Set `MAX_ITERATIONS = 5`. Set `iteration = 0`.
+Set the mode from `$ARGUMENTS` (default `demo`). Set `MAX_ITERATIONS = 5`. Set `iteration = 0`.
 
 Write initial state to the state file:
 ```bash
 cat > tests/.test-fix-state.json << 'EOF'
 {
-  "role": "<role>",
+  "mode": "<mode>",
   "iteration": 0,
   "maxIterations": 5,
   "status": "running",
@@ -70,7 +70,7 @@ Initialize the fix summary file (this file persists across the entire loop and i
 cat > tests/.fix-summary.md << 'EOF'
 # Test-Fix Loop Summary
 
-**Role:** <role>
+**Mode:** <mode>
 **Started:** <date>
 **Status:** Running
 
@@ -121,12 +121,12 @@ This prevents stale browser windows from prior subagents interfering with the ne
 - `subagent_type`: `"general-purpose"`
 - `description`: `"Test happy path iteration N"`
 - `prompt`: Include the full instructions — tell the subagent to:
-  1. Run the `/test-happy-path` skill with the role argument
+  1. Run the `/test-happy-path` skill with the mode argument (e.g., `demo`)
   2. After completion, return a brief summary: how many steps passed/failed, how many bugs found, and the report filename
 
 Example Task prompt:
 ```
-Run the /test-happy-path skill for role "<role>".
+Run the /test-happy-path skill with argument "<mode>".
 The working directory is /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform.
 After testing completes, report back:
 - Number of steps: PASS / FAIL / PARTIAL / SKIP
@@ -171,12 +171,12 @@ Increment `iteration`. If `iteration > MAX_ITERATIONS`, **go to Step 5 (Max Iter
 - `subagent_type`: `"general-purpose"`
 - `description`: `"Fix bugs iteration N"`
 - `prompt`: Include the full instructions — tell the subagent to:
-  1. Run the `/fix-bugs` skill with the role argument
+  1. Run the `/fix-bugs` skill (no role filter needed — it processes all reports in `tests/`)
   2. After completion, return a brief summary: how many bugs were fixed, which files were changed, any build errors
 
 Example Task prompt:
 ```
-Run the /fix-bugs skill for role "<role>".
+Run the /fix-bugs skill.
 The working directory is /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform.
 After fixing completes, report back:
 - Number of bugs fixed
@@ -192,7 +192,7 @@ Update the state file:
 # Update state file with fix results
 cat > tests/.test-fix-state.json << 'EOF'
 {
-  "role": "<role>",
+  "mode": "<mode>",
   "iteration": <N>,
   "maxIterations": 5,
   "status": "running",
@@ -273,5 +273,5 @@ Use the state file for loop position and `.fix-summary.md` for cumulative progre
 - **`tests/.fix-summary.md` is NEVER deleted.** It is the persistent record updated after every phase. On completion, the tests/ folder should contain only `.fix-summary.md`commit a.
 - **Progress is cumulative.** Bugs fixed in iteration 1 stay fixed in iteration 2 (unless a fix introduced a regression).
 - **If a fix introduces a NEW bug** not in the previous report, it will be caught in the next test cycle and fixed in the following fix cycle.
-- **Role filtering carries through.** If you start with `seller`, every test and fix cycle stays scoped to seller.
+- **Mode carries through.** If you start with `demo`, every test cycle uses the demo flow. For role-specific modes (`seller`, `buyer`, etc.), the fix cycle processes all reports in `tests/`.
 - **The state file is your safety net.** Always update it after each phase completes.

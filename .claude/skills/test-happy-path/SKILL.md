@@ -1,6 +1,6 @@
 ---
 name: test-happy-path
-description: Run happy path tests for a given role (buyer/seller/admin/broker/all) using Playwright MCP, following HAPPY_PATHS.md
+description: Run happy path tests for a given role (buyer/seller/admin/broker/demo/all) using Playwright MCP, following happy path docs
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -9,7 +9,11 @@ disable-model-invocation: false
 
 Run browser-based happy path tests for the EU Auction Platform. Uses Playwright MCP for browser roles and Bash curl for the broker API-only path.
 
-**Argument:** `$ARGUMENTS` — one of `buyer`, `seller`, `admin`, `broker`, or `all` (default: `all`)
+**Argument:** `$ARGUMENTS` — one of `buyer`, `seller`, `admin`, `broker`, `demo`, or `all` (default: `all`)
+
+**Happy path documents location:** `docs/happy-paths/`
+- `docs/happy-paths/HAPPY_PATHS.md` — role-based tests (buyer, seller, admin, broker)
+- `docs/happy-paths/HAPPY_PATH_DEMO.md` — presentation demo flow (cross-role, 7 steps)
 
 ---
 
@@ -17,13 +21,16 @@ Run browser-based happy path tests for the EU Auction Platform. Uses Playwright 
 
 Determine which role(s) to test from `$ARGUMENTS`:
 
-- `buyer` — run only the Buyer Happy Path (Section 1 of HAPPY_PATHS.md)
-- `seller` — run only the Seller Happy Path (Section 2)
-- `admin` — run only the Admin Happy Path (Section 3)
-- `broker` — run only the Broker Happy Path (Section 4, API-only via curl)
-- `all` or empty — run all four in order: buyer → seller → admin → broker
+- `buyer` — run only the Buyer Happy Path (Section 1 of `docs/happy-paths/HAPPY_PATHS.md`)
+- `seller` — run only the Seller Happy Path (Section 2 of `docs/happy-paths/HAPPY_PATHS.md`)
+- `admin` — run only the Admin Happy Path (Section 3 of `docs/happy-paths/HAPPY_PATHS.md`)
+- `broker` — run only the Broker Happy Path (Section 4 of `docs/happy-paths/HAPPY_PATHS.md`, API-only via curl)
+- `demo` — run the Presentation Demo Flow (`docs/happy-paths/HAPPY_PATH_DEMO.md`), steps 1-7 cross-role
+- `all` or empty — run all four role-based paths in order: buyer → seller → admin → broker
 
 Store the list of roles to test. For each role, you will produce a separate report file.
+
+When `demo` is selected, follow `docs/happy-paths/HAPPY_PATH_DEMO.md` instead of `HAPPY_PATHS.md`. The demo flow tests across all 3 portals in a single sequential flow (7 steps), producing a single report file named `tests/demo-happy-path-report-<YYYY-MM-DD>.md`.
 
 ---
 
@@ -57,7 +64,10 @@ mkdir -p tests/test-screenshots
 
 ## Step 3: Read the Canonical Test Plan
 
-Read the file `HAPPY_PATHS.md` at the project root. This is the single source of truth for all test steps. Each section (1–4) maps to a role. Follow the numbered steps and **Verify** checkpoints exactly as written.
+Read the appropriate test plan from `docs/happy-paths/`:
+
+- **Role-based testing** (`buyer`, `seller`, `admin`, `broker`, `all`): Read `docs/happy-paths/HAPPY_PATHS.md`. Each section (1-4) maps to a role. Follow the numbered steps and **Verify** checkpoints exactly as written.
+- **Demo flow testing** (`demo`): Read `docs/happy-paths/HAPPY_PATH_DEMO.md`. Follow Steps 1-7 sequentially across all 3 portals. This tests the exact presentation demo flow.
 
 ---
 
@@ -98,7 +108,7 @@ For **each step** in the happy path:
 
 1. **Execute** the action using the appropriate tool:
    - Browser roles (buyer/seller/admin): Use Playwright MCP tools (`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_fill_form`, `browser_wait_for`)
-   - Broker: Use Bash curl commands as specified in HAPPY_PATHS.md Section 4
+   - Broker: Use Bash curl commands as specified in `docs/happy-paths/HAPPY_PATHS.md` Section 4
 
 2. **At every "Verify" checkpoint:**
    - Take a page snapshot via `browser_snapshot` with `filename: "tests/test-screenshots/<role>-<step>-snapshot.md"` — then Read the file to check for expected elements. This keeps raw snapshot data out of the conversation context.
@@ -117,7 +127,7 @@ For **each step** in the happy path:
 
 **Test credentials:** buyer@test.com / password123
 
-Follow HAPPY_PATHS.md Section 1, steps 1.1 through 1.7:
+Follow `docs/happy-paths/HAPPY_PATHS.md` Section 1, steps 1.1 through 1.7:
 
 | Step | Name | Actions |
 |------|------|---------|
@@ -133,7 +143,7 @@ Follow HAPPY_PATHS.md Section 1, steps 1.1 through 1.7:
 
 **Test credentials:** seller@test.com / password123
 
-Follow HAPPY_PATHS.md Section 2, steps 2.1 through 2.11:
+Follow `docs/happy-paths/HAPPY_PATHS.md` Section 2, steps 2.1 through 2.11:
 
 | Step | Name | Actions                                                                                                                                                                                                    |
 |------|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -153,7 +163,7 @@ Follow HAPPY_PATHS.md Section 2, steps 2.1 through 2.11:
 
 **Test credentials:** admin@test.com / password123
 
-Follow HAPPY_PATHS.md Section 3, steps 3.1 through 3.10:
+Follow `docs/happy-paths/HAPPY_PATHS.md` Section 3, steps 3.1 through 3.10:
 
 | Step | Name | Actions |
 |------|------|---------|
@@ -173,7 +183,7 @@ Follow HAPPY_PATHS.md Section 3, steps 3.1 through 3.10:
 
 **Test credentials:** broker@test.com / password123
 
-Follow HAPPY_PATHS.md Section 4, steps 4.1 through 4.4. Use Bash curl commands:
+Follow `docs/happy-paths/HAPPY_PATHS.md` Section 4, steps 4.1 through 4.4. Use Bash curl commands:
 
 ```bash
 # 4.1 Get token
@@ -194,7 +204,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/brokers/l
 #   http://localhost:8080/api/v1/brokers/lots/intake -d '{...}'
 ```
 
-Verify HTTP status codes and response shapes match HAPPY_PATHS.md expectations.
+Verify HTTP status codes and response shapes match `docs/happy-paths/HAPPY_PATHS.md` expectations.
 
 ---
 
@@ -335,5 +345,5 @@ Use the `/kill-all` skill to stop and remove all services, kill frontend dev ser
 - **Check console and network after every navigation.** Many bugs only manifest as silent API failures.
 - **If a step depends on a prior step that failed**, mark it as SKIP with the reason.
 - **For the broker path**, save curl output as evidence instead of screenshots.
-- **Cross-reference with known issues** in HAPPY_PATHS.md "Known Issues" section — note if a bug is pre-existing vs new.
+- **Cross-reference with known issues** in `docs/happy-paths/HAPPY_PATHS.md` "Known Issues" section — note if a bug is pre-existing vs new.
 - **Keycloak login flow**: After navigating to the app, wait for Keycloak redirect. Take a `browser_snapshot`, find the username/password fields by `ref`, use `browser_fill_form` to enter credentials, then `browser_click` the Sign In button. Use `browser_wait_for` to confirm redirect back to the app.

@@ -37,6 +37,13 @@ function formatDate(dateStr: string): string {
   })
 }
 
+function formatCo2Value(kg: number): string {
+  if (kg >= 1000) {
+    return `${(kg / 1000).toFixed(1)} t CO2`
+  }
+  return `${kg.toFixed(0)} kg CO2`
+}
+
 const trendLabels = computed(() => monthlyTrend.value.map((m) => m.month))
 const trendData = computed(() => monthlyTrend.value.map((m) => m.co2AvoidedKg))
 
@@ -179,6 +186,7 @@ async function handleDownload(format: 'pdf' | 'csv') {
             label="CO2 Avoided (kg)"
             color="#059669"
             :height="300"
+            :value-formatter="formatCo2Value"
           />
         </div>
 

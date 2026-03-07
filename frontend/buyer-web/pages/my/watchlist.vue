@@ -39,11 +39,11 @@
                 <p class="text-lg font-bold text-primary">{{ formatCurrency(lot.startingBid) }}</p>
               </div>
               <button
-                class="p-2 text-gray-400 hover:text-warning transition-colors"
+                class="p-2 hover:text-red-600 transition-colors"
                 @click.prevent="removeFromWatchlist(lot.id)"
                 :title="$t('watchlistPage.remove')"
               >
-                <i class="pi pi-heart-fill text-lg" />
+                <i class="pi pi-heart-fill text-lg text-red-500" />
               </button>
             </div>
           </div>

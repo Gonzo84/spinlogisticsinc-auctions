@@ -120,7 +120,7 @@
                 :title="$t('lot.watchlist')"
                 @click="toggleWatchlist"
               >
-                <i class="pi text-xl" :class="isWatched ? 'pi-heart-fill text-warning' : 'pi-heart text-gray-400'" />
+                <i class="pi text-xl" :class="isWatched ? 'pi-heart-fill text-red-500' : 'pi-heart text-gray-400'" />
               </button>
               <button
                 class="p-2 rounded-lg border hover:bg-gray-50 transition-colors"

@@ -73,7 +73,7 @@ Store the full ordered list of report file paths. This is the **report queue**.
 
 ## Step 4: Process Reports in a Loop
 
-For each report in the queue (oldest first), execute Steps 4a–4h, then move to the next report. Continue until the queue is empty.
+For each report in the queue (oldest first), execute Steps 4a–4i, then move to the next report. Continue until the queue is empty.
 
 ### 4a: Read and Parse the Report
 
@@ -88,25 +88,34 @@ Read the full report file. Parse out every bug entry (sections matching `### BUG
 - Read the referenced source file(s) to understand the current code
 - If the report specifies exact line numbers, verify they still match (code may have shifted)
 
-### 4c: Implement the Fix
+### 4c: Read CONVENTIONS.md
+
+Before implementing any fix, read `CONVENTIONS.md` at the project root. This is the mandatory code style and architectural guide. All fixes MUST follow its rules, including:
+- **Kotlin style** (section 4): naming, CDI patterns, logging, configuration
+- **Vue/TypeScript** (section 3): SFC ordering, composables, PrimeVue patterns, API layer
+- **REST API** (section 5): response wrapping, pagination, status codes
+- **Database** (section 7): naming, Flyway migrations, column types
+- **Critical gotchas** (section 16): known pitfalls that caused real bugs
+
+### 4d: Implement the Fix
 - Apply the minimal fix described in the report
 - If the report doesn't specify an exact fix, analyze the root cause and implement the simplest correct solution
-- Follow existing code patterns and conventions in the file
+- Follow `CONVENTIONS.md` rules and existing code patterns in the file
 
-### 4d: Skip Criteria
+### 4e: Skip Criteria
 Skip a bug (do not attempt to fix) if:
 - It is caused by a **service being down** (infrastructure issue, not a code bug) — e.g., "service X is not running"
 - It was already marked as `FIXED during test` in the report
 - It requires **infrastructure changes** that can't be done via code (e.g., Keycloak admin API calls at runtime)
 
-### 4e: What Counts as a Fixable Bug
+### 4f: What Counts as a Fixable Bug
 Focus on bugs that involve:
 - **Backend code fixes** — SQL queries, repository methods, service logic, API endpoints
 - **Frontend code fixes** — Vue components, composables, templates, API calls
 - **Configuration fixes** — application.yml, realm JSON, Flyway migrations
 - **Form/UI fixes** — validation, data binding, display logic
 
-### 4f: Build Verification for This Report
+### 4g: Build Verification for This Report
 
 After all bugs in the current report are fixed, do a quick build check to catch compile errors:
 
@@ -123,7 +132,7 @@ cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform/frontend/<app> &&
 
 If build fails, fix the compilation error before proceeding.
 
-### 4g: Delete the Processed Report
+### 4h: Delete the Processed Report
 
 Once all fixable bugs in this report have been addressed and the build passes, delete the report file:
 
@@ -136,7 +145,7 @@ Also clean up any test screenshots referenced by that report if they exist in `t
 rm -f tests/test-screenshots/<role>-*.png
 ```
 
-### 4h: Check for Remaining Reports
+### 4i: Check for Remaining Reports
 
 ```bash
 ls -tr tests/*bugs*.md tests/*report*.md 2>/dev/null
@@ -163,9 +172,10 @@ Report the total number of reports processed and bugs fixed.
 
 - **Do not introduce new bugs.** Keep fixes minimal and targeted.
 - **Do not refactor surrounding code.** Only change what's needed to fix the reported bug.
-- **Preserve existing patterns.** Match the style of the file you're editing.
-- **If a fix requires a database migration**, create a new Flyway migration file with the next version number in sequence.
+- **Follow CONVENTIONS.md.** All fixes must adhere to the project's code conventions. Read it in Step 4c before implementing any fix.
+- **If a fix requires a database migration**, create a new Flyway migration file with the next version number in sequence. Follow section 7 of CONVENTIONS.md (snake_case, `app` schema, `IF NOT EXISTS` guards).
 - **If a fix is unclear**, read more context from the codebase before implementing. Check related files, tests, and API contracts.
+- **If implementing a new feature** as part of a fix (e.g., adding a missing endpoint), follow the architectural patterns in CONVENTIONS.md: hexagonal architecture (section 4.1), API conventions (section 5), PrimeVue patterns (section 3.11).
 - **Track progress** using the task list — mark each bug as in_progress when starting and completed when done.
 
 ### Context Management

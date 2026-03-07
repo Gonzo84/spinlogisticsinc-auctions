@@ -20,10 +20,12 @@ const props = withDefaults(defineProps<{
   label?: string
   color?: string
   height?: number
+  valueFormatter?: (value: number) => string
 }>(), {
   label: 'Revenue (EUR)',
   color: '#2563eb',
   height: 300,
+  valueFormatter: undefined,
 })
 
 const chartData = computed(() => ({
@@ -41,43 +43,50 @@ const chartData = computed(() => ({
   ],
 }))
 
-const chartOptions: ChartOptions<'bar'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false,
-    },
-    tooltip: {
-      backgroundColor: '#1f2937',
-      titleFont: { size: 13, weight: 'bold' },
-      bodyFont: { size: 12 },
-      padding: 12,
-      cornerRadius: 8,
-      callbacks: {
-        label: (ctx) => {
-          const value = ctx.parsed.y ?? 0
-          return `EUR ${value.toLocaleString('de-DE', { minimumFractionDigits: 2 })}`
+const defaultFormatter = (value: number) => `EUR ${value.toLocaleString('de-DE', { minimumFractionDigits: 2 })}`
+const defaultTickFormatter = (value: number) => `EUR ${value.toLocaleString('de-DE')}`
+
+const chartOptions = computed<ChartOptions<'bar'>>(() => {
+  const fmt = props.valueFormatter ?? defaultFormatter
+  const tickFmt = props.valueFormatter ?? defaultTickFormatter
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: '#1f2937',
+        titleFont: { size: 13, weight: 'bold' },
+        bodyFont: { size: 12 },
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: (ctx) => {
+            const value = ctx.parsed.y ?? 0
+            return fmt(value)
+          },
         },
       },
     },
-  },
-  scales: {
-    x: {
-      grid: { display: false },
-      ticks: { font: { size: 11 }, color: '#6b7280' },
-    },
-    y: {
-      grid: { color: '#f3f4f6' },
-      ticks: {
-        font: { size: 11 },
-        color: '#6b7280',
-        callback: (value) => `EUR ${Number(value).toLocaleString('de-DE')}`,
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11 }, color: '#6b7280' },
       },
-      beginAtZero: true,
+      y: {
+        grid: { color: '#f3f4f6' },
+        ticks: {
+          font: { size: 11 },
+          color: '#6b7280',
+          callback: (value) => tickFmt(Number(value)),
+        },
+        beginAtZero: true,
+      },
     },
-  },
-}
+  }
+})
 </script>
 
 <template>

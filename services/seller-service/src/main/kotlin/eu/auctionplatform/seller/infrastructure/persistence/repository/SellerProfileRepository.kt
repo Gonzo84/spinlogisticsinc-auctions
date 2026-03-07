@@ -78,9 +78,9 @@ class SellerProfileRepository @Inject constructor(
 
         private const val UPSERT_METRICS = """
             INSERT INTO app.seller_metrics
-                (seller_id, active_lots, total_bids, total_hammer_sales,
+                (seller_id, period, active_lots, total_bids, total_hammer_sales,
                  pending_settlements, total_settled, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
+            VALUES (?, 'ALL', ?, ?, ?, ?, ?, NOW())
             ON CONFLICT (seller_id) DO UPDATE SET
                 active_lots = EXCLUDED.active_lots,
                 total_bids = EXCLUDED.total_bids,
