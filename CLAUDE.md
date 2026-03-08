@@ -102,6 +102,9 @@ api/             # JAX-RS REST resources, DTOs, request/response objects
 - **Casbin RBAC:** Each service has `casbin_model.conf` and `casbin_policy.csv` in resources. Policies use keyMatch2 with `:param` patterns (not glob `*`/`**`). Role hierarchy: buyer, seller, broker, admin_ops, admin_super.
 - **Frontend Type Safety:** All 3 frontends enforce `no-explicit-any` via ESLint. Types are centralized in `src/types/` with barrel exports. All composable/store returns use `readonly()`.
 - **Pinia Setup Stores:** buyer-web uses Composition API (Setup) stores with `ref()`, `computed()`, and plain functions — not Options API.
+- **Post-auction flow endpoints:** `POST /auctions/{id}/award` (admin, awards closed auction), `GET /auctions/by-lot/{lotId}` (public, lookup by lot), `PATCH /payments/{id}/settle` (admin, settles completed/processing payment), `GET /payments/summary` (admin, KPI aggregation).
+- **Bean Validation error responses:** `ConstraintViolationExceptionMapper` in `shared/kotlin-commons` returns 400 with field-level error details (field, message, rejectedValue) instead of empty body.
+- **Inter-service HTTP lookups:** `AuctionLotLookupService` in payment-service calls auction-engine and catalog-service REST APIs to resolve hammer price, seller ID, and lot title for checkout. Config: `service.auction-engine.url`, `service.catalog-service.url`.
 
 ### Infrastructure Services (dev ports)
 
@@ -112,6 +115,7 @@ PostgreSQL: 5432 | NATS: 4222 | Keycloak: 8180 | Redis: 6379 | MinIO: 9000 | Ela
 | Email | Password | Role |
 |-------|----------|------|
 | buyer@test.com | test | buyer_active |
+| buyer2@test.com | test | buyer_active |
 | seller@test.com | test | seller_verified |
 | broker@test.com | test | broker_active |
 | admin@test.com | test | admin_ops |
@@ -144,6 +148,18 @@ cd frontend/admin-dashboard && npx vitest
 2. **CSS layer order for PrimeVue + Tailwind is non-negotiable.** Must be `tailwind-base, primevue, tailwind-utilities` in both `preset.ts` and each frontend's CSS entry point. Wrong order causes PrimeVue styles to be overridden by Tailwind reset or vice versa.
 
 3. **`preset.ts` component overrides need a type assertion.** PrimeVue's Aura preset types don't include all component keys (e.g., `datepicker`, `accordion`). Cast the components object with `as Record<string, Record<string, Record<string, string>>>` in `definePreset()`.
+
+4. **Gateway proxy must support every HTTP method used by services.** `ApiProxyResource.kt` has separate handler methods per HTTP verb. When adding a new endpoint that uses an uncommon method (e.g., PATCH), you must add both a `@PATCH` handler method AND a case in the internal `proxy()` switch. Missing this causes 405 Method Not Allowed.
+
+5. **Outbox poller `markPublished()` requires `setLong()` for bigint ID columns.** The outbox tables use `bigint` primary keys. Using `setString()` causes `ERROR: operator does not exist: bigint = character varying`, making outbox entries re-publish every poll cycle. Always use `setLong(idx, id.toLong())`.
+
+6. **Auction read model must store winnerId/winningBid on close.** The `AuctionReadModelRepository` projection for `AuctionClosedEvent` must write `current_high_bid` and `current_high_bidder_id` columns. Without this, downstream services (payment-service) see null winner after auction closes.
+
+7. **Payment-service inter-service lookups need explicit URL config.** `AuctionLotLookupService` requires `service.auction-engine.url` and `service.catalog-service.url` in `application.yml`, plus `AUCTION_ENGINE_URL` and `CATALOG_SERVICE_URL` env vars in Docker Compose.
+
+8. **Checkout has two modes: explicit items vs lotIds lookup.** `CheckoutRequest` accepts either `items` (with pre-resolved auctionId/hammerPrice/sellerId from the award response) or `lotIds` (triggering HTTP lookups to auction-engine and catalog-service). Always prefer `items` mode — the `lotIds` lookup is fragile without service-to-service auth tokens.
+
+9. **Keycloak realm changes require `KC_SPI_IMPORT_REALM_FILE_STRATEGY: OVERWRITE`.** Without this env var in the Keycloak Docker config, realm JSON changes (new users, client config) are ignored on container restart because Keycloak skips import if the realm already exists.
 
 ### Deployment
 
