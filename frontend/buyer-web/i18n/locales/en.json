@@ -83,6 +83,8 @@
     "reserve": "Reserve",
     "loginToBid": "Log in or register to place a bid on this lot.",
     "noAccount": "Don't have an account? Register now",
+    "biddingRestricted": "Bidding is not available for your account role.",
+    "buyerAccountRequired": "Only buyer accounts can place bids on auctions.",
     "depositRequired": "Deposit required to bid",
     "depositAmount": "A deposit of {amount} is required before you can bid.",
     "yourBid": "Your bid",

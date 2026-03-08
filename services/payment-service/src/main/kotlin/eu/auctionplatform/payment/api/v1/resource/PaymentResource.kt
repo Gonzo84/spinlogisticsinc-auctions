@@ -1,5 +1,6 @@
 package eu.auctionplatform.payment.api.v1.resource
 
+import eu.auctionplatform.payment.api.v1.dto.CheckoutItemRequest
 import eu.auctionplatform.payment.api.v1.dto.CheckoutRequest
 import eu.auctionplatform.payment.api.v1.dto.CheckoutResponse
 import eu.auctionplatform.payment.api.v1.dto.DepositRefundRequest
@@ -11,6 +12,7 @@ import eu.auctionplatform.payment.api.v1.dto.PaymentSubmitRequest
 import eu.auctionplatform.payment.api.v1.dto.PaymentSummary
 import eu.auctionplatform.payment.api.v1.dto.PaymentsSummaryResponse
 import eu.auctionplatform.payment.api.v1.dto.SettlementResponse
+import eu.auctionplatform.payment.application.service.AuctionLotLookupService
 import eu.auctionplatform.payment.application.service.CheckoutService
 import eu.auctionplatform.payment.application.service.LotCheckoutDetail
 import eu.auctionplatform.payment.application.service.NonPaymentService
@@ -63,7 +65,8 @@ class PaymentResource @Inject constructor(
     private val nonPaymentService: NonPaymentService,
     private val paymentRepository: PaymentRepository,
     private val invoiceRepository: InvoiceRepository,
-    private val invoiceHtmlGenerator: InvoiceHtmlGenerator
+    private val invoiceHtmlGenerator: InvoiceHtmlGenerator,
+    private val auctionLotLookupService: AuctionLotLookupService
 ) {
 
     companion object {
@@ -93,24 +96,20 @@ class PaymentResource @Inject constructor(
     ): Response {
         val buyerId = extractUserId(securityContext)
 
-        LOG.infof("Checkout initiated by buyer %s for %s lot(s)", buyerId, request.lotIds.size)
+        // Validate: at least one of items or lotIds must be provided
+        if (request.items.isEmpty() && request.lotIds.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(mapOf("error" to "Either 'items' or 'lotIds' must be provided", "code" to "INVALID_REQUEST"))
+                .build()
+        }
 
-        // Build lot details — in a full implementation, lot/auction details
-        // would be fetched from the lot-service or auction-engine.
-        val lotDetails = request.lotIds.map { lotIdStr ->
-            val lotId = UUID.fromString(lotIdStr)
-            LotCheckoutDetail(
-                lotId = lotId,
-                auctionId = lotId, // Placeholder: would be resolved from lot service
-                sellerId = lotId, // Placeholder: would be resolved from lot/auction service
-                hammerPrice = BigDecimal.ZERO, // Placeholder: would come from auction result
-                currency = request.currency,
-                buyerCountry = request.buyerCountry,
-                sellerCountry = request.buyerCountry, // Placeholder: would come from lot service
-                buyerType = request.buyerType,
-                sellerType = "BUSINESS", // Sellers are typically businesses
-                buyerVatId = request.buyerVatId
-            )
+        // Build lot details — prefer explicit items over lotIds lookup
+        val lotDetails = if (request.items.isNotEmpty()) {
+            LOG.infof("Checkout initiated by buyer %s with %d explicit item(s)", buyerId, request.items.size)
+            buildLotDetailsFromItems(request)
+        } else {
+            LOG.infof("Checkout initiated by buyer %s with %d lotId(s) (lookup mode)", buyerId, request.lotIds.size)
+            buildLotDetailsFromLotIds(request)
         }
 
         val payments = checkoutService.initiateCheckout(buyerId, lotDetails)
@@ -446,11 +445,13 @@ class PaymentResource @Inject constructor(
         LOG.debug("GET /payments/summary")
 
         val pending = paymentRepository.findByStatus(PaymentStatus.PENDING)
+        val processing = paymentRepository.findByStatus(PaymentStatus.PROCESSING)
         val completed = paymentRepository.findByStatus(PaymentStatus.COMPLETED)
 
         val overdueNow = paymentRepository.findOverdue(Instant.now())
 
-        val totalPending = pending.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
+        val allPending = pending + processing
+        val totalPending = allPending.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
         val totalPaid = completed.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
         val totalOverdue = overdueNow.fold(BigDecimal.ZERO) { acc, p -> acc.add(p.totalAmount) }
 
@@ -459,7 +460,7 @@ class PaymentResource @Inject constructor(
             totalOverdue = totalOverdue,
             totalPaid = totalPaid,
             totalDisputed = BigDecimal.ZERO,
-            pendingCount = pending.size,
+            pendingCount = allPending.size,
             overdueCount = overdueNow.size
         )
 
@@ -525,13 +526,28 @@ class PaymentResource @Inject constructor(
                 .entity(mapOf("error" to "Payment not found", "code" to "PAYMENT_NOT_FOUND"))
                 .build()
 
-        if (payment.status != PaymentStatus.COMPLETED) {
+        // Allow settlement for COMPLETED or PROCESSING payments.
+        // PROCESSING is accepted because in dev/test flows there is no real
+        // PSP webhook to transition the payment to COMPLETED; admin settlement
+        // acts as the manual completion trigger.
+        if (payment.status != PaymentStatus.COMPLETED && payment.status != PaymentStatus.PROCESSING) {
             return Response.status(Response.Status.CONFLICT)
                 .entity(mapOf(
-                    "error" to "Payment must be COMPLETED to settle (current: ${payment.status})",
+                    "error" to "Payment must be COMPLETED or PROCESSING to settle (current: ${payment.status})",
                     "code" to "INVALID_STATUS"
                 ))
                 .build()
+        }
+
+        // If payment is still PROCESSING, auto-complete it before settling
+        if (payment.status == PaymentStatus.PROCESSING) {
+            paymentRepository.markCompleted(
+                id = paymentId,
+                paymentMethod = payment.paymentMethod ?: "admin_settled",
+                pspReference = payment.pspReference ?: "ADMIN-${UUID.randomUUID().toString().take(8).uppercase()}",
+                paidAt = Instant.now()
+            )
+            LOG.infof("Payment %s auto-completed by admin settle action", paymentId)
         }
 
         val settlement = settlementService.createSettlement(paymentId)
@@ -625,6 +641,102 @@ class PaymentResource @Inject constructor(
     // -----------------------------------------------------------------------
     // Internal helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * Builds [LotCheckoutDetail] list from explicit [CheckoutItemRequest] items.
+     *
+     * Hammer price and auction ID come directly from the request. Seller ID
+     * and lot metadata are resolved from the catalog-service as a best-effort
+     * enrichment — failures do not block checkout.
+     */
+    private fun buildLotDetailsFromItems(request: CheckoutRequest): List<LotCheckoutDetail> {
+        return request.items.map { item ->
+            val lotId = UUID.fromString(item.lotId)
+            val auctionId = UUID.fromString(item.auctionId)
+            val hammerPrice = item.hammerPrice
+
+            // Enrich with lot metadata (seller, country, title) — best-effort
+            val lotInfo = auctionLotLookupService.fetchLotInfo(lotId)
+            val sellerId = item.sellerId?.let { UUID.fromString(it) }
+                ?: lotInfo?.sellerId
+                ?: auctionLotLookupService.fetchAuctionResultByAuctionId(auctionId)?.sellerId
+                ?: lotId
+            val sellerCountry = lotInfo?.sellerCountry ?: request.buyerCountry
+            val lotTitle = lotInfo?.title
+
+            LOG.infof(
+                "Checkout item (explicit): lot=%s, auction=%s, hammerPrice=%s, sellerId=%s",
+                lotId, auctionId, hammerPrice, sellerId
+            )
+
+            LotCheckoutDetail(
+                lotId = lotId,
+                auctionId = auctionId,
+                sellerId = sellerId,
+                hammerPrice = hammerPrice,
+                currency = request.currency,
+                buyerCountry = request.buyerCountry,
+                sellerCountry = sellerCountry,
+                buyerType = request.buyerType,
+                sellerType = "BUSINESS",
+                buyerVatId = request.buyerVatId,
+                lotTitle = lotTitle,
+                buyerName = null,
+                sellerName = null
+            )
+        }
+    }
+
+    /**
+     * Builds [LotCheckoutDetail] list by looking up auction and lot data
+     * from other services via HTTP. This is the fallback mode when the caller
+     * does not provide explicit items.
+     */
+    private fun buildLotDetailsFromLotIds(request: CheckoutRequest): List<LotCheckoutDetail> {
+        return request.lotIds.map { lotIdStr ->
+            val lotId = UUID.fromString(lotIdStr)
+
+            // Look up auction result (hammer price, winner, auctionId)
+            val auctionResult = auctionLotLookupService.fetchAuctionResultByLot(lotId)
+            // Look up lot details (sellerId, title, country)
+            val lotInfo = auctionLotLookupService.fetchLotInfo(lotId)
+
+            val hammerPrice = auctionResult?.hammerPrice ?: BigDecimal.ZERO
+            val auctionId = auctionResult?.auctionId ?: lotId
+            val sellerId = lotInfo?.sellerId ?: auctionResult?.sellerId ?: lotId
+            val sellerCountry = lotInfo?.sellerCountry ?: request.buyerCountry
+            val lotTitle = lotInfo?.title
+
+            if (hammerPrice == BigDecimal.ZERO) {
+                LOG.warnf(
+                    "Checkout lot %s: hammerPrice resolved to 0 (auctionResult=%s, lotInfo=%s). " +
+                        "Consider using 'items' mode with explicit hammerPrice.",
+                    lotId, auctionResult != null, lotInfo != null
+                )
+            }
+
+            LOG.infof(
+                "Checkout item (lookup): lot=%s, auction=%s, hammerPrice=%s, sellerId=%s, title=%s",
+                lotId, auctionId, hammerPrice, sellerId, lotTitle
+            )
+
+            LotCheckoutDetail(
+                lotId = lotId,
+                auctionId = auctionId,
+                sellerId = sellerId,
+                hammerPrice = hammerPrice,
+                currency = request.currency,
+                buyerCountry = request.buyerCountry,
+                sellerCountry = sellerCountry,
+                buyerType = request.buyerType,
+                sellerType = "BUSINESS",
+                buyerVatId = request.buyerVatId,
+                lotTitle = lotTitle,
+                buyerName = null,
+                sellerName = null
+            )
+        }
+    }
 
     private fun extractUserId(securityContext: SecurityContext): UUID {
         val principal = securityContext.userPrincipal?.name

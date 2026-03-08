@@ -15,13 +15,25 @@ import java.time.Instant
 
 /**
  * Request body for initiating checkout of won lots.
+ *
+ * Supports two input modes:
+ * 1. **Simple mode** — provide [lotIds] only; the service resolves auction
+ *    details (hammer price, seller ID) via inter-service HTTP lookups.
+ * 2. **Explicit mode** — provide [items] with auctionId and hammerPrice
+ *    pre-resolved by the caller (e.g. from the award response). This is
+ *    the preferred mode as it avoids fragile inter-service calls.
+ *
+ * When [items] is non-empty it takes precedence over [lotIds].
  */
 data class CheckoutRequest(
 
-    /** List of lot IDs to check out. */
-    @field:NotEmpty(message = "At least one lot is required")
+    /** List of lot IDs to check out (simple mode). */
     @JsonProperty("lotIds")
-    val lotIds: List<String>,
+    val lotIds: List<String> = emptyList(),
+
+    /** Lot checkout items with pre-resolved auction data (explicit mode). */
+    @JsonProperty("items")
+    val items: List<CheckoutItemRequest> = emptyList(),
 
     /** Buyer's country code (ISO 3166-1 alpha-2). */
     @field:NotBlank(message = "Buyer country is required")
@@ -40,6 +52,32 @@ data class CheckoutRequest(
     /** ISO 4217 currency code (defaults to EUR). */
     @JsonProperty("currency")
     val currency: String = "EUR"
+)
+
+/**
+ * A single lot item in a checkout request with pre-resolved auction data.
+ */
+data class CheckoutItemRequest(
+
+    /** The lot UUID. */
+    @field:NotBlank(message = "Lot ID is required")
+    @JsonProperty("lotId")
+    val lotId: String,
+
+    /** The auction UUID that awarded this lot. */
+    @field:NotBlank(message = "Auction ID is required")
+    @JsonProperty("auctionId")
+    val auctionId: String,
+
+    /** The hammer price from the auction award. */
+    @field:NotNull(message = "Hammer price is required")
+    @field:DecimalMin(value = "0.01", message = "Hammer price must be positive")
+    @JsonProperty("hammerPrice")
+    val hammerPrice: BigDecimal,
+
+    /** The seller UUID (optional, resolved from catalog if omitted). */
+    @JsonProperty("sellerId")
+    val sellerId: String? = null
 )
 
 /**

@@ -1099,6 +1099,35 @@
       ]
     },
     {
+      "id": "00000000-0000-0000-0000-000000000006",
+      "username": "buyer2@test.com",
+      "email": "buyer2@test.com",
+      "firstName": "Second",
+      "lastName": "Buyer",
+      "enabled": true,
+      "emailVerified": true,
+      "createdTimestamp": 1700000000000,
+      "attributes": {
+        "account_type": ["business"],
+        "deposit_status": ["active"],
+        "kyc_status": ["verified"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "buyer_active",
+        "default-roles-auction-platform"
+      ],
+      "groups": [
+        "/Buyers/Business"
+      ]
+    },
+    {
       "id": "00000000-0000-0000-0000-000000000002",
       "username": "seller@test.com",
       "email": "seller@test.com",

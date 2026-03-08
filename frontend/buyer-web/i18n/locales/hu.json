@@ -83,6 +83,8 @@
     "reserve": "Minimum ár",
     "loginToBid": "Jelentkezzen be vagy regisztráljon licitáláshoz.",
     "noAccount": "Nincs fiókja? Regisztráljon most",
+    "biddingRestricted": "Bidding is not available for your account role.",
+    "buyerAccountRequired": "Only buyer accounts can place bids on auctions.",
     "depositRequired": "Licitáláshoz letét szükséges",
     "depositAmount": "Licitálás előtt {amount} letét szükséges.",
     "yourBid": "Az Ön ajánlata",

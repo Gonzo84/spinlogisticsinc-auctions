@@ -122,7 +122,10 @@ class CheckoutService @Inject constructor(
                 status = PaymentStatus.PENDING,
                 dueDate = dueDate,
                 paidAt = null,
-                createdAt = now
+                createdAt = now,
+                lotTitle = lot.lotTitle,
+                buyerName = lot.buyerName,
+                sellerName = lot.sellerName
             )
 
             paymentRepository.save(payment)
@@ -455,7 +458,10 @@ data class LotCheckoutDetail(
     val sellerCountry: String,
     val buyerType: String,
     val sellerType: String,
-    val buyerVatId: String?
+    val buyerVatId: String?,
+    val lotTitle: String? = null,
+    val buyerName: String? = null,
+    val sellerName: String? = null
 )
 
 /**

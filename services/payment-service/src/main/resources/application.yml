@@ -108,6 +108,15 @@ casbin:
   model-path: classpath:casbin_model.conf
 
 # -----------------------------------------------------------------------------
+# Inter-service URLs (used by AuctionLotLookupService)
+# -----------------------------------------------------------------------------
+service:
+  auction-engine:
+    url: ${AUCTION_ENGINE_URL:http://localhost:8081}
+  catalog-service:
+    url: ${CATALOG_SERVICE_URL:http://localhost:8082}
+
+# -----------------------------------------------------------------------------
 # Adyen Payment Gateway
 # -----------------------------------------------------------------------------
 adyen:

@@ -83,6 +83,8 @@
     "reserve": "Minimalna cena",
     "loginToBid": "Prijavite se ili registrujte da biste dali ponudu za ovaj lot.",
     "noAccount": "Nemate nalog? Registrujte se sada",
+    "biddingRestricted": "Bidding is not available for your account role.",
+    "buyerAccountRequired": "Only buyer accounts can place bids on auctions.",
     "depositRequired": "Za licitiranje je potreban depozit",
     "depositAmount": "Pre licitiranja potreban je depozit od {amount}.",
     "yourBid": "Vaša ponuda",

@@ -45,8 +45,14 @@ export function usePayments() {
       if (filters.dateFrom) params.dateFrom = filters.dateFrom
       if (filters.dateTo) params.dateTo = filters.dateTo
 
-      const response = await get<{ items: Payment[]; total: number }>('/payments', { params })
-      payments.value = response.items ?? []
+      const response = await get<{ items: Record<string, unknown>[]; total: number }>('/payments', { params })
+      payments.value = (response.items ?? []).map((item) => ({
+        ...item,
+        id: (item.paymentId ?? item.id) as string,
+        amount: (item.hammerPrice ?? item.amount ?? 0) as number,
+        buyerPremium: (item.buyerPremium ?? 0) as number,
+        totalAmount: (item.totalAmount ?? 0) as number,
+      })) as unknown as Payment[]
       totalCount.value = response.total ?? 0
     } catch {
       payments.value = []

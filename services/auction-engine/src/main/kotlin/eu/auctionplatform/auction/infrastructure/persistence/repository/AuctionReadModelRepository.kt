@@ -131,6 +131,15 @@ class AuctionReadModelRepository @Inject constructor(
              WHERE auction_id = ?
         """
 
+        private const val UPDATE_STATUS_WITH_WINNER = """
+            UPDATE app.auction_read_model
+               SET status = ?,
+                   current_high_bid = COALESCE(?, current_high_bid),
+                   current_high_bidder_id = COALESCE(?, current_high_bidder_id),
+                   updated_at = ?
+             WHERE auction_id = ?
+        """
+
         private const val UPDATE_RESERVE_MET = """
             UPDATE app.auction_read_model
                SET reserve_met = TRUE,
@@ -263,14 +272,18 @@ class AuctionReadModelRepository @Inject constructor(
 
             is AuctionClosedEvent -> {
                 dataSource.connection.use { conn ->
-                    conn.prepareStatement(UPDATE_STATUS).use { stmt ->
+                    conn.prepareStatement(UPDATE_STATUS_WITH_WINNER).use { stmt ->
                         stmt.setString(1, "CLOSED")
-                        stmt.setTimestamp(2, Timestamp.from(now))
-                        stmt.setObject(3, UUID.fromString(event.aggregateId))
+                        stmt.setBigDecimal(2, event.finalBidAmount)
+                        val winnerUuid = event.winnerId?.let { UUID.fromString(it) }
+                        stmt.setObject(3, winnerUuid)
+                        stmt.setTimestamp(4, Timestamp.from(now))
+                        stmt.setObject(5, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                LOG.debugf("Updated read model status to CLOSED for auction %s", event.aggregateId)
+                LOG.debugf("Updated read model status to CLOSED for auction %s (winner=%s, finalBid=%s)",
+                    event.aggregateId, event.winnerId, event.finalBidAmount)
             }
 
             is LotAwardedEvent -> {

@@ -37,6 +37,7 @@ import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.DefaultValue
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.POST
+import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
@@ -133,6 +134,35 @@ class AuctionResource @Inject constructor(
     }
 
     /**
+     * Awards a closed auction to the winning bidder.
+     *
+     * Transitions the auction from CLOSED to AWARDED, recording the
+     * hammer price and winner. Restricted to admin roles.
+     *
+     * **POST /api/v1/auctions/{id}/award**
+     *
+     * @param id The auction UUID.
+     * @return 200 OK with award details.
+     */
+    @POST
+    @Path("/{id}/award")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun awardAuction(@PathParam("id") id: String): Response {
+        LOG.infof("Awarding auction %s", id)
+
+        val auctionId = AuctionId.fromString(id)
+        val result = lifecycleService.awardLot(auctionId)
+
+        val response = mapOf(
+            "auctionId" to result.auctionId,
+            "winnerId" to result.winnerId,
+            "hammerPrice" to result.hammerPrice
+        )
+
+        return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    /**
      * Retrieves auction details by ID.
      *
      * **GET /api/v1/auctions/{id}**
@@ -149,6 +179,28 @@ class AuctionResource @Inject constructor(
             ?: throw NotFoundException(
                 code = "AUCTION_NOT_FOUND",
                 message = "Auction $id not found"
+            )
+
+        return Response.ok(ApiResponse.ok(toDetailResponse(readModel))).build()
+    }
+
+    /**
+     * Retrieves auction details by lot ID.
+     *
+     * **GET /api/v1/auctions/by-lot/{lotId}**
+     *
+     * @param lotId The lot UUID.
+     * @return 200 OK with auction details or 404 if not found.
+     */
+    @GET
+    @Path("/by-lot/{lotId}")
+    @PermitAll
+    fun getAuctionByLot(@PathParam("lotId") lotId: String): Response {
+        val lotUuid = UUID.fromString(lotId)
+        val readModel = readModelRepository.findByLotId(lotUuid)
+            ?: throw NotFoundException(
+                code = "AUCTION_NOT_FOUND",
+                message = "No auction found for lot $lotId"
             )
 
         return Response.ok(ApiResponse.ok(toDetailResponse(readModel))).build()

@@ -65,6 +65,7 @@ services:
       KC_HOSTNAME_URL: http://localhost:8180
       KC_HOSTNAME_ADMIN_URL: http://localhost:8180
       KC_HOSTNAME_STRICT: "false"
+      KC_SPI_IMPORT_REALM_FILE_STRATEGY: OVERWRITE
     ports:
       - "8180:8080"
     volumes:

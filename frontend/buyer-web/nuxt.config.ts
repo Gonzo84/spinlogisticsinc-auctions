@@ -87,6 +87,8 @@ export default defineNuxtConfig({
     '/checkout/**': { ssr: false },
     '/auth/**': { ssr: false },
     '/profile/**': { ssr: false },
+    '/watchlist': { redirect: '/my/watchlist' },
+    '/account/watchlist': { redirect: '/my/watchlist' },
   },
 
   nitro: {

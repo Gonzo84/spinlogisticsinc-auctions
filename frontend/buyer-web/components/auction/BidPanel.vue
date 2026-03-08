@@ -65,8 +65,17 @@
       </div>
     </div>
 
-    <!-- Bid Section (for authenticated users, active auction) -->
-    <div v-else-if="lot.status === 'active' || lot.status === 'extended'" class="p-4 space-y-4">
+    <!-- Non-buyer role warning -->
+    <div v-else-if="!isBuyerRole && (lot.status === 'active' || lot.status === 'extended')" class="p-4">
+      <div class="text-center py-4">
+        <i class="pi pi-info-circle text-4xl text-gray-300 mb-3" />
+        <p class="text-sm text-gray-600 mb-1">{{ $t('auction.biddingRestricted') }}</p>
+        <p class="text-xs text-gray-400">{{ $t('auction.buyerAccountRequired') }}</p>
+      </div>
+    </div>
+
+    <!-- Bid Section (for authenticated buyers, active auction) -->
+    <div v-else-if="isBuyerRole && (lot.status === 'active' || lot.status === 'extended')" class="p-4 space-y-4">
       <!-- Deposit Warning -->
       <Message v-if="lot.depositRequired && !depositPaid" severity="warn" :closable="false">
         <p class="text-sm font-medium">{{ $t('auction.depositRequired') }}</p>
@@ -221,8 +230,10 @@ interface Props {
 const props = defineProps<Props>()
 
 const { t } = useI18n()
-const { isAuthenticated, login } = useAuth()
+const { isAuthenticated, login, hasRole } = useAuth()
 const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, currentBid, bidCount, minBidAmount, hasAutoBid, clearError } = useBid()
+
+const isBuyerRole = computed(() => hasRole('buyer_active'))
 
 const bidAmount = ref<number | null>(null)
 const bidError = ref<string | null>(null)

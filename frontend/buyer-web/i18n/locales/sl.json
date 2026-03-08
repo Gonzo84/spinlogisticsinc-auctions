@@ -83,6 +83,8 @@
     "reserve": "Rezerva",
     "loginToBid": "Prijavite se ali registrirajte, da oddate ponudbo za ta lot.",
     "noAccount": "Nimate računa? Registrirajte se zdaj",
+    "biddingRestricted": "Bidding is not available for your account role.",
+    "buyerAccountRequired": "Only buyer accounts can place bids on auctions.",
     "depositRequired": "Za ponudbo je potreben depozit",
     "depositAmount": "Za oddajo ponudbe je potreben depozit v višini {amount}.",
     "yourBid": "Vaša ponudba",

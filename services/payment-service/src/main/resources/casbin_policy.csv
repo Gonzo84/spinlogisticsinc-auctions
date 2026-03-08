@@ -15,6 +15,8 @@ p, admin_ops, /api/v1/payments/invoices, GET, allow
 p, admin_ops, /api/v1/payments/invoices/:id/pdf, GET, allow
 p, admin_ops, /api/v1/payments/settlements, GET, allow
 p, admin_ops, /api/v1/payments/settlements/:id/process, POST, allow
+p, admin_ops, /api/v1/payments/:id/settle, PATCH, allow
+p, admin_ops, /api/v1/payments/summary, GET, allow
 p, admin_super, /api/v1/:r, .*, allow
 p, admin_super, /api/v1/:r/:id, .*, allow
 p, admin_super, /api/v1/:r/:id/:sub, .*, allow

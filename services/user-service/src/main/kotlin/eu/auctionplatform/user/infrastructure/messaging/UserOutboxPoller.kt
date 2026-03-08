@@ -97,7 +97,7 @@ class UserOutboxPoller {
         conn.prepareStatement(
             "UPDATE $TABLE_NAME SET published = true, published_at = NOW() WHERE id = ?"
         ).use { stmt ->
-            stmt.setString(1, id)
+            stmt.setLong(1, id.toLong())
             stmt.executeUpdate()
         }
     }

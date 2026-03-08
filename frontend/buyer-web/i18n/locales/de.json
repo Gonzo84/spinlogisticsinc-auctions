@@ -83,6 +83,8 @@
     "reserve": "Mindestpreis",
     "loginToBid": "Melden Sie sich an oder registrieren Sie sich, um auf dieses Los zu bieten.",
     "noAccount": "Noch kein Konto? Jetzt registrieren",
+    "biddingRestricted": "Bidding is not available for your account role.",
+    "buyerAccountRequired": "Only buyer accounts can place bids on auctions.",
     "depositRequired": "Kaution erforderlich um zu bieten",
     "depositAmount": "Eine Kaution von {amount} ist erforderlich, bevor Sie bieten k\u00f6nnen.",
     "yourBid": "Ihr Gebot",

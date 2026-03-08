@@ -83,6 +83,8 @@
     "reserve": "Prezzo minimo",
     "loginToBid": "Accedi o registrati per fare un'offerta su questo lotto.",
     "noAccount": "Non hai un account? Registrati ora",
+    "biddingRestricted": "Bidding is not available for your account role.",
+    "buyerAccountRequired": "Only buyer accounts can place bids on auctions.",
     "depositRequired": "Deposito richiesto per fare offerte",
     "depositAmount": "Per poter fare offerte è richiesto un deposito di {amount}.",
     "yourBid": "La tua offerta",
