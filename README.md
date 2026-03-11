@@ -355,11 +355,13 @@ The Keycloak realm is pre-configured with test users:
 
 | User | Password | Role |
 |------|----------|------|
-| buyer@test.com | test | buyer_active |
-| seller@test.com | test | seller_verified |
-| broker@test.com | test | broker_active |
-| admin@test.com | test | admin_ops |
-| superadmin@test.com | test | admin_super |
+| buyer@test.com | password123 | buyer_active |
+| buyer2@test.com | password123 | buyer_active |
+| seller@test.com | password123 | seller_verified |
+| broker@test.com | password123 | broker / broker_active |
+| admin@test.com | password123 | admin_super |
+| superadmin@test.com | password123 | admin_super |
+| blocked@test.com | password123 | buyer_blocked |
 
 ## Observability
 

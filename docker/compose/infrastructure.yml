@@ -52,7 +52,19 @@ services:
     image: quay.io/keycloak/keycloak:24.0
     container_name: ${PROJECT_NAME}-keycloak
     restart: unless-stopped
-    command: start-dev --import-realm
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        /opt/keycloak/bin/kc.sh import \
+          --file /opt/keycloak/data/import/auction-platform-realm.json \
+          --override true \
+          --db postgres \
+          --db-url jdbc:postgresql://postgres:5432/keycloak \
+          --db-username dev \
+          --db-password dev \
+          2>/dev/null || true
+        exec /opt/keycloak/bin/kc.sh start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -65,7 +77,6 @@ services:
       KC_HOSTNAME_URL: http://localhost:8180
       KC_HOSTNAME_ADMIN_URL: http://localhost:8180
       KC_HOSTNAME_STRICT: "false"
-      KC_SPI_IMPORT_REALM_FILE_STRATEGY: OVERWRITE
     ports:
       - "8180:8080"
     volumes:

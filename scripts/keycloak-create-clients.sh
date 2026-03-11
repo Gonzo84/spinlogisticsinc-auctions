@@ -2,12 +2,14 @@
 # ---------------------------------------------------------------------------
 # keycloak-create-clients.sh
 #
-# Creates missing bearer-only OIDC service clients in the auction-platform
-# Keycloak realm via the Admin REST API.
+# DEPRECATED: This script is no longer needed. The Docker Compose Keycloak
+# service now uses `kc.sh import --override true` before `start-dev`, which
+# reliably imports the realm JSON on every startup. All clients, users, and
+# roles should be added to infrastructure/config/keycloak/auction-platform-realm.json
+# instead of using this script.
 #
-# Why: KC_SPI_IMPORT_REALM_FILE_STRATEGY=OVERWRITE is broken — Keycloak
-#      always uses IGNORE_EXISTING, so clients added to the realm JSON
-#      after initial import are never created. This script fills the gap.
+# Original purpose: Creates missing bearer-only OIDC service clients via
+# the Keycloak Admin REST API (workaround for broken import strategy).
 #
 # Usage:  ./scripts/keycloak-create-clients.sh
 # Env:    KEYCLOAK_URL  (default: http://localhost:8180)

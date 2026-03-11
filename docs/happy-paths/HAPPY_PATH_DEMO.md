@@ -92,17 +92,26 @@ Pre-login all portals in separate browser tabs before testing.
    - **Reserve Price:** 5200
    - **City:** "Ljubljana"
    - **Country:** "SI"
-4. Click "Create Lot" / Submit
-5. **Verify:** Success notification shown
-6. **Verify:** Redirected to lot list or lot detail page
-7. **Verify:** New lot appears with status "DRAFT"
+4. Upload multiple images (2–3 pictures):
+   - Click the upload drop zone or drag-and-drop test image files (`test-lot-image-1.png`, `test-lot-image-2.png`, `test-lot-image-3.png` from project root)
+   - **Verify:** Each image uploads (progress bar → thumbnail preview → "complete" status)
+   - **Verify:** First uploaded image gets "Primary" badge
+   - **Verify:** Upload counter shows "3/10" (or however many uploaded)
+   - **Verify:** No upload errors (no red overlay or "error" status)
+5. Click "Create Lot" / Submit
+6. **Verify:** Success notification shown
+7. **Verify:** Redirected to lot detail page
+8. **Verify:** All uploaded images visible in the image gallery (not broken image icons)
+9. **Verify:** Primary image displayed as the main lot photo
+10. **Verify:** Lot appears in My Lots with status "DRAFT"
 
 ### 2.3 Submit Lot for Review
 
 1. Click on the newly created lot to open its detail page
 2. **Verify:** Lot detail page loads with all entered information
-3. **Verify:** Category displays as a human-readable name (NOT a UUID)
-4. **Verify:** Location shows "Ljubljana, SI" (not raw ISO code or blank)
+3. **Verify:** Uploaded images visible in image gallery (not broken/empty)
+4. **Verify:** Category displays as a human-readable name (NOT a UUID)
+5. **Verify:** Location shows "Ljubljana, SI" (not raw ISO code or blank)
 5. Click "Submit for Review"
 6. **Verify:** Confirmation dialog appears
 7. Confirm submission
@@ -156,7 +165,7 @@ Pre-login all portals in separate browser tabs before testing.
 1. Click on an SPC container lot card
 2. **Verify:** Lot detail page loads with:
    - Title: SPC product name (e.g., "Pisarniski kontejner 6m")
-   - Image gallery area (placeholder if no images)
+   - Image gallery with uploaded photos (or placeholder if no images)
    - Specifications table (dimensions, insulation, features)
    - Location with country flag (Ljubljana, SI)
    - CO2 badge (if available — container reuse avoids ~8-12 tonnes CO2)

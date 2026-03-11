@@ -278,7 +278,7 @@ function selectImage(index: number) {
                 @click="selectImage(idx)"
               >
                 <img
-                  :src="img.thumbnailUrl"
+                  :src="img.thumbnailUrl || img.url"
                   :alt="`Image ${idx + 1}`"
                   class="h-full w-full object-cover"
                 >

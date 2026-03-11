@@ -128,10 +128,17 @@ Verified happy path flows for every platform role, tested end-to-end via browser
    - Reserve Price: 55000
    - City: "Rotterdam"
    - Country: "NL"
-4. Click "Create Lot"
-5. **Verify:** Success notification shown
-6. **Verify:** Redirected to My Lots page
-7. **Verify:** New lot appears in the list with status "DRAFT"
+4. Upload multiple images (at least 2–3):
+   - Click the upload area or drag-and-drop image files (JPEG, PNG, or WebP, max 10MB each)
+   - **Verify:** Each image shows upload progress bar, then completes with a thumbnail preview
+   - **Verify:** First image gets "Primary" badge automatically
+   - **Verify:** Image count updates (e.g., "3/10")
+   - Optionally: hover over images to reorder or change primary image
+5. Click "Create Lot"
+6. **Verify:** Success notification shown
+7. **Verify:** Redirected to lot detail page
+8. **Verify:** All uploaded images visible in the image gallery on the lot detail page
+9. **Verify:** New lot appears in My Lots list with status "DRAFT"
 
 ### 2.4 Submit Lot for Review
 

@@ -113,14 +113,15 @@ PostgreSQL: 5432 | NATS: 4222 | Keycloak: 8180 | Redis: 6379 | MinIO: 9000 | Ela
 
 ### Keycloak Test Users
 
-| Email | Password | Role |
-|-------|----------|------|
-| buyer@test.com | test | buyer_active |
-| buyer2@test.com | test | buyer_active |
-| seller@test.com | test | seller_verified |
-| broker@test.com | test | broker_active |
-| admin@test.com | test | admin_ops |
-| superadmin@test.com | test | admin_super |
+| Email | Password | Role | UUID |
+|-------|----------|------|------|
+| buyer@test.com | password123 | buyer_active | ...0001 |
+| buyer2@test.com | password123 | buyer_active | ...0007 |
+| seller@test.com | password123 | seller_verified | ...0002 |
+| broker@test.com | password123 | broker / broker_active | ...0003 |
+| admin@test.com | password123 | admin_super | ...0004 |
+| superadmin@test.com | password123 | admin_super | ...0005 |
+| blocked@test.com | password123 | buyer_blocked | ...0006 |
 
 ### CI/CD
 
@@ -160,7 +161,7 @@ cd frontend/admin-dashboard && npx vitest
 
 8. **Checkout has two modes: explicit items vs lotIds lookup.** `CheckoutRequest` accepts either `items` (with pre-resolved auctionId/hammerPrice/sellerId from the award response) or `lotIds` (triggering HTTP lookups to auction-engine and catalog-service). Always prefer `items` mode — the `lotIds` lookup is fragile without service-to-service auth tokens.
 
-9. **Keycloak `KC_SPI_IMPORT_REALM_FILE_STRATEGY: OVERWRITE` does NOT actually reimport.** Despite the env var being set, Keycloak logs `Strategy: IGNORE_EXISTING` and skips reimport. New users or clients added to `auction-platform-realm.json` must be created via the Keycloak admin API (`POST /admin/realms/{realm}/users`, `POST /admin/realms/{realm}/clients`). Role assignments also need a separate API call (`POST /users/{id}/role-mappings/realm`).
+9. **Keycloak realm import uses explicit `kc.sh import --override true` before `start-dev`.** The `--import-realm` startup flag always skips existing realms (by design in Keycloak 24). The old `KC_SPI_IMPORT_REALM_FILE_STRATEGY: OVERWRITE` env var had no effect on it. The fix is a two-phase command in Docker Compose: `kc.sh import --override true` runs first to overwrite the realm, then `kc.sh start-dev --import-realm` handles first-boot (when no DB schema exists yet). The realm JSON at `infrastructure/config/keycloak/auction-platform-realm.json` is the single source of truth for all users, clients, and roles. **Note:** `--override true` replaces the entire realm on every restart, so any users created via the Keycloak admin UI during dev will be lost on container restart.
 
 10. **New REST endpoints need Casbin policy for every accessing role.** Adding a new endpoint (e.g., `GET /payments/{id}`) requires policy entries in `casbin_policy.csv` for each role that should access it (`buyer_active`, `seller_verified`, `admin_ops`). The `admin_super` wildcard covers admins, but other roles need explicit entries or the endpoint returns 403. Easy to miss when the endpoint works in unit tests (no Casbin) but fails through the gateway.
 
@@ -179,6 +180,10 @@ cd frontend/admin-dashboard && npx vitest
 17. **Catalog-service `lot_images.imageUrl` must be populated at creation time.** When creating lots with images, the frontend must send `images: [{id, url}]` (not just `imageIds: [id]`) in `CreateLotRequest`. The catalog-service stores the URL directly — there's no async event that fills it later. Without the URL, `imageUrl` is stored as empty string and images appear broken on the lot detail page.
 
 18. **Backend image field `imageUrl` must be mapped to frontend `url` in normalizeLot().** The catalog API returns `imageUrl` for image objects but the `LotImage` TypeScript type and Vue templates use `url`. The seller-portal `normalizeLot()` in `useLots.ts` must map `imageUrl → url` and `displayOrder → sortOrder`. Buyer-web handles this in `auction-mapper.ts`.
+
+19. **Keycloak user IDs must be valid UUIDs (max 36 chars).** The `USER_ENTITY.ID` column is `varchar(36)`. Using descriptive string IDs like `service-account-payment-service-internal` (42 chars) causes `kc.sh import --override true` to fail with `ERROR: value too long for type character varying(36)`. Always use proper UUID format for all users including service accounts.
+
+20. **Keycloak Docker image entrypoint is `kc.sh` — cannot use `bash -c` in `command`.** The `quay.io/keycloak/keycloak` image sets `ENTRYPOINT` to `/opt/keycloak/bin/kc.sh`. Passing `command: bash -c '...'` sends `bash` as an argument to `kc.sh`, causing `Unknown option: 'bash'`. To run shell commands before `start-dev`, override `entrypoint: /bin/bash` and use `command: ["-c", "script"]`.
 
 ### Deployment
 
