@@ -1,5 +1,6 @@
 package eu.auctionplatform.media.api.v1.dto
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.NotBlank
@@ -9,22 +10,23 @@ import java.time.Instant
 /**
  * Request body for generating a presigned upload URL.
  *
- * @property lotId       The lot to associate the image with.
+ * @property lotId       The lot to associate the image with (optional; null for temp uploads before lot creation).
  * @property contentType MIME type of the file to be uploaded (e.g. "image/jpeg").
- * @property fileName    Optional original filename for reference.
+ * @property fileName    Original filename for reference.
  */
 data class PresignedUploadRequest(
 
-    @field:NotBlank(message = "Lot ID is required")
     @JsonProperty("lotId")
-    val lotId: String,
+    val lotId: String? = null,
 
     @field:NotBlank(message = "Content type is required")
     @JsonProperty("contentType")
-    val contentType: String,
+    val contentType: String = "",
 
+    @field:NotBlank(message = "File name is required")
     @JsonProperty("fileName")
-    val fileName: String? = null
+    @JsonAlias("filename")
+    val fileName: String = ""
 )
 
 /**
@@ -48,7 +50,10 @@ data class PresignedUploadResponse(
     val objectKey: String,
 
     @JsonProperty("expiresIn")
-    val expiresIn: Long
+    val expiresIn: Long,
+
+    @JsonProperty("publicUrl")
+    val publicUrl: String? = null
 )
 
 /**
@@ -113,4 +118,20 @@ data class UpdateOrderRequest(
     @field:NotNull(message = "Display order is required")
     @JsonProperty("displayOrder")
     val displayOrder: Int
+)
+
+/**
+ * Request body for associating previously uploaded (temp) images with a lot.
+ *
+ * @property lotId    The lot to associate the images with.
+ * @property imageIds The image identifiers to associate.
+ */
+data class AssociateImagesRequest(
+
+    @field:NotBlank(message = "Lot ID is required")
+    @JsonProperty("lotId")
+    val lotId: String,
+
+    @JsonProperty("imageIds")
+    val imageIds: List<String>
 )

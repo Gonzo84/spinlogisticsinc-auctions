@@ -138,8 +138,12 @@ services:
       mc mb local/documents --ignore-existing;
       mc mb local/broker-uploads --ignore-existing;
       mc mb local/user-kyc --ignore-existing;
+      mc mb local/auction-media --ignore-existing;
+      mc mb local/auction-thumbnails --ignore-existing;
       mc anonymous set download local/lot-images;
       mc anonymous set download local/lot-thumbnails;
+      mc anonymous set download local/auction-media;
+      mc anonymous set download local/auction-thumbnails;
       echo 'MinIO buckets created.';
       "
     networks:

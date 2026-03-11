@@ -18,12 +18,14 @@ import java.util.UUID
  * @property uploadUrl  The presigned URL for the client to PUT the file to.
  * @property objectKey  The MinIO object key where the file will be stored.
  * @property expiresIn  Number of seconds until the presigned URL expires.
+ * @property publicUrl  The public (non-expiring) URL for the uploaded object.
  */
 data class PresignedUploadResult(
     val imageId: UUID,
     val uploadUrl: String,
     val objectKey: String,
-    val expiresIn: Long
+    val expiresIn: Long,
+    val publicUrl: String
 )
 
 /**
@@ -70,14 +72,14 @@ class PresignedUrlService @Inject constructor(
      * Creates an image record in the database with UPLOADING status and returns
      * a presigned URL that the client can use to upload the file directly to MinIO.
      *
-     * @param lotId       The lot this image will belong to.
+     * @param lotId       The lot this image will belong to (null for temp uploads before lot creation).
      * @param contentType The MIME type of the file to be uploaded.
      * @param fileName    Optional original filename (used for object key generation).
      * @return [PresignedUploadResult] containing the presigned URL and metadata.
      * @throws IllegalArgumentException if the content type is not allowed.
      */
     fun generatePresignedUploadUrl(
-        lotId: UUID,
+        lotId: UUID?,
         contentType: String,
         fileName: String? = null
     ): PresignedUploadResult {
@@ -87,18 +89,35 @@ class PresignedUrlService @Inject constructor(
 
         val imageId = UUID.randomUUID()
         val extension = extensionFromContentType(contentType)
-        val objectKey = "uploads/$lotId/${imageId}.$extension"
 
-        // Determine display order (append at end)
-        val existingCount = imageRepository.countByLotId(lotId)
-        val isPrimary = existingCount == 0L
+        // When lotId is null, use temp path; otherwise use lot-specific path
+        val objectKey = if (lotId != null) {
+            "uploads/$lotId/${imageId}.$extension"
+        } else {
+            "uploads/temp/${imageId}.$extension"
+        }
+
+        // Determine display order (append at end); for temp uploads, start at 0
+        val displayOrder: Int
+        val isPrimary: Boolean
+        if (lotId != null) {
+            val existingCount = imageRepository.countByLotId(lotId)
+            displayOrder = existingCount.toInt()
+            isPrimary = existingCount == 0L
+        } else {
+            displayOrder = 0
+            isPrimary = true
+        }
+
+        // Use UUID(0,0) as placeholder lot_id when no lot exists yet (DB column is NOT NULL)
+        val storedLotId = lotId ?: UUID(0, 0)
 
         // Create image record in UPLOADING status
         val image = MediaImage(
             id = imageId,
-            lotId = lotId,
+            lotId = storedLotId,
             objectKey = objectKey,
-            displayOrder = existingCount.toInt(),
+            displayOrder = displayOrder,
             isPrimary = isPrimary,
             status = ImageStatus.UPLOADING,
             contentType = contentType
@@ -113,18 +132,20 @@ class PresignedUrlService @Inject constructor(
             expiry = DEFAULT_EXPIRY
         )
 
+        val publicUrl = minioService.getPublicUrl(mediaBucket, objectKey)
         val expiresIn = DEFAULT_EXPIRY.toSeconds()
 
         LOG.infof(
             "Generated presigned upload URL for lot %s (imageId=%s, type=%s, expiresIn=%ss)",
-            lotId, imageId, contentType, expiresIn
+            lotId ?: "temp", imageId, contentType, expiresIn
         )
 
         return PresignedUploadResult(
             imageId = imageId,
             uploadUrl = uploadUrl,
             objectKey = objectKey,
-            expiresIn = expiresIn
+            expiresIn = expiresIn,
+            publicUrl = publicUrl
         )
     }
 

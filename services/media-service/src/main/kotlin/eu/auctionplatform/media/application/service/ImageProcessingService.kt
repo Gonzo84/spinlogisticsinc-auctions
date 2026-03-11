@@ -135,10 +135,10 @@ class ImageProcessingService @Inject constructor(
                 }
             }
 
-            // Step 6: Generate presigned download URLs for the stored objects
-            val originalUrl = minioService.generatePresignedDownloadUrl(mediaBucket, image.objectKey)
-            val processedUrl = minioService.generatePresignedDownloadUrl(thumbnailsBucket, processedKey)
-            val thumbnailUrl = minioService.generatePresignedDownloadUrl(thumbnailsBucket, primaryThumbnailKey)
+            // Step 6: Generate public URLs for the stored objects (non-expiring)
+            val originalUrl = minioService.getPublicUrl(mediaBucket, image.objectKey)
+            val processedUrl = minioService.getPublicUrl(thumbnailsBucket, processedKey)
+            val thumbnailUrl = minioService.getPublicUrl(thumbnailsBucket, primaryThumbnailKey)
 
             // Step 7: Update database with URLs and READY status
             imageRepository.updateUrls(imageId, originalUrl, processedUrl, thumbnailUrl, ImageStatus.READY)

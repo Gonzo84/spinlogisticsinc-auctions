@@ -29,7 +29,17 @@ data class CreateLotRequest(
     @JsonAlias("startingBidAmount")
     val startingBid: BigDecimal = BigDecimal.ONE,
     val co2AvoidedKg: Double? = null,
-    val pickupInfo: String? = null
+    val pickupInfo: String? = null,
+    val imageIds: List<String>? = null,
+    val images: List<CreateLotImageRequest>? = null
+)
+
+/**
+ * Image data sent during lot creation (id + URL from presigned upload).
+ */
+data class CreateLotImageRequest(
+    val id: String,
+    val url: String
 )
 
 /**

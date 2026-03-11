@@ -41,6 +41,7 @@ const form = reactive<LotFormData>({
     lng: props.initialData?.location?.lng ?? 0,
   },
   imageIds: props.initialData?.imageIds ?? [],
+  images: props.initialData?.images ?? [],
 })
 
 const errors = ref<Record<string, string>>({})
@@ -448,6 +449,7 @@ function handleSubmit() {
       <ImageUploader
         v-model="form.imageIds"
         :max-files="10"
+        @update:images="form.images = $event"
       />
     </div>
 

@@ -105,6 +105,7 @@ api/             # JAX-RS REST resources, DTOs, request/response objects
 - **Post-auction flow endpoints:** `POST /auctions/{id}/award` (admin, awards closed auction), `GET /auctions/by-lot/{lotId}` (public, lookup by lot), `GET /payments/{id}` (buyer/seller/admin, single payment detail), `PATCH /payments/{id}/settle` (admin, settles completed/processing payment), `GET /payments/summary` (admin, KPI aggregation).
 - **Bean Validation error responses:** `ConstraintViolationExceptionMapper` in `shared/kotlin-commons` returns 400 with field-level error details (field, message, rejectedValue) instead of empty body.
 - **Inter-service HTTP lookups:** `AuctionLotLookupService` in payment-service calls auction-engine and catalog-service REST APIs to resolve hammer price, seller ID, and lot title for checkout. Config: `service.auction-engine.url`, `service.catalog-service.url`.
+- **Media-service presigned upload flow:** `POST /media/upload/presigned` (lotId optional) returns `{imageId, uploadUrl, publicUrl, expiresIn}`. Client PUTs file directly to MinIO via presigned URL. `POST /media/images/associate` moves temp images to lot-specific path. MinIO buckets `auction-media` and `auction-thumbnails` are auto-created with anonymous download policy in `infrastructure.yml`.
 
 ### Infrastructure Services (dev ports)
 
@@ -172,6 +173,12 @@ cd frontend/admin-dashboard && npx vitest
 14. **PrimeIcons font decode warnings in Vite dev server.** PrimeIcons fonts in `node_modules` produce "invalid sfntVersion" warnings when Vite pre-bundles them. Fix: add `optimizeDeps: { exclude: ['primeicons'] }` to each frontend's `vite.config.ts`.
 
 15. **Seed data creates duplicates on repeated runs.** Running the seed script multiple times creates duplicate lots. Any frontend lot list (homepage featured, search results) should deduplicate by title or ID. See `buyer-web/pages/index.vue` `fetchLotsFromCatalog()` for the pattern.
+
+16. **Image upload requires temp path + public URLs for presigned flow.** Media-service `PresignedUrlService` supports `lotId=null` for temp uploads before lot creation. Objects stored at `uploads/temp/{imageId}.{ext}`, moved to `uploads/{lotId}/{imageId}.{ext}` on association. The S3 presigner must use `publicEndpoint` (not internal Docker endpoint) with `pathStyleAccessEnabled(true)` — otherwise presigned URLs use virtual-hosted style (`bucket.host:port`) which doesn't resolve from the browser. Config: `MINIO_PUBLIC_ENDPOINT` env var in `media-service.yml`.
+
+17. **Catalog-service `lot_images.imageUrl` must be populated at creation time.** When creating lots with images, the frontend must send `images: [{id, url}]` (not just `imageIds: [id]`) in `CreateLotRequest`. The catalog-service stores the URL directly — there's no async event that fills it later. Without the URL, `imageUrl` is stored as empty string and images appear broken on the lot detail page.
+
+18. **Backend image field `imageUrl` must be mapped to frontend `url` in normalizeLot().** The catalog API returns `imageUrl` for image objects but the `LotImage` TypeScript type and Vue templates use `url`. The seller-portal `normalizeLot()` in `useLots.ts` must map `imageUrl → url` and `displayOrder → sortOrder`. Buyer-web handles this in `auction-mapper.ts`.
 
 ### Deployment
 

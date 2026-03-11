@@ -14,6 +14,7 @@ import eu.auctionplatform.catalog.domain.model.Lot
 import eu.auctionplatform.catalog.domain.model.LotImage
 import eu.auctionplatform.catalog.domain.model.LotStatus
 import eu.auctionplatform.catalog.infrastructure.persistence.entity.LotEntity
+import eu.auctionplatform.catalog.infrastructure.persistence.entity.LotImageEntity
 import eu.auctionplatform.catalog.infrastructure.persistence.repository.AuctionEventRepository
 import eu.auctionplatform.catalog.infrastructure.persistence.repository.CategoryRepository
 import eu.auctionplatform.catalog.infrastructure.persistence.repository.LotImageRepository
@@ -141,12 +142,54 @@ class LotService {
 
         lotRepository.persist(LotEntity.fromDomain(lot))
 
+        // Associate uploaded images with the new lot
+        // Prefer `images` (with URLs) over bare `imageIds`
+        val imageUrlMap = request.images?.associate { it.id to it.url } ?: emptyMap()
+        val allImageIds = request.images?.map { it.id } ?: request.imageIds ?: emptyList()
+
+        allImageIds.forEachIndexed { index, imageId ->
+            val imageEntity = LotImageEntity(
+                id = UUID.randomUUID(),
+                lotId = lot.id,
+                imageUrl = imageUrlMap[imageId] ?: "",
+                thumbnailUrl = null,
+                displayOrder = index,
+                isPrimary = index == 0
+            )
+            lotImageRepository.persist(imageEntity)
+        }
+
+        // Call media-service to associate images with this lot
+        if (allImageIds.isNotEmpty()) {
+            associateImagesWithLot(lot.id, allImageIds)
+        }
+
         LOG.infof("Created lot: id=%s, seller=%s, brand=%s, title=%s",
             lot.id, sellerId, lot.brand, lot.title)
 
         publishLotEvent("created", lot)
 
         return lot
+    }
+
+    private fun associateImagesWithLot(lotId: UUID, imageIds: List<String>) {
+        try {
+            // Fire NATS event for media-service to associate images
+            val payload = mapOf(
+                "eventType" to "catalog.lot.images.associate",
+                "lotId" to lotId.toString(),
+                "imageIds" to imageIds
+            )
+            val json = JsonMapper.toJson(payload)
+            val message = io.nats.client.impl.NatsMessage.builder()
+                .subject("catalog.lot.images.associate")
+                .data(json.toByteArray(Charsets.UTF_8))
+                .build()
+            natsConnection.jetStream().publish(message)
+            LOG.infof("Published image association event for lot %s with %d images", lotId, imageIds.size)
+        } catch (ex: Exception) {
+            LOG.warnf("Failed to publish image association event for lot %s: %s", lotId, ex.message)
+        }
     }
 
     // -------------------------------------------------------------------------

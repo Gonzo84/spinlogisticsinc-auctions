@@ -90,6 +90,14 @@ class ImageRepository @Inject constructor(
         private const val COUNT_BY_LOT_ID = """
             SELECT COUNT(*) FROM app.images WHERE lot_id = ?
         """
+
+        private const val UPDATE_LOT_ID_AND_KEY = """
+            UPDATE app.images SET lot_id = ?, object_key = ? WHERE id = ?
+        """
+
+        private const val UPDATE_LOT_ID_ONLY = """
+            UPDATE app.images SET lot_id = ? WHERE id = ?
+        """
     }
 
     /**
@@ -310,6 +318,34 @@ class ImageRepository @Inject constructor(
                 stmt.executeQuery().use { rs ->
                     rs.next()
                     return rs.getLong(1)
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the lot_id (and optionally the object_key) for an image.
+     *
+     * Used when associating a temp-uploaded image with a newly created lot.
+     *
+     * @param imageId      The image UUID.
+     * @param lotId        The lot UUID to associate with.
+     * @param newObjectKey Optional new object key (if the file was moved in MinIO).
+     */
+    fun updateLotId(imageId: UUID, lotId: UUID, newObjectKey: String? = null) {
+        dataSource.connection.use { conn ->
+            if (newObjectKey != null) {
+                conn.prepareStatement(UPDATE_LOT_ID_AND_KEY).use { stmt ->
+                    stmt.setObject(1, lotId)
+                    stmt.setString(2, newObjectKey)
+                    stmt.setObject(3, imageId)
+                    stmt.executeUpdate()
+                }
+            } else {
+                conn.prepareStatement(UPDATE_LOT_ID_ONLY).use { stmt ->
+                    stmt.setObject(1, lotId)
+                    stmt.setObject(2, imageId)
+                    stmt.executeUpdate()
                 }
             }
         }

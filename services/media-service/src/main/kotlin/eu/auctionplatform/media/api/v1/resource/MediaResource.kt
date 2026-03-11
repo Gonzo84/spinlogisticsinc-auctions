@@ -2,6 +2,7 @@ package eu.auctionplatform.media.api.v1.resource
 
 import eu.auctionplatform.commons.dto.ApiResponse
 import eu.auctionplatform.commons.exception.NotFoundException
+import eu.auctionplatform.media.api.v1.dto.AssociateImagesRequest
 import eu.auctionplatform.media.api.v1.dto.ImageResponse
 import eu.auctionplatform.media.api.v1.dto.PresignedUploadRequest
 import eu.auctionplatform.media.api.v1.dto.PresignedUploadResponse
@@ -71,10 +72,12 @@ class MediaResource @Inject constructor(
     @Path("/upload/presigned")
     @RolesAllowed("seller_verified", "seller_pending", "admin_ops", "admin_super", "broker")
     fun generatePresignedUrl(@Valid request: PresignedUploadRequest): Response {
-        LOG.infof("Generating presigned upload URL for lot %s", request.lotId)
+        LOG.infof("Generating presigned upload URL for lot %s", request.lotId ?: "temp")
+
+        val lotId = if (!request.lotId.isNullOrBlank()) UUID.fromString(request.lotId) else null
 
         val result = presignedUrlService.generatePresignedUploadUrl(
-            lotId = UUID.fromString(request.lotId),
+            lotId = lotId,
             contentType = request.contentType,
             fileName = request.fileName
         )
@@ -83,7 +86,8 @@ class MediaResource @Inject constructor(
             imageId = result.imageId.toString(),
             uploadUrl = result.uploadUrl,
             objectKey = result.objectKey,
-            expiresIn = result.expiresIn
+            expiresIn = result.expiresIn,
+            publicUrl = result.publicUrl
         )
 
         return Response.ok(ApiResponse.ok(response)).build()
@@ -219,6 +223,65 @@ class MediaResource @Inject constructor(
 
         val updated = image.copy(isPrimary = true)
         return Response.ok(ApiResponse.ok(updated.toResponse())).build()
+    }
+
+    // -----------------------------------------------------------------------
+    // Association (temp images → lot)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Associates previously uploaded temporary images with a lot.
+     *
+     * Updates the lot_id and object key for each image, moving them from
+     * the temp upload path to the lot-specific path.
+     *
+     * **POST /api/v1/media/images/associate**
+     *
+     * @param request The association request containing lotId and imageIds.
+     * @return 200 OK with the number of images associated.
+     */
+    @POST
+    @Path("/images/associate")
+    @RolesAllowed("seller_verified", "seller_pending", "admin_ops", "admin_super", "broker")
+    fun associateImages(@Valid request: AssociateImagesRequest): Response {
+        val lotId = parseUuid(request.lotId, "lotId") ?: return badRequestResponse("lotId", request.lotId)
+
+        LOG.infof("Associating %d images with lot %s", request.imageIds.size, lotId)
+
+        var associated = 0
+        for (imageIdStr in request.imageIds) {
+            val imageId = parseUuid(imageIdStr, "imageId")
+            if (imageId == null) {
+                LOG.warnf("Skipping invalid image ID: %s", imageIdStr)
+                continue
+            }
+
+            val image = imageRepository.findById(imageId)
+            if (image == null) {
+                LOG.warnf("Image %s not found -- skipping association", imageIdStr)
+                continue
+            }
+
+            // Compute new object key under the lot path
+            val extension = image.objectKey.substringAfterLast(".", "bin")
+            val newObjectKey = "uploads/$lotId/${imageId}.$extension"
+
+            // If the object key changed (was in temp/), copy to new location in MinIO
+            if (image.objectKey != newObjectKey) {
+                try {
+                    minioService.copyObject(mediaBucket, image.objectKey, mediaBucket, newObjectKey)
+                    minioService.deleteObject(mediaBucket, image.objectKey)
+                } catch (ex: Exception) {
+                    LOG.warnf("Failed to move object %s -> %s: %s", image.objectKey, newObjectKey, ex.message)
+                }
+            }
+
+            imageRepository.updateLotId(imageId, lotId, newObjectKey)
+            associated++
+        }
+
+        LOG.infof("Associated %d images with lot %s", associated, lotId)
+        return Response.ok(ApiResponse.ok(mapOf("associated" to associated))).build()
     }
 
     // -----------------------------------------------------------------------

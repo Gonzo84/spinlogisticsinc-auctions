@@ -31,6 +31,9 @@ class MinioService(
     @ConfigProperty(name = "minio.endpoint")
     private val endpoint: String,
 
+    @ConfigProperty(name = "minio.public-endpoint", defaultValue = "\${minio.endpoint}")
+    private val publicEndpoint: String,
+
     @ConfigProperty(name = "minio.access-key")
     private val accessKey: String,
 
@@ -60,9 +63,14 @@ class MinioService(
 
     private val presigner: S3Presigner by lazy {
         S3Presigner.builder()
-            .endpointOverride(URI.create(endpoint))
+            .endpointOverride(URI.create(publicEndpoint))
             .credentialsProvider(credentials)
             .region(Region.of(region))
+            .serviceConfiguration(
+                software.amazon.awssdk.services.s3.S3Configuration.builder()
+                    .pathStyleAccessEnabled(true)
+                    .build()
+            )
             .build()
     }
 
@@ -145,6 +153,20 @@ class MinioService(
             .build()
 
         s3Client.deleteObject(deleteRequest)
+    }
+
+    /**
+     * Returns the public (non-expiring) URL for an object.
+     *
+     * Requires the bucket to have anonymous download access enabled
+     * (e.g. via `mc anonymous set download <bucket>`).
+     *
+     * @param bucket    The bucket name.
+     * @param objectKey The object key within the bucket.
+     * @return The public URL as a string.
+     */
+    fun getPublicUrl(bucket: String, objectKey: String): String {
+        return "$publicEndpoint/$bucket/$objectKey"
     }
 
     /**

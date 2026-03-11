@@ -11,6 +11,11 @@ interface UploadedImage {
   status: 'uploading' | 'complete' | 'error'
 }
 
+interface ImageData {
+  id: string
+  url: string
+}
+
 const props = withDefaults(defineProps<{
   modelValue: string[]
   maxFiles?: number
@@ -20,6 +25,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string[]]
+  'update:images': [value: ImageData[]]
 }>()
 
 const { getPresignedUploadUrl } = useLots()
@@ -157,10 +163,9 @@ function retryUpload(id: string) {
 }
 
 function emitUpdate() {
-  const ids = images.value
-    .filter((im) => im.status === 'complete')
-    .map((im) => im.id)
-  emit('update:modelValue', ids)
+  const completed = images.value.filter((im) => im.status === 'complete')
+  emit('update:modelValue', completed.map((im) => im.id))
+  emit('update:images', completed.map((im) => ({ id: im.id, url: im.url })))
 }
 </script>
 

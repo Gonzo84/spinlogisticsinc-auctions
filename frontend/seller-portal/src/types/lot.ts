@@ -64,6 +64,11 @@ export interface Category {
   active: boolean
 }
 
+export interface LotFormImage {
+  id: string
+  url: string
+}
+
 export interface LotFormData {
   brand: string
   title: string
@@ -74,6 +79,7 @@ export interface LotFormData {
   reservePrice: number | null
   location: LotLocation
   imageIds: string[]
+  images: LotFormImage[]
 }
 
 export interface LotsFilter {

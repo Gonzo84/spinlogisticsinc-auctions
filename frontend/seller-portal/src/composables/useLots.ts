@@ -101,7 +101,13 @@ export function useLots() {
         lat: data.locationLat ?? 0,
         lng: data.locationLng ?? 0,
       },
-      images: data.images ?? [],
+      images: (data.images ?? []).map((img: Record<string, unknown>) => ({
+        id: (img.id as string) ?? '',
+        url: (img.imageUrl as string) ?? (img.url as string) ?? '',
+        thumbnailUrl: (img.thumbnailUrl as string) ?? '',
+        isPrimary: (img.isPrimary as boolean) ?? false,
+        sortOrder: (img.displayOrder as number) ?? (img.sortOrder as number) ?? 0,
+      })),
       auctionStart: data.auctionStart ?? null,
       auctionEnd: data.auctionEnd ?? null,
       hammerPrice: data.hammerPrice ?? null,
@@ -191,6 +197,8 @@ export function useLots() {
       locationCountry: data.location?.country ?? '',
       locationLat: data.location?.lat ?? null,
       locationLng: data.location?.lng ?? null,
+      imageIds: data.imageIds ?? [],
+      images: data.images ?? [],
     }
   }
 
@@ -309,7 +317,12 @@ export function useLots() {
     filename: string,
     contentType: string,
   ): Promise<{ uploadUrl: string; imageId: string; publicUrl: string }> {
-    return post('/media/upload/presigned', { filename, contentType })
+    const raw = await post<ApiResponse<{ uploadUrl: string; imageId: string; publicUrl: string }>>('/media/upload/presigned', { fileName: filename, contentType })
+    // Unwrap ApiResponse wrapper if present
+    if (raw && typeof raw === 'object' && 'data' in raw && raw.data) {
+      return raw.data as { uploadUrl: string; imageId: string; publicUrl: string }
+    }
+    return raw as unknown as { uploadUrl: string; imageId: string; publicUrl: string }
   }
 
   return {
