@@ -29,7 +29,7 @@
             @click="selectCountry(country.code)"
           >
             <span class="text-xl">{{ country.flag }}</span>
-            <span class="text-sm font-medium">{{ country.name }}</span>
+            <span class="text-sm font-medium">{{ $t('countries.' + country.code) }}</span>
           </button>
         </div>
       </div>
@@ -83,7 +83,7 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
     const raw = await api<Record<string, unknown>>('/lots', { params })
     const data = unwrapApiResponse(raw)
     const items = Array.isArray(data.items) ? data.items as Record<string, unknown>[] : []
-    return items.map((lot) => ({
+    const mapped = items.map((lot) => ({
       id: (lot.id ?? '') as string,
       title: (lot.title ?? '') as string,
       images: [{ url: (lot.primaryImageUrl ?? '') as string, alt: (lot.title ?? '') as string }],
@@ -91,6 +91,13 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
       currentBid: (lot.startingBid ?? 0) as number,
       endTime: '',
     }))
+    // Deduplicate by title to handle repeated seed data runs
+    const seen = new Set<string>()
+    return mapped.filter((lot) => {
+      if (seen.has(lot.title)) return false
+      seen.add(lot.title)
+      return true
+    })
   } catch {
     return []
   }

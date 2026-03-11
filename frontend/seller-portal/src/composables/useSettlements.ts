@@ -56,7 +56,15 @@ export function useSettlements() {
       // Unwrap ApiResponse wrapper ({data: T}) if present
       const data = unwrapApiResponse<Settlement[] | { items?: Settlement[] }>(raw)
       // seller-service returns a flat list, not paginated
-      const items: Settlement[] = Array.isArray(data) ? data : (data?.items ?? [])
+      const rawItems = Array.isArray(data) ? data : (data?.items ?? [])
+      // Backend returns `commission` (not `commissionAmount`) and no `commissionRate` — normalize
+      const items: Settlement[] = rawItems.map((s) => {
+        const raw = s as unknown as Record<string, number>
+        const commissionAmount = raw.commissionAmount ?? raw.commission ?? 0
+        const hammerPrice = raw.hammerPrice ?? 0
+        const commissionRate = raw.commissionRate ?? (hammerPrice > 0 ? Math.round((commissionAmount / hammerPrice) * 100 * 100) / 100 : 0)
+        return { ...s, commissionAmount, commissionRate } as Settlement
+      })
       settlements.value = items
       pagination.value = {
         total: items.length,

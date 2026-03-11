@@ -17,6 +17,9 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  optimizeDeps: {
+    exclude: ['primeicons'],
+  },
   server: {
     port: 5175,
     proxy: {

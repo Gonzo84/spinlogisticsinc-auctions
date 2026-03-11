@@ -167,6 +167,12 @@ cd frontend/admin-dashboard && npx vitest
 
 12. **Payment-service OIDC client needs separate `OIDC_AUTH_URL` env var in Docker Compose.** The standard `QUARKUS_OIDC_AUTH_SERVER_URL` only overrides `quarkus.oidc.auth-server-url`, NOT `quarkus.oidc-client.internal.auth-server-url`. The `oidc-client` section uses `${OIDC_AUTH_URL}` — must be set explicitly or the service hangs on startup trying to reach `localhost:8180`. The Keycloak client `payment-service-internal` must also exist in the realm.
 
+13. **Seller-service settlement fields differ from frontend expectations.** Backend returns `commission` (not `commissionAmount`) and no `commissionRate`. Frontend `useSettlements.ts` must normalize: map `commission` → `commissionAmount` and compute `commissionRate` from `commission / hammerPrice`. Without this, the settlements page shows "NaN %".
+
+14. **PrimeIcons font decode warnings in Vite dev server.** PrimeIcons fonts in `node_modules` produce "invalid sfntVersion" warnings when Vite pre-bundles them. Fix: add `optimizeDeps: { exclude: ['primeicons'] }` to each frontend's `vite.config.ts`.
+
+15. **Seed data creates duplicates on repeated runs.** Running the seed script multiple times creates duplicate lots. Any frontend lot list (homepage featured, search results) should deduplicate by title or ID. See `buyer-web/pages/index.vue` `fetchLotsFromCatalog()` for the pattern.
+
 ### Deployment
 
 - Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)
