@@ -3,18 +3,22 @@ package eu.auctionplatform.compliance.api.v1.resource
 import eu.auctionplatform.commons.dto.ApiResponse
 import eu.auctionplatform.commons.dto.PagedResponse
 import eu.auctionplatform.compliance.api.v1.dto.AmlScreeningRequest
-import eu.auctionplatform.compliance.api.v1.dto.AmlReportRequest
 import eu.auctionplatform.compliance.api.v1.dto.ContentReportRequest
 import eu.auctionplatform.compliance.api.v1.dto.ErasureRequest
 import eu.auctionplatform.compliance.api.v1.dto.ExportRequest
+import eu.auctionplatform.compliance.api.v1.dto.FraudAlertCreateRequest
 import eu.auctionplatform.compliance.api.v1.dto.FraudAlertResolveRequest
-import eu.auctionplatform.compliance.api.v1.dto.FraudAlertResponse
+import eu.auctionplatform.compliance.api.v1.dto.GdprRejectRequest
 import eu.auctionplatform.compliance.api.v1.dto.toResponse
 import eu.auctionplatform.compliance.application.service.AmlService
 import eu.auctionplatform.compliance.application.service.AuditService
 import eu.auctionplatform.compliance.application.service.DsaService
+import eu.auctionplatform.compliance.application.service.FraudAlertService
 import eu.auctionplatform.compliance.application.service.GdprService
 import eu.auctionplatform.compliance.domain.model.ContentReportStatus
+import eu.auctionplatform.compliance.domain.model.FraudAlertStatus
+import eu.auctionplatform.compliance.domain.model.FraudAlertType
+import eu.auctionplatform.compliance.domain.model.FraudSeverity
 import eu.auctionplatform.compliance.domain.model.GdprRequestStatus
 import jakarta.annotation.security.RolesAllowed
 import jakarta.inject.Inject
@@ -27,15 +31,17 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
+import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.SecurityContext
 import org.jboss.logging.Logger
 import java.time.Instant
 import java.util.UUID
 
 /**
  * REST resource for compliance operations including GDPR, AML, DSA,
- * and audit log queries.
+ * fraud alerts, and audit log queries.
  *
  * All endpoints are secured. GDPR and AML endpoints require authenticated
  * users; audit log and admin-level queries require the `admin` role.
@@ -56,6 +62,9 @@ class ComplianceResource {
 
     @Inject
     lateinit var auditService: AuditService
+
+    @Inject
+    lateinit var fraudAlertService: FraudAlertService
 
     companion object {
         private val LOG: Logger = Logger.getLogger(ComplianceResource::class.java)
@@ -132,6 +141,38 @@ class ComplianceResource {
         return Response.ok(ApiResponse.ok(pagedResponse)).build()
     }
 
+    /**
+     * Approves a GDPR request, starting processing.
+     *
+     * **PATCH /api/v1/compliance/gdpr/requests/{id}/approve**
+     */
+    @PATCH
+    @Path("/gdpr/requests/{id}/approve")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun approveGdprRequest(@PathParam("id") id: UUID): Response {
+        LOG.infof("PATCH /gdpr/requests/%s/approve", id)
+
+        val request = gdprService.approveRequest(id)
+
+        return Response.ok(ApiResponse.ok(request.toResponse())).build()
+    }
+
+    /**
+     * Rejects a GDPR request with a reason.
+     *
+     * **PATCH /api/v1/compliance/gdpr/requests/{id}/reject**
+     */
+    @PATCH
+    @Path("/gdpr/requests/{id}/reject")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun rejectGdprRequest(@PathParam("id") id: UUID, body: GdprRejectRequest): Response {
+        LOG.infof("PATCH /gdpr/requests/%s/reject reason=%s", id, body.reason)
+
+        val request = gdprService.rejectRequest(id, body.reason)
+
+        return Response.ok(ApiResponse.ok(request.toResponse())).build()
+    }
+
     // -----------------------------------------------------------------------
     // Fraud detection endpoints
     // -----------------------------------------------------------------------
@@ -140,9 +181,6 @@ class ComplianceResource {
      * Lists fraud alerts with optional severity, status and type filters (admin only).
      *
      * **GET /api/v1/compliance/fraud/alerts**
-     *
-     * Returns a paginated list of mock fraud alerts with realistic data
-     * until the fraud detection engine is fully integrated.
      */
     @GET
     @Path("/fraud/alerts")
@@ -156,79 +194,74 @@ class ComplianceResource {
     ): Response {
         LOG.debugf("GET /fraud/alerts severity=%s status=%s type=%s page=%d size=%d", severity, status, type, page, size)
 
-        // Mock fraud alerts until full fraud detection engine is integrated
-        val mockAlerts = listOf(
-            FraudAlertResponse(
-                id = UUID.fromString("00000000-0000-0000-0000-000000000f01"),
-                type = "SHILL_BIDDING",
-                severity = "HIGH",
-                status = "OPEN",
-                userId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                description = "Suspicious bidding pattern detected: same IP address placed 12 bids across 3 related lots within 2 minutes",
-                detectedAt = Instant.now().minusSeconds(3600),
-                lotId = UUID.fromString("00000000-0000-0000-0000-00000000aa01"),
-                riskScore = 0.92
-            ),
-            FraudAlertResponse(
-                id = UUID.fromString("00000000-0000-0000-0000-000000000f02"),
-                type = "VELOCITY_ANOMALY",
-                severity = "MEDIUM",
-                status = "UNDER_REVIEW",
-                userId = UUID.fromString("00000000-0000-0000-0000-000000000002"),
-                description = "Unusual account activity: 47 bids placed in the last hour, exceeding the 99th percentile for this user segment",
-                detectedAt = Instant.now().minusSeconds(7200),
-                lotId = null,
-                riskScore = 0.71
-            ),
-            FraudAlertResponse(
-                id = UUID.fromString("00000000-0000-0000-0000-000000000f03"),
-                type = "PAYMENT_FRAUD",
-                severity = "HIGH",
-                status = "OPEN",
-                userId = UUID.fromString("00000000-0000-0000-0000-000000000003"),
-                description = "Multiple failed payment attempts with different card numbers from the same device fingerprint",
-                detectedAt = Instant.now().minusSeconds(1800),
-                lotId = UUID.fromString("00000000-0000-0000-0000-00000000aa02"),
-                riskScore = 0.88
-            ),
-            FraudAlertResponse(
-                id = UUID.fromString("00000000-0000-0000-0000-000000000f04"),
-                type = "ACCOUNT_TAKEOVER",
-                severity = "LOW",
-                status = "RESOLVED",
-                userId = UUID.fromString("00000000-0000-0000-0000-000000000004"),
-                description = "Login from new geographic region (Romania) after previously only accessing from Netherlands. User verified via 2FA",
-                detectedAt = Instant.now().minusSeconds(86400),
-                lotId = null,
-                riskScore = 0.35
-            )
-        )
-
-        // Apply filters
-        var filtered = mockAlerts
-        if (severity != null) {
-            filtered = filtered.filter { it.severity.equals(severity, ignoreCase = true) }
+        val severityEnum = severity?.let {
+            try { FraudSeverity.valueOf(it.uppercase()) } catch (_: Exception) { null }
         }
-        if (status != null) {
-            filtered = filtered.filter { it.status.equals(status, ignoreCase = true) }
+        val statusEnum = status?.let {
+            try { FraudAlertStatus.valueOf(it.uppercase()) } catch (_: Exception) { null }
         }
-        if (type != null) {
-            filtered = filtered.filter { it.type.equals(type, ignoreCase = true) }
+        val typeEnum = type?.let {
+            try { FraudAlertType.valueOf(it.uppercase()) } catch (_: Exception) { null }
         }
 
-        // Paginate
-        val total = filtered.size.toLong()
-        val offset = ((page.coerceAtLeast(1)) - 1) * size
-        val pagedItems = filtered.drop(offset).take(size)
-
+        val pagedResult = fraudAlertService.listAlerts(severityEnum, statusEnum, typeEnum, page, size)
+        val responseItems = pagedResult.items.map { it.toResponse() }
         val pagedResponse = PagedResponse(
-            items = pagedItems,
-            total = total,
-            page = page,
-            pageSize = size
+            items = responseItems,
+            total = pagedResult.total,
+            page = pagedResult.page,
+            pageSize = pagedResult.pageSize
         )
 
         return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    /**
+     * Retrieves a single fraud alert by ID.
+     *
+     * **GET /api/v1/compliance/fraud/alerts/{id}**
+     */
+    @GET
+    @Path("/fraud/alerts/{id}")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun getFraudAlert(@PathParam("id") id: UUID): Response {
+        LOG.debugf("GET /fraud/alerts/%s", id)
+
+        val alert = fraudAlertService.getAlert(id)
+
+        return Response.ok(ApiResponse.ok(alert.toResponse())).build()
+    }
+
+    /**
+     * Creates a new fraud alert.
+     *
+     * **POST /api/v1/compliance/fraud/alerts**
+     */
+    @POST
+    @Path("/fraud/alerts")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun createFraudAlert(body: FraudAlertCreateRequest): Response {
+        LOG.infof("POST /fraud/alerts type=%s severity=%s userId=%s", body.type, body.severity, body.userId)
+
+        val typeEnum = FraudAlertType.valueOf(body.type.uppercase())
+        val severityEnum = FraudSeverity.valueOf(body.severity.uppercase())
+
+        val alert = fraudAlertService.createAlert(
+            type = typeEnum,
+            severity = severityEnum,
+            title = body.title,
+            description = body.description,
+            userId = body.userId,
+            lotId = body.lotId,
+            auctionId = body.auctionId,
+            riskScore = body.riskScore,
+            evidence = body.evidence
+        )
+
+        return Response
+            .status(Response.Status.CREATED)
+            .entity(ApiResponse.ok(alert.toResponse()))
+            .build()
     }
 
     /**
@@ -242,15 +275,9 @@ class ComplianceResource {
     fun investigateAlert(@PathParam("id") id: UUID): Response {
         LOG.infof("PATCH /fraud/alerts/%s/investigate", id)
 
-        return Response.ok(
-            ApiResponse.ok(
-                mapOf(
-                    "alertId" to id,
-                    "status" to "UNDER_REVIEW",
-                    "message" to "Fraud alert $id is now under investigation"
-                )
-            )
-        ).build()
+        val alert = fraudAlertService.investigate(id)
+
+        return Response.ok(ApiResponse.ok(alert.toResponse())).build()
     }
 
     /**
@@ -261,20 +288,17 @@ class ComplianceResource {
     @PATCH
     @Path("/fraud/alerts/{id}/resolve")
     @RolesAllowed("admin_ops", "admin_super")
-    fun resolveAlert(@PathParam("id") id: UUID, body: FraudAlertResolveRequest): Response {
+    fun resolveAlert(
+        @PathParam("id") id: UUID,
+        body: FraudAlertResolveRequest,
+        @Context securityContext: SecurityContext
+    ): Response {
         LOG.infof("PATCH /fraud/alerts/%s/resolve resolution=%s blockUsers=%s", id, body.resolution, body.blockUsers)
 
-        return Response.ok(
-            ApiResponse.ok(
-                mapOf(
-                    "alertId" to id,
-                    "status" to "RESOLVED",
-                    "resolution" to body.resolution,
-                    "usersBlocked" to body.blockUsers,
-                    "message" to "Fraud alert $id has been resolved"
-                )
-            )
-        ).build()
+        val resolvedBy = extractUserId(securityContext)
+        val alert = fraudAlertService.resolve(id, body.resolution, resolvedBy)
+
+        return Response.ok(ApiResponse.ok(alert.toResponse())).build()
     }
 
     /**
@@ -285,18 +309,16 @@ class ComplianceResource {
     @PATCH
     @Path("/fraud/alerts/{id}/dismiss")
     @RolesAllowed("admin_ops", "admin_super")
-    fun dismissAlert(@PathParam("id") id: UUID): Response {
+    fun dismissAlert(
+        @PathParam("id") id: UUID,
+        @Context securityContext: SecurityContext
+    ): Response {
         LOG.infof("PATCH /fraud/alerts/%s/dismiss", id)
 
-        return Response.ok(
-            ApiResponse.ok(
-                mapOf(
-                    "alertId" to id,
-                    "status" to "DISMISSED",
-                    "message" to "Fraud alert $id has been dismissed"
-                )
-            )
-        ).build()
+        val dismissedBy = extractUserId(securityContext)
+        val alert = fraudAlertService.dismiss(id, dismissedBy)
+
+        return Response.ok(ApiResponse.ok(alert.toResponse())).build()
     }
 
     // -----------------------------------------------------------------------
@@ -447,5 +469,19 @@ class ComplianceResource {
         )
 
         return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    // -----------------------------------------------------------------------
+    // Internal helpers
+    // -----------------------------------------------------------------------
+
+    private fun extractUserId(securityContext: SecurityContext): UUID {
+        val principal = securityContext.userPrincipal?.name
+            ?: return UUID.fromString("00000000-0000-0000-0000-000000000000")
+        return try {
+            UUID.fromString(principal)
+        } catch (_: Exception) {
+            UUID.fromString("00000000-0000-0000-0000-000000000000")
+        }
     }
 }

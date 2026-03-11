@@ -5,6 +5,7 @@ import eu.auctionplatform.compliance.domain.model.AmlScreeningStatus
 import eu.auctionplatform.compliance.domain.model.AuditLogEntry
 import eu.auctionplatform.compliance.domain.model.ContentReport
 import eu.auctionplatform.compliance.domain.model.ContentReportStatus
+import eu.auctionplatform.compliance.domain.model.FraudAlert
 import eu.auctionplatform.compliance.domain.model.GdprRequest
 import eu.auctionplatform.compliance.domain.model.GdprRequestStatus
 import eu.auctionplatform.compliance.domain.model.GdprRequestType
@@ -61,6 +62,28 @@ data class ContentReportRequest(
 data class FraudAlertResolveRequest(
     val resolution: String,
     val blockUsers: Boolean = false
+)
+
+/**
+ * Request payload for creating a new fraud alert.
+ */
+data class FraudAlertCreateRequest(
+    val type: String,
+    val severity: String,
+    val title: String,
+    val description: String,
+    val userId: UUID,
+    val lotId: UUID? = null,
+    val auctionId: UUID? = null,
+    val riskScore: Double,
+    val evidence: List<String> = emptyList()
+)
+
+/**
+ * Request payload for rejecting a GDPR request.
+ */
+data class GdprRejectRequest(
+    val reason: String
 )
 
 // =============================================================================
@@ -136,20 +159,25 @@ data class AuditLogEntryResponse(
 
 /**
  * Response representation of a fraud alert.
- *
- * Currently populated with mock data until the fraud detection engine
- * is fully integrated.
  */
 data class FraudAlertResponse(
     val id: UUID,
     val type: String,
     val severity: String,
     val status: String,
-    val userId: UUID,
+    val title: String,
     val description: String,
-    val detectedAt: Instant,
+    val userId: UUID,
     val lotId: UUID?,
-    val riskScore: Double
+    val auctionId: UUID?,
+    val riskScore: Double,
+    val evidence: List<String>,
+    val resolution: String?,
+    val resolvedBy: UUID?,
+    val resolvedAt: Instant?,
+    val detectedAt: Instant,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 // =============================================================================
@@ -211,4 +239,25 @@ fun AuditLogEntry.toResponse(): AuditLogEntryResponse = AuditLogEntryResponse(
     details = details,
     ipAddress = ipAddress,
     source = source
+)
+
+/** Converts a [FraudAlert] domain model to a [FraudAlertResponse] DTO. */
+fun FraudAlert.toResponse(): FraudAlertResponse = FraudAlertResponse(
+    id = id,
+    type = type.name,
+    severity = severity.name,
+    status = status.name,
+    title = title,
+    description = description,
+    userId = userId,
+    lotId = lotId,
+    auctionId = auctionId,
+    riskScore = riskScore,
+    evidence = evidence,
+    resolution = resolution,
+    resolvedBy = resolvedBy,
+    resolvedAt = resolvedAt,
+    detectedAt = detectedAt,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )

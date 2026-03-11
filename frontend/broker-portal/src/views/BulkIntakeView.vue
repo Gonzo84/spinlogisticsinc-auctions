@@ -1,32 +1,3 @@
-<script setup lang="ts">
-import { useLotIntake } from '@/composables/useLotIntake'
-import { useToast } from 'primevue/usetoast'
-import BulkIntakeUploader from '@/components/intake/BulkIntakeUploader.vue'
-import type { BulkLotIntakeRequest } from '@/types'
-
-const toast = useToast()
-const { loading, submitBulkIntake } = useLotIntake()
-
-async function handleSubmit(data: BulkLotIntakeRequest) {
-  const results = await submitBulkIntake(data)
-  if (results.length > 0) {
-    toast.add({
-      severity: 'success',
-      summary: 'Bulk Intake Submitted',
-      detail: `${results.length} lots have been submitted successfully.`,
-      life: 5000,
-    })
-  } else {
-    toast.add({
-      severity: 'error',
-      summary: 'Submission Failed',
-      detail: 'Failed to submit bulk intake. Please try again.',
-      life: 5000,
-    })
-  }
-}
-</script>
-
 <template>
   <div>
     <!-- Header -->
@@ -52,17 +23,7 @@ async function handleSubmit(data: BulkLotIntakeRequest) {
         Your CSV file should have the following columns:
       </p>
       <DataTable
-        :value="[
-          { column: 'title', required: 'Yes', description: 'Lot title' },
-          { column: 'categoryId', required: 'Yes', description: 'Category UUID' },
-          { column: 'description', required: 'No', description: 'Lot description' },
-          { column: 'reservePrice', required: 'No', description: 'Reserve price in EUR' },
-          { column: 'startingBid', required: 'No', description: 'Starting bid in EUR' },
-          { column: 'brand', required: 'No', description: 'Brand (e.g., troostwijk)' },
-          { column: 'locationAddress', required: 'No', description: 'Street address' },
-          { column: 'locationCity', required: 'No', description: 'City name' },
-          { column: 'locationCountry', required: 'No', description: 'ISO country code (NL, DE, etc.)' },
-        ]"
+        :value="csvColumns"
         striped-rows
         class="text-sm"
       >
@@ -82,3 +43,44 @@ async function handleSubmit(data: BulkLotIntakeRequest) {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useLotIntake } from '@/composables/useLotIntake'
+import { useToast } from 'primevue/usetoast'
+import BulkIntakeUploader from '@/components/intake/BulkIntakeUploader.vue'
+import type { BulkLotIntakeRequest } from '@/types'
+
+const toast = useToast()
+const { loading, submitBulkIntake } = useLotIntake()
+
+const csvColumns = [
+  { column: 'title', required: 'Yes', description: 'Lot title' },
+  { column: 'categoryId', required: 'Yes', description: 'Category UUID' },
+  { column: 'description', required: 'No', description: 'Lot description' },
+  { column: 'reservePrice', required: 'No', description: 'Reserve price in EUR' },
+  { column: 'startingBid', required: 'No', description: 'Starting bid in EUR' },
+  { column: 'brand', required: 'No', description: 'Brand (e.g., troostwijk)' },
+  { column: 'locationAddress', required: 'No', description: 'Street address' },
+  { column: 'locationCity', required: 'No', description: 'City name' },
+  { column: 'locationCountry', required: 'No', description: 'ISO country code (NL, DE, etc.)' },
+]
+
+async function handleSubmit(data: BulkLotIntakeRequest) {
+  const results = await submitBulkIntake(data)
+  if (results.length > 0) {
+    toast.add({
+      severity: 'success',
+      summary: 'Bulk Intake Submitted',
+      detail: `${results.length} lots have been submitted successfully.`,
+      life: 5000,
+    })
+  } else {
+    toast.add({
+      severity: 'error',
+      summary: 'Submission Failed',
+      detail: 'Failed to submit bulk intake. Please try again.',
+      life: 5000,
+    })
+  }
+}
+</script>

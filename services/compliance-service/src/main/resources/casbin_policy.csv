@@ -17,7 +17,10 @@ p, admin_ops, /api/v1/compliance/gdpr/requests, GET, allow
 p, admin_ops, /api/v1/compliance/aml/:id, GET|POST, allow
 p, admin_ops, /api/v1/compliance/dsa/:id, GET, allow
 p, admin_ops, /api/v1/compliance/dsa/content-report, POST, allow
-p, admin_ops, /api/v1/compliance/fraud/alerts, GET, allow
+p, admin_ops, /api/v1/compliance/gdpr/requests/:id/approve, PATCH, allow
+p, admin_ops, /api/v1/compliance/gdpr/requests/:id/reject, PATCH, allow
+p, admin_ops, /api/v1/compliance/fraud/alerts, GET|POST, allow
+p, admin_ops, /api/v1/compliance/fraud/alerts/:id, GET, allow
 p, admin_ops, /api/v1/compliance/fraud/alerts/:id/investigate, PATCH, allow
 p, admin_ops, /api/v1/compliance/fraud/alerts/:id/resolve, PATCH, allow
 p, admin_ops, /api/v1/compliance/fraud/alerts/:id/dismiss, PATCH, allow

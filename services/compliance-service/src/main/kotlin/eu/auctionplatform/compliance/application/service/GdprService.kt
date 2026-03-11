@@ -154,6 +154,90 @@ class GdprService {
     }
 
     /**
+     * Approves a pending GDPR request, transitioning it to IN_PROGRESS.
+     *
+     * For ERASURE requests, this also triggers cross-service erasure via NATS.
+     *
+     * @param requestId The GDPR request identifier.
+     * @return The updated GDPR request.
+     * @throws NotFoundException if the request does not exist.
+     * @throws ValidationException if the request is not in PENDING status.
+     */
+    fun approveRequest(requestId: UUID): GdprRequest {
+        val request = gdprRequestRepository.findById(requestId)
+            ?: throw NotFoundException(
+                code = "GDPR_REQUEST_NOT_FOUND",
+                message = "GDPR request with id '$requestId' not found."
+            )
+
+        if (request.status != GdprRequestStatus.PENDING) {
+            throw ValidationException(
+                field = "status",
+                error = "Only PENDING requests can be approved. Current status: ${request.status}."
+            )
+        }
+
+        gdprRequestRepository.updateStatus(requestId, GdprRequestStatus.IN_PROGRESS, null, null)
+
+        // For erasure requests, trigger cross-service data deletion
+        if (request.type == GdprRequestType.ERASURE) {
+            val event = GdprErasureEvent(
+                eventId = IdGenerator.generateString(),
+                aggregateId = request.userId.toString(),
+                aggregateType = "User",
+                brand = "platform",
+                timestamp = Instant.now(),
+                version = 1L,
+                requestId = requestId.toString(),
+                userId = request.userId.toString(),
+                reason = request.reason
+            )
+            natsPublisher.publish(NatsSubjects.COMPLIANCE_GDPR_ERASURE, event)
+        }
+
+        LOG.infof("GDPR request approved: id=%s, type=%s", requestId, request.type)
+
+        return request.markInProgress()
+    }
+
+    /**
+     * Rejects a pending GDPR request with a reason.
+     *
+     * @param requestId The GDPR request identifier.
+     * @param reason    The reason for rejection.
+     * @return The updated GDPR request.
+     * @throws NotFoundException if the request does not exist.
+     * @throws ValidationException if the request is not in PENDING status or reason is blank.
+     */
+    fun rejectRequest(requestId: UUID, reason: String): GdprRequest {
+        if (reason.isBlank()) {
+            throw ValidationException(
+                field = "reason",
+                error = "Rejection reason must not be blank."
+            )
+        }
+
+        val request = gdprRequestRepository.findById(requestId)
+            ?: throw NotFoundException(
+                code = "GDPR_REQUEST_NOT_FOUND",
+                message = "GDPR request with id '$requestId' not found."
+            )
+
+        if (request.status != GdprRequestStatus.PENDING) {
+            throw ValidationException(
+                field = "status",
+                error = "Only PENDING requests can be rejected. Current status: ${request.status}."
+            )
+        }
+
+        gdprRequestRepository.updateStatus(requestId, GdprRequestStatus.REJECTED, Instant.now(), reason)
+
+        LOG.infof("GDPR request rejected: id=%s, reason=%s", requestId, reason)
+
+        return request.reject(reason)
+    }
+
+    /**
      * Returns a paginated list of GDPR requests, optionally filtered by status.
      *
      * @param status Optional status filter.

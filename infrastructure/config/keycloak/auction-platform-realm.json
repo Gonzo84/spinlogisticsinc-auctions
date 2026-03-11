@@ -13,7 +13,15 @@
   "editUsernameAllowed": false,
   "rememberMe": true,
   "internationalizationEnabled": true,
-  "supportedLocales": ["en", "nl", "de", "fr", "pl", "it", "ro"],
+  "supportedLocales": [
+    "en",
+    "nl",
+    "de",
+    "fr",
+    "pl",
+    "it",
+    "ro"
+  ],
   "defaultLocale": "en",
   "bruteForceProtected": true,
   "maxFailureWaitSeconds": 900,
@@ -49,7 +57,9 @@
   "smtpServer": {},
   "eventsEnabled": true,
   "eventsExpiration": 604800,
-  "eventsListeners": ["jboss-logging"],
+  "eventsListeners": [
+    "jboss-logging"
+  ],
   "adminEventsEnabled": true,
   "adminEventsDetailsEnabled": true,
   "roles": {
@@ -576,131 +586,6 @@
       ]
     },
     {
-      "id": "client-mobile-app",
-      "clientId": "mobile-app",
-      "name": "Mobile Application",
-      "description": "Native mobile app for buyers and sellers",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": [
-        "eu.auction.mobile:/callback",
-        "http://localhost:8080/callback"
-      ],
-      "webOrigins": [],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
-      "frontchannelLogout": true,
-      "protocol": "openid-connect",
-      "attributes": {
-        "oidc.ciba.grant.enabled": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.session.required": "true",
-        "backchannel.logout.revoke.offline.tokens": "false",
-        "pkce.code.challenge.method": "S256"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "protocolMappers": [
-        {
-          "id": "mapper-mobile-app-account-type",
-          "name": "account_type",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "consentRequired": false,
-          "config": {
-            "userinfo.token.claim": "true",
-            "user.attribute": "account_type",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "account_type",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "mapper-mobile-app-deposit-status",
-          "name": "deposit_status",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "consentRequired": false,
-          "config": {
-            "userinfo.token.claim": "true",
-            "user.attribute": "deposit_status",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "deposit_status",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "mapper-mobile-app-kyc-status",
-          "name": "kyc_status",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "consentRequired": false,
-          "config": {
-            "userinfo.token.claim": "true",
-            "user.attribute": "kyc_status",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "kyc_status",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "mapper-mobile-app-realm-roles",
-          "name": "realm roles",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
-          "consentRequired": false,
-          "config": {
-            "multivalued": "true",
-            "userinfo.token.claim": "true",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "roles",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "mapper-mobile-app-groups",
-          "name": "groups",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-group-membership-mapper",
-          "consentRequired": false,
-          "config": {
-            "full.path": "true",
-            "multivalued": "true",
-            "userinfo.token.claim": "true",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "groups"
-          }
-        }
-      ],
-      "defaultClientScopes": [
-        "web-origins",
-        "acr",
-        "profile",
-        "roles",
-        "email"
-      ],
-      "optionalClientScopes": [
-        "address",
-        "phone",
-        "offline_access",
-        "microprofile-jwt"
-      ]
-    },
-    {
       "id": "client-broker-app",
       "clientId": "broker-app",
       "name": "Broker Application",
@@ -710,7 +595,8 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:3003/*"
+        "http://localhost:3003/*",
+        "http://localhost:5176/*"
       ],
       "webOrigins": [
         "+"
@@ -1137,6 +1023,126 @@
         "offline_access",
         "microprofile-jwt"
       ]
+    },
+    {
+      "clientId": "analytics-service",
+      "name": "Analytics Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "analytics-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "broker-service",
+      "name": "Broker Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "broker-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "catalog-service",
+      "name": "Catalog Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "catalog-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "co2-service",
+      "name": "CO2 Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "co2-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "compliance-service",
+      "name": "Compliance Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "compliance-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "media-service",
+      "name": "Media Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "media-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "notification-service",
+      "name": "Notification Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "notification-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "search-service",
+      "name": "Search Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "search-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "seller-service",
+      "name": "Seller Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "seller-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "user-service",
+      "name": "User Service",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "user-service-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -1150,9 +1156,15 @@
       "emailVerified": true,
       "createdTimestamp": 1700000000000,
       "attributes": {
-        "account_type": ["business"],
-        "deposit_status": ["active"],
-        "kyc_status": ["verified"]
+        "account_type": [
+          "business"
+        ],
+        "deposit_status": [
+          "active"
+        ],
+        "kyc_status": [
+          "verified"
+        ]
       },
       "credentials": [
         {
@@ -1179,9 +1191,15 @@
       "emailVerified": true,
       "createdTimestamp": 1700000000000,
       "attributes": {
-        "account_type": ["business"],
-        "deposit_status": ["active"],
-        "kyc_status": ["verified"]
+        "account_type": [
+          "business"
+        ],
+        "deposit_status": [
+          "active"
+        ],
+        "kyc_status": [
+          "verified"
+        ]
       },
       "credentials": [
         {
@@ -1208,7 +1226,9 @@
       "emailVerified": true,
       "createdTimestamp": 1700000000000,
       "attributes": {
-        "account_type": ["business"]
+        "account_type": [
+          "business"
+        ]
       },
       "credentials": [
         {
@@ -1285,8 +1305,12 @@
       "emailVerified": true,
       "createdTimestamp": 1700000000000,
       "attributes": {
-        "account_type": ["business"],
-        "deposit_status": ["none"]
+        "account_type": [
+          "business"
+        ],
+        "deposit_status": [
+          "none"
+        ]
       },
       "credentials": [
         {

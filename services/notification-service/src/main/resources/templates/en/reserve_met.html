@@ -3,50 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your auto-bid was triggered</title>
+    <title>Reserve Price Met</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'Helvetica Neue',Arial,sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;">
         <tr>
             <td style="padding:24px;background-color:#1e40af;text-align:center;">
-                <h1 style="color:#ffffff;margin:0;font-size:24px;">Auto-Bid Triggered</h1>
+                <h1 style="color:#ffffff;margin:0;font-size:24px;">Reserve Price Met</h1>
             </td>
         </tr>
         <tr>
             <td style="padding:32px 24px;">
                 <p style="color:#4a5568;font-size:16px;line-height:1.6;">
-                    Your auto-bid was triggered on <strong>{lotTitle}</strong>. The system placed a bid on your behalf to keep you as the highest bidder.
+                    Great news! Your bid on <strong>{lotTitle}</strong> has met the seller's reserve price. The lot is now eligible to sell and the auction will proceed to completion.
                 </p>
                 <table style="width:100%;border-collapse:collapse;margin:24px 0;">
                     <tr>
-                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#718096;">Bid placed</td>
-                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:bold;color:#059669;">&euro;{bidAmount}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#718096;">Your maximum</td>
-                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:bold;color:#1e40af;">&euro;{maxAmount}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#718096;">Remaining budget</td>
-                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:bold;color:#718096;">&euro;{remainingBudget}</td>
+                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#718096;">Your bid</td>
+                        <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:bold;color:#059669;">&euro;{currentBid}</td>
                     </tr>
                     <tr>
                         <td style="padding:12px;color:#718096;">Status</td>
-                        <td style="padding:12px;text-align:right;font-weight:bold;color:#059669;">Highest bidder</td>
+                        <td style="padding:12px;text-align:right;font-weight:bold;color:#059669;">Reserve met</td>
                     </tr>
                 </table>
                 <div style="text-align:center;margin:32px 0;">
                     <a href="{lotUrl}" style="display:inline-block;padding:14px 32px;background-color:#1e40af;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:bold;">
-                        View Lot
+                        View Auction
                     </a>
                 </div>
                 <p style="color:#a0aec0;font-size:13px;text-align:center;">
-                    You can adjust or cancel your auto-bid at any time from the lot page.
+                    The auction will continue until its scheduled closing time. Other bidders may still place higher bids.
                 </p>
             </td>
         </tr>
         <tr>
             <td style="padding:16px 24px;background-color:#f7fafc;text-align:center;color:#a0aec0;font-size:12px;">
+                <p>You received this email because you placed a bid that met the reserve price.</p>
                 <p><a href="{preferencesUrl}" style="color:#1e40af;">Manage notifications</a> | <a href="{unsubscribeUrl}" style="color:#1e40af;">Unsubscribe</a></p>
             </td>
         </tr>

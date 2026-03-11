@@ -53,6 +53,9 @@ enum class NotificationType(val description: String) {
     /** Warning that a non-payment case may be opened if the user does not pay. */
     NON_PAYMENT_WARNING("Non-payment warning"),
 
+    /** The reserve price on a lot has been met by a bid. */
+    RESERVE_MET("Reserve price met on your lot"),
+
     /** Welcome notification sent upon user registration. */
     WELCOME("Welcome to the auction platform")
 }

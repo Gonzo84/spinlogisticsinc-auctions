@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Frontend (Vue 3 / Nuxt 3 - npm)
 
-Each frontend app is in `frontend/{buyer-web,seller-portal,admin-dashboard}`:
+Each frontend app is in `frontend/{buyer-web,seller-portal,admin-dashboard,broker-portal}`:
 
 ```bash
 cd frontend/<app> && npm install && npm run dev    # Dev server with HMR
@@ -62,7 +62,7 @@ docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file d
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| gateway-service | 8080 | API gateway, WebSocket hub, rate limiting |
+| gateway-service | 8080 | API gateway, WebSocket hub (`/ws/auctions/{auctionId}` + `/ws/user`), rate limiting |
 | auction-engine | 8081 | Event-sourced bidding core (anti-sniping, proxy bidding, CQRS) |
 | catalog-service | 8082 | Lot & category management |
 | user-service | 8083 | User profiles, KYC |

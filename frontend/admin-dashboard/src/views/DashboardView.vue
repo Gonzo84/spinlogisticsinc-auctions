@@ -2,16 +2,17 @@
 import { ref, shallowRef, onMounted, onUnmounted, computed } from 'vue'
 import { useAuctions } from '@/composables/useAuctions'
 import { useAnalytics } from '@/composables/useAnalytics'
+import { useWebSocket } from '@/composables/useWebSocket'
 import LiveBidChart from '@/components/charts/LiveBidChart.vue'
 import { getStatusSeverity, formatStatusLabel } from '@/composables/useStatusSeverity'
 
 const { auctions, fetchAuctions, loading: auctionsLoading } = useAuctions()
 const { overview, fetchOverview, loading: analyticsLoading } = useAnalytics()
+const { connect, disconnect, on, off, connected } = useWebSocket()
 
 const loading = computed(() => auctionsLoading.value || analyticsLoading.value)
 
-// Simulated live bid data — use shallowRef to avoid deep reactivity
-// which can cause RangeError (Maximum call stack size exceeded) with Chart.js
+// Live bid data — aggregates bid_placed events per 5-second window
 const bidLabels = shallowRef<string[]>([])
 const bidData = shallowRef<number[]>([])
 
@@ -22,7 +23,36 @@ const alerts = ref([
   { id: '4', type: 'warning', message: '15 lots pending approval', link: '/lots/approval', time: '2 hours ago' },
 ])
 
-let refreshInterval: ReturnType<typeof setInterval>
+// Bid count accumulator for current 5-second window
+let currentWindowBidCount = 0
+let chartInterval: ReturnType<typeof setInterval>
+let pollInterval: ReturnType<typeof setInterval>
+
+function handleBidPlaced() {
+  currentWindowBidCount++
+}
+
+function handleFraudAlert(data: Record<string, unknown>) {
+  alerts.value = [
+    {
+      id: (data.alertId as string) ?? Date.now().toString(),
+      type: 'danger',
+      message: (data.title as string) ?? `Fraud alert: ${data.type}`,
+      link: '/fraud',
+      time: 'Just now',
+    },
+    ...alerts.value.slice(0, 9),
+  ]
+}
+
+function pushChartPoint(count: number) {
+  const t = new Date()
+  const label = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const newLabels = [...bidLabels.value, label]
+  const newData = [...bidData.value, count]
+  bidLabels.value = newLabels.length > 30 ? newLabels.slice(-30) : newLabels
+  bidData.value = newData.length > 30 ? newData.slice(-30) : newData
+}
 
 onMounted(async () => {
   await Promise.all([
@@ -30,30 +60,43 @@ onMounted(async () => {
     fetchOverview(),
   ])
 
-  // Generate initial chart data
+  // Initialize chart with zeros
   const now = new Date()
   const initLabels: string[] = []
   const initData: number[] = []
   for (let i = 29; i >= 0; i--) {
-    const t = new Date(now.getTime() - i * 60000)
-    initLabels.push(t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
-    initData.push(Math.floor(Math.random() * 50) + 10)
+    const t = new Date(now.getTime() - i * 5000)
+    initLabels.push(t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+    initData.push(0)
   }
   bidLabels.value = initLabels
   bidData.value = initData
 
-  // Simulate live updates — replace arrays to trigger shallowRef reactivity
-  refreshInterval = setInterval(() => {
-    const t = new Date()
-    const newLabels = [...bidLabels.value, t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })]
-    const newData = [...bidData.value, Math.floor(Math.random() * 50) + 10]
-    bidLabels.value = newLabels.length > 30 ? newLabels.slice(-30) : newLabels
-    bidData.value = newData.length > 30 ? newData.slice(-30) : newData
+  // Connect WebSocket and listen for bid events
+  connect()
+  on('bid_placed', handleBidPlaced)
+  on('fraud_alert', handleFraudAlert)
+
+  // Flush accumulated bids to chart every 5 seconds
+  chartInterval = setInterval(() => {
+    pushChartPoint(currentWindowBidCount)
+    currentWindowBidCount = 0
   }, 5000)
+
+  // Fallback: poll analytics every 30s if WebSocket disconnects
+  pollInterval = setInterval(async () => {
+    if (!connected.value) {
+      await fetchOverview()
+    }
+  }, 30_000)
 })
 
 onUnmounted(() => {
-  clearInterval(refreshInterval)
+  clearInterval(chartInterval)
+  clearInterval(pollInterval)
+  off('bid_placed', handleBidPlaced)
+  off('fraud_alert', handleFraudAlert)
+  disconnect()
 })
 
 function formatCurrency(value: number): string {

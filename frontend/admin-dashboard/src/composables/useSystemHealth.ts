@@ -104,7 +104,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 }
 
 export function useSystemHealth() {
-  const { get } = useApi()
+  const { get, post } = useApi()
 
   const health = ref<SystemHealthOverview | null>(null)
   const loading = ref(false)
@@ -130,11 +130,14 @@ export function useSystemHealth() {
     }
   }
 
-  // TODO: Service restart endpoint does not exist yet — return false immediately.
-  async function restartService(_serviceName: string): Promise<boolean> {
-    // TODO: Implement when POST /health/services/:name/restart is available
-    console.debug(`[useSystemHealth] restartService(${_serviceName}) — endpoint not yet implemented`)
-    return false
+  async function restartService(serviceName: string): Promise<boolean> {
+    try {
+      await post(`/health/services/${serviceName}/restart`)
+      return true
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, `Failed to restart ${serviceName}`)
+      return false
+    }
   }
 
   function getStatusColor(status: ServiceStatus): string {

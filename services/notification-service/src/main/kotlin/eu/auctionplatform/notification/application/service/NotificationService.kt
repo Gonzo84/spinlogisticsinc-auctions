@@ -105,6 +105,10 @@ class NotificationService @Inject constructor(
                 templateName = "non_payment_warning",
                 defaultSubject = "Action required: Complete your payment"
             ),
+            NotificationType.RESERVE_MET to TemplateConfig(
+                templateName = "reserve_met",
+                defaultSubject = "Reserve Price Met — Your Lot Has Reached Its Minimum"
+            ),
             NotificationType.WELCOME to TemplateConfig(
                 templateName = "welcome",
                 defaultSubject = "Welcome to the Auction Platform"
@@ -394,7 +398,8 @@ class NotificationService @Inject constructor(
             NotificationType.OVERBID,
             NotificationType.BID_CONFIRMED,
             NotificationType.AUTO_BID_TRIGGERED,
-            NotificationType.CLOSING_SOON -> {
+            NotificationType.CLOSING_SOON,
+            NotificationType.RESERVE_MET -> {
                 val auctionId = notification.templateData["auctionId"]?.toString()
                 if (auctionId != null) "/auctions/$auctionId" else null
             }

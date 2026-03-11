@@ -3,6 +3,7 @@ package eu.auctionplatform.notification.infrastructure.nats
 import eu.auctionplatform.commons.messaging.NatsConsumer
 import eu.auctionplatform.commons.messaging.NatsSubjects
 import eu.auctionplatform.commons.util.JsonMapper
+import java.math.BigDecimal
 import eu.auctionplatform.notification.application.service.NotificationService
 import eu.auctionplatform.notification.domain.model.NotificationType
 import eu.auctionplatform.notification.infrastructure.UserEmailResolver
@@ -26,6 +27,8 @@ import java.util.concurrent.Executors
  * - `auction.bid.proxy.>` -- Triggers [NotificationType.AUTO_BID_TRIGGERED]
  *   to the auto-bidder.
  * - `auction.lot.closed.>` -- Triggers [NotificationType.AUCTION_WON] to the winner.
+ * - `auction.reserve.met` -- Triggers [NotificationType.RESERVE_MET] to the bidder
+ *   whose bid met the reserve price.
  *
  * Uses the durable consumer name `notification-auction-consumer` to survive
  * restarts and ensure exactly-once processing semantics (via JetStream).
@@ -48,9 +51,10 @@ class AuctionEventNotificationConsumer @Inject constructor(
         private const val BID_PLACED_FILTER = "auction.bid.placed"
         private const val BID_PROXY_FILTER = "auction.bid.proxy"
         private const val LOT_CLOSED_FILTER = "auction.lot.closed"
+        private const val RESERVE_MET_FILTER = "auction.reserve.met"
     }
 
-    private val executor: ExecutorService = Executors.newFixedThreadPool(3)
+    private val executor: ExecutorService = Executors.newFixedThreadPool(4)
 
     /**
      * Starts three consumer threads, one for each auction event subject filter.
@@ -63,6 +67,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
         executor.submit { createBidPlacedConsumer().start() }
         executor.submit { createBidProxyConsumer().start() }
         executor.submit { createLotClosedConsumer().start() }
+        executor.submit { createReserveMetConsumer().start() }
     }
 
     @jakarta.annotation.PreDestroy
@@ -111,6 +116,19 @@ class AuctionEventNotificationConsumer @Inject constructor(
         ) {
             override fun handleMessage(message: Message) {
                 handleLotClosed(message)
+            }
+        }
+
+    private fun createReserveMetConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = connection,
+            streamName = STREAM_NAME,
+            durableName = "notification-reserve-met",
+            filterSubject = RESERVE_MET_FILTER,
+            deadLetterSubject = "dlq.notification.auction.reserve.met"
+        ) {
+            override fun handleMessage(message: Message) {
+                handleReserveMet(message)
             }
         }
 
@@ -180,40 +198,58 @@ class AuctionEventNotificationConsumer @Inject constructor(
     }
 
     /**
-     * Handles `auction.bid.proxy.>` events.
+     * Handles `auction.bid.proxy` events.
      *
-     * Sends [NotificationType.AUTO_BID_TRIGGERED] to the auto-bidder.
+     * Sends [NotificationType.AUTO_BID_TRIGGERED] to the auto-bid owner whose
+     * proxy bid was placed by the engine in response to a competing bid.
+     *
+     * Extracts fields from [eu.auctionplatform.events.auction.ProxyBidTriggeredEvent]:
+     * `autoBidOwnerId`, `amount`, `maxAmount`, `currency`, `triggeringBidId`.
      */
     @Suppress("UNCHECKED_CAST")
     private fun handleBidProxy(message: Message) {
         val payload = parsePayload(message) ?: return
 
-        val bidderId = payload["bidderId"]?.toString() ?: return
-        val bidAmount = payload["bidAmount"]?.toString() ?: "0"
-        val bidCurrency = payload["bidCurrency"]?.toString() ?: "EUR"
+        // ProxyBidTriggeredEvent uses autoBidOwnerId; fall back to bidderId for compat
+        val ownerId = payload["autoBidOwnerId"]?.toString()
+            ?: payload["bidderId"]?.toString()
+            ?: return
+        val bidAmount = payload["amount"]?.toString()
+            ?: payload["bidAmount"]?.toString()
+            ?: "0"
+        val bidCurrency = payload["currency"]?.toString()
+            ?: payload["bidCurrency"]?.toString()
+            ?: "EUR"
         val aggregateId = payload["aggregateId"]?.toString() ?: ""
-        val maxAutoBidAmount = payload["maxAutoBidAmount"]?.toString() ?: "0"
-        val maxAutoBidCurrency = payload["maxAutoBidCurrency"]?.toString() ?: "EUR"
+        val maxAmount = payload["maxAmount"]?.toString()
+            ?: payload["maxAutoBidAmount"]?.toString()
+            ?: "0"
+        val triggeringBidId = payload["triggeringBidId"]?.toString() ?: ""
 
-        val bidderUuid = UUID.fromString(bidderId)
-        val bidderEmail = userEmailResolver.resolveEmail(bidderUuid)
+        val ownerUuid = UUID.fromString(ownerId)
+        val ownerEmail = userEmailResolver.resolveEmail(ownerUuid)
+
+        val remainingBudget = try {
+            BigDecimal(maxAmount).subtract(BigDecimal(bidAmount)).toPlainString()
+        } catch (_: Exception) { "0" }
 
         val data = mutableMapOf(
             "auctionId" to aggregateId,
             "bidAmount" to bidAmount,
             "bidCurrency" to bidCurrency,
-            "maxAutoBidAmount" to maxAutoBidAmount,
-            "maxAutoBidCurrency" to maxAutoBidCurrency
+            "maxAmount" to maxAmount,
+            "remainingBudget" to remainingBudget,
+            "triggeringBidId" to triggeringBidId
         )
-        if (bidderEmail != null) data["email"] = bidderEmail
+        if (ownerEmail != null) data["email"] = ownerEmail
 
         notificationService.sendNotification(
-            userId = bidderUuid,
+            userId = ownerUuid,
             type = NotificationType.AUTO_BID_TRIGGERED,
             data = data
         )
 
-        LOG.debugf("Sent AUTO_BID_TRIGGERED to bidder=%s for auction=%s", bidderId, aggregateId)
+        LOG.debugf("Sent AUTO_BID_TRIGGERED to autoBidOwner=%s for auction=%s", ownerId, aggregateId)
     }
 
     /**
@@ -257,6 +293,45 @@ class AuctionEventNotificationConsumer @Inject constructor(
         )
 
         LOG.debugf("Sent AUCTION_WON to winner=%s for auction=%s", winnerId, aggregateId)
+    }
+
+    /**
+     * Handles `auction.reserve.met` events.
+     *
+     * Sends [NotificationType.RESERVE_MET] to the bidder whose bid met the
+     * seller's reserve price, informing them the lot is now eligible to sell.
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun handleReserveMet(message: Message) {
+        val payload = parsePayload(message) ?: return
+
+        val auctionId = payload["aggregateId"]?.toString() ?: ""
+        val lotId = payload["lotId"]?.toString() ?: ""
+        val bidderId = payload["bidderId"]?.toString() ?: return
+        val reservePrice = payload["reservePrice"]?.toString() ?: ""
+        val currentBid = payload["currentBid"]?.toString() ?: ""
+
+        val bidderUuid = UUID.fromString(bidderId)
+        val bidderEmail = userEmailResolver.resolveEmail(bidderUuid)
+
+        val data = mutableMapOf<String, Any>(
+            "auctionId" to auctionId,
+            "lotId" to lotId,
+            "reservePrice" to reservePrice,
+            "currentBid" to currentBid
+        )
+        if (bidderEmail != null) data["email"] = bidderEmail
+
+        notificationService.sendNotification(
+            userId = bidderUuid,
+            type = NotificationType.RESERVE_MET,
+            data = data
+        )
+
+        LOG.debugf(
+            "Sent RESERVE_MET to bidder=%s for auction=%s (lot=%s)",
+            bidderId, auctionId, lotId
+        )
     }
 
     // -----------------------------------------------------------------------

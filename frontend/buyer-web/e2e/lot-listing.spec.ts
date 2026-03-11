@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test'
+import { setupApiMocks } from './fixtures/api-mocks'
 
 test.describe('Lot Listing', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupApiMocks(page)
+  })
+
   test('should navigate to search page', async ({ page }) => {
     await page.goto('/search')
     // The page should load without errors

@@ -1,10 +1,47 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import SidebarNav from '@/components/layout/SidebarNav.vue'
 import TopBar from '@/components/layout/TopBar.vue'
+import { useWebSocket } from '@/composables/useWebSocket'
+import { useToast } from 'primevue/usetoast'
+
+const { connect, disconnect, on, off } = useWebSocket()
+const toast = useToast()
 
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
+
+function handleSettlementUpdate(data: Record<string, unknown>) {
+  toast.add({
+    severity: 'success',
+    summary: 'Settlement Updated',
+    detail: `Settlement ${data.status === 'SETTLED' ? 'paid out' : 'is ready'}`,
+    life: 5000,
+  })
+}
+
+function handleLotStatusChanged(data: Record<string, unknown>) {
+  toast.add({
+    severity: 'info',
+    summary: 'Lot Status Changed',
+    detail: `"${data.title}" is now ${data.newStatus}`,
+    life: 5000,
+  })
+}
+
+onMounted(() => {
+  connect()
+  on('settlement_updated', handleSettlementUpdate)
+  on('settlement_ready', handleSettlementUpdate)
+  on('lot_status_changed', handleLotStatusChanged)
+})
+
+onUnmounted(() => {
+  off('settlement_updated', handleSettlementUpdate)
+  off('settlement_ready', handleSettlementUpdate)
+  off('lot_status_changed', handleLotStatusChanged)
+  disconnect()
+})
 
 function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value

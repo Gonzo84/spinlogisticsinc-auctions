@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test'
+import { setupApiMocks } from './fixtures/api-mocks'
 
 test.describe('Homepage', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupApiMocks(page)
+  })
+
   test('should load the homepage and display the main heading', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveTitle(/auction/i)

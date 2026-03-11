@@ -43,9 +43,7 @@ export function useUsers() {
         pageSize: filters.pageSize,
       }
       if (filters.search) params.search = filters.search
-      if (filters.accountType) params.accountType = filters.accountType
       if (filters.status) params.status = filters.status
-      if (filters.kycStatus) params.kycStatus = filters.kycStatus
 
       const raw = await get<ApiResponse<PagedResponse<User>>>('/users', { params })
       // Unwrap ApiResponse wrapper: { data: { items: [...], total: N } }

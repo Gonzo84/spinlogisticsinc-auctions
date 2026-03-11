@@ -31,7 +31,7 @@ class WebSocketHub {
     /** auctionId -> set of active sessions watching that auction. */
     private val auctionSessions = ConcurrentHashMap<String, MutableSet<Session>>()
 
-    /** sessionId -> metadata (userId, auctionId) for reverse lookup on disconnect. */
+    /** sessionId -> metadata (userId, auctionId, roles) for reverse lookup on disconnect. */
     private val sessionMetadata = ConcurrentHashMap<String, SessionMetadata>()
 
     // -------------------------------------------------------------------------
@@ -45,25 +45,41 @@ class WebSocketHub {
      * specified auction and any user-targeted messages.
      */
     fun register(session: Session, userId: String, auctionId: String) {
+        registerInternal(session, userId, auctionId, emptyList())
+    }
+
+    /**
+     * Registers a user-scoped WebSocket [session] (no auction context).
+     *
+     * Used by [UserWebSocketEndpoint] for user-targeted real-time events
+     * such as settlement updates, lot status changes, and admin alerts.
+     */
+    fun registerUser(session: Session, userId: String, roles: List<String> = emptyList()) {
+        registerInternal(session, userId, null, roles)
+    }
+
+    private fun registerInternal(session: Session, userId: String, auctionId: String?, roles: List<String>) {
         val sessionId = session.id
 
         // Store metadata for reverse lookup
-        sessionMetadata[sessionId] = SessionMetadata(userId, auctionId)
+        sessionMetadata[sessionId] = SessionMetadata(userId, auctionId, roles)
 
         // Add to user sessions
         userSessions.computeIfAbsent(userId) {
             ConcurrentHashMap.newKeySet()
         }.add(session)
 
-        // Add to auction sessions
-        auctionSessions.computeIfAbsent(auctionId) {
-            ConcurrentHashMap.newKeySet()
-        }.add(session)
+        // Add to auction sessions (only if auction-scoped)
+        if (auctionId != null) {
+            auctionSessions.computeIfAbsent(auctionId) {
+                ConcurrentHashMap.newKeySet()
+            }.add(session)
+        }
 
         LOG.infof(
-            "WebSocket session registered [sessionId=%s, userId=%s, auctionId=%s]. " +
+            "WebSocket session registered [sessionId=%s, userId=%s, auctionId=%s, roles=%s]. " +
                 "Active: users=%s, auctions=%s, total sessions=%s",
-            sessionId, userId, auctionId,
+            sessionId, userId, auctionId ?: "none", roles.joinToString(","),
             userSessions.size, auctionSessions.size, sessionMetadata.size
         )
     }
@@ -84,18 +100,20 @@ class WebSocketHub {
             }
         }
 
-        // Remove from auction sessions
-        auctionSessions[metadata.auctionId]?.let { sessions ->
-            sessions.remove(session)
-            if (sessions.isEmpty()) {
-                auctionSessions.remove(metadata.auctionId)
+        // Remove from auction sessions (only if auction-scoped)
+        if (metadata.auctionId != null) {
+            auctionSessions[metadata.auctionId]?.let { sessions ->
+                sessions.remove(session)
+                if (sessions.isEmpty()) {
+                    auctionSessions.remove(metadata.auctionId)
+                }
             }
         }
 
         LOG.infof(
             "WebSocket session unregistered [sessionId=%s, userId=%s, auctionId=%s]. " +
                 "Active: users=%s, auctions=%s, total sessions=%s",
-            sessionId, metadata.userId, metadata.auctionId,
+            sessionId, metadata.userId, metadata.auctionId ?: "none",
             userSessions.size, auctionSessions.size, sessionMetadata.size
         )
     }
@@ -179,6 +197,50 @@ class WebSocketHub {
         }
     }
 
+    /**
+     * Broadcasts a [message] to all sessions belonging to users with the
+     * specified [role]. Used for admin-wide alerts and notifications.
+     */
+    fun broadcastToRole(role: String, message: String) {
+        val stale = mutableListOf<Session>()
+        var sent = 0
+
+        for ((sessionId, metadata) in sessionMetadata) {
+            if (role !in metadata.roles) continue
+            val session = findSessionById(sessionId) ?: continue
+
+            try {
+                if (session.isOpen) {
+                    session.asyncRemote.sendText(message)
+                    sent++
+                } else {
+                    stale.add(session)
+                }
+            } catch (ex: Exception) {
+                LOG.warnf("Failed to send role broadcast to session [%s]: %s", sessionId, ex.message)
+                stale.add(session)
+            }
+        }
+
+        for (session in stale) {
+            unregister(session)
+        }
+
+        LOG.debugf("Role broadcast [%s]: sent to %s sessions", role, sent)
+    }
+
+    /**
+     * Finds a session by its ID across all user session sets.
+     */
+    private fun findSessionById(sessionId: String): Session? {
+        for (sessions in userSessions.values) {
+            for (session in sessions) {
+                if (session.id == sessionId) return session
+            }
+        }
+        return null
+    }
+
     // -------------------------------------------------------------------------
     // Metrics / Diagnostics
     // -------------------------------------------------------------------------
@@ -206,6 +268,7 @@ class WebSocketHub {
      */
     private data class SessionMetadata(
         val userId: String,
-        val auctionId: String
+        val auctionId: String?,
+        val roles: List<String> = emptyList()
     )
 }
