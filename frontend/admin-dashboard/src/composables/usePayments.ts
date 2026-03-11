@@ -1,6 +1,7 @@
 import { ref, reactive, readonly } from 'vue'
 import axios from 'axios'
 import { useApi } from './useApi'
+import { useToast } from 'primevue/usetoast'
 import type { Payment, PaymentFilters, PaymentSummary } from '@/types/payment'
 import type { PaginationParams } from '@/types/api'
 
@@ -16,6 +17,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 
 export function usePayments() {
   const { get, post, patch } = useApi()
+  const toast = useToast()
 
   const payments = ref<Payment[]>([])
   const summary = ref<PaymentSummary | null>(null)
@@ -54,10 +56,15 @@ export function usePayments() {
         totalAmount: (item.totalAmount ?? 0) as number,
       })) as unknown as Payment[]
       totalCount.value = response.total ?? 0
-    } catch {
+    } catch (err: unknown) {
       payments.value = []
       totalCount.value = 0
-      error.value = null
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        console.debug('[usePayments] Payments endpoint not available, showing empty state')
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to load payments')
+        toast.add({ severity: 'error', summary: 'Error', detail: error.value, life: 5000 })
+      }
     } finally {
       loading.value = false
     }
@@ -66,8 +73,13 @@ export function usePayments() {
   async function fetchSummary(): Promise<void> {
     try {
       summary.value = await get<PaymentSummary>('/payments/summary')
-    } catch {
-      error.value = null
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        console.debug('[usePayments] Payment summary endpoint not available, showing empty state')
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to load payment summary')
+        toast.add({ severity: 'error', summary: 'Error', detail: error.value, life: 5000 })
+      }
     }
   }
 
@@ -92,7 +104,12 @@ export function usePayments() {
       await post(`/payments/${paymentId}/refund`, { reason })
       return true
     } catch (err: unknown) {
-      error.value = extractErrorMessage(err, 'Failed to refund payment')
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        toast.add({ severity: 'info', summary: 'Not Available', detail: 'Refund feature is not yet available', life: 5000 })
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to refund payment')
+        toast.add({ severity: 'error', summary: 'Error', detail: error.value, life: 5000 })
+      }
       return false
     } finally {
       loading.value = false
@@ -104,7 +121,12 @@ export function usePayments() {
       await post(`/payments/${paymentId}/reminder`)
       return true
     } catch (err: unknown) {
-      error.value = extractErrorMessage(err, 'Failed to send reminder')
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        toast.add({ severity: 'info', summary: 'Not Available', detail: 'Payment reminder feature is not yet available', life: 5000 })
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to send reminder')
+        toast.add({ severity: 'error', summary: 'Error', detail: error.value, life: 5000 })
+      }
       return false
     }
   }

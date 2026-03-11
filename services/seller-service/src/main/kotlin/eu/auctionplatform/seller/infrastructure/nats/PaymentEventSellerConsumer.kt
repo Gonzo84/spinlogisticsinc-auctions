@@ -13,6 +13,7 @@ import jakarta.inject.Singleton
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 // =============================================================================
@@ -60,6 +61,7 @@ class PaymentEventSellerConsumer @Inject constructor(
 
         // Subject prefixes for routing
         private const val SUBJECT_SETTLEMENT_READY = "payment.settlement.ready"
+        private const val SUBJECT_SETTLEMENT_SETTLED = "payment.settlement.settled"
         private const val SUBJECT_CHECKOUT_COMPLETED = "payment.checkout.completed"
     }
 
@@ -106,6 +108,7 @@ class PaymentEventSellerConsumer @Inject constructor(
 
         try {
             when {
+                subject.startsWith(SUBJECT_SETTLEMENT_SETTLED) -> handleSettlementSettled(payload)
                 subject.startsWith(SUBJECT_SETTLEMENT_READY) -> handleSettlementReady(payload)
                 subject.startsWith(SUBJECT_CHECKOUT_COMPLETED) -> handleCheckoutCompleted(payload)
                 else -> LOG.debugf("Ignoring unrelated subject [%s] on payment stream", subject)
@@ -140,8 +143,12 @@ class PaymentEventSellerConsumer @Inject constructor(
         val netAmount = node.requiredDecimal("netAmount")
         val commission = node.optionalDecimal("commission") ?: BigDecimal.ZERO
         val currency = node.optionalText("currency") ?: "EUR"
+        val paymentIdStr = node.optionalText("paymentId")
 
         val sellerId = UUID.fromString(sellerIdStr)
+        val paymentId = paymentIdStr?.let {
+            try { UUID.fromString(it) } catch (_: IllegalArgumentException) { null }
+        }
 
         // Resolve seller profile id (sellerId in event may be the user_id)
         val sellerProfileId = sellerProfileRepository.findSellerProfileIdByUserId(sellerId)
@@ -159,7 +166,7 @@ class PaymentEventSellerConsumer @Inject constructor(
             try { UUID.fromString(it) } catch (_: IllegalArgumentException) { null }
         }
 
-        // Insert settlement record
+        // Insert settlement record (with paymentId for later status updates)
         sellerProfileRepository.insertSettlement(
             sellerId = sellerProfileId,
             lotId = lotId ?: UUID.randomUUID(), // fallback if no lotId
@@ -168,13 +175,54 @@ class PaymentEventSellerConsumer @Inject constructor(
             commission = commission,
             netAmount = netAmount,
             currency = currency,
-            status = "READY"
+            status = "READY",
+            paymentId = paymentId
         )
 
         // Update seller metrics
         sellerProfileRepository.settlePayment(sellerProfileId, netAmount)
 
         LOG.infof("Settlement recorded for seller %s (net=%s %s)", sellerProfileId, netAmount, currency)
+    }
+
+    /**
+     * Handles `payment.settlement.settled` events by updating the seller
+     * settlement row status from "READY" to "PAID" and setting settled_at.
+     *
+     * Expected payload fields (from [PaymentSettledEvent]):
+     * - `paymentId` -- originating payment identifier (used to locate the settlement row)
+     * - `bankReference` -- bank/PSP reference for the transfer
+     * - `settledAt` -- timestamp when the settlement was completed
+     * - `sellerId` -- seller who received the payout
+     */
+    private fun handleSettlementSettled(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val paymentIdStr = node.requiredText("paymentId")
+        val settledAtStr = node.optionalText("settledAt")
+        val sellerIdStr = node.optionalText("sellerId")
+
+        val paymentId = UUID.fromString(paymentIdStr)
+        val settledAt = settledAtStr?.let {
+            try { Instant.parse(it) } catch (_: Exception) { Instant.now() }
+        } ?: Instant.now()
+
+        LOG.infof("Settlement settled for paymentId=%s (settledAt=%s)", paymentId, settledAt)
+
+        // Update the seller_settlements row status from READY to PAID
+        val updated = sellerProfileRepository.updateSettlementStatusByPaymentId(
+            paymentId = paymentId,
+            status = "PAID",
+            settledAt = settledAt
+        )
+
+        if (updated) {
+            LOG.infof("Successfully updated seller settlement to PAID for paymentId=%s", paymentId)
+        } else {
+            LOG.warnf(
+                "No seller settlement found for paymentId=%s (seller=%s) -- may not have been created yet",
+                paymentId, sellerIdStr
+            )
+        }
     }
 
     /**

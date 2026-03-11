@@ -1,16 +1,19 @@
 package eu.auctionplatform.payment.application.service
 
+import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.payment.domain.model.Payment
 import eu.auctionplatform.payment.domain.model.PaymentStatus
 import eu.auctionplatform.payment.domain.model.Settlement
 import eu.auctionplatform.payment.domain.model.SettlementStatus
 import eu.auctionplatform.payment.infrastructure.persistence.repository.PaymentRepository
 import eu.auctionplatform.payment.infrastructure.persistence.repository.SettlementRepository
+import io.agroal.api.AgroalDataSource
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.sql.Timestamp
 import java.time.Instant
 import java.util.UUID
 
@@ -35,7 +38,8 @@ import java.util.UUID
 @ApplicationScoped
 class SettlementService @Inject constructor(
     private val settlementRepository: SettlementRepository,
-    private val paymentRepository: PaymentRepository
+    private val paymentRepository: PaymentRepository,
+    private val dataSource: AgroalDataSource
 ) {
 
     companion object {
@@ -108,6 +112,14 @@ class SettlementService @Inject constructor(
             settlement.id, sellerId, netAmount, commission, paymentId
         )
 
+        // Write SettlementReadyEvent to outbox so both webhook and admin
+        // settle paths produce the event for downstream consumers.
+        try {
+            writeSettlementReadyToOutbox(settlement, payment)
+        } catch (e: Exception) {
+            LOG.errorf(e, "Failed to write SettlementReadyEvent to outbox for settlement %s: %s", settlement.id, e.message)
+        }
+
         return settlement
     }
 
@@ -158,7 +170,18 @@ class SettlementService @Inject constructor(
             settlementId, settlement.sellerId, bankReference
         )
 
-        return settlementRepository.findById(settlementId)
+        // Write PaymentSettledEvent to outbox for downstream consumers
+        // (seller-service, notification-service, analytics-service).
+        val settledSettlement = settlementRepository.findById(settlementId)
+        if (settledSettlement != null) {
+            try {
+                writeSettlementSettledToOutbox(settledSettlement, bankReference)
+            } catch (e: Exception) {
+                LOG.errorf(e, "Failed to write PaymentSettledEvent to outbox for settlement %s: %s", settlementId, e.message)
+            }
+        }
+
+        return settledSettlement
     }
 
     /**
@@ -192,5 +215,107 @@ class SettlementService @Inject constructor(
      */
     private fun resolveSellerId(payment: Payment): UUID {
         return payment.sellerId
+    }
+
+    // -----------------------------------------------------------------------
+    // Outbox event writing
+    // -----------------------------------------------------------------------
+
+    /**
+     * Writes a SettlementReadyEvent to the outbox table for reliable
+     * publication to NATS via the PaymentOutboxPoller.
+     *
+     * This is called from [createSettlement] so both webhook-triggered
+     * and admin-triggered settlement creation paths produce the event.
+     */
+    private fun writeSettlementReadyToOutbox(settlement: Settlement, payment: Payment) {
+        val eventPayload = mapOf(
+            "eventId" to UUID.randomUUID().toString(),
+            "eventType" to "payment.settlement.ready",
+            "aggregateId" to settlement.id.toString(),
+            "aggregateType" to "Settlement",
+            "brand" to "platform",
+            "timestamp" to Instant.now().toString(),
+            "version" to 1,
+            "settlementId" to settlement.id.toString(),
+            "sellerId" to settlement.sellerId.toString(),
+            "paymentId" to settlement.paymentId.toString(),
+            "netAmount" to settlement.netAmount,
+            "commission" to settlement.commission,
+            "currency" to payment.currency
+        )
+
+        writeOutboxEntry(
+            aggregateId = settlement.id,
+            eventType = "payment.settlement.ready",
+            natsSubject = "payment.settlement.ready",
+            payload = JsonMapper.toJson(eventPayload)
+        )
+
+        LOG.infof("Wrote SettlementReadyEvent to outbox for settlement %s", settlement.id)
+    }
+
+    /**
+     * Writes a PaymentSettledEvent to the outbox table for reliable
+     * publication to NATS via the PaymentOutboxPoller.
+     *
+     * Downstream consumers:
+     * - seller-service: updates settlement row status from READY to PAID
+     * - notification-service: sends payout confirmation to seller
+     * - analytics-service: records commission revenue
+     */
+    private fun writeSettlementSettledToOutbox(settlement: Settlement, bankReference: String) {
+        val eventPayload = mapOf(
+            "eventId" to UUID.randomUUID().toString(),
+            "eventType" to "payment.settlement.settled",
+            "aggregateId" to settlement.id.toString(),
+            "aggregateType" to "Settlement",
+            "brand" to "platform",
+            "timestamp" to Instant.now().toString(),
+            "version" to 1,
+            "settlementId" to settlement.id.toString(),
+            "sellerId" to settlement.sellerId.toString(),
+            "paymentId" to settlement.paymentId.toString(),
+            "netAmount" to settlement.netAmount,
+            "commission" to settlement.commission,
+            "currency" to "EUR",
+            "bankReference" to bankReference,
+            "settledAt" to (settlement.settledAt ?: Instant.now()).toString()
+        )
+
+        writeOutboxEntry(
+            aggregateId = settlement.id,
+            eventType = "payment.settlement.settled",
+            natsSubject = "payment.settlement.settled",
+            payload = JsonMapper.toJson(eventPayload)
+        )
+
+        LOG.infof("Wrote PaymentSettledEvent to outbox for settlement %s", settlement.id)
+    }
+
+    /**
+     * Inserts a row into the `app.outbox` table.
+     */
+    private fun writeOutboxEntry(
+        aggregateId: UUID,
+        eventType: String,
+        natsSubject: String,
+        payload: String
+    ) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(
+                """
+                INSERT INTO app.outbox (aggregate_id, event_type, payload, nats_subject, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """.trimIndent()
+            ).use { stmt ->
+                stmt.setObject(1, aggregateId)
+                stmt.setString(2, eventType)
+                stmt.setString(3, payload)
+                stmt.setString(4, natsSubject)
+                stmt.setTimestamp(5, Timestamp.from(Instant.now()))
+                stmt.executeUpdate()
+            }
+        }
     }
 }

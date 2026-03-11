@@ -1,7 +1,6 @@
 package eu.auctionplatform.payment.application.service
 
 import eu.auctionplatform.commons.util.JsonMapper
-import eu.auctionplatform.payment.domain.model.Settlement
 import eu.auctionplatform.payment.domain.model.Invoice
 import eu.auctionplatform.payment.domain.model.InvoiceType
 import eu.auctionplatform.payment.domain.model.Payment
@@ -254,12 +253,13 @@ class CheckoutService @Inject constructor(
                 LOG.errorf(e, "Failed to generate invoices for payment %s: %s", payment.id, e.message)
             }
 
-            // Create settlement for the seller — failure should not affect payment status
-            val settlement = try {
+            // Create settlement for the seller — failure should not affect payment status.
+            // SettlementService.createSettlement() writes the SettlementReadyEvent
+            // to the outbox internally, so no separate outbox write is needed here.
+            try {
                 settlementService.createSettlement(payment.id)
             } catch (e: Exception) {
                 LOG.errorf(e, "Failed to create settlement for payment %s: %s", payment.id, e.message)
-                null
             }
 
             // Write CheckoutCompletedEvent to outbox
@@ -267,15 +267,6 @@ class CheckoutService @Inject constructor(
                 writeCheckoutCompletedToOutbox(payment, webhookData.paymentMethod ?: "unknown")
             } catch (e: Exception) {
                 LOG.errorf(e, "Failed to write CheckoutCompletedEvent to outbox for payment %s: %s", payment.id, e.message)
-            }
-
-            // Write SettlementReadyEvent to outbox
-            if (settlement != null) {
-                try {
-                    writeSettlementReadyToOutbox(settlement, payment)
-                } catch (e: Exception) {
-                    LOG.errorf(e, "Failed to write SettlementReadyEvent to outbox for settlement %s: %s", settlement.id, e.message)
-                }
             }
 
             return true
@@ -385,37 +376,6 @@ class CheckoutService @Inject constructor(
         )
 
         LOG.infof("Wrote CheckoutCompletedEvent to outbox for payment %s", payment.id)
-    }
-
-    /**
-     * Writes a SettlementReadyEvent to the outbox table for reliable
-     * publication to NATS via the [PaymentOutboxPoller].
-     */
-    private fun writeSettlementReadyToOutbox(settlement: Settlement, payment: Payment) {
-        val eventPayload = mapOf(
-            "eventId" to UUID.randomUUID().toString(),
-            "eventType" to "payment.settlement.ready",
-            "aggregateId" to settlement.id.toString(),
-            "aggregateType" to "Settlement",
-            "brand" to "platform",
-            "timestamp" to Instant.now().toString(),
-            "version" to 1,
-            "settlementId" to settlement.id.toString(),
-            "sellerId" to settlement.sellerId.toString(),
-            "paymentId" to settlement.paymentId.toString(),
-            "netAmount" to settlement.netAmount,
-            "commission" to settlement.commission,
-            "currency" to payment.currency
-        )
-
-        writeOutboxEntry(
-            aggregateId = settlement.id,
-            eventType = "payment.settlement.ready",
-            natsSubject = "payment.settlement.ready",
-            payload = JsonMapper.toJson(eventPayload)
-        )
-
-        LOG.infof("Wrote SettlementReadyEvent to outbox for settlement %s", settlement.id)
     }
 
     /**

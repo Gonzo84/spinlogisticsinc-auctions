@@ -1,6 +1,7 @@
 import { ref, reactive, readonly } from 'vue'
 import axios from 'axios'
 import { useApi } from './useApi'
+import { useErrorHandler } from './useErrorHandler'
 import type { GdprRequest, GdprFilters, FraudAlert, FraudFilters } from '@/types/compliance'
 import type { PaginationParams } from '@/types/api'
 
@@ -26,6 +27,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 
 export function useCompliance() {
   const { get, patch } = useApi()
+  const { handleApiError, handleGracefulDegradation, is404 } = useErrorHandler()
 
   // GDPR state
   const gdprRequests = ref<GdprRequest[]>([])
@@ -66,10 +68,14 @@ export function useCompliance() {
       const response = await get<{ items: GdprRequest[]; total: number }>('/compliance/gdpr/requests', { params })
       gdprRequests.value = response.items ?? []
       gdprTotalCount.value = response.total ?? 0
-    } catch {
+    } catch (err: unknown) {
       gdprRequests.value = []
       gdprTotalCount.value = 0
-      error.value = null
+      if (is404(err)) {
+        handleGracefulDegradation('fetchGdprRequests')
+      } else {
+        error.value = handleApiError(err, 'Failed to load GDPR requests')
+      }
     } finally {
       loading.value = false
     }
@@ -119,10 +125,14 @@ export function useCompliance() {
       const response = await get<{ items: FraudAlert[]; total: number }>('/compliance/fraud/alerts', { params })
       fraudAlerts.value = response.items ?? []
       fraudTotalCount.value = response.total ?? 0
-    } catch {
+    } catch (err: unknown) {
       fraudAlerts.value = []
       fraudTotalCount.value = 0
-      error.value = null
+      if (is404(err)) {
+        handleGracefulDegradation('fetchFraudAlerts')
+      } else {
+        error.value = handleApiError(err, 'Failed to load fraud alerts')
+      }
     } finally {
       loading.value = false
     }

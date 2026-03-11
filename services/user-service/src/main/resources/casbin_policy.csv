@@ -46,6 +46,7 @@ p, admin_ops, /api/v1/users/me/purchases, GET, allow
 p, admin_ops, /api/v1/users/me/bids, GET, allow
 p, admin_ops, /api/v1/users/me/watchlist, GET, allow
 p, admin_ops, /api/v1/users/me/watchlist/:id, POST|DELETE, allow
+p, admin_ops, /api/v1/users, GET, allow
 p, admin_ops, /api/v1/users/:id, GET, allow
 p, admin_ops, /api/v1/users/by-keycloak-id/:id, GET, allow
 p, admin_ops, /api/v1/users/:id/status, PUT, allow

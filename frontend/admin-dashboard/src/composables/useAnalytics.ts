@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue'
 import { useApi } from './useApi'
+import { useErrorHandler } from './useErrorHandler'
 import type {
   PlatformOverview,
   MonthlyRevenue,
@@ -18,6 +19,7 @@ export type {
 
 export function useAnalytics() {
   const { get } = useApi()
+  const { handleApiError, handleGracefulDegradation, is404 } = useErrorHandler()
 
   const overview = ref<PlatformOverview | null>(null)
   const monthlyRevenue = ref<MonthlyRevenue[]>([])
@@ -35,8 +37,13 @@ export function useAnalytics() {
       overview.value = (raw as Record<string, unknown>)?.data
         ? (raw as { data: PlatformOverview }).data
         : raw as PlatformOverview
-    } catch {
+    } catch (err: unknown) {
       overview.value = null
+      if (is404(err)) {
+        handleGracefulDegradation('fetchOverview')
+      } else {
+        error.value = handleApiError(err, 'Failed to load platform overview')
+      }
     } finally {
       loading.value = false
     }
@@ -49,8 +56,13 @@ export function useAnalytics() {
       })
       const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: MonthlyRevenue[] }).data : [])
       monthlyRevenue.value = result
-    } catch {
+    } catch (err: unknown) {
       monthlyRevenue.value = []
+      if (is404(err)) {
+        handleGracefulDegradation('fetchMonthlyRevenue')
+      } else {
+        handleApiError(err, 'Failed to load monthly revenue')
+      }
     }
   }
 
@@ -61,8 +73,13 @@ export function useAnalytics() {
       })
       const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: RegistrationTrend[] }).data : [])
       registrationTrends.value = result
-    } catch {
+    } catch (err: unknown) {
       registrationTrends.value = []
+      if (is404(err)) {
+        handleGracefulDegradation('fetchRegistrationTrends')
+      } else {
+        handleApiError(err, 'Failed to load registration trends')
+      }
     }
   }
 
@@ -71,8 +88,13 @@ export function useAnalytics() {
       const raw = await get<CategoryPopularity[] | { data: CategoryPopularity[] }>('/analytics/categories')
       const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: CategoryPopularity[] }).data : [])
       categoryPopularity.value = result
-    } catch {
+    } catch (err: unknown) {
       categoryPopularity.value = []
+      if (is404(err)) {
+        handleGracefulDegradation('fetchCategoryPopularity')
+      } else {
+        handleApiError(err, 'Failed to load category popularity')
+      }
     }
   }
 
@@ -83,8 +105,13 @@ export function useAnalytics() {
       })
       const result = Array.isArray(raw) ? raw : (Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as { data: DailyBidVolume[] }).data : [])
       dailyBidVolume.value = result
-    } catch {
+    } catch (err: unknown) {
       dailyBidVolume.value = []
+      if (is404(err)) {
+        handleGracefulDegradation('fetchDailyBidVolume')
+      } else {
+        handleApiError(err, 'Failed to load daily bid volume')
+      }
     }
   }
 

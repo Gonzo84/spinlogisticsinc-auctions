@@ -23,6 +23,7 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.jboss.logging.Logger
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -308,6 +309,78 @@ class LotService {
         publishLotEvent("status.changed", assignedLot)
 
         return assignedLot
+    }
+
+    /**
+     * Marks a lot as sold after it has been awarded in an auction.
+     *
+     * Transitions the lot from ACTIVE to SOLD. This is called by the
+     * NATS consumer when an `auction.lot.awarded` event is received.
+     *
+     * @param lotId       The lot identifier.
+     * @param winnerId    The winning bidder's user ID (optional, for logging).
+     * @param hammerPrice The final hammer price (optional, for logging).
+     * @return The updated [Lot] domain model.
+     * @throws ConflictException if the lot is not in ACTIVE status.
+     */
+    @Transactional
+    fun markAsSold(lotId: UUID, winnerId: UUID? = null, hammerPrice: BigDecimal? = null): Lot {
+        val entity = findLotEntityOrThrow(lotId)
+
+        if (entity.status != LotStatus.ACTIVE) {
+            throw ConflictException(
+                code = "INVALID_LOT_STATUS",
+                message = "Lot '$lotId' must be ACTIVE to mark as sold (current: ${entity.status})."
+            )
+        }
+
+        entity.status = LotStatus.SOLD
+        entity.updatedAt = Instant.now()
+        lotRepository.persist(entity)
+
+        LOG.infof("Lot marked as sold: id=%s, winnerId=%s, hammerPrice=%s", lotId, winnerId, hammerPrice)
+
+        val soldLot = entity.toDomain()
+        publishLotEvent("status.changed", soldLot)
+
+        return soldLot
+    }
+
+    /**
+     * Relists a lot that was previously sold or active, making it available
+     * for a new auction.
+     *
+     * Transitions the lot from ACTIVE or SOLD back to APPROVED and detaches
+     * it from the previous auction. This is typically triggered by a
+     * non-payment scenario.
+     *
+     * @param lotId  The lot identifier.
+     * @param reason The reason for relisting (e.g. "NON_PAYMENT").
+     * @return The updated [Lot] domain model.
+     * @throws ConflictException if the lot is not in ACTIVE or SOLD status.
+     */
+    @Transactional
+    fun relistLot(lotId: UUID, reason: String = "NON_PAYMENT"): Lot {
+        val entity = findLotEntityOrThrow(lotId)
+
+        if (entity.status != LotStatus.ACTIVE && entity.status != LotStatus.SOLD) {
+            throw ConflictException(
+                code = "INVALID_LOT_STATUS",
+                message = "Lot '$lotId' cannot be relisted (current: ${entity.status}). Must be ACTIVE or SOLD."
+            )
+        }
+
+        entity.status = LotStatus.APPROVED
+        entity.auctionId = null
+        entity.updatedAt = Instant.now()
+        lotRepository.persist(entity)
+
+        LOG.infof("Lot relisted: id=%s, reason=%s (back to APPROVED)", lotId, reason)
+
+        val relistedLot = entity.toDomain()
+        publishLotEvent("status.changed", relistedLot)
+
+        return relistedLot
     }
 
     /**

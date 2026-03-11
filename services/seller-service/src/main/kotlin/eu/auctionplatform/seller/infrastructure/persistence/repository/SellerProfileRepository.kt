@@ -171,8 +171,14 @@ class SellerProfileRepository @Inject constructor(
         private const val INSERT_SETTLEMENT = """
             INSERT INTO app.seller_settlements
                 (id, seller_id, lot_id, lot_title, hammer_price, commission,
-                 net_amount, currency, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                 net_amount, currency, status, payment_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        """
+
+        private const val UPDATE_SETTLEMENT_STATUS_BY_PAYMENT_ID = """
+            UPDATE app.seller_settlements
+               SET status = ?, settled_at = ?, updated_at = NOW()
+             WHERE payment_id = ?
         """
 
         // -----------------------------------------------------------------------
@@ -612,7 +618,8 @@ class SellerProfileRepository @Inject constructor(
         commission: BigDecimal,
         netAmount: BigDecimal,
         currency: String,
-        status: String
+        status: String,
+        paymentId: UUID? = null
     ) {
         dataSource.connection.use { conn ->
             conn.prepareStatement(INSERT_SETTLEMENT).use { stmt ->
@@ -625,11 +632,35 @@ class SellerProfileRepository @Inject constructor(
                 stmt.setBigDecimal(7, netAmount)
                 stmt.setString(8, currency)
                 stmt.setString(9, status)
+                stmt.setObject(10, paymentId)
                 stmt.executeUpdate()
             }
         }
-        LOG.debugf("Inserted settlement record for seller %s (lot=%s, net=%s %s)",
-            sellerId, lotId, netAmount, currency)
+        LOG.debugf("Inserted settlement record for seller %s (lot=%s, net=%s %s, paymentId=%s)",
+            sellerId, lotId, netAmount, currency, paymentId)
+    }
+
+    /**
+     * Updates the settlement status and settled_at timestamp for a settlement
+     * identified by its originating payment ID.
+     *
+     * Used by the PaymentEventSellerConsumer when processing
+     * `payment.settlement.settled` events.
+     *
+     * @param paymentId The originating payment UUID.
+     * @param status The new settlement status (e.g. "PAID").
+     * @param settledAt When the settlement was completed (null to leave unchanged).
+     * @return true if a row was updated, false if no settlement was found for the paymentId.
+     */
+    fun updateSettlementStatusByPaymentId(paymentId: UUID, status: String, settledAt: Instant?): Boolean {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(UPDATE_SETTLEMENT_STATUS_BY_PAYMENT_ID).use { stmt ->
+                stmt.setString(1, status)
+                stmt.setTimestamp(2, settledAt?.let { Timestamp.from(it) })
+                stmt.setObject(3, paymentId)
+                return stmt.executeUpdate() > 0
+            }
+        }
     }
 
     // -----------------------------------------------------------------------

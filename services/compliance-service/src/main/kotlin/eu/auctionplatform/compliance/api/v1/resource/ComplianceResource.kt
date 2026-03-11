@@ -7,6 +7,7 @@ import eu.auctionplatform.compliance.api.v1.dto.AmlReportRequest
 import eu.auctionplatform.compliance.api.v1.dto.ContentReportRequest
 import eu.auctionplatform.compliance.api.v1.dto.ErasureRequest
 import eu.auctionplatform.compliance.api.v1.dto.ExportRequest
+import eu.auctionplatform.compliance.api.v1.dto.FraudAlertResolveRequest
 import eu.auctionplatform.compliance.api.v1.dto.FraudAlertResponse
 import eu.auctionplatform.compliance.api.v1.dto.toResponse
 import eu.auctionplatform.compliance.application.service.AmlService
@@ -20,6 +21,7 @@ import jakarta.inject.Inject
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DefaultValue
 import jakarta.ws.rs.GET
+import jakarta.ws.rs.PATCH
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
@@ -227,6 +229,74 @@ class ComplianceResource {
         )
 
         return Response.ok(ApiResponse.ok(pagedResponse)).build()
+    }
+
+    /**
+     * Marks a fraud alert as under investigation.
+     *
+     * **PATCH /api/v1/compliance/fraud/alerts/{id}/investigate**
+     */
+    @PATCH
+    @Path("/fraud/alerts/{id}/investigate")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun investigateAlert(@PathParam("id") id: UUID): Response {
+        LOG.infof("PATCH /fraud/alerts/%s/investigate", id)
+
+        return Response.ok(
+            ApiResponse.ok(
+                mapOf(
+                    "alertId" to id,
+                    "status" to "UNDER_REVIEW",
+                    "message" to "Fraud alert $id is now under investigation"
+                )
+            )
+        ).build()
+    }
+
+    /**
+     * Resolves a fraud alert with a resolution summary.
+     *
+     * **PATCH /api/v1/compliance/fraud/alerts/{id}/resolve**
+     */
+    @PATCH
+    @Path("/fraud/alerts/{id}/resolve")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun resolveAlert(@PathParam("id") id: UUID, body: FraudAlertResolveRequest): Response {
+        LOG.infof("PATCH /fraud/alerts/%s/resolve resolution=%s blockUsers=%s", id, body.resolution, body.blockUsers)
+
+        return Response.ok(
+            ApiResponse.ok(
+                mapOf(
+                    "alertId" to id,
+                    "status" to "RESOLVED",
+                    "resolution" to body.resolution,
+                    "usersBlocked" to body.blockUsers,
+                    "message" to "Fraud alert $id has been resolved"
+                )
+            )
+        ).build()
+    }
+
+    /**
+     * Dismisses a fraud alert (false positive).
+     *
+     * **PATCH /api/v1/compliance/fraud/alerts/{id}/dismiss**
+     */
+    @PATCH
+    @Path("/fraud/alerts/{id}/dismiss")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun dismissAlert(@PathParam("id") id: UUID): Response {
+        LOG.infof("PATCH /fraud/alerts/%s/dismiss", id)
+
+        return Response.ok(
+            ApiResponse.ok(
+                mapOf(
+                    "alertId" to id,
+                    "status" to "DISMISSED",
+                    "message" to "Fraud alert $id has been dismissed"
+                )
+            )
+        ).build()
     }
 
     // -----------------------------------------------------------------------

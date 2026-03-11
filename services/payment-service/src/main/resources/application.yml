@@ -45,12 +45,25 @@ quarkus:
       principal-claim: sub
 
   # ---------------------------------------------------------------------------
+  # OIDC Client – service-to-service authentication (client credentials)
+  # ---------------------------------------------------------------------------
+  oidc-client:
+    internal:
+      auth-server-url: ${OIDC_AUTH_URL:http://localhost:8180/realms/auction-platform}
+      client-id: payment-service-internal
+      credentials:
+        secret: ${PAYMENT_SERVICE_CLIENT_SECRET:payment-service-internal-secret}
+      grant:
+        type: client
+      token-path: /protocol/openid-connect/token
+
+  # ---------------------------------------------------------------------------
   # HTTP
   # ---------------------------------------------------------------------------
   http:
     port: 8084
     cors:
-      origins: http://localhost:3000,http://localhost:3001,http://localhost:3002
+      origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002}
       methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
       headers: accept,authorization,content-type,x-requested-with
       exposed-headers: location

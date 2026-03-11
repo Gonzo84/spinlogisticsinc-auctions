@@ -17,8 +17,14 @@ p, broker, /api/v1/auctions/:id, GET, allow
 p, admin_ops, /api/v1/auctions, GET|POST, allow
 p, admin_ops, /api/v1/auctions/:id, .*, allow
 p, admin_ops, /api/v1/auctions/:id/award, POST, allow
+p, buyer_active, /api/v1/auctions/by-lot/:lotId, GET, allow
+p, seller_verified, /api/v1/auctions/by-lot/:lotId, GET, allow
+p, broker, /api/v1/auctions/by-lot/:lotId, GET, allow
+p, service_account, /api/v1/internal/auctions/:id, GET, allow
+p, service_account, /api/v1/internal/auctions/by-lot/:id, GET, allow
 p, admin_super, /api/v1/:r, .*, allow
 p, admin_super, /api/v1/:r/:id, .*, allow
 p, admin_super, /api/v1/:r/:id/:sub, .*, allow
 p, admin_super, /api/v1/:r/:id/:sub/:action, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub/:action/:extra, .*, allow
 g, admin_super, admin_ops

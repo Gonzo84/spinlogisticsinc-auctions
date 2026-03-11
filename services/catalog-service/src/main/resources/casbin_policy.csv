@@ -30,8 +30,10 @@ p, admin_ops, /api/v1/lots, GET, allow
 p, admin_ops, /api/v1/lots/:id, GET, allow
 p, admin_ops, /api/v1/categories, GET, allow
 p, admin_ops, /api/v1/categories/:id, GET, allow
+p, service_account, /api/v1/internal/lots/:id, GET, allow
 p, admin_super, /api/v1/:r, .*, allow
 p, admin_super, /api/v1/:r/:id, .*, allow
 p, admin_super, /api/v1/:r/:id/:sub, .*, allow
 p, admin_super, /api/v1/:r/:id/:sub/:action, .*, allow
+p, admin_super, /api/v1/:r/:id/:sub/:action/:extra, .*, allow
 g, admin_super, admin_ops

@@ -1,0 +1,84 @@
+@layer tailwind-base, primevue, tailwind-utilities;
+
+@layer tailwind-base {
+  @tailwind base;
+}
+
+@layer tailwind-utilities {
+  @tailwind components;
+  @tailwind utilities;
+}
+
+@layer tailwind-base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-gray-50 font-sans text-gray-900;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Raleway', 'Open Sans', system-ui, sans-serif;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-500;
+  }
+}
+
+@layer tailwind-utilities {
+  .card {
+    @apply rounded-xl border border-gray-200 bg-white p-6 shadow-sm;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-gray-700;
+  }
+
+  .kpi-card {
+    @apply card flex flex-col gap-2;
+  }
+
+  .kpi-value {
+    @apply text-3xl font-bold text-gray-900;
+  }
+
+  .kpi-label {
+    @apply text-sm font-medium text-gray-500;
+  }
+
+  .kpi-change-up {
+    @apply text-xs font-medium text-green-600;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5
+           text-sm font-medium text-gray-600
+           transition-colors duration-200
+           hover:bg-gray-100 hover:text-gray-900;
+  }
+
+  .sidebar-link-active {
+    @apply bg-primary-50 text-primary-700 hover:bg-primary-100 hover:text-primary-800;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 9999px;
+  }
+}

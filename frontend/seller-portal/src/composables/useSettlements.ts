@@ -1,5 +1,6 @@
 import { ref, computed, readonly } from 'vue'
 import { useApi } from './useApi'
+import { useErrorHandler } from './useErrorHandler'
 import type {
   Settlement,
   SettlementStatus,
@@ -12,6 +13,7 @@ export type { Settlement, SettlementStatus, SettlementFilter, SettlementTotals }
 
 export function useSettlements() {
   const { get, loading, error } = useApi()
+  const { handleApiError, handleGracefulDegradation, is404 } = useErrorHandler()
 
   const settlements = ref<Settlement[]>([])
   const pagination = ref({ total: 0, page: 1, pageSize: 20, totalPages: 0 })
@@ -62,10 +64,13 @@ export function useSettlements() {
         pageSize: items.length || 20,
         totalPages: 1,
       }
-    } catch {
-      // Seller-service may not have settlements yet -- show empty state
+    } catch (err: unknown) {
       settlements.value = []
-      error.value = null
+      if (is404(err)) {
+        handleGracefulDegradation('fetchSettlements')
+      } else {
+        error.value = handleApiError(err, 'Failed to load settlements')
+      }
     }
   }
 
@@ -99,9 +104,12 @@ export function useSettlements() {
       if (data.url) {
         window.open(data.url, '_blank')
       }
-    } catch {
-      // Invoice download not available
-      error.value = null
+    } catch (err: unknown) {
+      if (is404(err)) {
+        handleGracefulDegradation('downloadInvoice')
+      } else {
+        error.value = handleApiError(err, 'Failed to download invoice')
+      }
     }
   }
 
@@ -125,8 +133,12 @@ export function useSettlements() {
         amount: item.totalNet ?? 0,
         count: item.settlementCount ?? 0,
       }))
-    } catch {
-      error.value = null
+    } catch (err: unknown) {
+      if (is404(err)) {
+        handleGracefulDegradation('fetchMonthlySettlements')
+      } else {
+        handleApiError(err, 'Failed to load monthly settlements')
+      }
       return []
     }
   }

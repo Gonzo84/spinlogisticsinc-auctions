@@ -1,6 +1,7 @@
 import { ref, reactive, readonly } from 'vue'
 import axios from 'axios'
 import { useApi } from './useApi'
+import { useErrorHandler } from './useErrorHandler'
 import type { User, UserDetail, UserFilters } from '@/types/user'
 import type { ApiResponse, PagedResponse, PaginationParams } from '@/types/api'
 
@@ -16,6 +17,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 
 export function useUsers() {
   const { get, put, post } = useApi()
+  const { handleGracefulDegradation, is404: isNotFound } = useErrorHandler()
 
   const users = ref<User[]>([])
   const currentUser = ref<UserDetail | null>(null)
@@ -50,11 +52,15 @@ export function useUsers() {
       const response = raw?.data && typeof raw.data === 'object' ? raw.data : (raw as unknown as PagedResponse<User>)
       users.value = response.items ?? []
       totalCount.value = response.total ?? 0
-    } catch {
-      // User-service may not support list endpoint yet -- show empty list
+    } catch (err: unknown) {
       users.value = []
       totalCount.value = 0
-      error.value = null
+      if (isNotFound(err)) {
+        // User-service may not support list endpoint yet -- show empty list
+        handleGracefulDegradation('fetchUsers')
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to load users')
+      }
     } finally {
       loading.value = false
     }

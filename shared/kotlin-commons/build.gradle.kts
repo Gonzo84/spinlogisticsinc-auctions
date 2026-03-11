@@ -30,6 +30,12 @@ dependencies {
     // JBoss Logging (standard Quarkus logging)
     compileOnly("org.jboss.logging:jboss-logging:3.6.1.Final")
 
+    // SLF4J for MDC (structured logging context in consumers)
+    compileOnly("org.slf4j:slf4j-api:2.0.16")
+
+    // Micrometer for optional metrics (provided by quarkus-micrometer at runtime)
+    compileOnly("io.micrometer:micrometer-core:1.14.4")
+
     // Test
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")

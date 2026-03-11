@@ -109,6 +109,13 @@
         "description": "Super administrator with full access",
         "composite": false,
         "clientRole": false
+      },
+      {
+        "id": "role-service-account",
+        "name": "service_account",
+        "description": "Service-to-service authentication role for internal API calls",
+        "composite": false,
+        "clientRole": false
       }
     ]
   },
@@ -1066,6 +1073,70 @@
         "offline_access",
         "microprofile-jwt"
       ]
+    },
+    {
+      "id": "client-payment-service-internal",
+      "clientId": "payment-service-internal",
+      "name": "Payment Service Internal",
+      "description": "Service account for payment-service inter-service communication",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "payment-service-internal-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "client.secret.creation.time": "1700000000",
+        "use.refresh.tokens": "true"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "mapper-payment-internal-realm-roles",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
     }
   ],
   "users": [
@@ -1231,6 +1302,20 @@
       "groups": [
         "/Buyers/Business"
       ]
+    },
+    {
+      "id": "service-account-payment-service-internal",
+      "username": "service-account-payment-service-internal",
+      "enabled": true,
+      "emailVerified": false,
+      "serviceAccountClientId": "payment-service-internal",
+      "createdTimestamp": 1700000000000,
+      "credentials": [],
+      "realmRoles": [
+        "service_account",
+        "default-roles-auction-platform"
+      ],
+      "groups": []
     }
   ],
   "scopeMappings": [],

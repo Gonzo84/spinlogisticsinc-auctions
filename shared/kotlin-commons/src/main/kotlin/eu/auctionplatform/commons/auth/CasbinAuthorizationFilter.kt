@@ -82,14 +82,22 @@ class CasbinAuthorizationFilter : ContainerRequestFilter {
     }
 
     override fun filter(requestContext: ContainerRequestContext) {
-        // Casbin fine-grained path authorization is disabled.
-        // Role-based access control is enforced via @RolesAllowed annotations
-        // on each JAX-RS resource method, which check Keycloak realm roles
-        // extracted from the JWT (realm_access/roles claim).
-        //
-        // The Casbin policies use keyMatch2 patterns that are incompatible
-        // with the '**' glob syntax in the current policy CSV files.
-        // Re-enable after migrating policies to keyMatch2-compatible patterns.
+        val path = requestContext.uriInfo.requestUri.rawPath
+        val method = requestContext.method
+
+        // Skip non-API paths (health/readiness probes), webhook endpoints, and CORS preflight
+        if (path.startsWith("/q/") || path.startsWith("/api/v1/webhooks") || method == "OPTIONS") return
+
+        val e = enforcer ?: return  // fail-open if enforcer not initialized
+
+        val roles = extractRoles(requestContext)
+        if (roles.isEmpty()) return  // anonymous or no roles — let @PermitAll/@RolesAllowed handle
+
+        val allowed = roles.any { role -> e.enforce(role, path, method) }
+        if (!allowed) {
+            LOG.debugf("Casbin denied: roles=%s path=%s method=%s", roles, path, method)
+            abortForbidden(requestContext, path, method)
+        }
     }
 
     /**
@@ -129,8 +137,9 @@ class CasbinAuthorizationFilter : ContainerRequestFilter {
         val knownRoles = listOf(
             "buyer_active", "buyer_pending_kyc", "buyer_blocked",
             "seller_verified", "seller_pending",
-            "broker",
-            "admin_ops", "admin_super"
+            "broker", "broker_active",
+            "admin_ops", "admin_super",
+            "service_account"
         )
 
         return knownRoles.filter { sc.isUserInRole(it) }.toSet()

@@ -1,6 +1,7 @@
 import { ref, computed, readonly } from 'vue'
 import { useApi } from './useApi'
 import { useAuth } from './useAuth'
+import { useErrorHandler } from './useErrorHandler'
 import type {
   Lot,
   LotBid,
@@ -19,6 +20,7 @@ export type { Lot, LotBid, LotFormData, LotStatus, LotsFilter, Category, LotImag
 export function useLots() {
   const { get, post, put, del, loading, error } = useApi()
   const { sellerId } = useAuth()
+  const { handleApiError, handleGracefulDegradation, is404 } = useErrorHandler()
 
   const lots = ref<Lot[]>([])
   const currentLot = ref<Lot | null>(null)
@@ -163,8 +165,12 @@ export function useLots() {
         const data = unwrapApiResponse<Category[] | { items?: Category[] }>(raw)
         categories.value = Array.isArray(data) ? data : (data?.items ?? [])
         return categories.value
-      } catch {
-        error.value = null
+      } catch (innerErr: unknown) {
+        if (is404(innerErr)) {
+          handleGracefulDegradation('fetchCategories')
+        } else {
+          handleApiError(innerErr, 'Failed to load categories')
+        }
         return []
       }
     }
@@ -257,8 +263,12 @@ export function useLots() {
         }
         statusCounts.value = counts
         return counts
-      } catch {
-        error.value = null
+      } catch (innerErr: unknown) {
+        if (is404(innerErr)) {
+          handleGracefulDegradation('fetchStatusCounts')
+        } else {
+          handleApiError(innerErr, 'Failed to load lot status counts')
+        }
         return statusCounts.value
       }
     }

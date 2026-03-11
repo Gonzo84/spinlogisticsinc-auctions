@@ -1,6 +1,8 @@
 package eu.auctionplatform.commons.outbox
 
 import io.agroal.api.AgroalDataSource
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import org.jboss.logging.Logger
 import java.sql.Connection
 import java.sql.ResultSet
@@ -19,9 +21,13 @@ import java.time.Instant
  * 3. Implement [mapRow] to convert a JDBC [ResultSet] row into an [OutboxEntry].
  * 4. Implement [publishEntry] to send the entry payload to NATS.
  * 5. Add `@Scheduled(every = "\${outbox.poll-interval:5s}")` on their override of [poll].
+ *
+ * @param meterRegistry Optional Micrometer registry for publishing custom metrics.
+ *                      When null, no metrics are recorded. Injected by Quarkus CDI at runtime.
  */
 abstract class OutboxPoller(
-    private val dataSource: AgroalDataSource
+    private val dataSource: AgroalDataSource,
+    private val meterRegistry: MeterRegistry? = null
 ) {
     companion object {
         private val LOG: Logger = Logger.getLogger(OutboxPoller::class.java)
@@ -46,6 +52,7 @@ abstract class OutboxPoller(
      * Example: `@Scheduled(every = "\${outbox.poll-interval:5s}")`
      */
     open fun poll() {
+        val timerSample = meterRegistry?.let { Timer.start(it) }
         try {
             dataSource.connection.use { conn ->
                 conn.prepareStatement(
@@ -66,8 +73,16 @@ abstract class OutboxPoller(
                                 publishEntry(entry)
                                 markPublished(conn, entry.id)
                                 count++
+                                meterRegistry?.counter(
+                                    "outbox.publish.total",
+                                    "table", tableName
+                                )?.increment()
                             } catch (e: Exception) {
                                 LOG.errorf("Failed to publish outbox entry %s: %s", entry.id, e.message)
+                                meterRegistry?.counter(
+                                    "outbox.publish.failures",
+                                    "table", tableName
+                                )?.increment()
                             }
                         }
                         if (count > 0) {
@@ -78,6 +93,14 @@ abstract class OutboxPoller(
             }
         } catch (e: Exception) {
             LOG.errorf("Outbox poll failed for %s: %s", tableName, e.message)
+        } finally {
+            if (timerSample != null && meterRegistry != null) {
+                timerSample.stop(
+                    Timer.builder("outbox.poll.duration")
+                        .tag("table", tableName)
+                        .register(meterRegistry)
+                )
+            }
         }
     }
 

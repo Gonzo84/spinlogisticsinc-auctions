@@ -35,7 +35,7 @@ class CorsFilter : ContainerResponseFilter {
         private val LOG: Logger = Logger.getLogger(CorsFilter::class.java)
     }
 
-    @ConfigProperty(name = "cors.allowed-origins", defaultValue = "*")
+    @ConfigProperty(name = "cors.allowed-origins", defaultValue = "http://localhost:3000,http://localhost:3001,http://localhost:3002")
     lateinit var allowedOrigins: String
 
     @ConfigProperty(name = "cors.allowed-methods", defaultValue = "GET,POST,PUT,DELETE,PATCH,OPTIONS")

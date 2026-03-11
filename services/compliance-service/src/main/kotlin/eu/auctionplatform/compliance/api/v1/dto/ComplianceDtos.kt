@@ -55,6 +55,14 @@ data class ContentReportRequest(
     val reason: String
 )
 
+/**
+ * Request payload for resolving a fraud alert.
+ */
+data class FraudAlertResolveRequest(
+    val resolution: String,
+    val blockUsers: Boolean = false
+)
+
 // =============================================================================
 // Response DTOs
 // =============================================================================

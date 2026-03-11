@@ -1,5 +1,6 @@
 package eu.auctionplatform.payment.api.v1.resource
 
+import eu.auctionplatform.commons.dto.ApiResponse
 import eu.auctionplatform.payment.api.v1.dto.CheckoutItemRequest
 import eu.auctionplatform.payment.api.v1.dto.CheckoutRequest
 import eu.auctionplatform.payment.api.v1.dto.CheckoutResponse
@@ -124,7 +125,7 @@ class PaymentResource @Inject constructor(
             dueDate = payments.firstOrNull()?.dueDate ?: Instant.now()
         )
 
-        return Response.status(Response.Status.CREATED).entity(checkoutResponse).build()
+        return Response.status(Response.Status.CREATED).entity(ApiResponse.ok(checkoutResponse)).build()
     }
 
     /**
@@ -179,6 +180,25 @@ class PaymentResource @Inject constructor(
         }
 
         return Response.ok(toPaymentStatusResponse(updatedPayment)).build()
+    }
+
+    /**
+     * Retrieves a single payment by its UUID.
+     *
+     * @param id The payment UUID.
+     * @return 200 OK with [PaymentStatusResponse], or 404 if not found.
+     */
+    @GET
+    @Path("/{id}")
+    @RolesAllowed("buyer_active", "seller_verified", "admin_ops", "admin_super")
+    fun getPaymentById(@PathParam("id") id: String): Response {
+        val paymentId = UUID.fromString(id)
+        val payment = paymentRepository.findById(paymentId)
+            ?: return Response.status(Response.Status.NOT_FOUND)
+                .entity(mapOf("error" to "Payment not found", "code" to "PAYMENT_NOT_FOUND"))
+                .build()
+
+        return Response.ok(ApiResponse.ok(toPaymentStatusResponse(payment))).build()
     }
 
     // -----------------------------------------------------------------------

@@ -5,6 +5,7 @@
     "shared/design-tokens",
     "buyer-web",
     "seller-portal",
-    "admin-dashboard"
+    "admin-dashboard",
+    "broker-portal"
   ]
 }

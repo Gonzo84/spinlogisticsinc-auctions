@@ -50,7 +50,7 @@ quarkus:
   http:
     port: 8087
     cors:
-      origins: http://localhost:3000,http://localhost:3001,http://localhost:3002
+      origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002}
       methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
       headers: accept,authorization,content-type,x-requested-with
       exposed-headers: location

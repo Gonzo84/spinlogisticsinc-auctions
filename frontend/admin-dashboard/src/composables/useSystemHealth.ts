@@ -117,21 +117,24 @@ export function useSystemHealth() {
       const raw = await get<BackendHealthResponse>('/health')
       health.value = transformHealthResponse(raw)
     } catch (err: unknown) {
-      error.value = extractErrorMessage(err, 'Failed to fetch system health data')
+      // Health endpoint may not be available — degrade gracefully instead of
+      // showing an error banner that blocks the entire dashboard.
+      if (axios.isAxiosError(err) && (err.response?.status === 404 || !err.response)) {
+        console.debug('[useSystemHealth] Health endpoint not available, showing empty state')
+        health.value = null
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to fetch system health data')
+      }
     } finally {
       loading.value = false
     }
   }
 
-  async function restartService(serviceName: string): Promise<boolean> {
-    try {
-      const { post } = useApi()
-      await post(`/health/services/${serviceName}/restart`)
-      return true
-    } catch (err: unknown) {
-      error.value = extractErrorMessage(err, `Failed to restart ${serviceName}`)
-      return false
-    }
+  // TODO: Service restart endpoint does not exist yet — return false immediately.
+  async function restartService(_serviceName: string): Promise<boolean> {
+    // TODO: Implement when POST /health/services/:name/restart is available
+    console.debug(`[useSystemHealth] restartService(${_serviceName}) — endpoint not yet implemented`)
+    return false
   }
 
   function getStatusColor(status: ServiceStatus): string {

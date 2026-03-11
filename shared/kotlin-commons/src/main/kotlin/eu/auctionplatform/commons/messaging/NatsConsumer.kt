@@ -1,5 +1,6 @@
 package eu.auctionplatform.commons.messaging
 
+import io.micrometer.core.instrument.MeterRegistry
 import io.nats.client.Connection
 import io.nats.client.JetStreamSubscription
 import io.nats.client.Message
@@ -8,6 +9,7 @@ import io.nats.client.api.ConsumerConfiguration
 import io.nats.client.impl.Headers
 import io.nats.client.impl.NatsMessage
 import org.jboss.logging.Logger
+import org.slf4j.MDC
 import java.time.Duration
 
 /**
@@ -29,6 +31,8 @@ import java.time.Duration
  *                             Null disables dead-letter routing.
  * @property batchSize         Number of messages to pull per iteration.
  * @property pollTimeout       How long to wait for messages in each pull.
+ * @property meterRegistry     Optional Micrometer registry for publishing custom metrics.
+ *                             When null, no metrics are recorded. Injected by Quarkus CDI at runtime.
  */
 abstract class NatsConsumer(
     protected val connection: Connection,
@@ -38,7 +42,8 @@ abstract class NatsConsumer(
     protected val maxRedeliveries: Int = 5,
     protected val deadLetterSubject: String? = null,
     protected val batchSize: Int = 10,
-    protected val pollTimeout: Duration = Duration.ofSeconds(5)
+    protected val pollTimeout: Duration = Duration.ofSeconds(5),
+    protected val meterRegistry: MeterRegistry? = null
 ) {
 
     companion object {
@@ -80,6 +85,13 @@ abstract class NatsConsumer(
             .durable(durableName)
             .filterSubject(filterSubject)
             .maxDeliver(maxRedeliveries.toLong())
+            .backoff(
+                Duration.ofSeconds(5),
+                Duration.ofSeconds(15),
+                Duration.ofSeconds(60),
+                Duration.ofSeconds(300),
+                Duration.ofSeconds(900)
+            )
             .build()
 
         val pullOptions = PullSubscribeOptions.builder()
@@ -172,17 +184,46 @@ abstract class NatsConsumer(
     // ---------------------------------------------------------------------------
 
     private fun processMessage(message: Message) {
+        val metadata = message.metaData()
+        val deliveryCount = metadata?.deliveredCount() ?: 0
+        val eventType = message.subject
+        val aggregateId = message.headers?.getFirst("aggregate-id") ?: "unknown"
+
+        // Set MDC context for structured JSON logging
+        MDC.put("eventType", eventType)
+        MDC.put("aggregateId", aggregateId)
+        MDC.put("consumer", durableName)
+        MDC.put("deliveryCount", deliveryCount.toString())
+
         try {
             handleMessage(message)
             message.ack()
+            meterRegistry?.counter(
+                "nats.consumer.processed",
+                "consumer", durableName,
+                "stream", streamName
+            )?.increment()
+
+            if (deliveryCount > 1) {
+                meterRegistry?.counter(
+                    "nats.consumer.redeliveries",
+                    "consumer", durableName,
+                    "stream", streamName
+                )?.increment()
+            }
         } catch (ex: Exception) {
-            val metadata = message.metaData()
-            val deliveryCount = metadata?.deliveredCount() ?: 0
+            MDC.put("errorClass", ex.javaClass.simpleName)
 
             LOG.errorf(
                 ex, "Error processing message on subject %s (delivery #%s): %s",
                 message.subject, deliveryCount, ex.message
             )
+
+            meterRegistry?.counter(
+                "nats.consumer.failures",
+                "consumer", durableName,
+                "stream", streamName
+            )?.increment()
 
             if (deliveryCount >= maxRedeliveries) {
                 sendToDeadLetterQueue(message, ex)
@@ -190,6 +231,12 @@ abstract class NatsConsumer(
             } else {
                 message.nak()
             }
+        } finally {
+            MDC.remove("eventType")
+            MDC.remove("aggregateId")
+            MDC.remove("consumer")
+            MDC.remove("deliveryCount")
+            MDC.remove("errorClass")
         }
     }
 
@@ -216,6 +263,13 @@ abstract class NatsConsumer(
                 .build()
 
             connection.publish(dlqMessage)
+
+            meterRegistry?.counter(
+                "nats.consumer.dlq",
+                "consumer", durableName,
+                "stream", streamName
+            )?.increment()
+
             LOG.warnf(
                 "Message forwarded to dead-letter subject %s (original=%s)",
                 dlqSubject, message.subject

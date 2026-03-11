@@ -1,9 +1,11 @@
 import { ref, computed, readonly } from 'vue'
 import { useApi } from './useApi'
+import { useErrorHandler } from './useErrorHandler'
 import type { Notification, ApiResponse, PagedResponse } from '@/types'
 
 export function useNotifications() {
   const { get, put } = useApi()
+  const { handleApiError, handleGracefulDegradation, is404 } = useErrorHandler()
 
   const notifications = ref<Notification[]>([])
   const unreadCount = ref(0)
@@ -35,8 +37,12 @@ export function useNotifications() {
       // Compute unread count from items
       unreadCount.value = items.filter((n) => !n.read).length
       return items
-    } catch {
-      error.value = null
+    } catch (err: unknown) {
+      if (is404(err)) {
+        handleGracefulDegradation('fetchNotifications')
+      } else {
+        error.value = handleApiError(err, 'Failed to load notifications')
+      }
       return []
     } finally {
       loading.value = false

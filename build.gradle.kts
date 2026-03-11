@@ -144,4 +144,24 @@ configure(subprojects.filter { it.path.startsWith(":services:") }) {
     configure<org.jetbrains.kotlin.noarg.gradle.NoArgExtension> {
         annotation("jakarta.persistence.Entity")
     }
+
+    // ── Integration test source set & task ───────────────────────────────────
+    val javaExt = the<JavaPluginExtension>()
+    val itSourceSet = javaExt.sourceSets.findByName("integrationTest")
+        ?: javaExt.sourceSets.create("integrationTest")
+    itSourceSet.apply {
+        compileClasspath += javaExt.sourceSets["main"].output + configurations["testCompileClasspath"]
+        runtimeClasspath += javaExt.sourceSets["main"].output + configurations["testRuntimeClasspath"]
+    }
+
+    val integrationTest by tasks.registering(Test::class) {
+        description = "Runs integration tests."
+        group = "verification"
+        testClassesDirs = itSourceSet.output.classesDirs
+        classpath = itSourceSet.runtimeClasspath
+        useJUnitPlatform()
+        systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+        jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+        shouldRunAfter(tasks.named("test"))
+    }
 }

@@ -7,9 +7,13 @@ import io.agroal.api.AgroalDataSource
 import io.nats.client.Connection
 import io.quarkus.redis.datasource.RedisDataSource
 import jakarta.annotation.security.PermitAll
+import jakarta.annotation.security.RolesAllowed
 import jakarta.inject.Inject
+import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.GET
+import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
+import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
@@ -43,6 +47,13 @@ class HealthResource {
 
     companion object {
         private val LOG: Logger = Logger.getLogger(HealthResource::class.java)
+
+        private val KNOWN_SERVICES = setOf(
+            "auction-engine", "catalog-service", "user-service",
+            "payment-service", "notification-service", "media-service",
+            "search-service", "seller-service", "broker-service",
+            "analytics-service", "compliance-service", "co2-service"
+        )
     }
 
     // -------------------------------------------------------------------------
@@ -130,6 +141,51 @@ class HealthResource {
 
         val httpStatus = if (allUp) Response.Status.OK else Response.Status.SERVICE_UNAVAILABLE
         return Response.status(httpStatus).entity(response).build()
+    }
+
+    // -------------------------------------------------------------------------
+    // Service Restart
+    // -------------------------------------------------------------------------
+
+    /**
+     * Initiates a restart for a named downstream service (mock implementation).
+     *
+     * **POST /api/v1/health/services/{name}/restart**
+     *
+     * Validates the service name against the known services list and returns
+     * a mock response indicating restart has been initiated.
+     *
+     * @param name the service name (e.g., "auction-engine", "catalog-service")
+     * @return 200 OK with restart status, or 400 Bad Request if service name is unknown.
+     */
+    @POST
+    @Path("/services/{name}/restart")
+    @RolesAllowed("admin_ops", "admin_super")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun restartService(@PathParam("name") name: String): Response {
+        LOG.infof("POST /services/%s/restart requested", name)
+
+        if (name !in KNOWN_SERVICES) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(
+                    mapOf(
+                        "status" to 400,
+                        "title" to "Bad Request",
+                        "detail" to "Unknown service: $name. Known services: ${KNOWN_SERVICES.sorted().joinToString(", ")}",
+                        "instance" to "/api/v1/health/services/$name/restart"
+                    )
+                )
+                .build()
+        }
+
+        return Response.ok(
+            mapOf(
+                "service" to name,
+                "status" to "RESTART_INITIATED",
+                "message" to "Restart signal sent to $name. Service will be back online shortly.",
+                "timestamp" to Instant.now().toString()
+            )
+        ).build()
     }
 
     // -------------------------------------------------------------------------

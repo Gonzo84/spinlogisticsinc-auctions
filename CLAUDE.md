@@ -102,7 +102,7 @@ api/             # JAX-RS REST resources, DTOs, request/response objects
 - **Casbin RBAC:** Each service has `casbin_model.conf` and `casbin_policy.csv` in resources. Policies use keyMatch2 with `:param` patterns (not glob `*`/`**`). Role hierarchy: buyer, seller, broker, admin_ops, admin_super.
 - **Frontend Type Safety:** All 3 frontends enforce `no-explicit-any` via ESLint. Types are centralized in `src/types/` with barrel exports. All composable/store returns use `readonly()`.
 - **Pinia Setup Stores:** buyer-web uses Composition API (Setup) stores with `ref()`, `computed()`, and plain functions — not Options API.
-- **Post-auction flow endpoints:** `POST /auctions/{id}/award` (admin, awards closed auction), `GET /auctions/by-lot/{lotId}` (public, lookup by lot), `PATCH /payments/{id}/settle` (admin, settles completed/processing payment), `GET /payments/summary` (admin, KPI aggregation).
+- **Post-auction flow endpoints:** `POST /auctions/{id}/award` (admin, awards closed auction), `GET /auctions/by-lot/{lotId}` (public, lookup by lot), `GET /payments/{id}` (buyer/seller/admin, single payment detail), `PATCH /payments/{id}/settle` (admin, settles completed/processing payment), `GET /payments/summary` (admin, KPI aggregation).
 - **Bean Validation error responses:** `ConstraintViolationExceptionMapper` in `shared/kotlin-commons` returns 400 with field-level error details (field, message, rejectedValue) instead of empty body.
 - **Inter-service HTTP lookups:** `AuctionLotLookupService` in payment-service calls auction-engine and catalog-service REST APIs to resolve hammer price, seller ID, and lot title for checkout. Config: `service.auction-engine.url`, `service.catalog-service.url`.
 
@@ -159,7 +159,13 @@ cd frontend/admin-dashboard && npx vitest
 
 8. **Checkout has two modes: explicit items vs lotIds lookup.** `CheckoutRequest` accepts either `items` (with pre-resolved auctionId/hammerPrice/sellerId from the award response) or `lotIds` (triggering HTTP lookups to auction-engine and catalog-service). Always prefer `items` mode — the `lotIds` lookup is fragile without service-to-service auth tokens.
 
-9. **Keycloak realm changes require `KC_SPI_IMPORT_REALM_FILE_STRATEGY: OVERWRITE`.** Without this env var in the Keycloak Docker config, realm JSON changes (new users, client config) are ignored on container restart because Keycloak skips import if the realm already exists.
+9. **Keycloak `KC_SPI_IMPORT_REALM_FILE_STRATEGY: OVERWRITE` does NOT actually reimport.** Despite the env var being set, Keycloak logs `Strategy: IGNORE_EXISTING` and skips reimport. New users or clients added to `auction-platform-realm.json` must be created via the Keycloak admin API (`POST /admin/realms/{realm}/users`, `POST /admin/realms/{realm}/clients`). Role assignments also need a separate API call (`POST /users/{id}/role-mappings/realm`).
+
+10. **New REST endpoints need Casbin policy for every accessing role.** Adding a new endpoint (e.g., `GET /payments/{id}`) requires policy entries in `casbin_policy.csv` for each role that should access it (`buyer_active`, `seller_verified`, `admin_ops`). The `admin_super` wildcard covers admins, but other roles need explicit entries or the endpoint returns 403. Easy to miss when the endpoint works in unit tests (no Casbin) but fails through the gateway.
+
+11. **NATS durable consumers with changed config require deletion before restart.** If `NatsConsumer` backoff/batch/config changes, the existing durable consumer in NATS JetStream rejects recreation with `[SUB-90016] Existing consumer cannot be modified`. Fix: `docker run --rm --network auction-platform-network natsio/nats-box:0.14.5 nats consumer rm <STREAM> <durable-name> -s nats://nats:4222 --force`, then restart the service.
+
+12. **Payment-service OIDC client needs separate `OIDC_AUTH_URL` env var in Docker Compose.** The standard `QUARKUS_OIDC_AUTH_SERVER_URL` only overrides `quarkus.oidc.auth-server-url`, NOT `quarkus.oidc-client.internal.auth-server-url`. The `oidc-client` section uses `${OIDC_AUTH_URL}` — must be set explicitly or the service hangs on startup trying to reach `localhost:8180`. The Keycloak client `payment-service-internal` must also exist in the realm.
 
 ### Deployment
 

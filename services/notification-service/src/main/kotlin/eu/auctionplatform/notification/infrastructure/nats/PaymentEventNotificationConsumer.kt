@@ -150,7 +150,7 @@ class PaymentEventNotificationConsumer @Inject constructor(
         val payload = parsePayload(message) ?: return
 
         val sellerId = payload["sellerId"]?.toString() ?: return
-        val settlementAmount = payload["settlementAmount"]?.toString() ?: "0"
+        val settlementAmount = payload["netAmount"]?.toString() ?: "0"
         val currency = payload["currency"]?.toString() ?: "EUR"
         val settlementId = payload["settlementId"]?.toString() ?: ""
 

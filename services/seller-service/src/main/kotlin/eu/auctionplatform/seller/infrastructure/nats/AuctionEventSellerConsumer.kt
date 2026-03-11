@@ -2,18 +2,19 @@ package eu.auctionplatform.seller.infrastructure.nats
 
 import com.fasterxml.jackson.databind.JsonNode
 import eu.auctionplatform.commons.messaging.NatsConsumer
+import eu.auctionplatform.commons.messaging.NatsSubjects
 import eu.auctionplatform.commons.util.JsonMapper
 import eu.auctionplatform.seller.infrastructure.persistence.repository.SellerProfileRepository
 import io.nats.client.Connection
 import io.nats.client.Message
-import io.quarkus.runtime.ShutdownEvent
-import io.quarkus.runtime.StartupEvent
-import jakarta.enterprise.event.Observes
-import jakarta.inject.Singleton
+import io.quarkus.runtime.Startup
+import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 // =============================================================================
 // Auction Event Seller Consumer -- NATS JetStream subscriber for auction events
@@ -32,36 +33,21 @@ import java.util.UUID
  * resolves the seller via a DB lookup on `seller_lots(id)` using the lotId
  * from the event payload.
  *
- * Uses a durable pull consumer named "seller-auction-consumer" on the
- * "AUCTION" stream to ensure at-least-once delivery and survive restarts.
+ * Uses durable consumers on the "AUCTION" stream to ensure at-least-once
+ * delivery and survive restarts.
  */
-@Singleton
+@ApplicationScoped
+@Startup
 class AuctionEventSellerConsumer @Inject constructor(
-    connection: Connection,
+    private val connection: Connection,
     private val sellerProfileRepository: SellerProfileRepository
-) : NatsConsumer(
-    connection = connection,
-    streamName = STREAM_NAME,
-    durableName = DURABLE_NAME,
-    filterSubject = FILTER_SUBJECT,
-    maxRedeliveries = 5,
-    deadLetterSubject = "seller.dlq.auction",
-    batchSize = 20
 ) {
-
-    private var consumerThread: Thread? = null
 
     companion object {
         private val LOG: Logger = Logger.getLogger(AuctionEventSellerConsumer::class.java)
 
-        /** NATS JetStream stream for auction events. */
-        const val STREAM_NAME: String = "AUCTION"
-
-        /** Durable consumer name -- persists across restarts. */
-        const val DURABLE_NAME: String = "seller-auction-consumer"
-
-        /** Subject filter matching all auction events. */
-        const val FILTER_SUBJECT: String = "auction.>"
+        private const val STREAM_NAME: String = "AUCTION"
+        private const val DURABLE_NAME: String = "seller-auction-consumer"
 
         // Subject prefixes for routing
         private const val SUBJECT_BID_PLACED = "auction.bid.placed"
@@ -69,61 +55,79 @@ class AuctionEventSellerConsumer @Inject constructor(
         private const val SUBJECT_LOT_AWARDED = "auction.lot.awarded"
     }
 
+    private val executor: ExecutorService = Executors.newFixedThreadPool(3)
+
     // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
 
     /**
-     * Starts the consumer loop in a dedicated daemon thread on application startup.
+     * Starts consumer threads for auction event subjects.
+     * Called automatically at application startup via the [Startup] annotation.
      */
-    fun onStart(@Observes event: StartupEvent) {
+    @jakarta.annotation.PostConstruct
+    fun init() {
         LOG.infof("Starting AuctionEventSellerConsumer [durable=%s]", DURABLE_NAME)
-        consumerThread = Thread({
-            start()
-        }, "seller-auction-consumer").apply {
-            isDaemon = true
-            start()
-        }
+
+        executor.submit { createBidPlacedConsumer().start() }
+        executor.submit { createLotClosedConsumer().start() }
+        executor.submit { createLotAwardedConsumer().start() }
     }
 
-    /**
-     * Signals the consumer loop to stop gracefully on application shutdown.
-     */
-    fun onStop(@Observes event: ShutdownEvent) {
+    @jakarta.annotation.PreDestroy
+    fun shutdown() {
         LOG.infof("Stopping AuctionEventSellerConsumer [durable=%s]", DURABLE_NAME)
-        stop()
-        consumerThread?.interrupt()
+        executor.shutdownNow()
     }
 
     // -------------------------------------------------------------------------
-    // Message handling
+    // Consumer factories
     // -------------------------------------------------------------------------
 
-    /**
-     * Routes an incoming NATS message to the appropriate handler based on the
-     * subject pattern.
-     *
-     * Subject convention: `auction.<entity>.<action>` (optionally with brand suffix).
-     */
-    override fun handleMessage(message: Message) {
-        val subject = message.subject
-        val payload = String(message.data, Charsets.UTF_8)
-
-        LOG.debugf("Received auction event on subject [%s], payload size=%s bytes",
-            subject, message.data.size)
-
-        try {
-            when {
-                subject.startsWith(SUBJECT_BID_PLACED) -> handleBidPlaced(payload)
-                subject.startsWith(SUBJECT_LOT_CLOSED) -> handleLotClosed(payload)
-                subject.startsWith(SUBJECT_LOT_AWARDED) -> handleLotAwarded(payload)
-                else -> LOG.debugf("Ignoring unrelated subject [%s] on auction stream", subject)
+    private fun createBidPlacedConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = connection,
+            streamName = STREAM_NAME,
+            durableName = "$DURABLE_NAME-bid-placed",
+            filterSubject = SUBJECT_BID_PLACED,
+            maxRedeliveries = 5,
+            deadLetterSubject = "seller.dlq.auction.bid.placed",
+            batchSize = 20
+        ) {
+            override fun handleMessage(message: Message) {
+                handleBidPlaced(message)
             }
-        } catch (ex: Exception) {
-            LOG.errorf(ex, "Failed to process auction event on [%s]: %s", subject, ex.message)
-            throw ex // re-throw so the base class handles nak/dead-letter
         }
-    }
+
+    private fun createLotClosedConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = connection,
+            streamName = STREAM_NAME,
+            durableName = "$DURABLE_NAME-lot-closed",
+            filterSubject = SUBJECT_LOT_CLOSED,
+            maxRedeliveries = 5,
+            deadLetterSubject = "seller.dlq.auction.lot.closed",
+            batchSize = 20
+        ) {
+            override fun handleMessage(message: Message) {
+                handleLotClosed(message)
+            }
+        }
+
+    private fun createLotAwardedConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = connection,
+            streamName = STREAM_NAME,
+            durableName = "$DURABLE_NAME-lot-awarded",
+            filterSubject = SUBJECT_LOT_AWARDED,
+            maxRedeliveries = 5,
+            deadLetterSubject = "seller.dlq.auction.lot.awarded",
+            batchSize = 20
+        ) {
+            override fun handleMessage(message: Message) {
+                handleLotAwarded(message)
+            }
+        }
 
     // -------------------------------------------------------------------------
     // Event handlers
@@ -135,7 +139,8 @@ class AuctionEventSellerConsumer @Inject constructor(
      *
      * The sellerId is resolved by looking up `seller_lots` by lotId.
      */
-    private fun handleBidPlaced(payload: String) {
+    private fun handleBidPlaced(message: Message) {
+        val payload = String(message.data, Charsets.UTF_8)
         val node = JsonMapper.instance.readTree(payload)
         val lotId = extractLotId(node) ?: return
         val bidAmount = node.optionalDecimal("amount")
@@ -162,7 +167,8 @@ class AuctionEventSellerConsumer @Inject constructor(
      *
      * Uses `finalBid` from [AuctionClosedEvent].
      */
-    private fun handleLotClosed(payload: String) {
+    private fun handleLotClosed(message: Message) {
+        val payload = String(message.data, Charsets.UTF_8)
         val node = JsonMapper.instance.readTree(payload)
         val lotId = extractLotId(node) ?: return
 
@@ -190,7 +196,8 @@ class AuctionEventSellerConsumer @Inject constructor(
      *
      * Uses `hammerPrice` from [LotAwardedEvent].
      */
-    private fun handleLotAwarded(payload: String) {
+    private fun handleLotAwarded(message: Message) {
+        val payload = String(message.data, Charsets.UTF_8)
         val node = JsonMapper.instance.readTree(payload)
         val lotId = extractLotId(node) ?: return
 

@@ -19,6 +19,7 @@ object NatsSubjects {
     const val AUCTION_DEPOSIT_REQUIRED: String   = "auction.deposit.required"
     const val AUCTION_RESERVE_MET: String        = "auction.reserve.met"
     const val AUCTION_LOT_AWARDED: String        = "auction.lot.awarded"
+    const val AUCTION_CANCELLED: String          = "auction.cancelled"
 
     // ── Catalog ──────────────────────────────────────────────────────────
     const val CATALOG_LOT_CREATED: String       = "catalog.lot.created"
@@ -29,10 +30,13 @@ object NatsSubjects {
     const val PAYMENT_CHECKOUT_COMPLETED: String = "payment.checkout.completed"
     const val PAYMENT_SETTLEMENT_READY: String   = "payment.settlement.ready"
     const val PAYMENT_DEPOSIT_PAID: String       = "payment.deposit.paid"
+    const val PAYMENT_SETTLEMENT_SETTLED: String = "payment.settlement.settled"
+    const val PAYMENT_DEPOSIT_REFUNDED: String   = "payment.deposit.refunded"
 
     // ── User / Identity ──────────────────────────────────────────────────
     const val USER_REGISTERED: String           = "user.registered"
     const val USER_KYC_VERIFIED: String         = "user.kyc.verified"
+    const val USER_BUYER_BLOCKED: String       = "user.buyer.blocked"
 
     // ── Media ────────────────────────────────────────────────────────────
     const val MEDIA_IMAGE_PROCESSED: String     = "media.image.processed"

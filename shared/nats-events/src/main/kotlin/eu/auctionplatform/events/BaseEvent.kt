@@ -12,9 +12,12 @@ import eu.auctionplatform.events.media.ImageProcessedEvent
 import eu.auctionplatform.events.media.ImageUploadedEvent
 import eu.auctionplatform.events.payment.CheckoutCompletedEvent
 import eu.auctionplatform.events.payment.DepositPaidEvent
+import eu.auctionplatform.events.payment.DepositRefundedEvent
 import eu.auctionplatform.events.payment.LotRelistRequestedEvent
 import eu.auctionplatform.events.payment.NonPaymentPenaltyEvent
+import eu.auctionplatform.events.payment.PaymentSettledEvent
 import eu.auctionplatform.events.payment.SettlementReadyEvent
+import eu.auctionplatform.events.user.BuyerBlockedEvent
 import eu.auctionplatform.events.user.KycVerifiedEvent
 import eu.auctionplatform.events.user.UserRegisteredEvent
 import java.time.Instant
@@ -75,6 +78,7 @@ data class EventMetadata(
     JsonSubTypes.Type(value = ReserveMetEvent::class, name = "auction.reserve.met"),
     JsonSubTypes.Type(value = BidRejectedEvent::class, name = "auction.bid.rejected"),
     JsonSubTypes.Type(value = DepositRequiredEvent::class, name = "auction.deposit.required"),
+    JsonSubTypes.Type(value = AuctionCancelledEvent::class, name = "auction.cancelled"),
     // Catalog domain
     JsonSubTypes.Type(value = LotCreatedEvent::class, name = "catalog.lot.created"),
     JsonSubTypes.Type(value = LotUpdatedEvent::class, name = "catalog.lot.updated"),
@@ -85,9 +89,12 @@ data class EventMetadata(
     JsonSubTypes.Type(value = DepositPaidEvent::class, name = "payment.deposit.paid"),
     JsonSubTypes.Type(value = NonPaymentPenaltyEvent::class, name = "payment.non-payment.penalty"),
     JsonSubTypes.Type(value = LotRelistRequestedEvent::class, name = "payment.lot.relist-requested"),
+    JsonSubTypes.Type(value = PaymentSettledEvent::class, name = "payment.settlement.settled"),
+    JsonSubTypes.Type(value = DepositRefundedEvent::class, name = "payment.deposit.refunded"),
     // User domain
     JsonSubTypes.Type(value = UserRegisteredEvent::class, name = "user.registered"),
     JsonSubTypes.Type(value = KycVerifiedEvent::class, name = "user.kyc.verified"),
+    JsonSubTypes.Type(value = BuyerBlockedEvent::class, name = "user.buyer.blocked"),
     // Media domain
     JsonSubTypes.Type(value = ImageUploadedEvent::class, name = "media.image.uploaded"),
     JsonSubTypes.Type(value = ImageProcessedEvent::class, name = "media.image.processed"),

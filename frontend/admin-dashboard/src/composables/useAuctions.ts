@@ -1,6 +1,7 @@
 import { ref, reactive, readonly } from 'vue'
 import axios from 'axios'
 import { useApi } from './useApi'
+import { useErrorHandler } from './useErrorHandler'
 import type {
   Auction,
   AuctionCreatePayload,
@@ -41,6 +42,7 @@ function normalizeAuction(a: RawAuctionResponse): Auction {
 
 export function useAuctions() {
   const { get, post, patch } = useApi()
+  const { handleGracefulDegradation, is404 } = useErrorHandler()
 
   const auctions = ref<Auction[]>([])
   const currentAuction = ref<Auction | null>(null)
@@ -79,10 +81,14 @@ export function useAuctions() {
       const items = response.items ?? []
       auctions.value = items.map(normalizeAuction)
       totalCount.value = response.total ?? 0
-    } catch {
+    } catch (err: unknown) {
       auctions.value = []
       totalCount.value = 0
-      error.value = null
+      if (is404(err)) {
+        handleGracefulDegradation('fetchAuctions')
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to load auctions')
+      }
     } finally {
       loading.value = false
     }

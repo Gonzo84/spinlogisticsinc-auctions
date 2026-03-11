@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
+import jakarta.ws.rs.HEAD
 import jakarta.ws.rs.PATCH
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.PUT
@@ -161,6 +162,15 @@ class ApiProxyResource {
         body: String?
     ): Response = proxy("PATCH", uriInfo, headers, body)
 
+    @HEAD
+    @Path("/{path: auctions.*|lots.*|categories.*|users.*|payments.*|notifications.*|media.*|search.*|sellers.*|brokers.*|compliance.*|co2.*|analytics.*}")
+    @PermitAll
+    @Produces(MediaType.APPLICATION_JSON)
+    fun proxyHead(
+        @Context uriInfo: UriInfo,
+        @Context headers: HttpHeaders
+    ): Response = proxy("HEAD", uriInfo, headers, null)
+
     // ----- Core proxy logic -----
 
     private fun proxy(
@@ -202,6 +212,7 @@ class ApiProxyResource {
             // Set method and body
             when (method) {
                 "GET" -> requestBuilder.GET()
+                "HEAD" -> requestBuilder.method("HEAD", HttpRequest.BodyPublishers.noBody())
                 "DELETE" -> requestBuilder.DELETE()
                 "POST" -> {
                     requestBuilder.header("Content-Type", "application/json")

@@ -177,6 +177,7 @@ class AnalyticsEventConsumer @Inject constructor(
 
         try {
             when {
+                subject.startsWith("payment.settlement.settled") -> handleSettlementSettled(payload)
                 subject.startsWith("payment.checkout.completed") -> handleCheckoutCompleted(payload)
                 else -> LOG.debugf("Unhandled payment event on subject [%s] -- skipping", subject)
             }
@@ -263,6 +264,30 @@ class AnalyticsEventConsumer @Inject constructor(
 
         analyticsRepository.upsertAuctionMetrics(metrics)
         LOG.infof("Updated auction metrics for auction [%s]: %s bids, max=%s", auctionId, metrics.totalBids, metrics.maxBid)
+    }
+
+    /**
+     * Handles settlement completion events by recording commission revenue
+     * in daily analytics.
+     *
+     * The commission amount represents platform revenue from each settled
+     * transaction, separate from the total checkout amount already tracked
+     * by [handleCheckoutCompleted].
+     */
+    private fun handleSettlementSettled(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val commission = node.decimalField("commission") ?: return
+
+        val today = LocalDate.now(ZoneOffset.UTC)
+        val entry = DailyRevenueEntry(
+            reportDate = today,
+            revenueEur = commission,
+            transactionCount = 1,
+            avgTransactionEur = commission
+        )
+
+        analyticsRepository.upsertDailyRevenue(entry)
+        LOG.debugf("Recorded settlement commission revenue for %s: +%s EUR", today, commission)
     }
 
     /**
