@@ -156,8 +156,8 @@ class BidEventForwarder @Inject constructor(
             "data" to mapOf(
                 "bidId" to node.path("bidId").asText(null),
                 "bidderId" to maskBidderId(node.path("bidderId").asText(null)),
-                "amount" to node.path("amount").asText(null),
-                "currency" to node.path("currency").asText("EUR"),
+                "amount" to (node.path("bidAmount").asText(null) ?: node.path("amount").asText(null)),
+                "currency" to (node.path("bidCurrency").asText(null) ?: node.path("currency").asText("EUR")),
                 "isProxy" to node.path("isProxy").asBoolean(false),
                 "bidCount" to node.path("bidCount").asInt(0),
                 "timestamp" to node.path("timestamp").asText(null)

@@ -295,16 +295,26 @@ const breadcrumbItems = computed(() => [
   ...(lot.value ? [{ label: lot.value.title, class: 'truncate max-w-xs' }] : []),
 ])
 
+let subscribedAuctionId: string | null = null
+
+// Subscribe once auction data is loaded (useAsyncData is client-only so lot.value is initially null)
+watch(lot, (lotData) => {
+  const auctionId = lotData?.id
+  if (auctionId && !subscribedAuctionId) {
+    subscribedAuctionId = auctionId
+    subscribeToAuction(auctionId)
+  }
+}, { immediate: true })
+
 onMounted(() => {
   if (lotId.value) {
-    subscribeToAuction(lotId.value)
     checkWatchlistStatus()
   }
 })
 
 onUnmounted(() => {
-  if (lotId.value) {
-    unsubscribeFromAuction(lotId.value)
+  if (subscribedAuctionId) {
+    unsubscribeFromAuction(subscribedAuctionId)
   }
 })
 

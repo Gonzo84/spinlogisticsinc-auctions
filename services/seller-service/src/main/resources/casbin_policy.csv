@@ -5,6 +5,9 @@ p, seller_verified, /api/v1/sellers/me/lots/:id, GET, allow
 p, seller_verified, /api/v1/sellers/me/lots/:id/accept-below-reserve, POST, allow
 p, seller_verified, /api/v1/sellers/me/lots/:id/relist, POST, allow
 p, seller_verified, /api/v1/sellers/me/settlements, GET, allow
+p, seller_verified, /api/v1/sellers/me/settlements/monthly, GET, allow
+p, seller_verified, /api/v1/sellers/me/settlements/:id/invoice, GET, allow
+p, seller_verified, /api/v1/sellers/me/lots/status-counts, GET, allow
 p, seller_verified, /api/v1/sellers/me/analytics, GET, allow
 p, seller_verified, /api/v1/sellers/me/co2-report, GET, allow
 p, seller_pending, /api/v1/sellers/register, POST, allow
@@ -14,6 +17,9 @@ p, seller_pending, /api/v1/sellers/me/lots/:id, GET, allow
 p, seller_pending, /api/v1/sellers/me/lots/:id/accept-below-reserve, POST, allow
 p, seller_pending, /api/v1/sellers/me/lots/:id/relist, POST, allow
 p, seller_pending, /api/v1/sellers/me/settlements, GET, allow
+p, seller_pending, /api/v1/sellers/me/settlements/monthly, GET, allow
+p, seller_pending, /api/v1/sellers/me/settlements/:id/invoice, GET, allow
+p, seller_pending, /api/v1/sellers/me/lots/status-counts, GET, allow
 p, seller_pending, /api/v1/sellers/me/analytics, GET, allow
 p, seller_pending, /api/v1/sellers/me/co2-report, GET, allow
 p, broker, /api/v1/sellers/register, POST, allow
@@ -23,6 +29,9 @@ p, broker, /api/v1/sellers/me/lots/:id, GET, allow
 p, broker, /api/v1/sellers/me/lots/:id/accept-below-reserve, POST, allow
 p, broker, /api/v1/sellers/me/lots/:id/relist, POST, allow
 p, broker, /api/v1/sellers/me/settlements, GET, allow
+p, broker, /api/v1/sellers/me/settlements/monthly, GET, allow
+p, broker, /api/v1/sellers/me/settlements/:id/invoice, GET, allow
+p, broker, /api/v1/sellers/me/lots/status-counts, GET, allow
 p, broker, /api/v1/sellers/me/analytics, GET, allow
 p, broker, /api/v1/sellers/me/co2-report, GET, allow
 p, admin_ops, /api/v1/sellers/:r, .*, allow

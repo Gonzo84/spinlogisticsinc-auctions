@@ -185,6 +185,18 @@ cd frontend/admin-dashboard && npx vitest
 
 20. **Keycloak Docker image entrypoint is `kc.sh` — cannot use `bash -c` in `command`.** The `quay.io/keycloak/keycloak` image sets `ENTRYPOINT` to `/opt/keycloak/bin/kc.sh`. Passing `command: bash -c '...'` sends `bash` as an argument to `kc.sh`, causing `Unknown option: 'bash'`. To run shell commands before `start-dev`, override `entrypoint: /bin/bash` and use `command: ["-c", "script"]`.
 
+21. **`CREATE INDEX CONCURRENTLY` deadlocks inside Flyway migrations.** Flyway wraps each migration in a transaction. `CONCURRENTLY` cannot run inside a transaction — it silently blocks forever waiting for an exclusive lock, causing the service to hang after Flyway output with no error message. The `-- flyway:postgresql:executeInTransaction=false` comment syntax does NOT work. Fix: use `CREATE INDEX IF NOT EXISTS` (without `CONCURRENTLY`) in Flyway migrations. For production, run `CONCURRENTLY` indexes manually outside Flyway.
+
+22. **Quarkus 3.x OTel env var is `QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT`, not the old 2.x name.** The legacy `QUARKUS_OPENTELEMETRY_TRACER_EXPORTER_OTLP_ENDPOINT` is silently ignored in Quarkus 3.x, falling back to `localhost:4317`. All service compose files must use the new name. Using the wrong name may cause startup hangs or telemetry loss when the OTel collector is unreachable.
+
+23. **Auction-engine requires `QUARKUS_REDIS_HOSTS` env var in Docker Compose.** The `quarkus-redis-client` dependency on the classpath causes Quarkus to eagerly connect to Redis at startup. Without `QUARKUS_REDIS_HOSTS=redis://redis:6379`, it defaults to `localhost:6379` which is unreachable inside the container, blocking startup indefinitely with no error log.
+
+24. **Bean Validation requires nullable fields for proper 400 error bodies.** When Jackson can't deserialize a required non-null Kotlin field (missing from JSON), it throws a deserialization exception *before* Bean Validation runs. The `ConstraintViolationExceptionMapper` never fires, resulting in an empty 400 body with no field-level details. Fix: make required DTO fields nullable with `= null` defaults, add `@NotNull`/`@NotBlank` annotations, and use `!!` in the resource method after `@Valid` passes. See `CreateAuctionRequest` for the pattern.
+
+25. **PrimeVue DataTable Column slots must not use nested `<template>` tags.** Using `<template v-if>` / `<template v-else>` inside a `<template #body>` slot causes Vue runtime `TypeError: Cannot read properties of null`. Use `<div>`/`<span>` with `v-if`/`v-else` instead.
+
+26. **Keycloak `post.logout.redirect.uris` separator is `##`, not space.** Multiple redirect URIs in Keycloak client config must be delimited with `##`. Spaces between URIs cause the second URI to be silently ignored, breaking post-logout redirects.
+
 ### Deployment
 
 - Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)

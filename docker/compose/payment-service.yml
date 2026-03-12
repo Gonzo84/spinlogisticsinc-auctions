@@ -14,7 +14,7 @@ services:
       QUARKUS_DATASOURCE_PASSWORD: dev
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8080/realms/auction-platform
       NATS_URL: nats://nats:4222
-      QUARKUS_OPENTELEMETRY_TRACER_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OIDC_AUTH_URL: http://keycloak:8080/realms/auction-platform
       AUCTION_ENGINE_URL: ${AUCTION_ENGINE_URL}
       CATALOG_SERVICE_URL: ${CATALOG_SERVICE_URL}

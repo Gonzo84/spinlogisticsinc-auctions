@@ -101,14 +101,24 @@ export function useAuction() {
 
   function subscribeToAuction(auctionId: string) {
     if (!ws.isConnected.value) {
-      ws.connect()
+      ws.connect(auctionId)
     }
 
     ws.subscribe(auctionId)
 
-    bidHandler = (data: { bid: Bid; auctionId: string }) => {
+    bidHandler = (data: { bid: Bid; auctionId: string } & Record<string, unknown>) => {
       if (data.auctionId === auctionId) {
-        auctionStore.addBid(data.bid)
+        // Gateway sends flat bid data; map to Bid type
+        const bid: Bid = data.bid ?? {
+          id: (data.bidId ?? '') as string,
+          auctionId: auctionId,
+          bidderId: (data.bidderId ?? '') as string,
+          bidderLabel: (data.bidderId ?? 'Bidder') as string,
+          amount: Number(data.amount) || 0,
+          isAutoBid: (data.isProxy ?? false) as boolean,
+          timestamp: (data.timestamp ?? new Date().toISOString()) as string,
+        }
+        auctionStore.addBid(bid)
       }
     }
 

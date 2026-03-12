@@ -111,15 +111,16 @@ class AuctionResource @Inject constructor(
     ): Response {
         LOG.infof("Creating auction for lot %s (brand=%s)", request.lotId, request.brand)
 
+        // Fields are guaranteed non-null by Bean Validation (@Valid + @NotNull/@NotBlank)
         val currency = Currency.getInstance(request.currency)
         val command = CreateAuctionCommand(
-            lotId = LotId.fromString(request.lotId),
-            brand = Brand.fromCode(request.brand),
-            startTime = request.startTime,
-            endTime = request.endTime,
-            startingBid = Money.of(request.startingBid, currency),
+            lotId = LotId.fromString(request.lotId!!),
+            brand = Brand.fromCode(request.brand!!),
+            startTime = request.startTime!!,
+            endTime = request.endTime!!,
+            startingBid = Money.of(request.startingBid!!, currency),
             reservePrice = request.reservePrice?.let { Money.of(it, currency) },
-            sellerId = UserId.fromString(request.sellerId)
+            sellerId = UserId.fromString(request.sellerId!!)
         )
 
         val auctionId = lifecycleService.createAuction(command)

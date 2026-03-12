@@ -235,15 +235,13 @@ const pendingCount = () => gdprRequests.value.filter((r) => r.status === 'pendin
         </Column>
         <Column field="processedAt" header="Processed">
           <template #body="{ data }">
-            <template v-if="data.processedAt">
+            <div v-if="data.processedAt">
               <span class="text-gray-500">{{ formatDate(data.processedAt) }}</span>
               <p class="text-xs text-gray-400">
                 by {{ data.processedBy }}
               </p>
-            </template>
-            <template v-else>
-              --
-            </template>
+            </div>
+            <span v-else>--</span>
           </template>
         </Column>
         <Column header="Actions" headerStyle="text-align: right" bodyStyle="text-align: right" style="width: 180px">

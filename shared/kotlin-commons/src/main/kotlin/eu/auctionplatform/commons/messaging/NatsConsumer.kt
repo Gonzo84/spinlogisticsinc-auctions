@@ -81,17 +81,21 @@ abstract class NatsConsumer(
 
         val jetStream = connection.jetStream()
 
+        val backoffDurations = arrayOf(
+            Duration.ofSeconds(5),
+            Duration.ofSeconds(15),
+            Duration.ofSeconds(60),
+            Duration.ofSeconds(300),
+            Duration.ofSeconds(900)
+        )
+        // maxDeliver must be > backoff length; use max of (redeliveries+1) and (backoff+1)
+        val effectiveMaxDeliver = maxOf(maxRedeliveries.toLong(), backoffDurations.size.toLong()) + 1
+
         val consumerConfig = ConsumerConfiguration.builder()
             .durable(durableName)
             .filterSubject(filterSubject)
-            .maxDeliver(maxRedeliveries.toLong())
-            .backoff(
-                Duration.ofSeconds(5),
-                Duration.ofSeconds(15),
-                Duration.ofSeconds(60),
-                Duration.ofSeconds(300),
-                Duration.ofSeconds(900)
-            )
+            .maxDeliver(effectiveMaxDeliver)
+            .backoff(*backoffDurations)
             .build()
 
         val pullOptions = PullSubscribeOptions.builder()

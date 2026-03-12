@@ -19,28 +19,28 @@ data class CreateAuctionRequest(
     /** Identifier of the lot to be auctioned. */
     @field:NotBlank(message = "Lot ID is required")
     @JsonProperty("lotId")
-    val lotId: String,
+    val lotId: String? = null,
 
     /** Brand / tenant code (e.g. "troostwijk", "surplex"). */
     @field:NotBlank(message = "Brand is required")
     @JsonProperty("brand")
-    val brand: String,
+    val brand: String? = null,
 
     /** Scheduled start time (UTC ISO-8601). */
     @field:NotNull(message = "Start time is required")
     @JsonProperty("startTime")
-    val startTime: Instant,
+    val startTime: Instant? = null,
 
     /** Scheduled end time (UTC ISO-8601). */
     @field:NotNull(message = "End time is required")
     @JsonProperty("endTime")
-    val endTime: Instant,
+    val endTime: Instant? = null,
 
     /** Minimum opening bid amount. */
     @field:NotNull(message = "Starting bid is required")
     @field:DecimalMin(value = "0.01", message = "Starting bid must be positive")
     @JsonProperty("startingBid")
-    val startingBid: BigDecimal,
+    val startingBid: BigDecimal? = null,
 
     /** ISO 4217 currency code (defaults to EUR). */
     @JsonProperty("currency")
@@ -56,7 +56,7 @@ data class CreateAuctionRequest(
     /** Identifier of the user selling the lot. */
     @field:NotBlank(message = "Seller ID is required")
     @JsonProperty("sellerId")
-    val sellerId: String
+    val sellerId: String? = null
 )
 
 /**

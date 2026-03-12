@@ -91,13 +91,26 @@ export function useWebSocket() {
 
       socket.onmessage = (event: MessageEvent) => {
         try {
-          const message = JSON.parse(event.data as string) as WebSocketMessage
+          const message = JSON.parse(event.data as string) as Record<string, unknown>
 
-          if (message.event === 'pong') return
+          // Gateway sends "type" field; normalize to match our event types
+          let eventType = (message.type ?? message.event) as string | undefined
+          if (!eventType) return
+          if (eventType === 'pong' || eventType === 'connected' || eventType === 'heartbeat') return
 
-          const handlers = eventHandlers.get(message.event)
+          // Normalize gateway event names to frontend event names
+          if (eventType === 'lot_extended') eventType = 'auction_extended'
+          if (eventType === 'lot_closed') eventType = 'auction_closed'
+          if (eventType === 'lot_awarded') eventType = 'auction_closed'
+
+          const handlers = eventHandlers.get(eventType as WebSocketEvent)
           if (handlers) {
-            handlers.forEach((handler) => handler(message.data))
+            // Include auctionId in data for handlers that need it
+            const data = message.data ?? message
+            if (typeof data === 'object' && data !== null && message.auctionId) {
+              (data as Record<string, unknown>).auctionId = message.auctionId
+            }
+            handlers.forEach((handler) => handler(data))
           }
         } catch {
           // Silently ignore malformed messages
@@ -156,7 +169,9 @@ export function useWebSocket() {
   function startHeartbeat() {
     stopHeartbeat()
     heartbeatInterval = setInterval(() => {
-      send({ event: 'ping', timestamp: new Date().toISOString() })
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send('ping')
+      }
     }, 30000)
   }
 

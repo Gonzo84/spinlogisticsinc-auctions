@@ -23,8 +23,8 @@
       <!-- Empty state when no featured auctions -->
       <div v-if="auctions.length === 0" class="text-center py-12">
         <i class="pi pi-box text-6xl text-gray-300 mb-4" />
-        <p class="text-gray-500 text-lg mb-2">No featured auctions right now</p>
-        <p class="text-gray-400 text-sm">Check back soon for new lots going live.</p>
+        <p class="text-gray-500 text-lg mb-2">{{ $t('home.noFeaturedAuctions') }}</p>
+        <p class="text-gray-400 text-sm">{{ $t('home.checkBackSoon') }}</p>
         <NuxtLink to="/search" class="inline-block mt-4 text-primary font-medium hover:underline">
           {{ $t('home.viewAll') }} &rarr;
         </NuxtLink>

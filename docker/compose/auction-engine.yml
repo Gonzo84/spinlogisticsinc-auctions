@@ -14,7 +14,8 @@ services:
       QUARKUS_DATASOURCE_PASSWORD: dev
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8080/realms/auction-platform
       NATS_URL: nats://nats:4222
-      QUARKUS_OPENTELEMETRY_TRACER_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     ports:
       - "8081:8081"
     healthcheck:

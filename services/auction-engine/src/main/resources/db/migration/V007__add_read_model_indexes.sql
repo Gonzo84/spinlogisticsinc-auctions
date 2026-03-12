@@ -7,19 +7,19 @@
 -- - Bidder activity lookup (current_high_bidder_id)
 -- - Brand-scoped listing (brand + status)
 --
--- Uses CONCURRENTLY to avoid table locks in production deployments.
--- flyway:postgresql:executeInTransaction=false
+-- Note: Cannot use CONCURRENTLY inside Flyway transactions.
+-- For production, run these indexes manually with CONCURRENTLY if needed.
 -- ==========================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_arm_status_end
+CREATE INDEX IF NOT EXISTS idx_arm_status_end
     ON app.auction_read_model(status, end_time);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_arm_seller_status
+CREATE INDEX IF NOT EXISTS idx_arm_seller_status
     ON app.auction_read_model(seller_id, status);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_arm_bidder
+CREATE INDEX IF NOT EXISTS idx_arm_bidder
     ON app.auction_read_model(current_high_bidder_id)
     WHERE current_high_bidder_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_arm_brand_status
+CREATE INDEX IF NOT EXISTS idx_arm_brand_status
     ON app.auction_read_model(brand, status);
