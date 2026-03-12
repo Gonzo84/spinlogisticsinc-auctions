@@ -1,7 +1,15 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 py-6">
     <!-- Breadcrumb -->
-    <Breadcrumb :model="breadcrumbItems" :home="breadcrumbHome" class="mb-6" />
+    <Breadcrumb :model="breadcrumbItems" :home="breadcrumbHome" class="mb-6">
+      <template #item="{ item, props: itemProps }">
+        <NuxtLink v-if="item.to" :to="item.to as string" v-bind="itemProps.action">
+          <span v-if="item.icon" :class="item.icon" />
+          <span v-if="item.label" :class="item.class">{{ item.label }}</span>
+        </NuxtLink>
+        <span v-else v-bind="itemProps.action" :class="item.class">{{ item.label }}</span>
+      </template>
+    </Breadcrumb>
 
     <!-- Loading State -->
     <div v-if="pending" class="flex items-center justify-center py-24">

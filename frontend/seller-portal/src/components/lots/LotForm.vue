@@ -449,6 +449,7 @@ function handleSubmit() {
       <ImageUploader
         v-model="form.imageIds"
         :max-files="10"
+        :initial-images="props.initialData?.images ?? []"
         @update:images="form.images = $event"
       />
     </div>

@@ -256,4 +256,121 @@ class LotRepository : PanacheRepositoryBase<LotEntity, UUID> {
             pattern
         )
     }
+
+    /**
+     * Dynamic query builder that supports combining multiple filter criteria.
+     *
+     * Builds a JPQL WHERE clause from all non-null filter parameters, allowing
+     * queries like "lots for seller X with status Y matching search Z".
+     *
+     * @param sellerId   Optional seller filter.
+     * @param status     Optional status filter.
+     * @param search     Optional text search on title/description.
+     * @param auctionId  Optional auction filter.
+     * @param categoryId Optional category filter.
+     * @param brand      Optional brand filter.
+     * @param country    Optional country filter.
+     * @param sort       The sort order to apply.
+     * @param page       The page to retrieve (0-based).
+     * @param pageSize   The number of items per page.
+     * @return List of matching lot entities.
+     */
+    fun findByFilters(
+        sellerId: UUID?,
+        status: LotStatus?,
+        search: String?,
+        auctionId: UUID?,
+        categoryId: UUID?,
+        brand: String?,
+        country: String?,
+        sort: Sort,
+        page: Int,
+        pageSize: Int
+    ): List<LotEntity> {
+        val (query, params) = buildFilterQuery(sellerId, status, search, auctionId, categoryId, brand, country)
+        return find(query, sort, *params.toTypedArray())
+            .page(Page.of(page, pageSize))
+            .list()
+    }
+
+    /**
+     * Counts lots matching the combined filter criteria.
+     */
+    fun countByFilters(
+        sellerId: UUID?,
+        status: LotStatus?,
+        search: String?,
+        auctionId: UUID?,
+        categoryId: UUID?,
+        brand: String?,
+        country: String?
+    ): Long {
+        val (query, params) = buildFilterQuery(sellerId, status, search, auctionId, categoryId, brand, country)
+        return count(query, *params.toTypedArray())
+    }
+
+    /**
+     * Builds a JPQL WHERE clause and parameter list from non-null filters.
+     */
+    private fun buildFilterQuery(
+        sellerId: UUID?,
+        status: LotStatus?,
+        search: String?,
+        auctionId: UUID?,
+        categoryId: UUID?,
+        brand: String?,
+        country: String?
+    ): Pair<String, List<Any>> {
+        val conditions = mutableListOf<String>()
+        val params = mutableListOf<Any>()
+        var paramIndex = 1
+
+        if (sellerId != null) {
+            conditions.add("sellerId = ?$paramIndex")
+            params.add(sellerId)
+            paramIndex++
+        }
+        if (status != null) {
+            conditions.add("status = ?$paramIndex")
+            params.add(status)
+            paramIndex++
+        }
+        if (auctionId != null) {
+            conditions.add("auctionId = ?$paramIndex")
+            params.add(auctionId)
+            paramIndex++
+        }
+        if (categoryId != null) {
+            conditions.add("categoryId = ?$paramIndex")
+            params.add(categoryId)
+            paramIndex++
+        }
+        if (brand != null) {
+            conditions.add("brand = ?$paramIndex")
+            params.add(brand)
+            paramIndex++
+        }
+        if (country != null) {
+            conditions.add("locationCountry = ?$paramIndex")
+            params.add(country)
+            paramIndex++
+        }
+        if (!search.isNullOrBlank()) {
+            val pattern = "%${search.lowercase()}%"
+            conditions.add("(lower(title) like ?$paramIndex or lower(description) like ?$paramIndex)")
+            params.add(pattern)
+            paramIndex++
+        }
+
+        val query = if (conditions.isEmpty()) {
+            "status != ?1".also {
+                params.clear()
+                params.add(LotStatus.WITHDRAWN)
+            }
+        } else {
+            conditions.joinToString(" and ")
+        }
+
+        return Pair(query, params)
+    }
 }

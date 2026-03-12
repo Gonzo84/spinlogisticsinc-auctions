@@ -197,6 +197,14 @@ cd frontend/admin-dashboard && npx vitest
 
 26. **Keycloak `post.logout.redirect.uris` separator is `##`, not space.** Multiple redirect URIs in Keycloak client config must be delimited with `##`. Spaces between URIs cause the second URI to be silently ignored, breaking post-logout redirects.
 
+27. **`NatsConsumer.maxDeliver` must exceed `backoff` array length.** NATS JetStream rejects consumer creation if `maxDeliver <= backoff.length` with error `[SUB-90016]` or `[10116]`. The consumer thread crashes silently on startup — no events are ever forwarded. Fix: `effectiveMaxDeliver = max(maxRedeliveries, backoff.length) + 1`. This was the root cause of WebSocket bidding never working (`BidEventForwarder` crashed on startup).
+
+28. **Gateway `BidEventForwarder` must read `bidAmount`/`bidCurrency` from domain events, not `amount`/`currency`.** The `BidPlacedEvent` domain event uses `bidAmount: BigDecimal` and `bidCurrency: String`. The gateway's JSON extraction must use `node.path("bidAmount")` with fallback to `node.path("amount")`. Without this, WebSocket `bid_placed` messages have `amount: null`.
+
+29. **Frontend `useWebSocket.ts` must read `message.type` (not `message.event`) and normalize gateway event names.** The gateway sends `{type: "bid_placed"}` but the original frontend code read `message.event`. Gateway also sends `lot_extended`/`lot_closed` but the frontend expects `auction_extended`/`auction_closed`. The handler data must be `message.data ?? message`, and `auctionId` must be injected from the top-level message into the data object.
+
+30. **`subscribeToAuction()` must pass `auctionId` to `ws.connect()`, and the lot detail page must subscribe with the auction ID (not the lot ID).** The WebSocket URL is `/ws/auctions/{auctionId}` — using the catalog lot UUID instead of the auction-engine auction UUID results in a connected but useless WebSocket (wrong room). The `[id].vue` page must use `lot.value.id` (which is the mapped `auctionId` from `mapAuctionResponse`) via a watcher, not `route.params.id`.
+
 ### Deployment
 
 - Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)

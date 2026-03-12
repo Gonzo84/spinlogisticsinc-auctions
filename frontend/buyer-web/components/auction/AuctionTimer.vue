@@ -155,12 +155,20 @@ watch(() => props.endTime, (newVal, oldVal) => {
   }
 })
 
-watch(isExpired, (expired) => {
+watch(isExpired, (expired, wasExpired) => {
   if (expired) {
     emit('expired')
     if (intervalId) {
       clearInterval(intervalId)
       intervalId = null
+    }
+  } else if (wasExpired && !expired) {
+    // Timer was expired but endTime was extended (anti-sniping) — restart the interval
+    if (!intervalId) {
+      now.value = Date.now()
+      intervalId = setInterval(() => {
+        now.value = Date.now()
+      }, 1000)
     }
   }
 })

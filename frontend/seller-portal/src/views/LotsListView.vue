@@ -57,6 +57,7 @@ const tabs: { key: LotStatus | 'all'; label: string; severity: string | undefine
   { key: 'all', label: 'All', severity: undefined },
   { key: 'draft', label: 'Draft', severity: getStatusSeverity('draft') },
   { key: 'pending_review', label: 'Pending', severity: getStatusSeverity('pending_review') },
+  { key: 'approved', label: 'Approved', severity: getStatusSeverity('approved') },
   { key: 'active', label: 'Active', severity: getStatusSeverity('active') },
   { key: 'sold', label: 'Sold', severity: getStatusSeverity('sold') },
   { key: 'unsold', label: 'Unsold', severity: getStatusSeverity('unsold') },
@@ -65,10 +66,6 @@ const tabs: { key: LotStatus | 'all'; label: string; severity: string | undefine
 function getTabCount(key: string): number {
   if (key === 'all') {
     return Object.values(statusCounts.value).reduce((a, b) => a + b, 0)
-  }
-  // Include approved lots in the Active tab count
-  if (key === 'active') {
-    return (statusCounts.value.active ?? 0) + (statusCounts.value.approved ?? 0)
   }
   return statusCounts.value[key as LotStatus] ?? 0
 }

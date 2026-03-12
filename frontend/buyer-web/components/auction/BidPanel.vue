@@ -5,19 +5,19 @@
       <div class="flex items-center justify-between mb-2">
         <span class="text-sm text-gray-500">{{ $t('auction.timeRemaining') }}</span>
         <span
-          v-if="lot.status === 'active' || lot.status === 'extended'"
+          v-if="reactiveStatus === 'active' || reactiveStatus === 'extended'"
           class="px-2 py-0.5 bg-secondary-100 text-secondary text-xs font-semibold rounded-full"
         >
           {{ $t('auction.live') }}
         </span>
         <span
-          v-else-if="lot.status === 'closed'"
+          v-else-if="reactiveStatus === 'closed'"
           class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full"
         >
           {{ $t('auction.closed') }}
         </span>
       </div>
-      <AuctionTimer :end-time="lot.endTime" @expired="onAuctionExpired" />
+      <AuctionTimer :end-time="reactiveEndTime" :extended="reactiveIsExtended" @expired="onAuctionExpired" />
     </div>
 
     <!-- Current Bid -->
@@ -66,7 +66,7 @@
     </div>
 
     <!-- Non-buyer role warning -->
-    <div v-else-if="!isBuyerRole && (lot.status === 'active' || lot.status === 'extended')" class="p-4">
+    <div v-else-if="!isBuyerRole && (reactiveStatus === 'active' || reactiveStatus === 'extended')" class="p-4">
       <div class="text-center py-4">
         <i class="pi pi-info-circle text-4xl text-gray-300 mb-3" />
         <p class="text-sm text-gray-600 mb-1">{{ $t('auction.biddingRestricted') }}</p>
@@ -75,7 +75,7 @@
     </div>
 
     <!-- Bid Section (for authenticated buyers, active auction) -->
-    <div v-else-if="isBuyerRole && (lot.status === 'active' || lot.status === 'extended')" class="p-4 space-y-4">
+    <div v-else-if="isBuyerRole && (reactiveStatus === 'active' || reactiveStatus === 'extended')" class="p-4 space-y-4">
       <!-- Deposit Warning -->
       <Message v-if="lot.depositRequired && !depositPaid" severity="warn" :closable="false">
         <p class="text-sm font-medium">{{ $t('auction.depositRequired') }}</p>
@@ -208,7 +208,7 @@
     </div>
 
     <!-- Closed Auction -->
-    <div v-else-if="lot.status === 'closed'" class="p-4">
+    <div v-else-if="reactiveStatus === 'closed'" class="p-4">
       <div class="text-center py-4">
         <p class="text-gray-500 text-sm">{{ $t('auction.auctionEnded') }}</p>
         <p class="text-2xl font-bold text-gray-900 mt-2">
@@ -222,6 +222,7 @@
 <script setup lang="ts">
 import type { Auction } from '~/types/auction'
 import { formatCurrency } from '~/utils/format'
+import { useAuctionStore } from '~/stores/auction'
 
 interface Props {
   lot: Auction
@@ -232,6 +233,13 @@ const props = defineProps<Props>()
 const { t } = useI18n()
 const { isAuthenticated, login, hasRole } = useAuth()
 const { placeBid, setAutoBid, cancelAutoBid, loading: bidLoading, currentBid, bidCount, minBidAmount, hasAutoBid, clearError } = useBid()
+const auctionStore = useAuctionStore()
+
+// Use the store's reactive timerEndTime so anti-sniping extensions update the countdown
+const reactiveEndTime = computed(() => auctionStore.timerEndTime ?? props.lot.endTime)
+const reactiveIsExtended = computed(() => auctionStore.isExtended)
+// Use the store's reactive status so WebSocket close/extend events update the UI
+const reactiveStatus = computed(() => auctionStore.currentAuction?.status ?? props.lot.status)
 
 const isBuyerRole = computed(() => hasRole('buyer_active'))
 

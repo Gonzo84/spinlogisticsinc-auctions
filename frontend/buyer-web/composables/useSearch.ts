@@ -1,5 +1,6 @@
 import type { SearchFilters, SearchResult, SearchAggregations, SearchSuggestion } from '~/types/search'
 import { unwrapApiResponse } from '~/utils/api-response'
+import { mapAuctionResponse } from '~/utils/auction-mapper'
 
 export function useSearch() {
   const { $api } = useNuxtApp()
@@ -43,7 +44,7 @@ export function useSearch() {
             pageSize: filters.limit || 20,
           }
           catalogParams.search = filters.q
-          if (filters.category) catalogParams.categoryId = filters.category
+          if (filters.category) catalogParams.categorySlug = filters.category
 
           const raw = await api<Record<string, unknown>>('/lots', { params: catalogParams })
           const data = unwrapApiResponse(raw)
@@ -101,7 +102,7 @@ export function useSearch() {
               page: filters.page ? filters.page - 1 : 0,
               pageSize: filters.limit || 20,
             }
-            if (filters.category) catalogParams.categoryId = filters.category
+            if (filters.category) catalogParams.categorySlug = filters.category
 
             const raw = await api<Record<string, unknown>>('/lots', { params: catalogParams })
             const data = unwrapApiResponse(raw)
@@ -117,6 +118,13 @@ export function useSearch() {
           }
         }
       }
+
+      // Normalize items through mapAuctionResponse so that field names
+      // (e.g. currentHighBid → currentBid, startingBid → startingPrice)
+      // match what LotCard.vue expects.
+      result.items = result.items.map((item) =>
+        mapAuctionResponse(item) as unknown as Record<string, unknown>
+      )
 
       if (result.aggregations) {
         aggregations.value = result.aggregations

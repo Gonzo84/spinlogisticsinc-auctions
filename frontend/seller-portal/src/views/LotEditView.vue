@@ -39,6 +39,7 @@ const initialData = computed<Partial<LotFormData> | undefined>(() => {
       lng: 0,
     },
     imageIds: (lot.images ?? []).map((img: LotImage) => img.id),
+    images: (lot.images ?? []).map((img: LotImage) => ({ id: img.id, url: img.url })),
   }
 })
 

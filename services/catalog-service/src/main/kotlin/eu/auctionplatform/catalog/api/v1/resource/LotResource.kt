@@ -73,6 +73,7 @@ class LotResource {
     fun listLots(
         @QueryParam("brand") brand: String?,
         @QueryParam("categoryId") categoryId: UUID?,
+        @QueryParam("categorySlug") categorySlug: String?,
         @QueryParam("country") country: String?,
         @QueryParam("status") status: LotStatus?,
         @QueryParam("sellerId") sellerId: UUID?,
@@ -83,9 +84,14 @@ class LotResource {
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("pageSize") @DefaultValue("20") pageSize: Int
     ): Response {
+        // Resolve categorySlug to categoryId if slug is provided and categoryId is not
+        val resolvedCategoryId = categoryId ?: categorySlug?.let { slug ->
+            lotService.resolveCategorySlug(slug)
+        }
+
         val filter = LotListFilter(
             brand = brand,
-            categoryId = categoryId,
+            categoryId = resolvedCategoryId,
             country = country,
             status = status,
             sellerId = sellerId,

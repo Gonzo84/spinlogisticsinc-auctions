@@ -34,8 +34,10 @@ const showCancelDialog = ref(false)
 const cancelReason = ref('')
 
 onMounted(async () => {
+  // fetchAuction must complete first — fetchAuctionLots derives lot data
+  // from the loaded auction detail (no separate /lots endpoint exists).
+  await fetchAuction(auctionId.value)
   await Promise.all([
-    fetchAuction(auctionId.value),
     fetchAuctionLots(auctionId.value),
     fetchLiveBids(auctionId.value),
   ])

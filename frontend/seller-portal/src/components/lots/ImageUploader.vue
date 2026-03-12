@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useLots } from '@/composables/useLots'
 
 interface UploadedImage {
@@ -19,8 +19,10 @@ interface ImageData {
 const props = withDefaults(defineProps<{
   modelValue: string[]
   maxFiles?: number
+  initialImages?: Array<{ id: string; url: string; isPrimary?: boolean; sortOrder?: number }>
 }>(), {
   maxFiles: 10,
+  initialImages: () => [],
 })
 
 const emit = defineEmits<{
@@ -33,6 +35,20 @@ const { getPresignedUploadUrl } = useLots()
 const images = ref<UploadedImage[]>([])
 const isDragging = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+// Initialize with existing images when editing a lot
+onMounted(() => {
+  if (props.initialImages && props.initialImages.length > 0) {
+    images.value = props.initialImages.map((img, index) => ({
+      id: img.id,
+      url: img.url,
+      filename: `image-${index + 1}`,
+      isPrimary: img.isPrimary ?? index === 0,
+      progress: 100,
+      status: 'complete' as const,
+    }))
+  }
+})
 
 const canAddMore = computed(() => images.value.length < props.maxFiles)
 

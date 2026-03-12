@@ -71,6 +71,7 @@
 <script setup lang="ts">
 import { COUNTRIES } from '~/utils/constants'
 import { unwrapApiResponse } from '~/utils/api-response'
+import { mapAuctionResponse } from '~/utils/auction-mapper'
 
 const { t } = useI18n()
 
@@ -104,7 +105,26 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
 }
 
 const { data: featuredAuctions } = await useAsyncData('featured-auctions', async () => {
-  return await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 9 })
+  // Use auction-engine endpoint which has currentHighBid (not just startingBid from catalog)
+  const { $api } = useNuxtApp()
+  const api = $api as typeof $fetch
+  try {
+    const raw = await api<Record<string, unknown>>('/auctions', {
+      params: { status: 'ACTIVE', limit: 9 },
+    })
+    const data = unwrapApiResponse(raw)
+    const items = Array.isArray(data.items) ? data.items as Record<string, unknown>[] : []
+    const mapped = items.map((item) => mapAuctionResponse(item))
+    const seen = new Set<string>()
+    return mapped.filter((lot) => {
+      if (seen.has(lot.title)) return false
+      seen.add(lot.title)
+      return true
+    })
+  } catch {
+    // Fallback to catalog if auction-engine unavailable
+    return await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 9 })
+  }
 }, {
   default: () => [],
   server: false,

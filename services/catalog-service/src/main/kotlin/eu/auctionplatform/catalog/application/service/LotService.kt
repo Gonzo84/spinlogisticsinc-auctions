@@ -469,6 +469,16 @@ class LotService {
     // -------------------------------------------------------------------------
 
     /**
+     * Resolves a category slug to its UUID.
+     *
+     * @param slug The category slug (e.g. "office-containers").
+     * @return The category UUID, or null if not found.
+     */
+    fun resolveCategorySlug(slug: String): UUID? {
+        return categoryRepository.findBySlug(slug)?.id
+    }
+
+    /**
      * Retrieves a lot by its identifier, including its images.
      *
      * @param lotId The lot identifier.
@@ -499,58 +509,35 @@ class LotService {
     fun listLots(filter: LotListFilter): Pair<List<Lot>, Long> {
         val sort = lotRepository.buildSort(filter.sortBy, filter.sortDir)
 
-        return when {
-            filter.sellerId != null -> {
-                val lots = lotRepository.findBySellerId(filter.sellerId, sort, filter.page, filter.pageSize)
-                    .map { it.toDomain() }
-                val total = lotRepository.countBySellerId(filter.sellerId)
-                Pair(lots, total)
-            }
-            filter.auctionId != null -> {
-                val lots = lotRepository.findByAuctionId(filter.auctionId, sort, filter.page, filter.pageSize)
-                    .map { it.toDomain() }
-                val total = lotRepository.countByAuctionId(filter.auctionId)
-                Pair(lots, total)
-            }
-            filter.categoryId != null -> {
-                val lots = lotRepository.findByCategoryId(filter.categoryId, sort, filter.page, filter.pageSize)
-                    .map { it.toDomain() }
-                val total = lotRepository.countByCategoryId(filter.categoryId)
-                Pair(lots, total)
-            }
-            filter.brand != null -> {
-                val lots = lotRepository.findByBrand(filter.brand, sort, filter.page, filter.pageSize)
-                    .map { it.toDomain() }
-                val total = lotRepository.countByBrand(filter.brand)
-                Pair(lots, total)
-            }
-            filter.status != null -> {
-                val lots = lotRepository.findByStatus(filter.status, sort, filter.page, filter.pageSize)
-                    .map { it.toDomain() }
-                val total = lotRepository.countByStatus(filter.status)
-                Pair(lots, total)
-            }
-            filter.country != null -> {
-                val lots = lotRepository.findByCountry(filter.country, null, sort, filter.page, filter.pageSize)
-                    .map { it.toDomain() }
-                val total = lotRepository.countByCountry(filter.country)
-                Pair(lots, total)
-            }
-            !filter.search.isNullOrBlank() -> {
-                val lots = lotRepository.findBySearch(filter.search, sort, filter.page, filter.pageSize)
-                    .map { it.toDomain() }
-                val total = lotRepository.countBySearch(filter.search)
-                Pair(lots, total)
-            }
-            else -> {
-                val lots = lotRepository.findAll(sort)
-                    .page(io.quarkus.panache.common.Page.of(filter.page, filter.pageSize))
-                    .list()
-                    .map { it.toDomain() }
-                val total = lotRepository.count()
-                Pair(lots, total)
-            }
-        }
+        // Use the combined filter query that supports all filter combinations
+        // (e.g. sellerId + status, sellerId + search, etc.)
+        // The old `when` block treated filters as mutually exclusive, so e.g.
+        // sellerId was checked first and status was ignored — breaking the
+        // seller portal's quick-status filters.
+        val lots = lotRepository.findByFilters(
+            sellerId = filter.sellerId,
+            status = filter.status,
+            search = filter.search,
+            auctionId = filter.auctionId,
+            categoryId = filter.categoryId,
+            brand = filter.brand,
+            country = filter.country,
+            sort = sort,
+            page = filter.page,
+            pageSize = filter.pageSize
+        ).map { it.toDomain() }
+
+        val total = lotRepository.countByFilters(
+            sellerId = filter.sellerId,
+            status = filter.status,
+            search = filter.search,
+            auctionId = filter.auctionId,
+            categoryId = filter.categoryId,
+            brand = filter.brand,
+            country = filter.country
+        )
+
+        return Pair(lots, total)
     }
 
     // -------------------------------------------------------------------------

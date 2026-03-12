@@ -101,13 +101,16 @@ export function useLots() {
         lat: data.locationLat ?? 0,
         lng: data.locationLng ?? 0,
       },
-      images: (data.images ?? []).map((img: Record<string, unknown>) => ({
-        id: (img.id as string) ?? '',
-        url: (img.imageUrl as string) ?? (img.url as string) ?? '',
-        thumbnailUrl: (img.thumbnailUrl as string) ?? '',
-        isPrimary: (img.isPrimary as boolean) ?? false,
-        sortOrder: (img.displayOrder as number) ?? (img.sortOrder as number) ?? 0,
-      })),
+      images: (data.images ?? []).map((img) => {
+        const raw = img as unknown as Record<string, unknown>
+        return {
+          id: (raw.id as string) ?? '',
+          url: (raw.imageUrl as string) ?? (raw.url as string) ?? '',
+          thumbnailUrl: (raw.thumbnailUrl as string) ?? '',
+          isPrimary: (raw.isPrimary as boolean) ?? false,
+          sortOrder: (raw.displayOrder as number) ?? (raw.sortOrder as number) ?? 0,
+        }
+      }),
       auctionStart: data.auctionStart ?? null,
       auctionEnd: data.auctionEnd ?? null,
       hammerPrice: data.hammerPrice ?? null,

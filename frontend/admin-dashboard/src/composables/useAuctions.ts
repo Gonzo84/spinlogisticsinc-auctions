@@ -77,7 +77,9 @@ export function useAuctions() {
       if (filters.sortBy) params.sortBy = filters.sortBy
       if (filters.sortDir) params.sortDir = filters.sortDir
 
-      const response = await get<PagedResponse<RawAuctionResponse>>('/auctions', { params })
+      const raw = await get<ApiResponse<PagedResponse<RawAuctionResponse>>>('/auctions', { params })
+      // Unwrap ApiResponse wrapper: backend returns { success, data: { items, total } }
+      const response = (raw.data ?? raw) as unknown as PagedResponse<RawAuctionResponse>
       const items = response.items ?? []
       auctions.value = items.map(normalizeAuction)
       totalCount.value = response.total ?? 0
@@ -98,7 +100,10 @@ export function useAuctions() {
     loading.value = true
     error.value = null
     try {
-      currentAuction.value = await get<Auction>(`/auctions/${id}`)
+      const raw = await get<ApiResponse<RawAuctionResponse>>(`/auctions/${id}`)
+      // Unwrap ApiResponse wrapper: backend returns { success, data: { ... } }
+      const auctionData = (raw.data ?? raw) as unknown as RawAuctionResponse
+      currentAuction.value = normalizeAuction(auctionData)
     } catch (err: unknown) {
       error.value = extractErrorMessage(err, 'Failed to fetch auction')
     } finally {
@@ -179,22 +184,77 @@ export function useAuctions() {
     }
   }
 
-  async function fetchAuctionLots(auctionId: string): Promise<void> {
+  /**
+   * Builds the auction lots list from the current auction detail.
+   *
+   * The auction-engine has a 1:1 auction-to-lot relationship, so there is no
+   * separate `/auctions/{id}/lots` endpoint. Instead we derive a single
+   * AuctionLot entry from the auction detail response that is already loaded
+   * via `fetchAuction()`. Must be called *after* `fetchAuction()` resolves.
+   */
+  async function fetchAuctionLots(_auctionId: string): Promise<void> {
     try {
-      const response = await get<{ items: AuctionLot[] }>(`/auctions/${auctionId}/lots`)
-      auctionLots.value = response.items
+      // currentAuction may be the raw ApiResponse wrapper or the normalised object
+      const auction = currentAuction.value as Record<string, unknown> | null
+      if (!auction) {
+        auctionLots.value = []
+        return
+      }
+      // Unwrap ApiResponse if needed (backend wraps in { success, data })
+      const data = (auction.data ?? auction) as Record<string, unknown>
+
+      const lotId = (data.lotId ?? data.id ?? '') as string
+      const lot: AuctionLot = {
+        id: lotId,
+        auctionId: (data.auctionId ?? data.id ?? '') as string,
+        lotNumber: 1,
+        title: (data.title as string) ?? `Lot ${String(lotId).substring(0, 8)}`,
+        currentBid: Number(data.currentHighBid ?? data.currentBid ?? 0),
+        bidCount: Number(data.totalBids ?? data.bidCount ?? 0),
+        status: ((data.status as string) ?? 'active').toLowerCase() as AuctionLot['status'],
+        extensionCount: Number(data.extensionCount ?? 0),
+        closingTime: (data.endTime ?? data.endDate ?? '') as string,
+      }
+      auctionLots.value = [lot]
     } catch (err: unknown) {
       error.value = extractErrorMessage(err, 'Failed to fetch lots')
     }
   }
 
+  /**
+   * Fetches bid history for an auction from `GET /auctions/{id}/bids`.
+   *
+   * The backend returns `ApiResponse<List<BidResponse>>` — there is no
+   * separate `/bids/live` sub-resource.
+   */
   async function fetchLiveBids(auctionId: string): Promise<void> {
     try {
-      const response = await get<{ items: BidActivity[] }>(`/auctions/${auctionId}/bids/live`)
-      liveBids.value = response.items
+      const raw = await get<Record<string, unknown>>(`/auctions/${auctionId}/bids`)
+      // Unwrap ApiResponse: { success, data: [...] }
+      const bidsArray = (Array.isArray(raw) ? raw : (raw.data ?? [])) as Record<string, unknown>[]
+
+      liveBids.value = (Array.isArray(bidsArray) ? bidsArray : []).map((b) => ({
+        id: (b.bidId ?? b.id ?? '') as string,
+        lotId: (b.lotId ?? '') as string,
+        lotTitle: (b.lotTitle ?? '') as string,
+        bidderName: (b.bidderName ?? maskBidderId((b.bidderId ?? '') as string)) as string,
+        amount: Number(b.amount ?? 0),
+        timestamp: (b.timestamp ?? '') as string,
+      }))
     } catch (err: unknown) {
-      error.value = extractErrorMessage(err, 'Failed to fetch live bids')
+      if (is404(err)) {
+        liveBids.value = []
+      } else {
+        error.value = extractErrorMessage(err, 'Failed to fetch live bids')
+      }
     }
+  }
+
+  /** Masks a bidder UUID for display (e.g. "abcd1234-...-5678" → "abcd****5678"). */
+  function maskBidderId(bidderId: string): string {
+    if (!bidderId || bidderId.length < 8) return bidderId
+    const clean = bidderId.replace(/-/g, '')
+    return `${clean.substring(0, 4)}****${clean.substring(clean.length - 4)}`
   }
 
   return {
