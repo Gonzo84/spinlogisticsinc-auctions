@@ -23,6 +23,7 @@ const {
   closeAuction,
   featureAuction,
   unfeatureAuction,
+  revokeAward,
 } = useAuctions()
 
 const auctionId = computed(() => route.params.id as string)
@@ -34,6 +35,8 @@ const breadcrumbItems = computed(() => [
 
 const showCancelDialog = ref(false)
 const cancelReason = ref('')
+const showRevokeDialog = ref(false)
+const revokeReason = ref('')
 
 onMounted(async () => {
   // fetchAuction must complete first — fetchAuctionLots derives lot data
@@ -67,6 +70,17 @@ async function handleCancel() {
   const ok = await cancelAuction(auctionId.value, cancelReason.value)
   if (ok) {
     showCancelDialog.value = false
+    await fetchAuction(auctionId.value)
+  }
+}
+
+async function handleRevokeAward() {
+  if (!revokeReason.value.trim()) return
+  const ok = await revokeAward(auctionId.value, revokeReason.value)
+  if (ok) {
+    showRevokeDialog.value = false
+    revokeReason.value = ''
+    toast.add({ severity: 'success', summary: 'Revoked', detail: 'Award has been revoked', life: 3000 })
     await fetchAuction(auctionId.value)
   }
 }
@@ -158,7 +172,15 @@ const bidChartData = computed(() =>
             @click="handleClose"
           />
           <Button
-            v-if="currentAuction.status !== 'cancelled' && currentAuction.status !== 'closed'"
+            v-if="currentAuction.status === 'awarded'"
+            label="Revoke Award"
+            icon="pi pi-undo"
+            severity="danger"
+            outlined
+            @click="showRevokeDialog = true"
+          />
+          <Button
+            v-if="currentAuction.status !== 'cancelled' && currentAuction.status !== 'closed' && currentAuction.status !== 'awarded'"
             label="Cancel Auction"
             severity="danger"
             @click="showCancelDialog = true"
@@ -326,6 +348,46 @@ const bidChartData = computed(() =>
             :loading="loading"
             :disabled="loading"
             @click="handleCancel"
+          />
+        </div>
+      </template>
+    </Dialog>
+
+    <!-- Revoke Award Dialog -->
+    <Dialog
+      v-model:visible="showRevokeDialog"
+      header="Revoke Award"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '28rem' }"
+    >
+      <p class="mb-4 text-sm text-gray-500">
+        Are you sure you want to revoke the award for this auction? The auction will return to closed status.
+      </p>
+      <div>
+        <label class="label">Reason for revocation</label>
+        <Textarea
+          v-model="revokeReason"
+          rows="3"
+          class="w-full"
+          placeholder="Provide a reason..."
+        />
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            :disabled="loading"
+            @click="showRevokeDialog = false"
+          />
+          <Button
+            label="Revoke Award"
+            severity="danger"
+            icon="pi pi-undo"
+            :loading="loading"
+            :disabled="loading || !revokeReason.trim()"
+            @click="handleRevokeAward"
           />
         </div>
       </template>

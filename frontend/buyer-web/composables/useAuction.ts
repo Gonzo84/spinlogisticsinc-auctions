@@ -15,6 +15,7 @@ export function useAuction() {
   let bidHandler: ((data: { bid: Bid; auctionId: string }) => void) | null = null
   let extendedHandler: ((data: { auctionId: string; newEndTime: string }) => void) | null = null
   let closedHandler: ((data: { auctionId: string }) => void) | null = null
+  let awardRevokedHandler: ((data: { auctionId: string }) => void) | null = null
 
   async function getAuction(id: string): Promise<Auction> {
     loading.value = true
@@ -134,9 +135,16 @@ export function useAuction() {
       }
     }
 
+    awardRevokedHandler = (data: { auctionId: string }) => {
+      if (data.auctionId === auctionId) {
+        auctionStore.revokeAward()
+      }
+    }
+
     ws.onBidPlaced(bidHandler)
     ws.onAuctionExtended(extendedHandler)
     ws.onAuctionClosed(closedHandler)
+    ws.onAuctionAwardRevoked(awardRevokedHandler)
   }
 
   function unsubscribeFromAuction(auctionId: string) {
@@ -155,6 +163,10 @@ export function useAuction() {
       ws.off('auction_closed', closedHandler)
       closedHandler = null
     }
+    if (awardRevokedHandler) {
+      ws.off('auction_award_revoked', awardRevokedHandler)
+      awardRevokedHandler = null
+    }
 
     auctionStore.clearAuction()
   }
@@ -166,6 +178,7 @@ export function useAuction() {
     bids: computed(() => auctionStore.bids),
     isActive: computed(() => auctionStore.isActive),
     isClosed: computed(() => auctionStore.isClosed),
+    isAwarded: computed(() => auctionStore.isAwarded),
     getAuction,
     listAuctions,
     subscribeToAuction,

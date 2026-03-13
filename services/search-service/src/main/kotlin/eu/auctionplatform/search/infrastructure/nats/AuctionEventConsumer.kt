@@ -75,6 +75,7 @@ class AuctionEventConsumer @Inject constructor(
         private const val SUBJECT_CO2_CALCULATED = "co2.calculated"
         private const val SUBJECT_FEATURED_MARKED = "auction.featured.marked"
         private const val SUBJECT_FEATURED_UNMARKED = "auction.featured.unmarked"
+        private const val SUBJECT_AWARD_REVOKED = "auction.lot.award-revoked"
     }
 
     // -------------------------------------------------------------------------
@@ -132,6 +133,7 @@ class AuctionEventConsumer @Inject constructor(
                 subject.startsWith(SUBJECT_CO2_CALCULATED) -> handleCo2Calculated(payload)
                 subject.startsWith(SUBJECT_FEATURED_MARKED) -> handleFeaturedMarked(payload)
                 subject.startsWith(SUBJECT_FEATURED_UNMARKED) -> handleFeaturedUnmarked(payload)
+                subject.startsWith(SUBJECT_AWARD_REVOKED) -> handleAwardRevoked(payload)
                 else -> LOG.debugf("Ignoring unrelated subject [%s] on auction stream", subject)
             }
         } catch (ex: Exception) {
@@ -282,6 +284,28 @@ class AuctionEventConsumer @Inject constructor(
 
         lotIndexService.updateDocument(lotId, updates)
         LOG.infof("Successfully marked lot [id=%s] as featured", lotId)
+    }
+
+    /**
+     * Handles `auction.lot.award-revoked` events by resetting the lot status to "closed"
+     * in the search index.
+     *
+     * This occurs when an admin revokes an award on a closed auction, returning it
+     * to the pre-award "closed" state.
+     *
+     * Expected payload fields:
+     * - `lotId` or `aggregateId` -- the lot identifier
+     */
+    private fun handleAwardRevoked(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node)
+
+        LOG.infof("Revoking award for lot [id=%s], resetting status to closed", lotId)
+
+        lotIndexService.updateDocument(lotId, mapOf(
+            "status" to "closed"
+        ))
+        LOG.infof("Successfully revoked award for lot [id=%s]", lotId)
     }
 
     /**

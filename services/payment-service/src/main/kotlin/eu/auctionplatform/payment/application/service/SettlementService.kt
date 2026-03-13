@@ -242,6 +242,8 @@ class SettlementService @Inject constructor(
             "paymentId" to settlement.paymentId.toString(),
             "netAmount" to settlement.netAmount,
             "commission" to settlement.commission,
+            "commissionRate" to settlement.commissionRate,
+            "hammerPrice" to payment.hammerPrice,
             "currency" to payment.currency
         )
 
@@ -278,6 +280,8 @@ class SettlementService @Inject constructor(
             "paymentId" to settlement.paymentId.toString(),
             "netAmount" to settlement.netAmount,
             "commission" to settlement.commission,
+            "commissionRate" to settlement.commissionRate,
+            "hammerPrice" to settlement.netAmount.add(settlement.commission),
             "currency" to "EUR",
             "bankReference" to bankReference,
             "settledAt" to (settlement.settledAt ?: Instant.now()).toString()

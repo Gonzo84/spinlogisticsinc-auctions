@@ -132,4 +132,12 @@ sealed class AuctionException(
         code = "FEATURED_LIMIT_REACHED",
         message = "Maximum featured auction limit ($maxFeatured) reached"
     )
+
+    class AwardRevocationWindowExpiredException(
+        awardedAt: java.time.Instant,
+        windowMinutes: Int
+    ) : AuctionException(
+        code = "REVOCATION_WINDOW_EXPIRED",
+        message = "Revoke window expired. Award was at $awardedAt, window was $windowMinutes minutes."
+    )
 }

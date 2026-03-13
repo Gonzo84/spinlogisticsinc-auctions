@@ -107,6 +107,10 @@ quarkus:
 auction:
   featured:
     max-count: ${AUCTION_FEATURED_MAX_COUNT:12}
+  auto-award:
+    enabled: ${AUCTION_AUTO_AWARD_ENABLED:true}
+    delay-seconds: ${AUCTION_AUTO_AWARD_DELAY_SECONDS:0}
+    revoke-window-minutes: ${AUCTION_REVOKE_WINDOW_MINUTES:30}
 
 # -----------------------------------------------------------------------------
 # NATS

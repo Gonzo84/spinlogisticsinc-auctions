@@ -18,6 +18,7 @@ p, admin_ops, /api/v1/auctions, GET|POST, allow
 p, admin_ops, /api/v1/auctions/:id, .*, allow
 p, admin_ops, /api/v1/auctions/:id/award, POST, allow
 p, admin_ops, /api/v1/auctions/:id/feature, POST|DELETE, allow
+p, admin_ops, /api/v1/auctions/:id/revoke-award, POST, allow
 p, buyer_active, /api/v1/auctions/by-lot/:lotId, GET, allow
 p, seller_verified, /api/v1/auctions/by-lot/:lotId, GET, allow
 p, broker, /api/v1/auctions/by-lot/:lotId, GET, allow

@@ -4,6 +4,7 @@ import eu.auctionplatform.auction.domain.event.AuctionClosedEvent
 import eu.auctionplatform.auction.domain.event.AuctionExtendedEvent
 import eu.auctionplatform.auction.domain.event.AuctionFeaturedEvent
 import eu.auctionplatform.auction.domain.event.AuctionUnfeaturedEvent
+import eu.auctionplatform.auction.domain.event.AwardRevokedEvent
 import eu.auctionplatform.auction.domain.event.BidPlacedEvent
 import eu.auctionplatform.auction.domain.event.LotAwardedEvent
 import eu.auctionplatform.auction.domain.event.ReserveMetEvent
@@ -41,6 +42,8 @@ data class AuctionReadModel(
     val sellerId: UUID,
     val featured: Boolean = false,
     val featuredAt: Instant? = null,
+    val awardedAt: Instant? = null,
+    val autoAwarded: Boolean = false,
     val createdAt: Instant = Instant.now(),
     val updatedAt: Instant = Instant.now()
 )
@@ -65,6 +68,7 @@ class AuctionReadModelRepository @Inject constructor(
             original_end_time, starting_bid, current_high_bid,
             current_high_bidder_id, bid_count, reserve_met,
             extension_count, seller_id, featured, featured_at,
+            awarded_at, auto_awarded,
             created_at, updated_at
         """
 
@@ -94,8 +98,9 @@ class AuctionReadModelRepository @Inject constructor(
                  original_end_time, starting_bid, current_high_bid,
                  current_high_bidder_id, bid_count, reserve_met,
                  extension_count, seller_id, featured, featured_at,
+                 awarded_at, auto_awarded,
                  created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (auction_id) DO UPDATE SET
                 lot_id = EXCLUDED.lot_id,
                 brand = EXCLUDED.brand,
@@ -112,6 +117,8 @@ class AuctionReadModelRepository @Inject constructor(
                 seller_id = EXCLUDED.seller_id,
                 featured = EXCLUDED.featured,
                 featured_at = EXCLUDED.featured_at,
+                awarded_at = EXCLUDED.awarded_at,
+                auto_awarded = EXCLUDED.auto_awarded,
                 updated_at = EXCLUDED.updated_at
         """
 
@@ -173,6 +180,27 @@ class AuctionReadModelRepository @Inject constructor(
              WHERE featured = TRUE AND status IN ('ACTIVE', 'CLOSING')
              ORDER BY featured_at DESC
              LIMIT ?
+        """
+
+        private const val UPDATE_AWARDED = """
+            UPDATE app.auction_read_model
+               SET status = 'AWARDED', awarded_at = ?, auto_awarded = ?, updated_at = ?
+             WHERE auction_id = ?
+        """
+
+        private const val UPDATE_REVOKED = """
+            UPDATE app.auction_read_model
+               SET status = 'CLOSED', updated_at = ?
+             WHERE auction_id = ?
+        """
+
+        private const val SELECT_CLOSED_WITH_WINNER_BEFORE = """
+            SELECT $SELECT_COLUMNS FROM app.auction_read_model
+             WHERE status = 'CLOSED'
+               AND current_high_bidder_id IS NOT NULL
+               AND reserve_met = TRUE
+               AND updated_at <= ?
+             ORDER BY updated_at ASC
         """
 
         private const val UPDATE_RESERVE_MET = """
@@ -265,8 +293,14 @@ class AuctionReadModelRepository @Inject constructor(
                 } else {
                     stmt.setNull(16, java.sql.Types.TIMESTAMP)
                 }
-                stmt.setTimestamp(17, Timestamp.from(readModel.createdAt))
-                stmt.setTimestamp(18, Timestamp.from(readModel.updatedAt))
+                if (readModel.awardedAt != null) {
+                    stmt.setTimestamp(17, Timestamp.from(readModel.awardedAt))
+                } else {
+                    stmt.setNull(17, java.sql.Types.TIMESTAMP)
+                }
+                stmt.setBoolean(18, readModel.autoAwarded)
+                stmt.setTimestamp(19, Timestamp.from(readModel.createdAt))
+                stmt.setTimestamp(20, Timestamp.from(readModel.updatedAt))
                 stmt.executeUpdate()
             }
         }
@@ -328,15 +362,28 @@ class AuctionReadModelRepository @Inject constructor(
             }
 
             is LotAwardedEvent -> {
+                val autoAwarded = event.metadata?.get("autoAwarded") == "true"
                 dataSource.connection.use { conn ->
-                    conn.prepareStatement(UPDATE_STATUS).use { stmt ->
-                        stmt.setString(1, "AWARDED")
-                        stmt.setTimestamp(2, Timestamp.from(now))
-                        stmt.setObject(3, UUID.fromString(event.aggregateId))
+                    conn.prepareStatement(UPDATE_AWARDED).use { stmt ->
+                        stmt.setTimestamp(1, Timestamp.from(event.timestamp))
+                        stmt.setBoolean(2, autoAwarded)
+                        stmt.setTimestamp(3, Timestamp.from(now))
+                        stmt.setObject(4, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                LOG.debugf("Updated read model status to AWARDED for auction %s", event.aggregateId)
+                LOG.debugf("Updated read model status to AWARDED for auction %s (auto=%s)", event.aggregateId, autoAwarded)
+            }
+
+            is AwardRevokedEvent -> {
+                dataSource.connection.use { conn ->
+                    conn.prepareStatement(UPDATE_REVOKED).use { stmt ->
+                        stmt.setTimestamp(1, Timestamp.from(now))
+                        stmt.setObject(2, UUID.fromString(event.aggregateId))
+                        stmt.executeUpdate()
+                    }
+                }
+                LOG.debugf("Updated read model status to CLOSED (revoked) for auction %s", event.aggregateId)
             }
 
             is ReserveMetEvent -> {
@@ -389,6 +436,17 @@ class AuctionReadModelRepository @Inject constructor(
         }
     }
 
+    fun findClosedAuctionsBeforeWithWinner(before: Instant): List<AuctionReadModel> {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_CLOSED_WITH_WINNER_BEFORE).use { stmt ->
+                stmt.setTimestamp(1, Timestamp.from(before))
+                stmt.executeQuery().use { rs ->
+                    return rs.toModelList()
+                }
+            }
+        }
+    }
+
     fun findFeatured(limit: Int = 12): List<AuctionReadModel> {
         dataSource.connection.use { conn ->
             conn.prepareStatement(SELECT_FEATURED).use { stmt ->
@@ -429,6 +487,8 @@ class AuctionReadModelRepository @Inject constructor(
         sellerId = getObject("seller_id", UUID::class.java),
         featured = getBoolean("featured"),
         featuredAt = getTimestamp("featured_at")?.toInstant(),
+        awardedAt = getTimestamp("awarded_at")?.toInstant(),
+        autoAwarded = getBoolean("auto_awarded"),
         createdAt = getTimestamp("created_at").toInstant(),
         updatedAt = getTimestamp("updated_at").toInstant()
     )

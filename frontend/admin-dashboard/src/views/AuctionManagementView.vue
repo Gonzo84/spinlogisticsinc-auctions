@@ -11,6 +11,7 @@ const statusOptions = [
   { label: 'Active', value: 'active' },
   { label: 'Closing', value: 'closing' },
   { label: 'Closed', value: 'closed' },
+  { label: 'Awarded', value: 'awarded' },
   { label: 'Cancelled', value: 'cancelled' },
 ]
 
@@ -208,6 +209,7 @@ function clearFilters() {
         <Column field="status" header="Status">
           <template #body="{ data }">
             <Tag :value="formatStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+            <span v-if="data.autoAwarded" class="ml-1 text-xs text-gray-400">(auto)</span>
           </template>
         </Column>
         <Column field="lotCount" header="Lots" headerStyle="text-align: right" bodyStyle="text-align: right" sortable />

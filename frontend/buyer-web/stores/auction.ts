@@ -25,6 +25,10 @@ export const useAuctionStore = defineStore('auction', () => {
     return currentAuction.value?.status === 'closed'
   })
 
+  const isAwarded = computed((): boolean => {
+    return currentAuction.value?.status === 'awarded'
+  })
+
   const reserveMet = computed((): boolean => {
     return currentAuction.value?.reserveMet ?? false
   })
@@ -80,6 +84,17 @@ export const useAuctionStore = defineStore('auction', () => {
     }
   }
 
+  function revokeAward() {
+    if (currentAuction.value) {
+      currentAuction.value = {
+        ...currentAuction.value,
+        status: 'closed',
+        awardedAt: undefined,
+        autoAwarded: undefined,
+      }
+    }
+  }
+
   function setAutoBid(config: AutoBidConfig | null) {
     autoBidConfig.value = config
   }
@@ -102,6 +117,7 @@ export const useAuctionStore = defineStore('auction', () => {
     bidCount,
     isActive,
     isClosed,
+    isAwarded,
     reserveMet,
     hasAutoBid,
     minBidAmount,
@@ -109,6 +125,7 @@ export const useAuctionStore = defineStore('auction', () => {
     addBid,
     extendAuction,
     closeAuction,
+    revokeAward,
     setAutoBid,
     clearAuction,
   }

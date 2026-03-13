@@ -29,6 +29,8 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import org.jboss.logging.Logger
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
 
 /**
@@ -220,7 +222,9 @@ class SellerResource {
                 lotId = s.lotId,
                 lotTitle = s.lotTitle,
                 hammerPrice = s.hammerPrice,
-                commission = s.commission,
+                commissionAmount = s.commission,
+                commissionRate = s.commissionRate.multiply(BigDecimal(100))
+                    .setScale(2, RoundingMode.HALF_UP),
                 netAmount = s.netAmount,
                 currency = s.currency,
                 status = s.status,

@@ -138,7 +138,8 @@ data class LotAwardedEvent(
     val winnerId: String,
     val winningBidAmount: BigDecimal,
     val winningBidCurrency: String,
-    val winningBidId: String
+    val winningBidId: String,
+    override val metadata: Map<String, String>? = null,
 ) : AuctionEvent(
     eventId = eventId,
     eventType = EVENT_TYPE,
@@ -387,6 +388,33 @@ data class AuctionFeaturedEvent(
 ) {
     companion object {
         const val EVENT_TYPE: String = "AuctionFeaturedEvent"
+    }
+}
+
+/**
+ * Raised when an admin revokes an award, reverting the auction to CLOSED status.
+ */
+data class AwardRevokedEvent(
+    override val eventId: String,
+    override val aggregateId: String,
+    override val brand: String,
+    override val timestamp: Instant,
+    override val version: Long,
+    val revokedBy: String,
+    val reason: String,
+    val originalWinnerId: String,
+    val originalHammerPrice: BigDecimal,
+    override val metadata: Map<String, String>? = null,
+) : AuctionEvent(
+    eventId = eventId,
+    eventType = EVENT_TYPE,
+    aggregateId = aggregateId,
+    brand = brand,
+    timestamp = timestamp,
+    version = version
+) {
+    companion object {
+        const val EVENT_TYPE: String = "AwardRevokedEvent"
     }
 }
 

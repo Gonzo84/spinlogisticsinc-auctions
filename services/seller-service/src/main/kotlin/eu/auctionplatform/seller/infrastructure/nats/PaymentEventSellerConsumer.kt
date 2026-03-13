@@ -13,6 +13,7 @@ import jakarta.inject.Singleton
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.util.UUID
 
@@ -154,11 +155,16 @@ class PaymentEventSellerConsumer @Inject constructor(
         val sellerProfileId = sellerProfileRepository.findSellerProfileIdByUserId(sellerId)
             ?: sellerId // fall back to using it directly as seller_profile.id
 
-        LOG.infof("Recording settlement for seller %s (netAmount=%s, commission=%s)",
-            sellerProfileId, netAmount, commission)
+        // Read from event (authoritative) with fallback to recomputation
+        val hammerPrice = node.optionalDecimal("hammerPrice")
+            ?: netAmount.add(commission)
+        val commissionRate = node.optionalDecimal("commissionRate")
+            ?: if (hammerPrice > BigDecimal.ZERO)
+                commission.divide(hammerPrice, 4, RoundingMode.HALF_UP)
+            else BigDecimal("0.10")
 
-        // Compute hammer price as netAmount + commission
-        val hammerPrice = netAmount.add(commission)
+        LOG.infof("Recording settlement for seller %s (netAmount=%s, commission=%s, rate=%s)",
+            sellerProfileId, netAmount, commission, commissionRate)
 
         // Determine lotId from the event -- settlement may reference a lot indirectly
         val lotIdStr = node.optionalText("lotId") ?: node.optionalText("aggregateId")
@@ -173,6 +179,7 @@ class PaymentEventSellerConsumer @Inject constructor(
             lotTitle = null,
             hammerPrice = hammerPrice,
             commission = commission,
+            commissionRate = commissionRate,
             netAmount = netAmount,
             currency = currency,
             status = "READY",

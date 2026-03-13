@@ -52,9 +52,10 @@ class AuctionEventNotificationConsumer @Inject constructor(
         private const val BID_PROXY_FILTER = "auction.bid.proxy"
         private const val LOT_CLOSED_FILTER = "auction.lot.closed"
         private const val RESERVE_MET_FILTER = "auction.reserve.met"
+        private const val AWARD_REVOKED_FILTER = "auction.lot.award-revoked"
     }
 
-    private val executor: ExecutorService = Executors.newFixedThreadPool(4)
+    private val executor: ExecutorService = Executors.newFixedThreadPool(5)
 
     /**
      * Starts three consumer threads, one for each auction event subject filter.
@@ -68,6 +69,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
         executor.submit { createBidProxyConsumer().start() }
         executor.submit { createLotClosedConsumer().start() }
         executor.submit { createReserveMetConsumer().start() }
+        executor.submit { createAwardRevokedConsumer().start() }
     }
 
     @jakarta.annotation.PreDestroy
@@ -129,6 +131,19 @@ class AuctionEventNotificationConsumer @Inject constructor(
         ) {
             override fun handleMessage(message: Message) {
                 handleReserveMet(message)
+            }
+        }
+
+    private fun createAwardRevokedConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = connection,
+            streamName = STREAM_NAME,
+            durableName = "$DURABLE_NAME-award-revoked",
+            filterSubject = AWARD_REVOKED_FILTER,
+            deadLetterSubject = "dlq.notification.auction.lot.award-revoked"
+        ) {
+            override fun handleMessage(message: Message) {
+                handleAwardRevoked(message)
             }
         }
 
@@ -332,6 +347,42 @@ class AuctionEventNotificationConsumer @Inject constructor(
             "Sent RESERVE_MET to bidder=%s for auction=%s (lot=%s)",
             bidderId, auctionId, lotId
         )
+    }
+
+    /**
+     * Handles `auction.lot.award-revoked` events.
+     *
+     * Sends [NotificationType.AWARD_REVOKED] to the original winner whose
+     * award was revoked by an admin.
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun handleAwardRevoked(message: Message) {
+        val payload = parsePayload(message) ?: return
+
+        val winnerId = payload["winnerId"]?.toString() ?: return
+        val aggregateId = payload["aggregateId"]?.toString() ?: ""
+        val reason = payload["reason"]?.toString() ?: ""
+        val hammerPrice = payload["hammerPrice"]?.toString() ?: "0"
+        val currency = payload["currency"]?.toString() ?: "EUR"
+
+        val winnerUuid = UUID.fromString(winnerId)
+        val winnerEmail = userEmailResolver.resolveEmail(winnerUuid)
+
+        val data = mutableMapOf(
+            "auctionId" to aggregateId,
+            "hammerPrice" to hammerPrice,
+            "currency" to currency,
+            "reason" to reason
+        )
+        if (winnerEmail != null) data["email"] = winnerEmail
+
+        notificationService.sendNotification(
+            userId = winnerUuid,
+            type = NotificationType.AWARD_REVOKED,
+            data = data
+        )
+
+        LOG.debugf("Sent AWARD_REVOKED to winner=%s for auction=%s (reason=%s)", winnerId, aggregateId, reason)
     }
 
     // -----------------------------------------------------------------------

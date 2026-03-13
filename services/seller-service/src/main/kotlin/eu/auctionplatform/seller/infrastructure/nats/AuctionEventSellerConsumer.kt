@@ -28,6 +28,7 @@ import java.util.concurrent.Executors
  * - `auction.bid.placed` -- increments bid counter for the lot's seller.
  * - `auction.lot.closed` -- records hammer sale, updates lot status.
  * - `auction.lot.awarded` -- records award, updates lot status.
+ * - `auction.lot.award-revoked` -- reverts lot status to CLOSED, removes READY settlements.
  *
  * Because auction events do not carry a `sellerId` field, this consumer
  * resolves the seller via a DB lookup on `seller_lots(id)` using the lotId
@@ -53,9 +54,10 @@ class AuctionEventSellerConsumer @Inject constructor(
         private const val SUBJECT_BID_PLACED = "auction.bid.placed"
         private const val SUBJECT_LOT_CLOSED = "auction.lot.closed"
         private const val SUBJECT_LOT_AWARDED = "auction.lot.awarded"
+        private const val SUBJECT_LOT_AWARD_REVOKED = "auction.lot.award-revoked"
     }
 
-    private val executor: ExecutorService = Executors.newFixedThreadPool(3)
+    private val executor: ExecutorService = Executors.newFixedThreadPool(4)
 
     // -------------------------------------------------------------------------
     // Lifecycle
@@ -72,6 +74,7 @@ class AuctionEventSellerConsumer @Inject constructor(
         executor.submit { createBidPlacedConsumer().start() }
         executor.submit { createLotClosedConsumer().start() }
         executor.submit { createLotAwardedConsumer().start() }
+        executor.submit { createLotAwardRevokedConsumer().start() }
     }
 
     @jakarta.annotation.PreDestroy
@@ -126,6 +129,21 @@ class AuctionEventSellerConsumer @Inject constructor(
         ) {
             override fun handleMessage(message: Message) {
                 handleLotAwarded(message)
+            }
+        }
+
+    private fun createLotAwardRevokedConsumer(): NatsConsumer =
+        object : NatsConsumer(
+            connection = connection,
+            streamName = STREAM_NAME,
+            durableName = "$DURABLE_NAME-lot-award-revoked",
+            filterSubject = SUBJECT_LOT_AWARD_REVOKED,
+            maxRedeliveries = 5,
+            deadLetterSubject = "seller.dlq.auction.lot.award-revoked",
+            batchSize = 20
+        ) {
+            override fun handleMessage(message: Message) {
+                handleLotAwardRevoked(message)
             }
         }
 
@@ -211,6 +229,42 @@ class AuctionEventSellerConsumer @Inject constructor(
         sellerProfileRepository.updateLotStatus(lotId, "AWARDED")
 
         LOG.debugf("Recorded lot awarded for seller %s (lot=%s)", sellerId, lotId)
+    }
+
+    /**
+     * Handles `auction.lot.award-revoked` events by reverting the lot status
+     * from AWARDED back to CLOSED, removing any READY settlement records,
+     * and reversing seller metrics.
+     *
+     * Uses `originalHammerPrice` from [AwardRevokedEvent] to subtract from
+     * total_hammer_sales and decrement pending_settlements.
+     */
+    private fun handleLotAwardRevoked(message: Message) {
+        val payload = String(message.data, Charsets.UTF_8)
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node) ?: return
+
+        val sellerId = sellerProfileRepository.findSellerIdByLotId(lotId)
+        if (sellerId == null) {
+            LOG.debugf("No seller found for lot %s -- skipping lot.award-revoked", lotId)
+            return
+        }
+
+        // Revert lot status from AWARDED back to CLOSED
+        sellerProfileRepository.updateLotStatus(lotId, "CLOSED")
+
+        // Remove any READY (unpaid) settlement records for this lot
+        val deletedSettlements = sellerProfileRepository.deleteSettlementByLotId(lotId)
+        LOG.debugf("Deleted %d READY settlement(s) for lot %s", deletedSettlements, lotId)
+
+        // Reverse seller metrics (undo addHammerSale from lot.closed handler)
+        val hammerPrice = node.optionalDecimal("originalHammerPrice")
+        if (hammerPrice != null && hammerPrice > BigDecimal.ZERO) {
+            sellerProfileRepository.revertHammerSale(sellerId, hammerPrice)
+        }
+
+        val reason = node.get("reason")?.asText() ?: "unknown"
+        LOG.infof("Reverted award for seller %s (lot=%s, reason=%s)", sellerId, lotId, reason)
     }
 
     // -------------------------------------------------------------------------

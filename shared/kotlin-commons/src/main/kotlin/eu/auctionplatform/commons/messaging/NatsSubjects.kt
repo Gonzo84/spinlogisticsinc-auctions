@@ -19,6 +19,7 @@ object NatsSubjects {
     const val AUCTION_DEPOSIT_REQUIRED: String   = "auction.deposit.required"
     const val AUCTION_RESERVE_MET: String        = "auction.reserve.met"
     const val AUCTION_LOT_AWARDED: String        = "auction.lot.awarded"
+    const val AUCTION_LOT_AWARD_REVOKED: String  = "auction.lot.award-revoked"
     const val AUCTION_CANCELLED: String          = "auction.cancelled"
 
     // ── Catalog ──────────────────────────────────────────────────────────

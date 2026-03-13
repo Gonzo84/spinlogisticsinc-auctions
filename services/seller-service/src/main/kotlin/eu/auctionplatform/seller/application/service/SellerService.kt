@@ -68,7 +68,7 @@ class SellerService @Inject constructor(
 
         private const val SELECT_SETTLEMENTS_BY_SELLER = """
             SELECT s.id, s.lot_id, s.lot_title, s.hammer_price, s.commission,
-                   s.net_amount, s.currency, s.status, s.settled_at
+                   s.commission_rate, s.net_amount, s.currency, s.status, s.settled_at
               FROM app.seller_settlements s
              WHERE s.seller_id = ?
              ORDER BY s.settled_at DESC NULLS LAST
@@ -345,6 +345,7 @@ class SellerService @Inject constructor(
                                 lotTitle = rs.getString("lot_title"),
                                 hammerPrice = rs.getBigDecimal("hammer_price") ?: BigDecimal.ZERO,
                                 commission = rs.getBigDecimal("commission") ?: BigDecimal.ZERO,
+                                commissionRate = rs.getBigDecimal("commission_rate") ?: BigDecimal("0.10"),
                                 netAmount = rs.getBigDecimal("net_amount") ?: BigDecimal.ZERO,
                                 currency = rs.getString("currency") ?: "EUR",
                                 status = rs.getString("status") ?: "PENDING",

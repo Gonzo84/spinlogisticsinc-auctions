@@ -6,6 +6,7 @@ export type WebSocketEvent =
   | 'bid_placed'
   | 'auction_extended'
   | 'auction_closed'
+  | 'auction_award_revoked'
   | 'overbid'
   | 'reserve_met'
   | 'notification'
@@ -29,6 +30,10 @@ interface AuctionExtendedData {
 }
 
 interface AuctionClosedData {
+  auctionId: string
+}
+
+interface AuctionAwardRevokedData {
   auctionId: string
 }
 
@@ -102,6 +107,7 @@ export function useWebSocket() {
           if (eventType === 'lot_extended') eventType = 'auction_extended'
           if (eventType === 'lot_closed') eventType = 'auction_closed'
           if (eventType === 'lot_awarded') eventType = 'auction_closed'
+          if (eventType === 'lot_award_revoked') eventType = 'auction_award_revoked'
 
           const handlers = eventHandlers.get(eventType as WebSocketEvent)
           if (handlers) {
@@ -210,6 +216,10 @@ export function useWebSocket() {
     addHandler('auction_closed', handler as InternalHandler)
   }
 
+  function onAuctionAwardRevoked(handler: (data: AuctionAwardRevokedData) => void) {
+    addHandler('auction_award_revoked', handler as InternalHandler)
+  }
+
   function onOverbid(handler: (data: OverbidData) => void) {
     addHandler('overbid', handler as InternalHandler)
   }
@@ -254,6 +264,7 @@ export function useWebSocket() {
     onBidPlaced,
     onAuctionExtended,
     onAuctionClosed,
+    onAuctionAwardRevoked,
     onOverbid,
     onReserveMet,
     onNotification,

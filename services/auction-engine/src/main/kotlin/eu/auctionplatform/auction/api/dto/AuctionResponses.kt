@@ -80,6 +80,14 @@ data class AuctionDetailResponse(
     @JsonProperty("createdAt")
     val createdAt: Instant,
 
+    /** When the auction was awarded. */
+    @JsonProperty("awardedAt")
+    val awardedAt: Instant? = null,
+
+    /** Whether the auction was auto-awarded (vs manually awarded by admin). */
+    @JsonProperty("autoAwarded")
+    val autoAwarded: Boolean = false,
+
     /** UTC timestamp when the auction read model was last updated. */
     @JsonProperty("updatedAt")
     val updatedAt: Instant
@@ -129,7 +137,11 @@ data class AuctionSummaryResponse(
 
     /** Whether this auction is featured on the homepage. */
     @JsonProperty("featured")
-    val featured: Boolean
+    val featured: Boolean,
+
+    /** Whether the auction was auto-awarded. */
+    @JsonProperty("autoAwarded")
+    val autoAwarded: Boolean = false
 )
 
 /**

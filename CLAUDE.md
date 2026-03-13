@@ -170,7 +170,7 @@ cd frontend/admin-dashboard && npx vitest
 
 12. **Payment-service OIDC client needs separate `OIDC_AUTH_URL` env var in Docker Compose.** The standard `QUARKUS_OIDC_AUTH_SERVER_URL` only overrides `quarkus.oidc.auth-server-url`, NOT `quarkus.oidc-client.internal.auth-server-url`. The `oidc-client` section uses `${OIDC_AUTH_URL}` — must be set explicitly or the service hangs on startup trying to reach `localhost:8180`. The Keycloak client `payment-service-internal` must also exist in the realm.
 
-13. **Seller-service settlement fields differ from frontend expectations.** Backend returns `commission` (not `commissionAmount`) and no `commissionRate`. Frontend `useSettlements.ts` must normalize: map `commission` → `commissionAmount` and compute `commissionRate` from `commission / hammerPrice`. Without this, the settlements page shows "NaN %".
+13. **Seller-service settlement fields now aligned with frontend.** Backend returns `commissionAmount` and `commissionRate` (as percentage) directly. Frontend `useSettlements.ts` has a backwards-compatible fallback that maps `commission` → `commissionAmount` if the old format is still received.
 
 14. **PrimeIcons font decode warnings in Vite dev server.** PrimeIcons fonts in `node_modules` produce "invalid sfntVersion" warnings when Vite pre-bundles them. Fix: add `optimizeDeps: { exclude: ['primeicons'] }` to each frontend's `vite.config.ts`.
 
@@ -227,6 +227,12 @@ cd frontend/admin-dashboard && npx vitest
 40. **`InternalAuctionResource` must stay in sync with `AuctionDetailResponse`.** This internal service-to-service endpoint constructs `AuctionDetailResponse` independently from `AuctionResource`. When fields are added to the DTO (like `featured`/`featuredAt`), both resource files must be updated or the build fails with "No value passed for parameter".
 
 41. **Frontend links to lot detail must use catalog `lotId`, not auction-engine `auctionId`.** `mapAuctionResponse()` sets `id = auctionId` and `lotNumber = lotId`. The lot detail page (`lots/[id].vue`) calls catalog-service with the URL param — using the auction-engine UUID causes a 404. Components displaying auction-engine data must link with `auction.lotNumber || auction.id`. This bit `HeroCarousel.vue` for featured auctions.
+
+42. **Auto-award runs in `AuctionClosingScheduler` after close.** Configurable via `auction.auto-award.enabled` (default `true`) and `auction.auto-award.delay-seconds` (default `0`). When delay is 0, award happens immediately after close in the same scheduler tick. When delay > 0, a separate `@Scheduled(every = "5s")` job polls for eligible auctions. The `autoAwardLot()` method in `AuctionLifecycleService` replays events to get the aggregate, calls `award()`, and publishes `LotAwardedEvent` via NATS. Award revocation is supported via `POST /auctions/{id}/revoke-award` which produces `AwardRevokedEvent` and reverts status to CLOSED.
+
+43. **`AwardRevokedEvent` triggers cross-service cleanup.** When an award is revoked: (a) auction-engine reverts to CLOSED status, (b) `AwardRevokedConsumer` in payment-service cancels associated payments (`PaymentRepository.findByAuctionId()` + `updateStatus(CANCELLED)`), (c) seller-service `AuctionEventSellerConsumer` deletes READY settlements and reverts hammer sale metrics. All consumers must handle this event or stale data persists.
+
+44. **Settlement field names are now aligned across the stack.** Seller-service API returns `commissionAmount` (not `commission`) and `commissionRate` (as percentage, e.g., `10.00`). Payment-service `SettlementResponse` also uses `commissionAmount`. NATS settlement events include `commissionRate` and `hammerPrice` from the authoritative source (payment-service). The `commission_rate` column in `seller_settlements` stores the ratio (e.g., `0.10`); the API converts to percentage. Frontend `useSettlements.ts` has a backwards-compatible fallback for old-format responses.
 
 ### Deployment
 

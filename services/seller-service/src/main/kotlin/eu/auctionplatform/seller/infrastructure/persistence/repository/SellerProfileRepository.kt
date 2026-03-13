@@ -170,15 +170,28 @@ class SellerProfileRepository @Inject constructor(
 
         private const val INSERT_SETTLEMENT = """
             INSERT INTO app.seller_settlements
-                (id, seller_id, lot_id, lot_title, hammer_price, commission,
+                (id, seller_id, lot_id, lot_title, hammer_price, commission, commission_rate,
                  net_amount, currency, status, payment_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         """
 
         private const val UPDATE_SETTLEMENT_STATUS_BY_PAYMENT_ID = """
             UPDATE app.seller_settlements
                SET status = ?, settled_at = ?, updated_at = NOW()
              WHERE payment_id = ?
+        """
+
+        private const val DELETE_SETTLEMENT_BY_LOT_ID = """
+            DELETE FROM app.seller_settlements WHERE lot_id = ? AND status = 'READY'
+        """
+
+        private const val REVERT_HAMMER_SALE = """
+            UPDATE app.seller_metrics
+               SET total_hammer_sales = GREATEST(total_hammer_sales - ?, 0),
+                   pending_settlements = GREATEST(pending_settlements - 1, 0),
+                   active_lots = active_lots + 1,
+                   updated_at = NOW()
+             WHERE seller_id = ?
         """
 
         // -----------------------------------------------------------------------
@@ -616,6 +629,7 @@ class SellerProfileRepository @Inject constructor(
         lotTitle: String?,
         hammerPrice: BigDecimal,
         commission: BigDecimal,
+        commissionRate: BigDecimal = BigDecimal("0.10"),
         netAmount: BigDecimal,
         currency: String,
         status: String,
@@ -629,10 +643,11 @@ class SellerProfileRepository @Inject constructor(
                 stmt.setString(4, lotTitle)
                 stmt.setBigDecimal(5, hammerPrice)
                 stmt.setBigDecimal(6, commission)
-                stmt.setBigDecimal(7, netAmount)
-                stmt.setString(8, currency)
-                stmt.setString(9, status)
-                stmt.setObject(10, paymentId)
+                stmt.setBigDecimal(7, commissionRate)
+                stmt.setBigDecimal(8, netAmount)
+                stmt.setString(9, currency)
+                stmt.setString(10, status)
+                stmt.setObject(11, paymentId)
                 stmt.executeUpdate()
             }
         }
@@ -659,6 +674,43 @@ class SellerProfileRepository @Inject constructor(
                 stmt.setTimestamp(2, settledAt?.let { Timestamp.from(it) })
                 stmt.setObject(3, paymentId)
                 return stmt.executeUpdate() > 0
+            }
+        }
+    }
+
+    /**
+     * Deletes any READY settlement records for a given lot.
+     *
+     * Used when an award is revoked -- only READY (not yet PAID) settlements
+     * should be cleaned up.
+     *
+     * @param lotId The lot identifier.
+     * @return The number of rows deleted.
+     */
+    fun deleteSettlementByLotId(lotId: UUID): Int {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(DELETE_SETTLEMENT_BY_LOT_ID).use { stmt ->
+                stmt.setObject(1, lotId)
+                return stmt.executeUpdate()
+            }
+        }
+    }
+
+    /**
+     * Reverses the metrics changes from [addHammerSale] when an award is revoked.
+     *
+     * Decrements pending_settlements, subtracts the hammer amount from
+     * total_hammer_sales, and re-increments active_lots.
+     *
+     * @param sellerId The seller profile identifier.
+     * @param hammerAmount The hammer price to subtract.
+     */
+    fun revertHammerSale(sellerId: UUID, hammerAmount: BigDecimal) {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(REVERT_HAMMER_SALE).use { stmt ->
+                stmt.setBigDecimal(1, hammerAmount)
+                stmt.setObject(2, sellerId)
+                stmt.executeUpdate()
             }
         }
     }

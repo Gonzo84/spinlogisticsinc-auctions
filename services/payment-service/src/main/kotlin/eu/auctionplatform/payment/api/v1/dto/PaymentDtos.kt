@@ -306,8 +306,8 @@ data class SettlementResponse(
     @JsonProperty("netAmount")
     val netAmount: BigDecimal,
 
-    @JsonProperty("commission")
-    val commission: BigDecimal,
+    @JsonProperty("commissionAmount")
+    val commissionAmount: BigDecimal,
 
     @JsonProperty("commissionRate")
     val commissionRate: BigDecimal,

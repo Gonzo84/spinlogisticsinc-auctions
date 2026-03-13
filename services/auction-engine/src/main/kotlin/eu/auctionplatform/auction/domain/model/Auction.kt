@@ -421,6 +421,40 @@ class Auction private constructor() : AggregateRoot() {
     }
 
     /**
+     * Revokes a previously awarded auction, reverting it to CLOSED status.
+     *
+     * The auction must be in [AuctionStatus.AWARDED] state with winner data.
+     * After revocation, the auction can be re-awarded or cancelled by an admin.
+     *
+     * @param adminId The admin performing the revocation.
+     * @param reason Human-readable reason for revocation.
+     * @return The list of domain events produced.
+     * @throws IllegalStateException if the auction cannot be revoked.
+     */
+    fun revokeAward(adminId: String, reason: String): List<DomainEvent> {
+        check(status == AuctionStatus.AWARDED) {
+            "Cannot revoke award: auction '$id' is in status $status, expected AWARDED"
+        }
+        check(currentHighBidderId != null && currentHighBid != null) {
+            "Cannot revoke award: no winner data to preserve"
+        }
+
+        val event = AwardRevokedEvent(
+            eventId = IdGenerator.generateString(),
+            aggregateId = id.toString(),
+            brand = brand.code,
+            timestamp = Instant.now(),
+            version = version + 1,
+            revokedBy = adminId,
+            reason = reason,
+            originalWinnerId = currentHighBidderId!!.toString(),
+            originalHammerPrice = currentHighBid!!.amount
+        )
+        raise(event)
+        return listOf(event)
+    }
+
+    /**
      * Cancels the auction with the given [reason].
      *
      * An auction can be cancelled from any non-terminal state.
@@ -789,6 +823,7 @@ class Auction private constructor() : AggregateRoot() {
             is ReserveMetEvent -> applyReserveMet(event)
             is BidRejectedEvent -> { /* No state change for rejected bids */ }
             is AutoBidSetEvent -> applyAutoBidSet(event)
+            is AwardRevokedEvent -> applyAwardRevoked(event)
             is AuctionFeaturedEvent -> applyAuctionFeatured(event)
             is AuctionUnfeaturedEvent -> applyAuctionUnfeatured(event)
             is AutoBidExhaustedEvent -> applyAutoBidExhausted(event)
@@ -965,6 +1000,10 @@ class Auction private constructor() : AggregateRoot() {
         autoBids[bidderId]?.let { autoBid ->
             autoBids[bidderId] = autoBid.deactivate()
         }
+    }
+
+    private fun applyAwardRevoked(event: AwardRevokedEvent) {
+        status = AuctionStatus.CLOSED
     }
 
     private fun applyAuctionFeatured(event: AuctionFeaturedEvent) {

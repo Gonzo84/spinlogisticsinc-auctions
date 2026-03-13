@@ -25,6 +25,8 @@ import org.jboss.logging.Logger
  * - `auction.bid.placed.>` -- new bid placed on a lot
  * - `auction.lot.extended.>` -- lot closing time extended (anti-sniping)
  * - `auction.lot.closed.>` -- lot closed / bidding ended
+ * - `auction.lot.awarded.>` -- lot awarded to winning bidder
+ * - `auction.lot.award-revoked.>` -- lot award revoked by admin
  *
  * The `>` wildcard matches the trailing brand segment, e.g.
  * `auction.bid.placed.troostwijk`.
@@ -99,6 +101,8 @@ class BidEventForwarder @Inject constructor(
      * - `auction.bid.placed.<brand>` -- forward as "bid_placed" event
      * - `auction.lot.extended.<brand>` -- forward as "lot_extended" event
      * - `auction.lot.closed.<brand>` -- forward as "lot_closed" event
+     * - `auction.lot.awarded.<brand>` -- forward as "lot_awarded" event
+     * - `auction.lot.award-revoked.<brand>` -- forward as "lot_award_revoked" event
      */
     override fun handleMessage(message: Message) {
         val subject = message.subject
@@ -122,6 +126,9 @@ class BidEventForwarder @Inject constructor(
 
                 subject.startsWith(NatsSubjects.AUCTION_LOT_AWARDED) ->
                     forwardLotAwarded(payload)
+
+                subject.startsWith(NatsSubjects.AUCTION_LOT_AWARD_REVOKED) ->
+                    forwardLotAwardRevoked(payload)
 
                 else ->
                     LOG.debugf("Ignoring non-forwardable auction subject [%s]", subject)
@@ -245,6 +252,31 @@ class BidEventForwarder @Inject constructor(
 
         webSocketHub.broadcast(auctionId, wsMessage)
         LOG.debugf("Forwarded lot_awarded to auction [%s]", auctionId)
+    }
+
+    /**
+     * Forwards a lot-award-revoked event to all WebSocket clients.
+     *
+     * After receiving this event, clients should transition the auction UI back
+     * from "awarded" state and indicate that the award has been revoked.
+     */
+    private fun forwardLotAwardRevoked(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val auctionId = extractAuctionId(node) ?: return
+
+        val wsMessage = JsonMapper.toJson(mapOf(
+            "type" to "lot_award_revoked",
+            "auctionId" to auctionId,
+            "data" to mapOf(
+                "reason" to node.path("reason").asText(null),
+                "revokedBy" to node.path("revokedBy").asText(null),
+                "revokedAt" to node.path("revokedAt").asText(null)
+            ),
+            "serverTime" to java.time.Instant.now().toString()
+        ))
+
+        webSocketHub.broadcast(auctionId, wsMessage)
+        LOG.debugf("Forwarded lot_award_revoked to auction [%s]", auctionId)
     }
 
     // -------------------------------------------------------------------------

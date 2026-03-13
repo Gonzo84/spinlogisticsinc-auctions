@@ -86,6 +86,12 @@ class PaymentRepository @Inject constructor(
              WHERE id = ?
         """
 
+        private const val SELECT_BY_AUCTION_ID_AND_STATUSES = """
+            SELECT $SELECT_COLUMNS FROM app.payments
+            WHERE auction_id = ? AND status = ANY(?)
+            ORDER BY created_at DESC
+        """
+
         private const val SELECT_OVERDUE = """
             SELECT $SELECT_COLUMNS FROM app.payments
             WHERE status = 'PENDING' AND due_date < ?
@@ -231,6 +237,25 @@ class PaymentRepository @Inject constructor(
         }
 
         return Pair(payments, total)
+    }
+
+    /**
+     * Returns all payments for a given auction ID matching any of the specified statuses.
+     *
+     * @param auctionId The auction UUID.
+     * @param statuses The set of statuses to match.
+     * @return List of matching payments.
+     */
+    fun findByAuctionIdAndStatuses(auctionId: UUID, statuses: List<PaymentStatus>): List<Payment> {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_BY_AUCTION_ID_AND_STATUSES).use { stmt ->
+                stmt.setObject(1, auctionId)
+                stmt.setArray(2, conn.createArrayOf("varchar", statuses.map { it.name }.toTypedArray()))
+                stmt.executeQuery().use { rs ->
+                    return rs.toPaymentList()
+                }
+            }
+        }
     }
 
     /**

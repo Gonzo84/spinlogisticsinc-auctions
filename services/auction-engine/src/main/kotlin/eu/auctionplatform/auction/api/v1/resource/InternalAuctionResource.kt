@@ -93,6 +93,8 @@ class InternalAuctionResource {
             sellerId = model.sellerId.toString(),
             featured = model.featured,
             featuredAt = model.featuredAt,
+            awardedAt = model.awardedAt,
+            autoAwarded = model.autoAwarded,
             createdAt = model.createdAt,
             updatedAt = model.updatedAt
         )

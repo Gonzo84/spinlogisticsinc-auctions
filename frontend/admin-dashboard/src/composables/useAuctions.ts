@@ -37,6 +37,8 @@ function normalizeAuction(a: RawAuctionResponse): Auction {
     totalBids: a.totalBids ?? a.bidCount ?? 0,
     featured: a.featured ?? false,
     featuredAt: a.featuredAt ?? undefined,
+    awardedAt: a.awardedAt ?? undefined,
+    autoAwarded: a.autoAwarded ?? false,
     createdAt: a.createdAt ?? '',
     updatedAt: a.updatedAt ?? '',
   }
@@ -287,6 +289,20 @@ export function useAuctions() {
     }
   }
 
+  async function revokeAward(id: string, reason: string): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    try {
+      await post(`/auctions/${id}/revoke-award`, { reason })
+      return true
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to revoke award')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   /** Masks a bidder UUID for display (e.g. "abcd1234-...-5678" → "abcd****5678"). */
   function maskBidderId(bidderId: string): string {
     if (!bidderId || bidderId.length < 8) return bidderId
@@ -312,5 +328,6 @@ export function useAuctions() {
     fetchLiveBids,
     featureAuction,
     unfeatureAuction,
+    revokeAward,
   }
 }

@@ -13,6 +13,7 @@ const severityMap: Record<string, string> = {
   resolved: 'success',
 
   // Info (blue)
+  awarded: 'info',
   scheduled: 'info',
   sold: 'info',
   held: 'info',

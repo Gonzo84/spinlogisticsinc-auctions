@@ -42,7 +42,7 @@ export interface Auction {
   bidHistory: Bid[]
   endTime: string
   startTime: string
-  status: 'upcoming' | 'active' | 'extended' | 'closed'
+  status: 'upcoming' | 'active' | 'extended' | 'closed' | 'awarded'
   reservePrice?: number
   reserveMet: boolean
   co2Savings?: number
@@ -52,6 +52,8 @@ export interface Auction {
   depositAmount?: number
   minIncrement: number
   featured?: boolean
+  awardedAt?: string
+  autoAwarded?: boolean
 }
 
 export interface AutoBidConfig {

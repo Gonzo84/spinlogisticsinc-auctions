@@ -844,7 +844,7 @@ class PaymentResource @Inject constructor(
             sellerId = settlement.sellerId.toString(),
             paymentId = settlement.paymentId.toString(),
             netAmount = settlement.netAmount,
-            commission = settlement.commission,
+            commissionAmount = settlement.commission,
             commissionRate = settlement.commissionRate,
             status = settlement.status.name,
             settledAt = settlement.settledAt,

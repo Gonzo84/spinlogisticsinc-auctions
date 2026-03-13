@@ -86,7 +86,9 @@ class AuctionResource @Inject constructor(
     private val eventRepository: AuctionEventRepository,
     private val dataSource: AgroalDataSource,
     @ConfigProperty(name = "auction.featured.max-count", defaultValue = "12")
-    private val featuredMaxCount: String
+    private val featuredMaxCount: String,
+    @ConfigProperty(name = "auction.auto-award.revoke-window-minutes", defaultValue = "30")
+    private val revokeWindowMinutes: String
 ) {
 
     companion object {
@@ -164,6 +166,35 @@ class AuctionResource @Inject constructor(
         )
 
         return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    /**
+     * Revokes an award, reverting the auction to CLOSED status.
+     *
+     * Must be called within the configurable revoke window (default 30 min).
+     *
+     * **POST /api/v1/auctions/{id}/revoke-award**
+     */
+    @POST
+    @Path("/{id}/revoke-award")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun revokeAward(
+        @PathParam("id") id: String,
+        request: Map<String, String>?,
+        @Context securityContext: SecurityContext
+    ): Response {
+        val auctionId = AuctionId.fromString(id)
+        val adminId = extractUserId(securityContext)
+        val reason = request?.get("reason")?.takeIf { it.isNotBlank() } ?: "Admin revoked award"
+
+        val result = lifecycleService.revokeAward(
+            auctionId = auctionId,
+            adminId = adminId,
+            reason = reason,
+            revokeWindowMinutes = revokeWindowMinutes.toInt()
+        )
+
+        return Response.ok(ApiResponse.ok(result)).build()
     }
 
     /**
@@ -523,6 +554,7 @@ class AuctionResource @Inject constructor(
                    original_end_time, starting_bid, current_high_bid,
                    current_high_bidder_id, bid_count, reserve_met,
                    extension_count, seller_id, featured, featured_at,
+                   awarded_at, auto_awarded,
                    created_at, updated_at
               FROM app.auction_read_model
               $whereClause
@@ -560,6 +592,8 @@ class AuctionResource @Inject constructor(
                                 sellerId = rs.getObject("seller_id", UUID::class.java),
                                 featured = rs.getBoolean("featured"),
                                 featuredAt = rs.getTimestamp("featured_at")?.toInstant(),
+                                awardedAt = rs.getTimestamp("awarded_at")?.toInstant(),
+                                autoAwarded = rs.getBoolean("auto_awarded"),
                                 createdAt = rs.getTimestamp("created_at").toInstant(),
                                 updatedAt = rs.getTimestamp("updated_at").toInstant()
                             )
@@ -594,6 +628,8 @@ class AuctionResource @Inject constructor(
             sellerId = model.sellerId.toString(),
             featured = model.featured,
             featuredAt = model.featuredAt,
+            awardedAt = model.awardedAt,
+            autoAwarded = model.autoAwarded,
             createdAt = model.createdAt,
             updatedAt = model.updatedAt
         )
@@ -612,7 +648,8 @@ class AuctionResource @Inject constructor(
             currentHighBid = model.currentHighBid,
             bidCount = model.bidCount,
             reserveMet = model.reserveMet,
-            featured = model.featured
+            featured = model.featured,
+            autoAwarded = model.autoAwarded
         )
 
     /**

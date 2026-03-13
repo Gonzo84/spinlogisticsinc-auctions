@@ -57,5 +57,8 @@ enum class NotificationType(val description: String) {
     RESERVE_MET("Reserve price met on your lot"),
 
     /** Welcome notification sent upon user registration. */
-    WELCOME("Welcome to the auction platform")
+    WELCOME("Welcome to the auction platform"),
+
+    /** The admin revoked the award that was previously granted to the winner. */
+    AWARD_REVOKED("Your auction award has been revoked")
 }

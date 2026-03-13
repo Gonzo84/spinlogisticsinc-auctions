@@ -7,8 +7,10 @@ export interface Auction {
   buyerPremiumPercent: number
   startDate: string
   endDate: string
-  status: 'draft' | 'scheduled' | 'active' | 'closing' | 'closed' | 'cancelled'
+  status: 'draft' | 'scheduled' | 'active' | 'closing' | 'closed' | 'cancelled' | 'awarded'
   lotCount: number
+  awardedAt?: string
+  autoAwarded?: boolean
   totalBids: number
   featured: boolean
   featuredAt?: string
@@ -81,6 +83,8 @@ export interface RawAuctionResponse {
   bidCount?: number
   featured?: boolean
   featuredAt?: string
+  awardedAt?: string
+  autoAwarded?: boolean
   createdAt?: string
   updatedAt?: string
 }

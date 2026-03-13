@@ -5,7 +5,9 @@ import eu.auctionplatform.auction.domain.command.CreateAuctionCommand
 import eu.auctionplatform.auction.domain.event.AuctionClosedEvent
 import eu.auctionplatform.auction.domain.event.AuctionFeaturedEvent
 import eu.auctionplatform.auction.domain.event.AuctionUnfeaturedEvent
+import eu.auctionplatform.auction.domain.event.AwardRevokedEvent
 import eu.auctionplatform.auction.domain.event.LotAwardedEvent
+import eu.auctionplatform.auction.domain.exception.AuctionException
 import eu.auctionplatform.auction.domain.model.Auction
 import eu.auctionplatform.auction.infrastructure.persistence.entity.AuctionEventEntity
 import eu.auctionplatform.auction.infrastructure.persistence.entity.OutboxEntity
@@ -37,7 +39,8 @@ data class AuctionCloseResult(
     val auctionId: String,
     val finalBid: java.math.BigDecimal?,
     val winnerId: String?,
-    val reserveMet: Boolean
+    val reserveMet: Boolean,
+    val canAutoAward: Boolean = false
 )
 
 /**
@@ -56,6 +59,13 @@ data class AwardResult(
 data class FeaturedResult(
     val auctionId: String,
     val featured: Boolean
+)
+
+data class RevokeResult(
+    val auctionId: String,
+    val originalWinnerId: String,
+    val originalHammerPrice: java.math.BigDecimal,
+    val reason: String
 )
 
 /**
@@ -204,7 +214,8 @@ class AuctionLifecycleService @Inject constructor(
             auctionId = auctionId.toString(),
             finalBid = closedEvent?.finalBidAmount,
             winnerId = closedEvent?.winnerId,
-            reserveMet = closedEvent?.reserveMet ?: false
+            reserveMet = closedEvent?.reserveMet ?: false,
+            canAutoAward = closedEvent?.winnerId != null && (closedEvent.reserveMet)
         )
     }
 
@@ -219,7 +230,7 @@ class AuctionLifecycleService @Inject constructor(
      * @throws NotFoundException if the auction does not exist.
      */
     @Transactional
-    fun awardLot(auctionId: AuctionId): AwardResult {
+    fun awardLot(auctionId: AuctionId, autoAwarded: Boolean = false): AwardResult {
         val auction = loadAuction(auctionId)
         val expectedVersion = auction.version
 
@@ -233,12 +244,93 @@ class AuctionLifecycleService @Inject constructor(
             )
         }
 
-        val eventEntities = newEvents.map { AuctionEventEntity.fromDomainEvent(it) }
+        // Enrich LotAwardedEvent with autoAwarded metadata if applicable
+        val enrichedEvents = if (autoAwarded) {
+            newEvents.map { event ->
+                if (event is LotAwardedEvent) {
+                    LotAwardedEvent(
+                        eventId = event.eventId,
+                        aggregateId = event.aggregateId,
+                        brand = event.brand,
+                        timestamp = event.timestamp,
+                        version = event.version,
+                        lotId = event.lotId,
+                        winnerId = event.winnerId,
+                        winningBidAmount = event.winningBidAmount,
+                        winningBidCurrency = event.winningBidCurrency,
+                        winningBidId = event.winningBidId,
+                        metadata = mapOf("autoAwarded" to "true")
+                    )
+                } else event
+            }
+        } else newEvents
+
+        val eventEntities = enrichedEvents.map { AuctionEventEntity.fromDomainEvent(it) }
         val success = eventRepository.appendEvents(auctionId.value, eventEntities, expectedVersion)
         if (!success) {
             throw ConflictException(
                 code = "CONCURRENCY_CONFLICT",
                 message = "Failed to award lot for auction $auctionId due to concurrent modification"
+            )
+        }
+
+        for (event in enrichedEvents) {
+            val subject = resolveNatsSubject(event)
+            outboxRepository.save(OutboxEntity.fromDomainEvent(event, subject))
+            readModelRepository.updateFromEvent(event)
+        }
+
+        auction.markEventsAsCommitted()
+
+        LOG.infof("Awarded lot for auction %s (auto=%s)", auctionId, autoAwarded)
+
+        // Extract award details from the LotAwardedEvent
+        val awardedEvent = enrichedEvents.filterIsInstance<LotAwardedEvent>().firstOrNull()
+
+        return AwardResult(
+            auctionId = auctionId.toString(),
+            winnerId = awardedEvent?.winnerId ?: "",
+            hammerPrice = awardedEvent?.winningBidAmount ?: java.math.BigDecimal.ZERO
+        )
+    }
+
+    @Transactional
+    fun autoAwardLot(auctionId: AuctionId): AwardResult {
+        val result = awardLot(auctionId, autoAwarded = true)
+        LOG.infof("Auto-awarded auction %s to winner %s", auctionId, result.winnerId)
+        return result
+    }
+
+    @Transactional
+    fun revokeAward(
+        auctionId: AuctionId,
+        adminId: String,
+        reason: String,
+        revokeWindowMinutes: Int
+    ): RevokeResult {
+        val auction = loadAuction(auctionId)
+        val expectedVersion = auction.version
+
+        // Check revoke window
+        val readModel = readModelRepository.findById(auctionId.value)
+            ?: throw NotFoundException(code = "AUCTION_NOT_FOUND", message = "Auction not found")
+
+        val awardedAt = readModel.awardedAt
+            ?: throw NotFoundException(code = "AUCTION_NOT_AWARDED", message = "Auction has no award timestamp")
+
+        val windowExpiry = awardedAt.plus(java.time.Duration.ofMinutes(revokeWindowMinutes.toLong()))
+        if (Instant.now().isAfter(windowExpiry)) {
+            throw AuctionException.AwardRevocationWindowExpiredException(awardedAt, revokeWindowMinutes)
+        }
+
+        val newEvents = auction.revokeAward(adminId, reason)
+
+        val eventEntities = newEvents.map { AuctionEventEntity.fromDomainEvent(it) }
+        val success = eventRepository.appendEvents(auctionId.value, eventEntities, expectedVersion)
+        if (!success) {
+            throw ConflictException(
+                code = "CONCURRENCY_CONFLICT",
+                message = "Failed to revoke award for auction $auctionId due to concurrent modification"
             )
         }
 
@@ -249,16 +341,14 @@ class AuctionLifecycleService @Inject constructor(
         }
 
         auction.markEventsAsCommitted()
+        LOG.infof("Revoked award for auction %s by admin %s (reason=%s)", auctionId, adminId, reason)
 
-        LOG.infof("Awarded lot for auction %s", auctionId)
-
-        // Extract award details from the LotAwardedEvent
-        val awardedEvent = newEvents.filterIsInstance<LotAwardedEvent>().firstOrNull()
-
-        return AwardResult(
+        val revokedEvent = newEvents.first() as AwardRevokedEvent
+        return RevokeResult(
             auctionId = auctionId.toString(),
-            winnerId = awardedEvent?.winnerId ?: "",
-            hammerPrice = awardedEvent?.winningBidAmount ?: java.math.BigDecimal.ZERO
+            originalWinnerId = revokedEvent.originalWinnerId,
+            originalHammerPrice = revokedEvent.originalHammerPrice,
+            reason = reason
         )
     }
 
@@ -393,6 +483,7 @@ class AuctionLifecycleService @Inject constructor(
             "AuctionExtendedEvent" -> NatsSubjects.AUCTION_LOT_EXTENDED
             "AuctionClosedEvent" -> NatsSubjects.AUCTION_LOT_CLOSED
             "LotAwardedEvent" -> NatsSubjects.AUCTION_LOT_AWARDED
+            "AwardRevokedEvent" -> "auction.lot.award-revoked"
             "AuctionCancelledEvent" -> "auction.lot.cancelled"
             "ReserveMetEvent" -> "auction.reserve.met"
             "AutoBidSetEvent" -> "auction.autobid.set"
