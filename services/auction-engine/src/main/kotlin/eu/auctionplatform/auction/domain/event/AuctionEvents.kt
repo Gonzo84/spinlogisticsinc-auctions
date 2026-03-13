@@ -360,3 +360,56 @@ data class ReserveMetEvent(
         const val EVENT_TYPE: String = "ReserveMetEvent"
     }
 }
+
+// =============================================================================
+// Featured events
+// =============================================================================
+
+/**
+ * Raised when an admin marks an active auction as "featured" for homepage promotion.
+ */
+data class AuctionFeaturedEvent(
+    override val eventId: String,
+    override val aggregateId: String,
+    override val brand: String,
+    override val timestamp: Instant,
+    override val version: Long,
+    val featuredBy: String,
+    val featuredAt: Instant,
+    override val metadata: Map<String, String>? = null,
+) : AuctionEvent(
+    eventId = eventId,
+    eventType = EVENT_TYPE,
+    aggregateId = aggregateId,
+    brand = brand,
+    timestamp = timestamp,
+    version = version
+) {
+    companion object {
+        const val EVENT_TYPE: String = "AuctionFeaturedEvent"
+    }
+}
+
+/**
+ * Raised when an admin removes the "featured" flag from an auction.
+ */
+data class AuctionUnfeaturedEvent(
+    override val eventId: String,
+    override val aggregateId: String,
+    override val brand: String,
+    override val timestamp: Instant,
+    override val version: Long,
+    val unfeaturedBy: String,
+    override val metadata: Map<String, String>? = null,
+) : AuctionEvent(
+    eventId = eventId,
+    eventType = EVENT_TYPE,
+    aggregateId = aggregateId,
+    brand = brand,
+    timestamp = timestamp,
+    version = version
+) {
+    companion object {
+        const val EVENT_TYPE: String = "AuctionUnfeaturedEvent"
+    }
+}

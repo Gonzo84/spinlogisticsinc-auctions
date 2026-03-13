@@ -3,6 +3,8 @@ package eu.auctionplatform.auction.application.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import eu.auctionplatform.auction.domain.command.CreateAuctionCommand
 import eu.auctionplatform.auction.domain.event.AuctionClosedEvent
+import eu.auctionplatform.auction.domain.event.AuctionFeaturedEvent
+import eu.auctionplatform.auction.domain.event.AuctionUnfeaturedEvent
 import eu.auctionplatform.auction.domain.event.LotAwardedEvent
 import eu.auctionplatform.auction.domain.model.Auction
 import eu.auctionplatform.auction.infrastructure.persistence.entity.AuctionEventEntity
@@ -13,6 +15,7 @@ import eu.auctionplatform.auction.infrastructure.persistence.repository.AuctionR
 import eu.auctionplatform.auction.infrastructure.persistence.repository.OutboxRepository
 import eu.auctionplatform.commons.domain.AuctionId
 import eu.auctionplatform.commons.domain.DomainEvent
+import eu.auctionplatform.commons.domain.UserId
 import eu.auctionplatform.commons.exception.ConflictException
 import eu.auctionplatform.commons.exception.NotFoundException
 import eu.auctionplatform.commons.messaging.NatsSubjects
@@ -48,6 +51,11 @@ data class AwardResult(
     val auctionId: String,
     val winnerId: String,
     val hammerPrice: java.math.BigDecimal
+)
+
+data class FeaturedResult(
+    val auctionId: String,
+    val featured: Boolean
 )
 
 /**
@@ -295,6 +303,61 @@ class AuctionLifecycleService @Inject constructor(
         LOG.infof("Cancelled auction %s (reason=%s)", auctionId, reason)
     }
 
+    @Transactional
+    fun featureAuction(auctionId: AuctionId, adminId: UserId, maxFeatured: Int): FeaturedResult {
+        val auction = loadAuction(auctionId)
+        val expectedVersion = auction.version
+        val currentFeaturedCount = readModelRepository.countFeatured()
+
+        val newEvents = auction.markFeatured(adminId, currentFeaturedCount, maxFeatured)
+
+        val eventEntities = newEvents.map { AuctionEventEntity.fromDomainEvent(it) }
+        val success = eventRepository.appendEvents(auctionId.value, eventEntities, expectedVersion)
+        if (!success) {
+            throw ConflictException(
+                code = "CONCURRENT_MODIFICATION",
+                message = "Auction was modified concurrently"
+            )
+        }
+
+        for (event in newEvents) {
+            outboxRepository.save(OutboxEntity.fromDomainEvent(event, resolveNatsSubject(event)))
+            readModelRepository.updateFromEvent(event)
+        }
+
+        auction.markEventsAsCommitted()
+        LOG.infof("Featured auction %s by admin %s", auctionId, adminId)
+
+        return FeaturedResult(auctionId.toString(), featured = true)
+    }
+
+    @Transactional
+    fun unfeatureAuction(auctionId: AuctionId, adminId: UserId): FeaturedResult {
+        val auction = loadAuction(auctionId)
+        val expectedVersion = auction.version
+
+        val newEvents = auction.unmarkFeatured(adminId)
+
+        val eventEntities = newEvents.map { AuctionEventEntity.fromDomainEvent(it) }
+        val success = eventRepository.appendEvents(auctionId.value, eventEntities, expectedVersion)
+        if (!success) {
+            throw ConflictException(
+                code = "CONCURRENT_MODIFICATION",
+                message = "Auction was modified concurrently"
+            )
+        }
+
+        for (event in newEvents) {
+            outboxRepository.save(OutboxEntity.fromDomainEvent(event, resolveNatsSubject(event)))
+            readModelRepository.updateFromEvent(event)
+        }
+
+        auction.markEventsAsCommitted()
+        LOG.infof("Unfeatured auction %s by admin %s", auctionId, adminId)
+
+        return FeaturedResult(auctionId.toString(), featured = false)
+    }
+
     // -----------------------------------------------------------------------
     // Internal helpers
     // -----------------------------------------------------------------------
@@ -334,6 +397,8 @@ class AuctionLifecycleService @Inject constructor(
             "ReserveMetEvent" -> "auction.reserve.met"
             "AutoBidSetEvent" -> "auction.autobid.set"
             "AutoBidExhaustedEvent" -> "auction.autobid.exhausted"
+            "AuctionFeaturedEvent" -> "auction.featured.marked"
+            "AuctionUnfeaturedEvent" -> "auction.featured.unmarked"
             else -> "auction.events.${event.eventType}"
         }
     }

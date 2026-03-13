@@ -20,8 +20,14 @@
         <i class="pi pi-image text-5xl" />
       </div>
 
+      <!-- Featured Badge -->
+      <div v-if="lot.featured" class="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 z-10">
+        <i class="pi pi-star-fill text-xs" />
+        {{ $t('auction.featured') }}
+      </div>
+
       <!-- CO2 Badge -->
-      <div v-if="lot.co2Savings" class="absolute top-2 left-2">
+      <div v-if="lot.co2Savings && !lot.featured" class="absolute top-2 left-2">
         <SharedCO2Badge :amount="lot.co2Savings" />
       </div>
 

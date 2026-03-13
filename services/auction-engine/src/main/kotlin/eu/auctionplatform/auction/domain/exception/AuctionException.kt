@@ -103,4 +103,33 @@ sealed class AuctionException(
         code = "INVALID_BID_AMOUNT",
         message = "Invalid bid amount for auction '$auctionId': $reason"
     )
+
+    class AuctionNotFeaturableException(
+        id: AuctionId,
+        status: String
+    ) : AuctionException(
+        code = "AUCTION_NOT_FEATURABLE",
+        message = "Auction '$id' cannot be featured in status '$status'"
+    )
+
+    class AuctionAlreadyFeaturedException(
+        id: AuctionId
+    ) : AuctionException(
+        code = "AUCTION_ALREADY_FEATURED",
+        message = "Auction '$id' is already featured"
+    )
+
+    class AuctionNotFeaturedException(
+        id: AuctionId
+    ) : AuctionException(
+        code = "AUCTION_NOT_FEATURED",
+        message = "Auction '$id' is not currently featured"
+    )
+
+    class FeaturedLimitReachedException(
+        maxFeatured: Int
+    ) : AuctionException(
+        code = "FEATURED_LIMIT_REACHED",
+        message = "Maximum featured auction limit ($maxFeatured) reached"
+    )
 }

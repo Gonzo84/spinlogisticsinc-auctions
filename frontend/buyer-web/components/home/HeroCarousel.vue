@@ -41,7 +41,7 @@
             class="min-w-[calc(33.333%-1rem)] flex-shrink-0"
           >
             <NuxtLink
-              :to="`/lots/${auction.id}`"
+              :to="`/lots/${auction.lotNumber || auction.id}`"
               class="block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
             >
               <div class="relative aspect-[4/3] bg-gray-200">
@@ -80,6 +80,7 @@ import { formatCurrency } from '~/utils/format'
 
 interface FeaturedAuction {
   id: string
+  lotNumber?: string
   title: string
   imageUrl: string
   currentBid: number

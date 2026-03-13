@@ -91,6 +91,8 @@ class AuctionEventEntity(
             AutoBidSetEvent.EVENT_TYPE to AutoBidSetEvent::class.java,
             AutoBidExhaustedEvent.EVENT_TYPE to AutoBidExhaustedEvent::class.java,
             ReserveMetEvent.EVENT_TYPE to ReserveMetEvent::class.java,
+            AuctionFeaturedEvent.EVENT_TYPE to AuctionFeaturedEvent::class.java,
+            AuctionUnfeaturedEvent.EVENT_TYPE to AuctionUnfeaturedEvent::class.java,
         )
 
         /**

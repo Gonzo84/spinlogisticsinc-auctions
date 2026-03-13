@@ -105,22 +105,40 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
 }
 
 const { data: featuredAuctions } = await useAsyncData('featured-auctions', async () => {
-  // Use auction-engine endpoint which has currentHighBid (not just startingBid from catalog)
   const { $api } = useNuxtApp()
   const api = $api as typeof $fetch
   try {
+    // First try to get explicitly featured auctions
     const raw = await api<Record<string, unknown>>('/auctions', {
-      params: { status: 'ACTIVE', limit: 9 },
+      params: { featured: true, status: 'ACTIVE', size: 12 },
     })
     const data = unwrapApiResponse(raw)
     const items = Array.isArray(data.items) ? data.items as Record<string, unknown>[] : []
     const mapped = items.map((item) => mapAuctionResponse(item))
     const seen = new Set<string>()
-    return mapped.filter((lot) => {
+    const deduped = mapped.filter((lot) => {
       if (seen.has(lot.title)) return false
       seen.add(lot.title)
       return true
     })
+
+    // If no featured auctions exist yet, fall back to all active
+    if (deduped.length === 0) {
+      const fallbackRaw = await api<Record<string, unknown>>('/auctions', {
+        params: { status: 'ACTIVE', size: 9 },
+      })
+      const fallbackData = unwrapApiResponse(fallbackRaw)
+      const fallbackItems = Array.isArray(fallbackData.items) ? fallbackData.items as Record<string, unknown>[] : []
+      const fallbackMapped = fallbackItems.map((item) => mapAuctionResponse(item))
+      const fallbackSeen = new Set<string>()
+      return fallbackMapped.filter((lot) => {
+        if (fallbackSeen.has(lot.title)) return false
+        fallbackSeen.add(lot.title)
+        return true
+      })
+    }
+
+    return deduped
   } catch {
     // Fallback to catalog if auction-engine unavailable
     return await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 9 })

@@ -89,6 +89,12 @@ class Auction private constructor() : AggregateRoot() {
     var sellerId: UserId = UserId(NIL_UUID)
         private set
 
+    var featured: Boolean = false
+        private set
+
+    var featuredAt: Instant? = null
+        private set
+
     /** Set of blocked user IDs — populated from external context before command handling. */
     private val blockedBidders: MutableSet<UserId> = mutableSetOf()
 
@@ -447,6 +453,57 @@ class Auction private constructor() : AggregateRoot() {
         return events
     }
 
+    /**
+     * Marks this auction as "featured" for homepage promotion.
+     *
+     * Only active auctions can be featured. The total featured count is checked
+     * against [maxFeatured] to prevent homepage overload.
+     */
+    fun markFeatured(adminId: UserId, currentFeaturedCount: Int, maxFeatured: Int): List<DomainEvent> {
+        if (status != AuctionStatus.ACTIVE) {
+            throw AuctionException.AuctionNotFeaturableException(id, status.name)
+        }
+        if (featured) {
+            throw AuctionException.AuctionAlreadyFeaturedException(id)
+        }
+        if (currentFeaturedCount >= maxFeatured) {
+            throw AuctionException.FeaturedLimitReachedException(maxFeatured)
+        }
+
+        val now = Instant.now()
+        val event = AuctionFeaturedEvent(
+            eventId = IdGenerator.generateString(),
+            aggregateId = id.toString(),
+            brand = brand.code,
+            timestamp = now,
+            version = version + 1,
+            featuredBy = adminId.toString(),
+            featuredAt = now,
+        )
+        raise(event)
+        return listOf(event)
+    }
+
+    /**
+     * Removes the "featured" flag from this auction.
+     */
+    fun unmarkFeatured(adminId: UserId): List<DomainEvent> {
+        if (!featured) {
+            throw AuctionException.AuctionNotFeaturedException(id)
+        }
+
+        val event = AuctionUnfeaturedEvent(
+            eventId = IdGenerator.generateString(),
+            aggregateId = id.toString(),
+            brand = brand.code,
+            timestamp = Instant.now(),
+            version = version + 1,
+            unfeaturedBy = adminId.toString(),
+        )
+        raise(event)
+        return listOf(event)
+    }
+
     // -----------------------------------------------------------------------
     // Private business rule methods
     // -----------------------------------------------------------------------
@@ -732,6 +789,8 @@ class Auction private constructor() : AggregateRoot() {
             is ReserveMetEvent -> applyReserveMet(event)
             is BidRejectedEvent -> { /* No state change for rejected bids */ }
             is AutoBidSetEvent -> applyAutoBidSet(event)
+            is AuctionFeaturedEvent -> applyAuctionFeatured(event)
+            is AuctionUnfeaturedEvent -> applyAuctionUnfeatured(event)
             is AutoBidExhaustedEvent -> applyAutoBidExhausted(event)
             else -> throw IllegalArgumentException(
                 "Auction aggregate does not know how to apply event of type '${event.eventType}'"
@@ -843,6 +902,8 @@ class Auction private constructor() : AggregateRoot() {
 
     private fun applyAuctionClosed(event: AuctionClosedEvent) {
         status = AuctionStatus.CLOSED
+        featured = false
+        featuredAt = null
 
         // Promote the current high bid to WINNING status
         bids.lastOrNull { it.status == BidStatus.ACTIVE }?.let { winningBid ->
@@ -904,6 +965,16 @@ class Auction private constructor() : AggregateRoot() {
         autoBids[bidderId]?.let { autoBid ->
             autoBids[bidderId] = autoBid.deactivate()
         }
+    }
+
+    private fun applyAuctionFeatured(event: AuctionFeaturedEvent) {
+        featured = true
+        featuredAt = event.featuredAt
+    }
+
+    private fun applyAuctionUnfeatured(event: AuctionUnfeaturedEvent) {
+        featured = false
+        featuredAt = null
     }
 
     // -----------------------------------------------------------------------

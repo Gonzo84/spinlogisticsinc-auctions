@@ -68,6 +68,14 @@ data class AuctionDetailResponse(
     @JsonProperty("sellerId")
     val sellerId: String,
 
+    /** Whether this auction is featured on the homepage. */
+    @JsonProperty("featured")
+    val featured: Boolean,
+
+    /** When the auction was marked as featured. */
+    @JsonProperty("featuredAt")
+    val featuredAt: Instant?,
+
     /** UTC timestamp when the auction was created. */
     @JsonProperty("createdAt")
     val createdAt: Instant,
@@ -117,7 +125,11 @@ data class AuctionSummaryResponse(
 
     /** Whether the reserve price has been met. */
     @JsonProperty("reserveMet")
-    val reserveMet: Boolean
+    val reserveMet: Boolean,
+
+    /** Whether this auction is featured on the homepage. */
+    @JsonProperty("featured")
+    val featured: Boolean
 )
 
 /**

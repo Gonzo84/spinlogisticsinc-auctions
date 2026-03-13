@@ -6,6 +6,7 @@ export interface SearchFilters {
   priceMax?: number
   distance?: number
   reserveStatus?: string
+  featured?: boolean
   sort?: string
   page?: number
   limit?: number

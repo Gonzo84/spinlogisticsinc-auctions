@@ -29,6 +29,7 @@ export function useSearch() {
       if (filters.distance) params.distance = filters.distance
       if (filters.reserveStatus) params.reserveStatus = filters.reserveStatus
       if (filters.sort) params.sort = filters.sort
+      if (filters.featured !== undefined) params.featured = filters.featured
       if (filters.page) params.page = filters.page - 1
       if (filters.limit) params.limit = filters.limit
 

@@ -2,6 +2,8 @@ package eu.auctionplatform.auction.infrastructure.persistence.repository
 
 import eu.auctionplatform.auction.domain.event.AuctionClosedEvent
 import eu.auctionplatform.auction.domain.event.AuctionExtendedEvent
+import eu.auctionplatform.auction.domain.event.AuctionFeaturedEvent
+import eu.auctionplatform.auction.domain.event.AuctionUnfeaturedEvent
 import eu.auctionplatform.auction.domain.event.BidPlacedEvent
 import eu.auctionplatform.auction.domain.event.LotAwardedEvent
 import eu.auctionplatform.auction.domain.event.ReserveMetEvent
@@ -37,6 +39,8 @@ data class AuctionReadModel(
     val reserveMet: Boolean,
     val extensionCount: Int,
     val sellerId: UUID,
+    val featured: Boolean = false,
+    val featuredAt: Instant? = null,
     val createdAt: Instant = Instant.now(),
     val updatedAt: Instant = Instant.now()
 )
@@ -60,7 +64,8 @@ class AuctionReadModelRepository @Inject constructor(
             auction_id, lot_id, brand, status, start_time, end_time,
             original_end_time, starting_bid, current_high_bid,
             current_high_bidder_id, bid_count, reserve_met,
-            extension_count, seller_id, created_at, updated_at
+            extension_count, seller_id, featured, featured_at,
+            created_at, updated_at
         """
 
         private const val SELECT_BY_ID = """
@@ -88,8 +93,9 @@ class AuctionReadModelRepository @Inject constructor(
                 (auction_id, lot_id, brand, status, start_time, end_time,
                  original_end_time, starting_bid, current_high_bid,
                  current_high_bidder_id, bid_count, reserve_met,
-                 extension_count, seller_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 extension_count, seller_id, featured, featured_at,
+                 created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (auction_id) DO UPDATE SET
                 lot_id = EXCLUDED.lot_id,
                 brand = EXCLUDED.brand,
@@ -104,6 +110,8 @@ class AuctionReadModelRepository @Inject constructor(
                 reserve_met = EXCLUDED.reserve_met,
                 extension_count = EXCLUDED.extension_count,
                 seller_id = EXCLUDED.seller_id,
+                featured = EXCLUDED.featured,
+                featured_at = EXCLUDED.featured_at,
                 updated_at = EXCLUDED.updated_at
         """
 
@@ -136,8 +144,35 @@ class AuctionReadModelRepository @Inject constructor(
                SET status = ?,
                    current_high_bid = COALESCE(?, current_high_bid),
                    current_high_bidder_id = COALESCE(?, current_high_bidder_id),
+                   featured = FALSE,
+                   featured_at = NULL,
                    updated_at = ?
              WHERE auction_id = ?
+        """
+
+        private const val UPDATE_FEATURED = """
+            UPDATE app.auction_read_model
+               SET featured = TRUE, featured_at = ?, updated_at = ?
+             WHERE auction_id = ?
+        """
+
+        private const val UPDATE_UNFEATURED = """
+            UPDATE app.auction_read_model
+               SET featured = FALSE, featured_at = NULL, updated_at = ?
+             WHERE auction_id = ?
+        """
+
+        private const val COUNT_FEATURED = """
+            SELECT COUNT(*) FROM app.auction_read_model
+             WHERE featured = TRUE AND status IN ('ACTIVE', 'CLOSING')
+        """
+
+        private const val SELECT_FEATURED = """
+            SELECT $SELECT_COLUMNS
+              FROM app.auction_read_model
+             WHERE featured = TRUE AND status IN ('ACTIVE', 'CLOSING')
+             ORDER BY featured_at DESC
+             LIMIT ?
         """
 
         private const val UPDATE_RESERVE_MET = """
@@ -224,8 +259,14 @@ class AuctionReadModelRepository @Inject constructor(
                 stmt.setBoolean(12, readModel.reserveMet)
                 stmt.setInt(13, readModel.extensionCount)
                 stmt.setObject(14, readModel.sellerId)
-                stmt.setTimestamp(15, Timestamp.from(readModel.createdAt))
-                stmt.setTimestamp(16, Timestamp.from(readModel.updatedAt))
+                stmt.setBoolean(15, readModel.featured)
+                if (readModel.featuredAt != null) {
+                    stmt.setTimestamp(16, Timestamp.from(readModel.featuredAt))
+                } else {
+                    stmt.setNull(16, java.sql.Types.TIMESTAMP)
+                }
+                stmt.setTimestamp(17, Timestamp.from(readModel.createdAt))
+                stmt.setTimestamp(18, Timestamp.from(readModel.updatedAt))
                 stmt.executeUpdate()
             }
         }
@@ -309,8 +350,52 @@ class AuctionReadModelRepository @Inject constructor(
                 LOG.debugf("Updated read model reserve met for auction %s", event.aggregateId)
             }
 
+            is AuctionFeaturedEvent -> {
+                dataSource.connection.use { conn ->
+                    conn.prepareStatement(UPDATE_FEATURED).use { stmt ->
+                        stmt.setTimestamp(1, Timestamp.from(event.featuredAt))
+                        stmt.setTimestamp(2, Timestamp.from(now))
+                        stmt.setObject(3, UUID.fromString(event.aggregateId))
+                        stmt.executeUpdate()
+                    }
+                }
+                LOG.debugf("Updated read model featured=true for auction %s", event.aggregateId)
+            }
+
+            is AuctionUnfeaturedEvent -> {
+                dataSource.connection.use { conn ->
+                    conn.prepareStatement(UPDATE_UNFEATURED).use { stmt ->
+                        stmt.setTimestamp(1, Timestamp.from(now))
+                        stmt.setObject(2, UUID.fromString(event.aggregateId))
+                        stmt.executeUpdate()
+                    }
+                }
+                LOG.debugf("Updated read model featured=false for auction %s", event.aggregateId)
+            }
+
             else -> {
                 LOG.tracef("Ignoring event type %s for read model projection", event::class.simpleName)
+            }
+        }
+    }
+
+    fun countFeatured(): Int {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(COUNT_FEATURED).use { stmt ->
+                val rs = stmt.executeQuery()
+                rs.next()
+                return rs.getInt(1)
+            }
+        }
+    }
+
+    fun findFeatured(limit: Int = 12): List<AuctionReadModel> {
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(SELECT_FEATURED).use { stmt ->
+                stmt.setInt(1, limit)
+                stmt.executeQuery().use { rs ->
+                    return rs.toModelList()
+                }
             }
         }
     }
@@ -342,6 +427,8 @@ class AuctionReadModelRepository @Inject constructor(
         reserveMet = getBoolean("reserve_met"),
         extensionCount = getInt("extension_count"),
         sellerId = getObject("seller_id", UUID::class.java),
+        featured = getBoolean("featured"),
+        featuredAt = getTimestamp("featured_at")?.toInstant(),
         createdAt = getTimestamp("created_at").toInstant(),
         updatedAt = getTimestamp("updated_at").toInstant()
     )

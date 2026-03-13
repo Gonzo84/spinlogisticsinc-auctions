@@ -455,6 +455,14 @@ class LotIndexService @Inject constructor(
             .properties("currency", Property.Builder()
                 .keyword(KeywordProperty.Builder().build())
                 .build())
+            // ----- featured: boolean -----
+            .properties("featured", Property.Builder()
+                .boolean_(BooleanProperty.Builder().build())
+                .build())
+            // ----- featuredAt: date -----
+            .properties("featuredAt", Property.Builder()
+                .date(DateProperty.Builder().build())
+                .build())
             .build()
     }
 }

@@ -73,6 +73,8 @@ class AuctionEventConsumer @Inject constructor(
         private const val SUBJECT_LOT_CLOSED = "auction.lot.closed"
         private const val SUBJECT_LOT_EXTENDED = "auction.lot.extended"
         private const val SUBJECT_CO2_CALCULATED = "co2.calculated"
+        private const val SUBJECT_FEATURED_MARKED = "auction.featured.marked"
+        private const val SUBJECT_FEATURED_UNMARKED = "auction.featured.unmarked"
     }
 
     // -------------------------------------------------------------------------
@@ -128,6 +130,8 @@ class AuctionEventConsumer @Inject constructor(
                 subject.startsWith(SUBJECT_LOT_CLOSED) -> handleLotClosed(payload)
                 subject.startsWith(SUBJECT_LOT_EXTENDED) -> handleLotExtended(payload)
                 subject.startsWith(SUBJECT_CO2_CALCULATED) -> handleCo2Calculated(payload)
+                subject.startsWith(SUBJECT_FEATURED_MARKED) -> handleFeaturedMarked(payload)
+                subject.startsWith(SUBJECT_FEATURED_UNMARKED) -> handleFeaturedUnmarked(payload)
                 else -> LOG.debugf("Ignoring unrelated subject [%s] on auction stream", subject)
             }
         } catch (ex: Exception) {
@@ -257,6 +261,43 @@ class AuctionEventConsumer @Inject constructor(
             "co2AvoidedKg" to co2AvoidedKg
         ))
         LOG.infof("Successfully updated CO2 for lot [id=%s]", lotId)
+    }
+
+    /**
+     * Handles `auction.featured.marked` events by setting featured=true on the lot document.
+     */
+    private fun handleFeaturedMarked(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node)
+        val featuredAt = node.optionalText("featuredAt")
+
+        LOG.infof("Marking lot [id=%s] as featured", lotId)
+
+        val updates = mutableMapOf<String, Any?>(
+            "featured" to true,
+        )
+        if (featuredAt != null) {
+            updates["featuredAt"] = featuredAt
+        }
+
+        lotIndexService.updateDocument(lotId, updates)
+        LOG.infof("Successfully marked lot [id=%s] as featured", lotId)
+    }
+
+    /**
+     * Handles `auction.featured.unmarked` events by setting featured=false on the lot document.
+     */
+    private fun handleFeaturedUnmarked(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node)
+
+        LOG.infof("Removing featured flag from lot [id=%s]", lotId)
+
+        lotIndexService.updateDocument(lotId, mapOf(
+            "featured" to false,
+            "featuredAt" to null,
+        ))
+        LOG.infof("Successfully removed featured flag from lot [id=%s]", lotId)
     }
 
     // -------------------------------------------------------------------------

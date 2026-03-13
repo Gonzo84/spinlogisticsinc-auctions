@@ -21,6 +21,8 @@ const {
   fetchLiveBids,
   cancelAuction,
   closeAuction,
+  featureAuction,
+  unfeatureAuction,
 } = useAuctions()
 
 const auctionId = computed(() => route.params.id as string)
@@ -85,6 +87,21 @@ function handleClose() {
   })
 }
 
+async function handleToggleFeatured() {
+  if (!currentAuction.value) return
+  try {
+    if (currentAuction.value.featured) {
+      await unfeatureAuction(currentAuction.value.id)
+    } else {
+      await featureAuction(currentAuction.value.id)
+    }
+    toast.add({ severity: 'success', summary: 'Updated', detail: 'Featured status updated', life: 3000 })
+  } catch (err: unknown) {
+    const msg = (err as Record<string, unknown>)?.message ?? 'Failed to update featured status'
+    toast.add({ severity: 'error', summary: String(msg), life: 5000 })
+  }
+}
+
 const bidChartLabels = computed(() =>
   liveBids.value.slice(-20).map((b) =>
     new Date(b.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -127,6 +144,13 @@ const bidChartData = computed(() =>
           </p>
         </div>
         <div class="flex gap-2">
+          <Button
+            v-if="currentAuction.status === 'active'"
+            :label="currentAuction.featured ? 'Remove from Featured' : 'Mark as Featured'"
+            :icon="currentAuction.featured ? 'pi pi-star-fill' : 'pi pi-star'"
+            :severity="currentAuction.featured ? 'warn' : 'secondary'"
+            @click="handleToggleFeatured"
+          />
           <Button
             v-if="currentAuction.status === 'active'"
             label="Close Auction"

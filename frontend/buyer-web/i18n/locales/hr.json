@@ -83,6 +83,7 @@
     "reserveMet": "Minimalna cijena dosegnuta",
     "reserveNotMet": "Minimalna cijena nije dosegnuta",
     "reserve": "Minimalna cijena",
+    "featured": "Istaknuto",
     "loginToBid": "Prijavite se ili registrirajte za davanje ponude na ovaj lot.",
     "noAccount": "Nemate račun? Registrirajte se sada",
     "biddingRestricted": "Bidding is not available for your account role.",

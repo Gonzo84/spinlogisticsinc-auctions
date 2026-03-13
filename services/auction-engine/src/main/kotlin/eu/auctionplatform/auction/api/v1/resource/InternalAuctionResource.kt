@@ -91,6 +91,8 @@ class InternalAuctionResource {
             reserveMet = model.reserveMet,
             extensionCount = model.extensionCount,
             sellerId = model.sellerId.toString(),
+            featured = model.featured,
+            featuredAt = model.featuredAt,
             createdAt = model.createdAt,
             updatedAt = model.updatedAt
         )

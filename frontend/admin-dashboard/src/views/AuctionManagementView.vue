@@ -180,6 +180,11 @@ function clearFilters() {
         <template #empty>
           <div class="text-center py-8 text-gray-500">No auctions found.</div>
         </template>
+        <Column header="" style="width: 3rem">
+          <template #body="{ data }">
+            <i v-if="data.featured" class="pi pi-star-fill text-yellow-500" v-tooltip="'Featured'" />
+          </template>
+        </Column>
         <Column field="title" header="Auction" sortable>
           <template #body="{ data }">
             <router-link

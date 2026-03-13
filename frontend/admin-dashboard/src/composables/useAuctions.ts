@@ -35,13 +35,15 @@ function normalizeAuction(a: RawAuctionResponse): Auction {
     status: ((a.status ?? 'draft').toLowerCase()) as Auction['status'],
     lotCount: a.lotCount ?? 1,
     totalBids: a.totalBids ?? a.bidCount ?? 0,
+    featured: a.featured ?? false,
+    featuredAt: a.featuredAt ?? undefined,
     createdAt: a.createdAt ?? '',
     updatedAt: a.updatedAt ?? '',
   }
 }
 
 export function useAuctions() {
-  const { get, post, patch } = useApi()
+  const { get, post, patch, del } = useApi()
   const { handleGracefulDegradation, is404 } = useErrorHandler()
 
   const auctions = ref<Auction[]>([])
@@ -132,6 +134,7 @@ export function useAuctions() {
         status: ((auctionData?.status ?? 'scheduled').toLowerCase()) as Auction['status'],
         lotCount: 1,
         totalBids: 0,
+        featured: false,
         createdAt: auctionData?.createdAt ?? '',
         updatedAt: auctionData?.updatedAt ?? '',
       }
@@ -250,6 +253,40 @@ export function useAuctions() {
     }
   }
 
+  async function featureAuction(id: string): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    try {
+      await post(`/auctions/${id}/feature`)
+      if (currentAuction.value?.id === id) {
+        currentAuction.value = { ...currentAuction.value, featured: true }
+      }
+      return true
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to feature auction')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function unfeatureAuction(id: string): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    try {
+      await del(`/auctions/${id}/feature`)
+      if (currentAuction.value?.id === id) {
+        currentAuction.value = { ...currentAuction.value, featured: false }
+      }
+      return true
+    } catch (err: unknown) {
+      error.value = extractErrorMessage(err, 'Failed to unfeature auction')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   /** Masks a bidder UUID for display (e.g. "abcd1234-...-5678" → "abcd****5678"). */
   function maskBidderId(bidderId: string): string {
     if (!bidderId || bidderId.length < 8) return bidderId
@@ -273,5 +310,7 @@ export function useAuctions() {
     closeAuction,
     fetchAuctionLots,
     fetchLiveBids,
+    featureAuction,
+    unfeatureAuction,
   }
 }

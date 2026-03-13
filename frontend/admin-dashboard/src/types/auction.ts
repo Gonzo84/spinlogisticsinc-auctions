@@ -10,6 +10,8 @@ export interface Auction {
   status: 'draft' | 'scheduled' | 'active' | 'closing' | 'closed' | 'cancelled'
   lotCount: number
   totalBids: number
+  featured: boolean
+  featuredAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -77,6 +79,8 @@ export interface RawAuctionResponse {
   lotCount?: number
   totalBids?: number
   bidCount?: number
+  featured?: boolean
+  featuredAt?: string
   createdAt?: string
   updatedAt?: string
 }

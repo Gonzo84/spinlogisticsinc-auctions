@@ -10,6 +10,7 @@ import eu.auctionplatform.auction.api.dto.PlaceBidRequest
 import eu.auctionplatform.auction.api.dto.SetAutoBidRequest
 import eu.auctionplatform.auction.application.service.AuctionLifecycleService
 import eu.auctionplatform.auction.application.service.BidService
+import org.eclipse.microprofile.config.inject.ConfigProperty
 import eu.auctionplatform.auction.domain.command.CreateAuctionCommand
 import eu.auctionplatform.auction.domain.command.PlaceBidCommand
 import eu.auctionplatform.auction.domain.command.SetAutoBidCommand
@@ -83,7 +84,9 @@ class AuctionResource @Inject constructor(
     private val lifecycleService: AuctionLifecycleService,
     private val readModelRepository: AuctionReadModelRepository,
     private val eventRepository: AuctionEventRepository,
-    private val dataSource: AgroalDataSource
+    private val dataSource: AgroalDataSource,
+    @ConfigProperty(name = "auction.featured.max-count", defaultValue = "12")
+    private val featuredMaxCount: String
 ) {
 
     companion object {
@@ -161,6 +164,43 @@ class AuctionResource @Inject constructor(
         )
 
         return Response.ok(ApiResponse.ok(response)).build()
+    }
+
+    /**
+     * Marks an active auction as featured for homepage promotion.
+     *
+     * **POST /api/v1/auctions/{id}/feature**
+     */
+    @POST
+    @Path("/{id}/feature")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun featureAuction(
+        @PathParam("id") id: String,
+        @Context securityContext: SecurityContext
+    ): Response {
+        val auctionId = AuctionId.fromString(id)
+        val adminId = UserId.fromString(extractUserId(securityContext))
+        val maxFeatured = featuredMaxCount.toInt()
+        val result = lifecycleService.featureAuction(auctionId, adminId, maxFeatured)
+        return Response.ok(ApiResponse.ok(mapOf("auctionId" to result.auctionId, "featured" to result.featured))).build()
+    }
+
+    /**
+     * Removes the featured flag from an auction.
+     *
+     * **DELETE /api/v1/auctions/{id}/feature**
+     */
+    @DELETE
+    @Path("/{id}/feature")
+    @RolesAllowed("admin_ops", "admin_super")
+    fun unfeatureAuction(
+        @PathParam("id") id: String,
+        @Context securityContext: SecurityContext
+    ): Response {
+        val auctionId = AuctionId.fromString(id)
+        val adminId = UserId.fromString(extractUserId(securityContext))
+        val result = lifecycleService.unfeatureAuction(auctionId, adminId)
+        return Response.ok(ApiResponse.ok(mapOf("auctionId" to result.auctionId, "featured" to result.featured))).build()
     }
 
     /**
@@ -383,6 +423,7 @@ class AuctionResource @Inject constructor(
         @QueryParam("status") status: String?,
         @QueryParam("brand") brand: String?,
         @QueryParam("lotId") lotId: String?,
+        @QueryParam("featured") featured: Boolean?,
         @QueryParam("page") @DefaultValue("1") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int
     ): Response {
@@ -390,7 +431,7 @@ class AuctionResource @Inject constructor(
         val effectivePage = page.coerceAtLeast(1)
 
         // Query the read model with JDBC for filtered, paginated results
-        val results = queryAuctions(status, brand, lotId, effectivePage, effectiveSize)
+        val results = queryAuctions(status, brand, lotId, featured, effectivePage, effectiveSize)
 
         val summaries = results.first.map { toSummaryResponse(it) }
         val total = results.second
@@ -435,6 +476,7 @@ class AuctionResource @Inject constructor(
         status: String?,
         brand: String?,
         lotId: String?,
+        featured: Boolean?,
         page: Int,
         size: Int
     ): Pair<List<AuctionReadModel>, Long> {
@@ -452,6 +494,10 @@ class AuctionResource @Inject constructor(
         if (!lotId.isNullOrBlank()) {
             conditions.add("lot_id = ?::uuid")
             params.add(lotId)
+        }
+        if (featured != null) {
+            conditions.add("featured = ?")
+            params.add(featured.toString())
         }
 
         val whereClause = if (conditions.isEmpty()) "" else "WHERE ${conditions.joinToString(" AND ")}"
@@ -476,7 +522,8 @@ class AuctionResource @Inject constructor(
             SELECT auction_id, lot_id, brand, status, start_time, end_time,
                    original_end_time, starting_bid, current_high_bid,
                    current_high_bidder_id, bid_count, reserve_met,
-                   extension_count, seller_id, created_at, updated_at
+                   extension_count, seller_id, featured, featured_at,
+                   created_at, updated_at
               FROM app.auction_read_model
               $whereClause
              ORDER BY end_time ASC
@@ -511,6 +558,8 @@ class AuctionResource @Inject constructor(
                                 reserveMet = rs.getBoolean("reserve_met"),
                                 extensionCount = rs.getInt("extension_count"),
                                 sellerId = rs.getObject("seller_id", UUID::class.java),
+                                featured = rs.getBoolean("featured"),
+                                featuredAt = rs.getTimestamp("featured_at")?.toInstant(),
                                 createdAt = rs.getTimestamp("created_at").toInstant(),
                                 updatedAt = rs.getTimestamp("updated_at").toInstant()
                             )
@@ -543,6 +592,8 @@ class AuctionResource @Inject constructor(
             reserveMet = model.reserveMet,
             extensionCount = model.extensionCount,
             sellerId = model.sellerId.toString(),
+            featured = model.featured,
+            featuredAt = model.featuredAt,
             createdAt = model.createdAt,
             updatedAt = model.updatedAt
         )
@@ -560,7 +611,8 @@ class AuctionResource @Inject constructor(
             endTime = model.endTime,
             currentHighBid = model.currentHighBid,
             bidCount = model.bidCount,
-            reserveMet = model.reserveMet
+            reserveMet = model.reserveMet,
+            featured = model.featured
         )
 
     /**
