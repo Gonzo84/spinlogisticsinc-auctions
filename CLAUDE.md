@@ -234,6 +234,18 @@ cd frontend/admin-dashboard && npx vitest
 
 44. **Settlement field names are now aligned across the stack.** Seller-service API returns `commissionAmount` (not `commission`) and `commissionRate` (as percentage, e.g., `10.00`). Payment-service `SettlementResponse` also uses `commissionAmount`. NATS settlement events include `commissionRate` and `hammerPrice` from the authoritative source (payment-service). The `commission_rate` column in `seller_settlements` stores the ratio (e.g., `0.10`); the API converts to percentage. Frontend `useSettlements.ts` has a backwards-compatible fallback for old-format responses.
 
+45. **`AuctionResource.queryAuctions()` must use typed JDBC setters for non-string columns.** The dynamic query builder stored all filter params as strings and used `setString()` for binding. PostgreSQL rejects `setString` for `boolean` columns (`operator does not exist: boolean = character varying`). The `setTypedParam()` helper dispatches to `setBoolean()` for booleans. Any future filter parameters of non-string types (int, timestamp) need the same treatment.
+
+46. **`LotAwardedEvent` domain field names differ from NATS consumer expectations.** The event uses `aggregateId`/`winningBidAmount`/`winningBidCurrency` but payment-service's `LotAwardedConsumer` reads `auctionId`/`hammerPrice`/`currency`. Fixed with `@get:JsonProperty` computed property aliases on the domain event. When adding new NATS consumers for existing events, always verify the serialized field names match what consumers expect — domain events use DDD naming, consumers often use business naming.
+
+47. **Nuxt 3 `await useAsyncData()` can cause empty renders on client-side hydration.** Using `await` with `{ server: false }` resolves immediately with the default empty value during hydration, and the background fetch may not trigger a re-render. Fix: remove `await` so the composable returns immediately, the fetch runs in background, and Vue reactivity handles the update. See `pages/index.vue` featured auctions and new lots fetches.
+
+48. **Casbin `keyMatch2` with `:param` does not match nested sub-paths.** `/api/v1/search/:type` matches `/api/v1/search/lots` but NOT `/api/v1/search/lots/suggest`. Each depth level needs its own policy entry: `/api/v1/search/:type/:action`. When adding new sub-resource endpoints, always add matching Casbin policy entries at the correct depth.
+
+49. **`AuctionClosingScheduler.checkPendingAutoAwards()` must run even when delay=0.** The original guard `if (delaySeconds <= 0) return` skipped the safety-net scheduler entirely, so if the immediate auto-award in `checkAndCloseAuctions` failed (transient error, `canAutoAward` edge case), no retry existed. The scheduler now always polls for CLOSED auctions eligible for award regardless of delay config.
+
+50. **BidPanel `bidAmount` should reset to `minBidAmount` after successful bid, not `null`.** Setting to `null` breaks the button label (shows "Place Bid" without amount) and can prevent the next bid since `canBid` checks `bidAmount.value`. Always reset to the next valid minimum so the UI stays ready for the next bid.
+
 ### Deployment
 
 - Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)

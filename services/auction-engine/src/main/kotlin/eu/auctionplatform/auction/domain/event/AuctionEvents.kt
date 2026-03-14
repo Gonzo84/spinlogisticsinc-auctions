@@ -1,5 +1,6 @@
 package eu.auctionplatform.auction.domain.event
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import eu.auctionplatform.auction.domain.model.BidRejectionReason
 import eu.auctionplatform.commons.domain.DomainEvent
 import java.math.BigDecimal
@@ -148,6 +149,18 @@ data class LotAwardedEvent(
     timestamp = timestamp,
     version = version
 ) {
+    /** Alias for [aggregateId] so downstream NATS consumers can read `auctionId`. */
+    @get:JsonProperty("auctionId")
+    val auctionId: String get() = aggregateId
+
+    /** Alias for [winningBidAmount] so downstream NATS consumers can read `hammerPrice`. */
+    @get:JsonProperty("hammerPrice")
+    val hammerPrice: BigDecimal get() = winningBidAmount
+
+    /** Alias for [winningBidCurrency] so downstream NATS consumers can read `currency`. */
+    @get:JsonProperty("currency")
+    val currency: String get() = winningBidCurrency
+
     companion object {
         const val EVENT_TYPE: String = "LotAwardedEvent"
     }

@@ -454,12 +454,13 @@ class AuctionResource @Inject constructor(
         @QueryParam("status") status: String?,
         @QueryParam("brand") brand: String?,
         @QueryParam("lotId") lotId: String?,
-        @QueryParam("featured") featured: Boolean?,
+        @QueryParam("featured") featuredParam: String?,
         @QueryParam("page") @DefaultValue("1") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int
     ): Response {
         val effectiveSize = size.coerceIn(1, 100)
         val effectivePage = page.coerceAtLeast(1)
+        val featured = featuredParam?.toBooleanStrictOrNull()
 
         // Query the read model with JDBC for filtered, paginated results
         val results = queryAuctions(status, brand, lotId, featured, effectivePage, effectiveSize)
@@ -474,7 +475,7 @@ class AuctionResource @Inject constructor(
             pageSize = effectiveSize
         )
 
-        return Response.ok(pagedResponse).build()
+        return Response.ok(ApiResponse.ok(pagedResponse)).build()
     }
 
     // -----------------------------------------------------------------------
@@ -528,7 +529,7 @@ class AuctionResource @Inject constructor(
         }
         if (featured != null) {
             conditions.add("featured = ?")
-            params.add(featured.toString())
+            params.add(featured)
         }
 
         val whereClause = if (conditions.isEmpty()) "" else "WHERE ${conditions.joinToString(" AND ")}"
@@ -537,7 +538,7 @@ class AuctionResource @Inject constructor(
         // Count total matching records
         val total: Long = dataSource.connection.use { conn ->
             conn.prepareStatement("SELECT COUNT(*) FROM app.auction_read_model $whereClause").use { stmt ->
-                params.forEachIndexed { index, param -> stmt.setString(index + 1, param.toString()) }
+                params.forEachIndexed { index, param -> setTypedParam(stmt, index + 1, param) }
                 stmt.executeQuery().use { rs ->
                     if (rs.next()) rs.getLong(1) else 0L
                 }
@@ -566,7 +567,7 @@ class AuctionResource @Inject constructor(
             conn.prepareStatement(querySql).use { stmt ->
                 var paramIndex = 1
                 params.forEach { param ->
-                    stmt.setString(paramIndex++, param.toString())
+                    setTypedParam(stmt, paramIndex++, param)
                 }
                 stmt.setInt(paramIndex++, size)
                 stmt.setInt(paramIndex, offset)
@@ -651,6 +652,20 @@ class AuctionResource @Inject constructor(
             featured = model.featured,
             autoAwarded = model.autoAwarded
         )
+
+    /**
+     * Sets a prepared-statement parameter using the correct JDBC type.
+     *
+     * Boolean values use [java.sql.PreparedStatement.setBoolean] to avoid
+     * PostgreSQL type-mismatch errors (`boolean = character varying`).
+     * All other types fall back to [java.sql.PreparedStatement.setString].
+     */
+    private fun setTypedParam(stmt: java.sql.PreparedStatement, index: Int, value: Any) {
+        when (value) {
+            is Boolean -> stmt.setBoolean(index, value)
+            else -> stmt.setString(index, value.toString())
+        }
+    }
 
     /**
      * Converts an event store entity with a bid event type into a [BidResponse]

@@ -104,7 +104,7 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
   }
 }
 
-const { data: featuredAuctions } = await useAsyncData('featured-auctions', async () => {
+const { data: featuredAuctions } = useAsyncData('featured-auctions', async () => {
   const { $api } = useNuxtApp()
   const api = $api as typeof $fetch
   try {
@@ -148,7 +148,7 @@ const { data: featuredAuctions } = await useAsyncData('featured-auctions', async
   server: false,
 })
 
-const { data: newLots } = await useAsyncData('new-lots', async () => {
+const { data: newLots } = useAsyncData('new-lots', async () => {
   // Show both ACTIVE lots (with auctions) and APPROVED lots (newly listed, awaiting auction)
   const activeLots = await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 8 })
   const approvedLots = await fetchLotsFromCatalog({ status: 'APPROVED', page: 0, pageSize: 8 })

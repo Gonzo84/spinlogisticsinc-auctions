@@ -253,8 +253,10 @@ const depositPaid = ref(true) // Assumed from API in real app
 const increments = [50, 100, 500]
 
 const canBid = computed(() => {
-  if (!bidAmount.value) return false
-  if (bidAmount.value < minBidAmount.value) return false
+  // Allow bidding when bidAmount is null but minBidAmount is valid (handlePlaceBid will use minBidAmount)
+  const amount = bidAmount.value || minBidAmount.value
+  if (!amount || amount <= 0) return false
+  if (bidAmount.value && bidAmount.value < minBidAmount.value) return false
   if (props.lot.depositRequired && !depositPaid.value) return false
   return true
 })
@@ -268,18 +270,23 @@ async function handlePlaceBid() {
   bidError.value = null
   clearError()
 
-  if (!bidAmount.value || bidAmount.value < minBidAmount.value) {
+  // Fall back to minimum bid if bidAmount is null (e.g., InputNumber didn't sync v-model)
+  const effectiveAmount = bidAmount.value || minBidAmount.value
+  if (!effectiveAmount || effectiveAmount < minBidAmount.value) {
     bidError.value = t('auction.minimumBid') + ': ' + formatCurrency(minBidAmount.value)
     return
   }
 
+  // Ensure bidAmount ref is in sync for the button label
+  bidAmount.value = effectiveAmount
+
   try {
     await placeBid({
       auctionId: props.lot.id,
-      amount: bidAmount.value,
+      amount: effectiveAmount,
     })
     showSuccess.value = true
-    bidAmount.value = null
+    bidAmount.value = minBidAmount.value
     setTimeout(() => {
       showSuccess.value = false
     }, 3000)

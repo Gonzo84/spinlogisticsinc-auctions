@@ -43,6 +43,7 @@ fun Lot.toSummaryResponse(primaryImageUrl: String? = null): LotSummaryResponse =
     sellerId = sellerId,
     categoryId = categoryId,
     title = title,
+    description = description,
     brand = brand,
     locationCountry = locationCountry,
     locationCity = locationCity,

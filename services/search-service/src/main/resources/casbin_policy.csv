@@ -1,10 +1,17 @@
 p, buyer_active, /api/v1/search/:type, GET, allow
+p, buyer_active, /api/v1/search/:type/:action, GET, allow
 p, buyer_pending_kyc, /api/v1/search/:type, GET, allow
+p, buyer_pending_kyc, /api/v1/search/:type/:action, GET, allow
 p, buyer_blocked, /api/v1/search/:type, GET, allow
+p, buyer_blocked, /api/v1/search/:type/:action, GET, allow
 p, seller_verified, /api/v1/search/:type, GET, allow
+p, seller_verified, /api/v1/search/:type/:action, GET, allow
 p, seller_pending, /api/v1/search/:type, GET, allow
+p, seller_pending, /api/v1/search/:type/:action, GET, allow
 p, broker, /api/v1/search/:type, GET, allow
+p, broker, /api/v1/search/:type/:action, GET, allow
 p, admin_ops, /api/v1/search/:type, GET, allow
+p, admin_ops, /api/v1/search/:type/:action, GET, allow
 p, admin_super, /api/v1/:r, .*, allow
 p, admin_super, /api/v1/:r/:id, .*, allow
 p, admin_super, /api/v1/:r/:id/:sub, .*, allow

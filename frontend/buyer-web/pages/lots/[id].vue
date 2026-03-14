@@ -215,7 +215,7 @@
             @click="showBidHistory = !showBidHistory"
           >
             <h2 class="text-lg font-semibold text-gray-900">
-              {{ $t('auction.bidHistory') }} ({{ lot.bidCount }})
+              {{ $t('auction.bidHistory') }} ({{ auctionStore.bidCount }})
             </h2>
             <i
               class="pi pi-chevron-down text-gray-400 transition-transform"
@@ -278,10 +278,12 @@ import type { Auction } from '~/types/auction'
 import { formatCurrency, formatDate } from '~/utils/format'
 import { getCountryFlag } from '~/utils/constants'
 import { unwrapApiResponse } from '~/utils/api-response'
+import { useAuctionStore } from '~/stores/auction'
 
 const { t } = useI18n()
 const route = useRoute()
 const { getAuction, subscribeToAuction, unsubscribeFromAuction } = useAuction()
+const auctionStore = useAuctionStore()
 
 const lotId = computed(() => route.params.id as string)
 

@@ -100,16 +100,19 @@ class AuctionClosingScheduler @Inject constructor(
     }
 
     /**
-     * Polls for closed auctions eligible for delayed auto-award.
+     * Polls for closed auctions eligible for auto-award.
      *
-     * Only active when auto-award delay is configured > 0. Checks every 5 seconds
-     * for auctions that closed long enough ago to proceed with auto-award.
+     * Acts as both the delayed auto-award path (when delay > 0) and a safety net
+     * for any auctions that missed the immediate auto-award in checkAndCloseAuctions
+     * (e.g., due to transient errors or canAutoAward evaluating to false).
+     *
+     * Checks every 5 seconds for CLOSED auctions with a winner and reserve met
+     * that have not yet been awarded.
      */
     @Scheduled(every = "5s", identity = "delayed-auto-award-scheduler")
     fun checkPendingAutoAwards() {
         if (!autoAwardEnabled.toBoolean()) return
         val delaySeconds = autoAwardDelaySeconds.toLongOrNull() ?: 0L
-        if (delaySeconds <= 0) return
 
         val cutoff = Instant.now().minusSeconds(delaySeconds)
         val closedAuctions = readModelRepository.findClosedAuctionsBeforeWithWinner(cutoff)
@@ -118,9 +121,9 @@ class AuctionClosingScheduler @Inject constructor(
             try {
                 val auctionId = AuctionId(auction.auctionId)
                 lifecycleService.autoAwardLot(auctionId)
-                LOG.infof("Delayed auto-award completed for auction %s", auctionId)
+                LOG.infof("Auto-award (safety net) completed for auction %s", auctionId)
             } catch (e: Exception) {
-                LOG.errorf(e, "Failed delayed auto-award for %s: %s", auction.auctionId, e.message)
+                LOG.errorf(e, "Failed auto-award for %s: %s", auction.auctionId, e.message)
             }
         }
     }

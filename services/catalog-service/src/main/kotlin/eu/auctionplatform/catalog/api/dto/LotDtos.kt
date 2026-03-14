@@ -145,6 +145,7 @@ data class LotSummaryResponse(
     val sellerId: UUID,
     val categoryId: UUID?,
     val title: String,
+    val description: String,
     val brand: String,
     val locationCountry: String,
     val locationCity: String,

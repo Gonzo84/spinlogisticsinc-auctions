@@ -251,12 +251,12 @@ function updateFilters(newFilters: Partial<SearchFilters>) {
     ...route.query as Record<string, string>,
   }
 
-  if (newFilters.category !== undefined) query.category = newFilters.category || undefined
-  if (newFilters.country !== undefined) query.country = newFilters.country?.join(',') || undefined
-  if (newFilters.priceMin !== undefined) query.priceMin = newFilters.priceMin?.toString() || undefined
-  if (newFilters.priceMax !== undefined) query.priceMax = newFilters.priceMax?.toString() || undefined
-  if (newFilters.distance !== undefined) query.distance = newFilters.distance?.toString() || undefined
-  if (newFilters.reserveStatus !== undefined) query.reserveStatus = newFilters.reserveStatus || undefined
+  if ('category' in newFilters) query.category = newFilters.category || undefined
+  if ('country' in newFilters) query.country = newFilters.country?.join(',') || undefined
+  if ('priceMin' in newFilters) query.priceMin = newFilters.priceMin?.toString() || undefined
+  if ('priceMax' in newFilters) query.priceMax = newFilters.priceMax?.toString() || undefined
+  if ('distance' in newFilters) query.distance = newFilters.distance?.toString() || undefined
+  if ('reserveStatus' in newFilters) query.reserveStatus = newFilters.reserveStatus || undefined
 
   query.page = '1'
   currentPage.value = 1
