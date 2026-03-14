@@ -531,6 +531,59 @@ These verify platform-wide behavior across the demo flow.
    - Admin payments page (Tab 3)
    - Seller settlements page (Tab 2)
 
+### Lot ID vs Auction ID Consistency (CRITICAL)
+
+> **Background:** The platform has two UUID identity spaces — catalog `lotId` (from catalog-service) and `auctionId` (from auction-engine). Confusing them causes 404s, broken links, wrong settlements, and missing notifications. See `docs/LOT_AUCTION_ID_AUDIT.md` and CONVENTIONS.md section 2.4.
+
+Verify these ID usage rules across the entire demo flow:
+
+#### Frontend Navigation (buyer-web)
+
+1. **LotCard links:** Click any lot card on homepage, search, or category pages.
+   - **Verify:** URL path is `/lots/{catalogLotId}` (the catalog-service UUID)
+   - **Verify:** The lot detail page loads successfully (not 404)
+   - **How to check:** Compare URL param with the lot's `catalogLotId` field (visible in API response as `lotId`). The auction-engine's `auctionId` is a different UUID — using it here would 404.
+
+2. **HeroCarousel links:** Click a featured auction in the homepage carousel.
+   - **Verify:** URL path uses `catalogLotId`, not `auctionId`
+   - **Verify:** Lot detail page loads (not 404)
+
+3. **Overbid notification links:** After placing a bid (Step 4), if another buyer outbids:
+   - **Verify:** The overbid toast "Rebid" link navigates to `/lots/{catalogLotId}`
+   - **Verify:** The notification action URL in the notifications panel uses `catalogLotId`
+   - **How to test:** Place a bid as buyer1, then outbid via API as buyer2. Check the toast link in buyer1's browser.
+
+4. **Lot detail page data sources:** On the lot detail page:
+   - **Verify:** Lot metadata (title, images, description, specs) comes from catalog-service (uses `catalogLotId`)
+   - **Verify:** Bid panel, WebSocket subscription, and bid placement use `auctionId` (from auction-engine)
+   - **Verify:** The WebSocket room URL is `/ws/auctions/{auctionId}` (not `/ws/auctions/{catalogLotId}`)
+
+#### Seller Portal
+
+5. **Seller lot detail bid history:** Navigate to a lot with bids in seller-portal.
+   - **Verify:** Bid history loads (not empty, not 404)
+   - **Verify:** The API call uses `/auctions/{auctionId}/bids` (not `/auctions/{catalogLotId}/bids`)
+   - **How to check:** Open browser DevTools Network tab, find the bids request, verify the UUID in the URL matches the auction-engine ID.
+
+6. **Seller analytics:** Navigate to seller dashboard.
+   - **Verify:** KPI cards show non-zero values for sellers with active/sold lots
+   - **Verify:** No "0 lots, 0 revenue" when lots exist
+
+#### Backend Event Consumers (API verification)
+
+7. **Award notification uses correct winner ID:** After awarding a lot (Step 6.1), if the award is later revoked:
+   - **Verify:** The revocation notification is sent to the original winner
+   - **How to test:** Award, then revoke via `POST /auctions/{id}/revoke-award`, check notification-service logs for `originalWinnerId` (not `winnerId`)
+
+8. **Settlement uses correct sellerId:** After payment settlement (Step 6.5):
+   - **Verify:** Settlement record has the correct seller UUID (from catalog-service)
+   - **Verify:** Settlement is NOT using `auctionId` or `lotId` as `sellerId`
+   - **How to check:** `GET /api/v1/payments/settlements` as seller — settlements should appear. If sellerId was wrong, they won't show.
+
+9. **Payment checkout fails loudly on missing data:** If seller or auction can't be resolved:
+   - **Verify:** Checkout returns a clear error (400 Bad Request with message), NOT a silent success with wrong IDs
+   - **How to test (optional):** Attempt checkout with a non-existent lotId — should get an explicit error, not a payment with random UUIDs.
+
 ### Error-Free Navigation
 
 1. **Verify:** No JavaScript console errors on any of the 3 frontends

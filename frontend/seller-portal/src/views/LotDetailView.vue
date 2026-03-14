@@ -47,7 +47,7 @@ onMounted(async () => {
   const hasAuction = lotData.status === 'active' || lotData.status === 'sold' || lotData.auctionStart
   if (hasAuction) {
     try {
-      await fetchLotBids(lotId.value)
+      await fetchLotBids(lotId.value, lotData.auctionId)
     } catch {
       // Clear the shared error ref so it doesn't hide the lot detail
       error.value = null

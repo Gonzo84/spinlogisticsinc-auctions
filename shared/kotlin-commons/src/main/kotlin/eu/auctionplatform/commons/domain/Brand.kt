@@ -16,15 +16,15 @@ enum class Brand(val code: String) {
 
     companion object {
 
-        private val byCode: Map<String, Brand> = entries.associateBy { it.code }
+        private val byCode: Map<String, Brand> = entries.associateBy { it.code.lowercase() }
 
         /**
-         * Resolves a [Brand] from its [code].
+         * Resolves a [Brand] from its [code] (case-insensitive).
          *
          * @throws IllegalArgumentException if the code is not recognised.
          */
         fun fromCode(code: String): Brand =
-            byCode[code] ?: throw IllegalArgumentException(
+            byCode[code.lowercase()] ?: throw IllegalArgumentException(
                 "Unknown brand code '$code'. Known codes: ${byCode.keys}"
             )
     }

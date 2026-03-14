@@ -10,6 +10,7 @@ p, buyer_blocked, /api/v1/auctions/:id/bids, POST, deny
 p, buyer_blocked, /api/v1/auctions/:id/auto-bids, POST, deny
 p, seller_verified, /api/v1/auctions, GET, allow
 p, seller_verified, /api/v1/auctions/:id, GET, allow
+p, seller_verified, /api/v1/auctions/:id/bids, GET, allow
 p, seller_pending, /api/v1/auctions, GET, allow
 p, seller_pending, /api/v1/auctions/:id, GET, allow
 p, broker, /api/v1/auctions, GET, allow

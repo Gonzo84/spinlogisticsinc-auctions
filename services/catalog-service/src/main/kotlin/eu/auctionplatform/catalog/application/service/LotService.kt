@@ -112,7 +112,7 @@ class LotService {
     @Transactional
     fun createLot(sellerId: UUID, request: CreateLotRequest): Lot {
         // Validate category exists
-        categoryRepository.findById(request.categoryId)
+        categoryRepository.findById(request.categoryId!!)
             ?: throw NotFoundException(
                 code = "CATEGORY_NOT_FOUND",
                 message = "Category with id '${request.categoryId}' not found."
@@ -121,16 +121,16 @@ class LotService {
         val lot = Lot(
             id = IdGenerator.generateUUIDv7(),
             sellerId = sellerId,
-            brand = request.brand,
-            title = request.title,
-            description = request.description,
-            categoryId = request.categoryId,
+            brand = request.brand!!,
+            title = request.title!!,
+            description = request.description!!,
+            categoryId = request.categoryId!!,
             specifications = request.specifications,
             locationLat = request.locationLat,
             locationLng = request.locationLng,
             locationAddress = request.locationAddress,
-            locationCountry = request.locationCountry,
-            locationCity = request.locationCity,
+            locationCountry = request.locationCountry!!,
+            locationCity = request.locationCity!!,
             reservePrice = request.reservePrice,
             startingBid = request.startingBid,
             status = LotStatus.DRAFT,

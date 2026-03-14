@@ -22,6 +22,7 @@ export interface Notification {
   title: string
   message: string
   auctionId?: string
+  lotId?: string
   lotTitle?: string
   amount?: number
   read: boolean

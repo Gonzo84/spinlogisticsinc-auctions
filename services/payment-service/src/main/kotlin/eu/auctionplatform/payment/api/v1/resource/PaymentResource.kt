@@ -680,7 +680,9 @@ class PaymentResource @Inject constructor(
             val sellerId = item.sellerId?.let { UUID.fromString(it) }
                 ?: lotInfo?.sellerId
                 ?: auctionLotLookupService.fetchAuctionResultByAuctionId(auctionId)?.sellerId
-                ?: lotId
+                ?: throw jakarta.ws.rs.BadRequestException(
+                    "Could not resolve sellerId for lot $lotId — ensure seller info is available"
+                )
             val sellerCountry = lotInfo?.sellerCountry ?: request.buyerCountry
             val lotTitle = lotInfo?.title
 
@@ -722,8 +724,14 @@ class PaymentResource @Inject constructor(
             val lotInfo = auctionLotLookupService.fetchLotInfo(lotId)
 
             val hammerPrice = auctionResult?.hammerPrice ?: BigDecimal.ZERO
-            val auctionId = auctionResult?.auctionId ?: lotId
-            val sellerId = lotInfo?.sellerId ?: auctionResult?.sellerId ?: lotId
+            val auctionId = auctionResult?.auctionId
+                ?: throw jakarta.ws.rs.BadRequestException(
+                    "Could not resolve auctionId for lot $lotId — auction lookup failed"
+                )
+            val sellerId = lotInfo?.sellerId ?: auctionResult?.sellerId
+                ?: throw jakarta.ws.rs.BadRequestException(
+                    "Could not resolve sellerId for lot $lotId — ensure seller info is available"
+                )
             val sellerCountry = lotInfo?.sellerCountry ?: request.buyerCountry
             val lotTitle = lotInfo?.title
 

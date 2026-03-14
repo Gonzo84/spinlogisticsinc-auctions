@@ -29,7 +29,7 @@ export interface Seller {
 export interface Auction {
   id: string
   title: string
-  lotNumber: string
+  catalogLotId: string
   description: string
   category: string
   country: string

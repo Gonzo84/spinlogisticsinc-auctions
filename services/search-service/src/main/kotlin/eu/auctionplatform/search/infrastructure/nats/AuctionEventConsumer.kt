@@ -24,6 +24,7 @@ import java.time.Instant
  * Elasticsearch lots index accordingly.
  *
  * Subscribed subjects:
+ * - `auction.lot.created.>` -- updates auctionEndTime and startingBid from auction data.
  * - `auction.bid.placed.>` -- updates currentBid and increments bidCount.
  * - `auction.lot.closed.>` -- removes the lot from the active index and moves
  *   it to the archive index.
@@ -69,6 +70,7 @@ class AuctionEventConsumer @Inject constructor(
         const val FILTER_SUBJECT: String = ">"
 
         // Subject prefixes for routing
+        private const val SUBJECT_AUCTION_CREATED = "auction.lot.created"
         private const val SUBJECT_BID_PLACED = "auction.bid.placed"
         private const val SUBJECT_LOT_CLOSED = "auction.lot.closed"
         private const val SUBJECT_LOT_EXTENDED = "auction.lot.extended"
@@ -127,6 +129,7 @@ class AuctionEventConsumer @Inject constructor(
 
         try {
             when {
+                subject.startsWith(SUBJECT_AUCTION_CREATED) -> handleAuctionCreated(payload)
                 subject.startsWith(SUBJECT_BID_PLACED) -> handleBidPlaced(payload)
                 subject.startsWith(SUBJECT_LOT_CLOSED) -> handleLotClosed(payload)
                 subject.startsWith(SUBJECT_LOT_EXTENDED) -> handleLotExtended(payload)
@@ -145,6 +148,45 @@ class AuctionEventConsumer @Inject constructor(
     // -------------------------------------------------------------------------
     // Event handlers
     // -------------------------------------------------------------------------
+
+    /**
+     * Handles `auction.lot.created` events by updating the lot document with
+     * the auction end time and starting bid from the auction-engine.
+     *
+     * This ensures search results display correct countdown timers and
+     * starting prices for lots that have active auctions.
+     *
+     * Expected payload fields:
+     * - `lotId` -- the catalog lot identifier (ES document ID)
+     * - `endTime` -- the auction end time (ISO-8601)
+     * - `startingBidAmount` -- the auction starting bid amount
+     */
+    private fun handleAuctionCreated(payload: String) {
+        val node = JsonMapper.instance.readTree(payload)
+        val lotId = extractLotId(node)
+        val endTime = node.optionalText("endTime")
+        val startingBid = node.optionalDecimal("startingBidAmount")
+
+        LOG.infof("Updating lot [id=%s] with auction data (endTime=%s, startingBid=%s)",
+            lotId, endTime, startingBid)
+
+        val updates = mutableMapOf<String, Any?>(
+            "status" to "active"
+        )
+        if (endTime != null) updates["auctionEndTime"] = endTime
+        if (startingBid != null) {
+            updates["startingBid"] = startingBid
+            updates["currentBid"] = startingBid
+        }
+
+        try {
+            lotIndexService.updateDocument(lotId, updates)
+            LOG.infof("Successfully updated lot [id=%s] with auction data", lotId)
+        } catch (ex: Exception) {
+            LOG.warnf("Lot [id=%s] not yet in search index, skipping auction created update: %s",
+                lotId, ex.message)
+        }
+    }
 
     /**
      * Handles `auction.bid.placed` events by updating the currentBid amount
@@ -329,15 +371,14 @@ class AuctionEventConsumer @Inject constructor(
     // -------------------------------------------------------------------------
 
     /**
-     * Extracts the lot ID from the event payload.
-     *
-     * Supports both `lotId` (catalog-style events) and `aggregateId`
-     * (auction-style events where the aggregate is the auction/lot).
+     * Extracts the catalog lot ID from the event payload.
+     * Only reads the explicit `lotId` field — never falls back to `aggregateId`
+     * which is the auction-engine's auctionId (a different UUID).
      */
     private fun extractLotId(node: JsonNode): String {
         return node.get("lotId")?.asText()
-            ?: node.get("aggregateId")?.asText()
-            ?: throw IllegalArgumentException("Neither 'lotId' nor 'aggregateId' found in event payload")
+            ?: throw IllegalArgumentException(
+                "Event payload missing 'lotId' field (aggregateId=${node.get("aggregateId")?.asText()})")
     }
 
     private fun JsonNode.requiredText(field: String): String {

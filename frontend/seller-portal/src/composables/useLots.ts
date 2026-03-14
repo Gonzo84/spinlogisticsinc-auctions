@@ -81,6 +81,7 @@ export function useLots() {
   function normalizeLot(data: RawLotData): Lot {
     return {
       id: data.id ?? '',
+      auctionId: data.auctionId ?? null,
       brand: data.brand ?? '',
       title: data.title ?? '',
       description: data.description ?? '',
@@ -128,8 +129,18 @@ export function useLots() {
     return lot
   }
 
-  async function fetchLotBids(lotId: string): Promise<LotBid[]> {
-    const bids = await get<LotBid[]>(`/auctions/${lotId}/bids`)
+  async function fetchLotBids(lotId: string, auctionId?: string | null): Promise<LotBid[]> {
+    // Resolve auction-engine auctionId from the catalog lotId if not provided
+    let resolvedAuctionId = auctionId
+    if (!resolvedAuctionId) {
+      const lookup = await get<Record<string, unknown>>(`/auctions/by-lot/${lotId}`)
+      const data = unwrapApiResponse<Record<string, unknown>>(lookup)
+      resolvedAuctionId = (data.auctionId as string) ?? (data.id as string)
+    }
+    if (!resolvedAuctionId) return []
+    const raw = await get<unknown>(`/auctions/${resolvedAuctionId}/bids`)
+    const data = unwrapApiResponse<LotBid[] | { items?: LotBid[] }>(raw)
+    const bids = Array.isArray(data) ? data : (data?.items ?? [])
     lotBids.value = bids
     return bids
   }

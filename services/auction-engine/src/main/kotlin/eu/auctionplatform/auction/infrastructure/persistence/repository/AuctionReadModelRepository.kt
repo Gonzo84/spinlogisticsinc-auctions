@@ -82,6 +82,8 @@ class AuctionReadModelRepository @Inject constructor(
             SELECT $SELECT_COLUMNS
               FROM app.auction_read_model
              WHERE lot_id = ?
+             ORDER BY created_at DESC
+             LIMIT 1
         """
 
         private const val SELECT_ACTIVE_CLOSING_BEFORE = """
@@ -184,7 +186,12 @@ class AuctionReadModelRepository @Inject constructor(
 
         private const val UPDATE_AWARDED = """
             UPDATE app.auction_read_model
-               SET status = 'AWARDED', awarded_at = ?, auto_awarded = ?, updated_at = ?
+               SET status = 'AWARDED',
+                   current_high_bid = COALESCE(?, current_high_bid),
+                   current_high_bidder_id = COALESCE(?::uuid, current_high_bidder_id),
+                   awarded_at = ?,
+                   auto_awarded = ?,
+                   updated_at = ?
              WHERE auction_id = ?
         """
 
@@ -365,14 +372,17 @@ class AuctionReadModelRepository @Inject constructor(
                 val autoAwarded = event.metadata?.get("autoAwarded") == "true"
                 dataSource.connection.use { conn ->
                     conn.prepareStatement(UPDATE_AWARDED).use { stmt ->
-                        stmt.setTimestamp(1, Timestamp.from(event.timestamp))
-                        stmt.setBoolean(2, autoAwarded)
-                        stmt.setTimestamp(3, Timestamp.from(now))
-                        stmt.setObject(4, UUID.fromString(event.aggregateId))
+                        stmt.setBigDecimal(1, event.winningBidAmount)
+                        stmt.setString(2, event.winnerId)
+                        stmt.setTimestamp(3, Timestamp.from(event.timestamp))
+                        stmt.setBoolean(4, autoAwarded)
+                        stmt.setTimestamp(5, Timestamp.from(now))
+                        stmt.setObject(6, UUID.fromString(event.aggregateId))
                         stmt.executeUpdate()
                     }
                 }
-                LOG.debugf("Updated read model status to AWARDED for auction %s (auto=%s)", event.aggregateId, autoAwarded)
+                LOG.debugf("Updated read model status to AWARDED for auction %s (winner=%s, hammerPrice=%s, auto=%s)",
+                    event.aggregateId, event.winnerId, event.winningBidAmount, autoAwarded)
             }
 
             is AwardRevokedEvent -> {

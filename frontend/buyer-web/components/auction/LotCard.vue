@@ -1,6 +1,6 @@
 <template>
   <NuxtLink
-    :to="`/lots/${lot.id}`"
+    :to="`/lots/${lot.catalogLotId || lot.id}`"
     class="block bg-white rounded-xl border hover:shadow-md transition-shadow overflow-hidden"
     :class="viewMode === 'list' ? 'flex' : ''"
   >

@@ -2,6 +2,7 @@ package eu.auctionplatform.payment.infrastructure.nats
 
 import eu.auctionplatform.commons.messaging.NatsConsumer
 import eu.auctionplatform.commons.util.JsonMapper
+import eu.auctionplatform.payment.application.service.AuctionLotLookupService
 import eu.auctionplatform.payment.application.service.CheckoutService
 import eu.auctionplatform.payment.application.service.LotCheckoutDetail
 import eu.auctionplatform.payment.application.service.PaymentWebhookData
@@ -32,7 +33,8 @@ import java.util.concurrent.Executors
 @Startup
 class LotAwardedConsumer @Inject constructor(
     private val connection: Connection,
-    private val checkoutService: CheckoutService
+    private val checkoutService: CheckoutService,
+    private val auctionLotLookupService: AuctionLotLookupService
 ) {
 
     companion object {
@@ -112,17 +114,25 @@ class LotAwardedConsumer @Inject constructor(
             val lotUuid = UUID.fromString(lotId)
             val auctionUuid = UUID.fromString(auctionId)
 
-            // Build lot checkout detail from event data
-            // Seller ID and country info default here; in production they come from lot/catalog service
+            // Resolve seller from catalog-service via lot lookup
+            val lotInfo = auctionLotLookupService.fetchLotInfo(lotUuid)
+            val sellerId = lotInfo?.sellerId
+            val sellerCountry = lotInfo?.sellerCountry ?: "NL"
+
+            if (sellerId == null) {
+                LOG.errorf("Cannot resolve sellerId for lot %s — skipping checkout. Will retry on next award event.", lotId)
+                return
+            }
+
             val lotDetail = LotCheckoutDetail(
                 lotId = lotUuid,
                 auctionId = auctionUuid,
-                sellerId = auctionUuid, // Placeholder: would be resolved from lot service
+                sellerId = sellerId,
                 hammerPrice = hammerPrice,
                 currency = currency,
-                buyerCountry = "NL", // Default: would come from buyer profile
-                sellerCountry = "NL", // Default: would come from lot service
-                buyerType = "BUSINESS", // Default: would come from buyer profile
+                buyerCountry = "NL",
+                sellerCountry = sellerCountry,
+                buyerType = "BUSINESS",
                 sellerType = "BUSINESS",
                 buyerVatId = null
             )

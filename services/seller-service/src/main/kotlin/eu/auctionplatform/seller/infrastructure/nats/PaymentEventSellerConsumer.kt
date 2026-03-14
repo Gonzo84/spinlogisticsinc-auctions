@@ -151,9 +151,12 @@ class PaymentEventSellerConsumer @Inject constructor(
             try { UUID.fromString(it) } catch (_: IllegalArgumentException) { null }
         }
 
-        // Resolve seller profile id (sellerId in event may be the user_id)
+        // Resolve seller profile id (sellerId in event is the Keycloak user_id)
         val sellerProfileId = sellerProfileRepository.findSellerProfileIdByUserId(sellerId)
-            ?: sellerId // fall back to using it directly as seller_profile.id
+        if (sellerProfileId == null) {
+            LOG.warnf("No seller profile found for userId %s -- cannot record settlement", sellerId)
+            return
+        }
 
         // Read from event (authoritative) with fallback to recomputation
         val hammerPrice = node.optionalDecimal("hammerPrice")
@@ -166,8 +169,9 @@ class PaymentEventSellerConsumer @Inject constructor(
         LOG.infof("Recording settlement for seller %s (netAmount=%s, commission=%s, rate=%s)",
             sellerProfileId, netAmount, commission, commissionRate)
 
-        // Determine lotId from the event -- settlement may reference a lot indirectly
-        val lotIdStr = node.optionalText("lotId") ?: node.optionalText("aggregateId")
+        // Determine lotId from the event — never fall back to aggregateId
+        // which is the settlementId for payment events (a different UUID)
+        val lotIdStr = node.optionalText("lotId")
         val lotId = lotIdStr?.let {
             try { UUID.fromString(it) } catch (_: IllegalArgumentException) { null }
         }

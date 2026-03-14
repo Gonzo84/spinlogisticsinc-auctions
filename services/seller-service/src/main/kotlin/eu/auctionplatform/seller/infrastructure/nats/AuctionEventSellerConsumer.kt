@@ -272,14 +272,15 @@ class AuctionEventSellerConsumer @Inject constructor(
     // -------------------------------------------------------------------------
 
     /**
-     * Extracts the lot ID from the event payload.
-     * Supports both `lotId` (explicit) and `aggregateId` (auction event convention).
+     * Extracts the catalog lot ID from the event payload.
+     * Only reads the explicit `lotId` field — never falls back to `aggregateId`
+     * which is the auction-engine's auctionId (a different UUID).
      */
     private fun extractLotId(node: JsonNode): UUID? {
         val lotIdStr = node.get("lotId")?.asText()
-            ?: node.get("aggregateId")?.asText()
         if (lotIdStr == null) {
-            LOG.warn("Event payload missing both 'lotId' and 'aggregateId' fields")
+            LOG.warnf("Event payload missing 'lotId' field — skipping (aggregateId=%s)",
+                node.get("aggregateId")?.asText())
             return null
         }
         return try {

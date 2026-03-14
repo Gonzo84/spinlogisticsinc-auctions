@@ -50,7 +50,7 @@ Continuously alternate between testing and fixing bugs until a test run produces
 
 ## Step 1: Initialize
 
-Set the mode from `$ARGUMENTS` (default `demo`). Set `MAX_ITERATIONS = 5`. Set `iteration = 0`.
+Set the mode from `$ARGUMENTS` (default `demo`). Set `MAX_ITERATIONS = 10`. Set `iteration = 0`.
 
 Write initial state to the state file:
 ```bash
@@ -58,7 +58,7 @@ cat > tests/.test-fix-state.json << 'EOF'
 {
   "mode": "<mode>",
   "iteration": 0,
-  "maxIterations": 5,
+  "maxIterations": 10,
   "status": "running",
   "history": []
 }
@@ -194,7 +194,7 @@ cat > tests/.test-fix-state.json << 'EOF'
 {
   "mode": "<mode>",
   "iteration": <N>,
-  "maxIterations": 5,
+  "maxIterations": 10,
   "status": "running",
   "history": [
     {"iteration": 1, "bugsFound": <n>, "bugsFixed": <n>},
@@ -267,7 +267,7 @@ Use the state file for loop position and `.fix-summary.md` for cumulative progre
 ## Important Notes
 
 - **ALWAYS use Task subagents** for test and fix phases. Never call these skills directly in the main conversation.
-- **Max 5 iterations.** If bugs persist after 5 test-fix cycles, something deeper is wrong — stop and report.
+- **Max 10 iterations.** If bugs persist after 10 test-fix cycles, something deeper is wrong — stop and report.
 - **Each iteration is a full cycle:** test → check → fix → re-test. This ensures fixes don't introduce regressions.
 - **The `/fix-bugs` skill deletes the report** after processing, so each `/test-happy-path` run starts fresh.
 - **`tests/.fix-summary.md` is NEVER deleted.** It is the persistent record updated after every phase. On completion, the tests/ folder should contain only `.fix-summary.md`commit a.

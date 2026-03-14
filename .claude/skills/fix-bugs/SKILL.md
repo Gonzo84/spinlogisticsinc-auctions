@@ -88,19 +88,29 @@ Read the full report file. Parse out every bug entry (sections matching `### BUG
 - Read the referenced source file(s) to understand the current code
 - If the report specifies exact line numbers, verify they still match (code may have shifted)
 
-### 4c: Read CONVENTIONS.md
+### 4c: Read CONVENTIONS.md (MANDATORY — Consistency is the Highest Priority)
 
-Before implementing any fix, read `CONVENTIONS.md` at the project root. This is the mandatory code style and architectural guide. All fixes MUST follow its rules, including:
+Before implementing any fix, read `CONVENTIONS.md` at the project root. This is the mandatory code style and architectural guide. **Consistency with existing conventions takes absolute priority over speed or cleverness.** All fixes MUST follow its rules, including:
+
+- **ID consistency** (section 2.4): **CRITICAL** — Catalog `lotId` vs auction-engine `auctionId` are different UUIDs. Never confuse them. Never fall back from one to the other. See `docs/LOT_AUCTION_ID_AUDIT.md` for the full audit. Specifically:
+  - Frontend navigation links to `/lots/{id}` MUST use `catalogLotId`, never `auctionId`
+  - NATS consumer `extractLotId()` MUST only read the explicit `lotId` field — NEVER fall back to `aggregateId`
+  - Payment-service MUST throw/return early if `sellerId` or `auctionId` can't be resolved — never silently substitute `lotId`
+  - Gateway WebSocket broadcasts MUST include `lotId` alongside `auctionId`
+- **Domain term glossary** (section 2.3): Use canonical field names consistently (`catalogLotId` not `lotNumber`, `auctionId` not `id` in auction contexts)
 - **Kotlin style** (section 4): naming, CDI patterns, logging, configuration
 - **Vue/TypeScript** (section 3): SFC ordering, composables, PrimeVue patterns, API layer
 - **REST API** (section 5): response wrapping, pagination, status codes
 - **Database** (section 7): naming, Flyway migrations, column types
 - **Critical gotchas** (section 16): known pitfalls that caused real bugs
+- **What NOT to do** (section 17): explicit anti-patterns including ID fallback prohibitions
 
 ### 4d: Implement the Fix
 - Apply the minimal fix described in the report
 - If the report doesn't specify an exact fix, analyze the root cause and implement the simplest correct solution
-- Follow `CONVENTIONS.md` rules and existing code patterns in the file
+- **Consistency first:** Follow `CONVENTIONS.md` rules and existing code patterns in the file. When in doubt, match what neighboring code does.
+- **ID consistency check:** Before committing any fix that touches lot IDs, auction IDs, or navigation links, verify it follows CONVENTIONS.md section 2.4. Ask: "Am I using the right ID type here?" A fix that introduces a new ID confusion bug is worse than no fix at all.
+- **Fail loudly over silent fallbacks:** If a fix involves resolving an ID or cross-service lookup, never add a silent fallback that substitutes a wrong ID. Throw an exception or return early with a log message instead.
 
 ### 4e: Skip Criteria
 Skip a bug (do not attempt to fix) if:
@@ -170,9 +180,11 @@ Report the total number of reports processed and bugs fixed.
 
 ## Important Notes
 
+- **Consistency is the highest priority.** Every fix must align with CONVENTIONS.md. A fix that violates conventions is not a fix — it's a new bug.
 - **Do not introduce new bugs.** Keep fixes minimal and targeted.
 - **Do not refactor surrounding code.** Only change what's needed to fix the reported bug.
 - **Follow CONVENTIONS.md.** All fixes must adhere to the project's code conventions. Read it in Step 4c before implementing any fix.
+- **ID consistency is non-negotiable.** Before any fix touching IDs, navigation links, or cross-service lookups, verify it follows CONVENTIONS.md section 2.4 (Lot ID vs Auction ID). Never introduce a silent fallback from `aggregateId` to `lotId`. Never use `auctionId` for lot navigation or `lotId` for bid/WebSocket operations.
 - **If a fix requires a database migration**, create a new Flyway migration file with the next version number in sequence. Follow section 7 of CONVENTIONS.md (snake_case, `app` schema, `IF NOT EXISTS` guards).
 - **If a fix is unclear**, read more context from the codebase before implementing. Check related files, tests, and API contracts.
 - **If implementing a new feature** as part of a fix (e.g., adding a missing endpoint), follow the architectural patterns in CONVENTIONS.md: hexagonal architecture (section 4.1), API conventions (section 5), PrimeVue patterns (section 3.11).

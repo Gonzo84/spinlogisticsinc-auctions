@@ -206,7 +206,7 @@ function emitUpdate() {
         type="file"
         accept="image/jpeg,image/png,image/webp"
         multiple
-        class="hidden"
+        class="absolute w-0 h-0 overflow-hidden opacity-0"
         @change="handleFileSelect"
       >
       <i class="pi pi-images text-4xl text-gray-400" />

@@ -123,6 +123,34 @@ For **each step** in the happy path:
    - **FAIL**: Verify checkpoint not met, page crashes, or critical functionality broken
    - **SKIP**: Precondition not met (service down, depends on failed prior step)
 
+### ID Consistency Verification (Cross-Cutting)
+
+> **Background:** The platform has two UUID identity spaces — catalog `lotId` and auction-engine `auctionId`. Confusing them is a recurring source of bugs. See CONVENTIONS.md section 2.4 and `docs/LOT_AUCTION_ID_AUDIT.md`.
+
+During testing, apply these additional checks at every navigation and API interaction:
+
+**Navigation links (buyer-web):**
+- When clicking any lot card, HeroCarousel item, or notification link, verify the URL path `/lots/{id}` uses the **catalog lotId** (not the auction-engine auctionId). The lot detail page should load without 404.
+- Use `browser_evaluate` to extract the current URL after navigation and compare with the lot's `catalogLotId` field if available.
+
+**API requests (all portals):**
+- When checking network requests via `browser_network_requests`, verify:
+  - Bid-related requests (`/auctions/{id}/bids`, `/auctions/{id}/auto-bids`) use the **auctionId**
+  - Lot-related requests (`/lots/{id}`, `/lots/{id}/submit`) use the **catalog lotId**
+  - WebSocket connections use `/ws/auctions/{auctionId}` (not lotId)
+- A 404 on `/auctions/{uuid}` or `/lots/{uuid}` often means the wrong ID type was used — report as a **Critical** ID consistency bug.
+
+**Seller portal bid history:**
+- When testing seller lot detail (step 2.5 or equivalent), verify the bid history API call uses `auctionId` (resolved via lot's `auctionId` field or `/auctions/by-lot/{lotId}` lookup), not the catalog `lotId` directly.
+
+**Post-auction flow (demo steps 6.x):**
+- After checkout, verify the payment record has the correct `sellerId` (a user UUID, not a lot or auction UUID)
+- After settlement, verify the seller can see the settlement in their portal (wrong `sellerId` would cause it to be invisible)
+
+**Bug severity for ID confusion:**
+- Any bug where `auctionId` is used where `catalogLotId` is expected (or vice versa) is **Critical** severity
+- Any silent fallback that substitutes one ID type for another is **Critical** severity
+
 ### 4a: Buyer Happy Path (Browser — http://localhost:3000)
 
 **Test credentials:** buyer@test.com / password123

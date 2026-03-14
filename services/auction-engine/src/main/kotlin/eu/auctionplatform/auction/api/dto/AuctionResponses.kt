@@ -88,6 +88,14 @@ data class AuctionDetailResponse(
     @JsonProperty("autoAwarded")
     val autoAwarded: Boolean = false,
 
+    /** User ID of the auction winner (populated when status is AWARDED). */
+    @JsonProperty("winnerId")
+    val winnerId: String? = null,
+
+    /** Final hammer price (populated when status is AWARDED). */
+    @JsonProperty("hammerPrice")
+    val hammerPrice: BigDecimal? = null,
+
     /** UTC timestamp when the auction read model was last updated. */
     @JsonProperty("updatedAt")
     val updatedAt: Instant

@@ -86,18 +86,19 @@ export function useNotifications() {
       notificationsStore.addNotification(data)
     })
 
-    ws.onOverbid((data: { lotTitle?: string; auctionId?: string; newBidAmount?: number }) => {
+    ws.onOverbid((data: { lotTitle?: string; auctionId?: string; lotId?: string; newBidAmount?: number }) => {
       const notification: Notification = {
         id: `overbid-${Date.now()}`,
         type: 'overbid',
         title: 'You\'ve been outbid!',
         message: `Someone placed a higher bid on "${data.lotTitle}"`,
         auctionId: data.auctionId,
+        lotId: data.lotId,
         lotTitle: data.lotTitle,
         amount: data.newBidAmount,
         read: false,
         createdAt: new Date().toISOString(),
-        actionUrl: `/lots/${data.auctionId}`,
+        actionUrl: `/lots/${data.lotId ?? data.auctionId}`,
       }
       notificationsStore.addNotification(notification)
     })

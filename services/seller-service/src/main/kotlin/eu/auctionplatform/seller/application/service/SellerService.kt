@@ -75,13 +75,13 @@ class SellerService @Inject constructor(
         """
 
         private const val SELECT_ANALYTICS_BY_SELLER = """
-            SELECT COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.active_lots ELSE 0 END), 0) AS total_lots,
-                   COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.total_bids ELSE 0 END), 0) AS total_bids,
-                   COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.total_hammer_sales ELSE 0 END), 0) AS total_revenue,
-                   COALESCE(MAX(m.sell_through_rate), 0) AS sell_through_rate,
-                   COALESCE(SUM(CASE WHEN m.period = 'ALL' THEN m.total_settled ELSE 0 END), 0) AS total_settled
-              FROM app.seller_metrics m
-             WHERE m.seller_id = ?
+            SELECT COUNT(*) AS total_lots,
+                   COALESCE(SUM(l.bid_count), 0) AS total_bids,
+                   COALESCE(SUM(CASE WHEN l.status IN ('SOLD', 'PAID', 'AWARDED', 'CLOSED') AND l.current_bid > 0 THEN l.current_bid ELSE 0 END), 0) AS total_revenue,
+                   COUNT(CASE WHEN l.status IN ('SOLD', 'PAID', 'AWARDED') THEN 1 END) AS total_sold,
+                   COALESCE(SUM(CASE WHEN l.status = 'PAID' THEN l.current_bid ELSE 0 END), 0) AS total_settled
+              FROM app.seller_lots l
+             WHERE l.seller_id = ?
         """
 
         private const val SELECT_CO2_BY_SELLER = """
@@ -379,7 +379,7 @@ class SellerService @Inject constructor(
         var totalLots = 0
         var totalBids = 0
         var totalRevenue = BigDecimal.ZERO
-        var sellThroughRate = BigDecimal.ZERO
+        var totalSold = 0
         var totalSettled = BigDecimal.ZERO
 
         dataSource.connection.use { conn ->
@@ -390,17 +390,17 @@ class SellerService @Inject constructor(
                         totalLots = rs.getInt("total_lots")
                         totalBids = rs.getInt("total_bids")
                         totalRevenue = rs.getBigDecimal("total_revenue") ?: BigDecimal.ZERO
-                        sellThroughRate = rs.getBigDecimal("sell_through_rate") ?: BigDecimal.ZERO
+                        totalSold = rs.getInt("total_sold")
                         totalSettled = rs.getBigDecimal("total_settled") ?: BigDecimal.ZERO
                     }
                 }
             }
         }
 
-        val totalSold = if (sellThroughRate > BigDecimal.ZERO && totalLots > 0) {
-            sellThroughRate.multiply(BigDecimal(totalLots)).setScale(0, RoundingMode.HALF_UP).toInt()
+        val sellThroughRate = if (totalLots > 0) {
+            BigDecimal(totalSold).divide(BigDecimal(totalLots), 4, RoundingMode.HALF_UP)
         } else {
-            0
+            BigDecimal.ZERO
         }
 
         val averageHammerPrice = if (totalSold > 0) {

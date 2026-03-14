@@ -611,8 +611,9 @@ class AuctionResource @Inject constructor(
     /**
      * Converts a read model to a detailed auction response DTO.
      */
-    private fun toDetailResponse(model: AuctionReadModel): AuctionDetailResponse =
-        AuctionDetailResponse(
+    private fun toDetailResponse(model: AuctionReadModel): AuctionDetailResponse {
+        val isAwarded = model.status == "AWARDED"
+        return AuctionDetailResponse(
             auctionId = model.auctionId.toString(),
             lotId = model.lotId.toString(),
             brand = model.brand,
@@ -631,9 +632,12 @@ class AuctionResource @Inject constructor(
             featuredAt = model.featuredAt,
             awardedAt = model.awardedAt,
             autoAwarded = model.autoAwarded,
+            winnerId = if (isAwarded) model.currentHighBidderId?.toString() else null,
+            hammerPrice = if (isAwarded) model.currentHighBid else null,
             createdAt = model.createdAt,
             updatedAt = model.updatedAt
         )
+    }
 
     /**
      * Converts a read model to a summary auction response DTO.

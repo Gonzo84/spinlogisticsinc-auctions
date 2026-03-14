@@ -48,7 +48,7 @@
           <!-- Actions -->
           <div class="flex items-center gap-2 mt-3">
             <NuxtLink
-              :to="`/lots/${toast.auctionId}`"
+              :to="`/lots/${toast.lotId}`"
               class="flex-1 py-2 bg-primary text-white text-sm font-semibold rounded-lg text-center hover:bg-primary-800 transition-colors"
               @click="dismissToast(toast.id)"
             >
@@ -78,7 +78,7 @@
 <script setup lang="ts">
 interface OverbidToast {
   id: string
-  auctionId: string
+  lotId: string
   lotTitle: string
   amount?: number
   dismissing: boolean
@@ -98,13 +98,13 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-function addToast(data: { id: string; auctionId: string; lotTitle: string; amount?: number }) {
+function addToast(data: { id: string; lotId: string; lotTitle: string; amount?: number }) {
   // Prevent duplicates
   if (activeToasts.value.some((t) => t.id === data.id)) return
 
   const toast: OverbidToast = {
     id: data.id,
-    auctionId: data.auctionId,
+    lotId: data.lotId,
     lotTitle: data.lotTitle,
     amount: data.amount,
     dismissing: false,
@@ -148,7 +148,7 @@ watch(overbidNotifications, (notifications) => {
     if (!activeToasts.value.some((t) => t.id === notif.id)) {
       addToast({
         id: notif.id,
-        auctionId: notif.auctionId || '',
+        lotId: notif.lotId || notif.auctionId || '',
         lotTitle: notif.lotTitle || notif.message,
         amount: notif.amount,
       })

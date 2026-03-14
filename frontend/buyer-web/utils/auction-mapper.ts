@@ -24,7 +24,7 @@ export function mapAuctionResponse(auction: Record<string, unknown>, lot?: Recor
   return {
     id: (auction.auctionId ?? auction.id ?? '') as string,
     title: (lot?.title ?? auction.title ?? `Lot ${((auction.lotId ?? auction.auctionId ?? '') as string).substring(0, 8)}`) as string,
-    lotNumber: (auction.lotId ?? lot?.id ?? '') as string,
+    catalogLotId: (auction.lotId ?? lot?.id ?? '') as string,
     description: (lot?.description ?? auction.description ?? '') as string,
     category: (lot?.categoryId ?? auction.category ?? '') as string,
     country: (lot?.locationCountry ?? auction.country ?? '') as string,
@@ -34,7 +34,7 @@ export function mapAuctionResponse(auction: Record<string, unknown>, lot?: Recor
     startingPrice: (auction.startingBid ?? lot?.startingBid ?? auction.startingPrice ?? 0) as number,
     bidCount: (auction.bidCount ?? 0) as number,
     bidHistory: (auction.bidHistory ?? []) as Bid[],
-    endTime: (auction.endTime ?? lot?.auctionEnd ?? lot?.endTime ?? '') as string,
+    endTime: (auction.endTime ?? auction.auctionEndTime ?? lot?.auctionEnd ?? lot?.endTime ?? '') as string,
     startTime: (auction.startTime ?? lot?.auctionStart ?? lot?.startTime ?? '') as string,
     status: ((auction.status ?? 'active') as string).toLowerCase() as Auction['status'],
     reserveMet: (auction.reserveMet ?? false) as boolean,

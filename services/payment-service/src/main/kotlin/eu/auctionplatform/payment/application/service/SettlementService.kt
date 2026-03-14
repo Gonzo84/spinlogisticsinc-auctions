@@ -114,11 +114,9 @@ class SettlementService @Inject constructor(
 
         // Write SettlementReadyEvent to outbox so both webhook and admin
         // settle paths produce the event for downstream consumers.
-        try {
-            writeSettlementReadyToOutbox(settlement, payment)
-        } catch (e: Exception) {
-            LOG.errorf(e, "Failed to write SettlementReadyEvent to outbox for settlement %s: %s", settlement.id, e.message)
-        }
+        // Must not swallow exceptions — if outbox write fails, settlement
+        // exists without an event, leaving seller-service out of sync.
+        writeSettlementReadyToOutbox(settlement, payment)
 
         return settlement
     }
@@ -174,11 +172,7 @@ class SettlementService @Inject constructor(
         // (seller-service, notification-service, analytics-service).
         val settledSettlement = settlementRepository.findById(settlementId)
         if (settledSettlement != null) {
-            try {
-                writeSettlementSettledToOutbox(settledSettlement, bankReference)
-            } catch (e: Exception) {
-                LOG.errorf(e, "Failed to write PaymentSettledEvent to outbox for settlement %s: %s", settlementId, e.message)
-            }
+            writeSettlementSettledToOutbox(settledSettlement, bankReference)
         }
 
         return settledSettlement

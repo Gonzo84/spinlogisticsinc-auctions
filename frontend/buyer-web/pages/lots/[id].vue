@@ -141,7 +141,7 @@
           </div>
           <div class="flex items-center gap-3 mt-2 text-sm text-gray-500">
             <span v-if="lot.category && !lot.category.includes('-')" class="px-2 py-1 bg-gray-100 rounded text-xs font-medium">{{ lot.category }}</span>
-            <span>{{ $t('lot.lotNumber') }}: {{ lot.lotNumber }}</span>
+            <span>{{ $t('lot.lotNumber') }}: {{ lot.catalogLotId }}</span>
             <span class="flex items-center gap-1">
               <span class="text-base">{{ countryFlag(lot.country) }}</span>
               {{ lot.location }}

@@ -246,6 +246,28 @@ cd frontend/admin-dashboard && npx vitest
 
 50. **BidPanel `bidAmount` should reset to `minBidAmount` after successful bid, not `null`.** Setting to `null` breaks the button label (shows "Place Bid" without amount) and can prevent the next bid since `canBid` checks `bidAmount.value`. Always reset to the next valid minimum so the UI stays ready for the next bid.
 
+51. **NATS consumers must NEVER fall back to `aggregateId` when extracting `lotId`.** The `aggregateId` in auction events equals the auction-engine's `auctionId` (a different UUID from the catalog `lotId`). In payment events, `aggregateId` is the `settlementId`. Falling back to either silently produces wrong data — FK violations, missing settlements, or broken seller-lot associations. `extractLotId()` must only read the explicit `lotId` field; if missing, log and skip the event.
+
+52. **`AwardRevokedEvent` uses `originalWinnerId`, not `winnerId`.** The notification-service consumer must read `payload["originalWinnerId"]` to find the winner whose award was revoked. Reading `winnerId` returns null, the handler exits early, and award revocation notifications are never sent.
+
+53. **Payment-service must fail loudly when sellerId or auctionId can't be resolved.** Silent fallbacks (using `lotId` as `sellerId`, or `lotId` as `auctionId`) create payments with wrong cross-references that break downstream settlement, award revocation lookup, and seller attribution. Throw `BadRequestException` or return early instead.
+
+54. **Buyer-web `Auction.lotNumber` renamed to `catalogLotId`.** The field stores the catalog-service lot UUID (not a sequential number). All navigation links to `/lots/{id}` must use `catalogLotId` (with fallback to `id`), never use the auction-engine `auctionId` (which is what `Auction.id` contains after `mapAuctionResponse()`). Components: `LotCard.vue`, `HeroCarousel.vue`, `OverbidToast.vue`, `lots/[id].vue`.
+
+55. **Gateway `BidEventForwarder` must include `lotId` in WebSocket broadcast payload.** Without this, overbid notifications and toast links can only navigate using `auctionId`, which 404s on `/lots/{auctionId}` (expects catalog lotId). The `BidPlacedEvent` domain event carries `lotId` — extract and forward it in `forwardBidPlaced()`.
+
+56. **`Brand.fromCode()` must use case-insensitive matching.** The seller-portal may store brand as "SPC" (uppercase) but `Brand.fromCode()` used exact string matching against lowercase codes ("spc"). This caused HTTP 500 `IllegalArgumentException` on auction creation. Fix: lowercase both the map keys and the input code in `Brand.kt`. Always use case-insensitive comparison for enum-like code lookups.
+
+57. **Auction read model `UPDATE_AWARDED` must write `current_high_bid` and `current_high_bidder_id`.** The `AuctionReadModelRepository` projection for `LotAwardedEvent` must set these columns from the event's `winningBidAmount`/`winnerId`. Without this, `AuctionDetailResponse.winnerId` and `hammerPrice` are null after auto-award, breaking downstream checkout lookups and admin display. Use `COALESCE(?, current_high_bid)` to preserve existing values as fallback.
+
+58. **Search-service must handle `auction.lot.created` NATS events.** Without a `handleAuctionCreated()` handler in `AuctionEventConsumer`, ES lot documents never get `auctionEndTime` or `startingBid` populated. This causes search result cards to show `--:--:--` timers and `0` starting prices. The handler must subscribe to `auction.lot.created.>` and update the ES document with `auctionEndTime`, `startingBid`, and `status=active`.
+
+59. **`mapAuctionResponse()` endTime mapping must include `auctionEndTime` fallback.** Search-service stores the auction end time as `auctionEndTime` in Elasticsearch, but auction-engine returns `endTime`. The frontend mapper chain must be: `endTime ?? auctionEndTime ?? lot.auctionEnd ?? lot.endTime`. Missing this causes timers to show `--:--:--` even when the data exists in the backend.
+
+60. **Nuxt `useAsyncData` needs `getCachedData: () => undefined` for re-fetch on client-side navigation.** Beyond gotcha #47 (don't `await`), navigating away and back to a page serves stale/empty cached values from `useAsyncData`. Adding `getCachedData: () => undefined` to the options forces a fresh fetch on every visit. See `pages/index.vue` featured auctions and new lots sections.
+
+61. **Buyer-web keyword search must prefer search-service over catalog-service.** Catalog-service has no auction data (`bidCount`, `auctionEndTime`). Search-service ES documents include both. When the user enters a keyword query, try search-service first; fall back to catalog only when search-service returns empty results. Additionally, enrich search results that still lack `endTime` by calling `/auctions/by-lot/{lotId}` per item as a resilient fallback.
+
 ### Deployment
 
 - Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)

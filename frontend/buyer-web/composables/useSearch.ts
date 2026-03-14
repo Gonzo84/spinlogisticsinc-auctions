@@ -35,47 +35,47 @@ export function useSearch() {
 
       let result: SearchResult
 
-      // When there's a keyword query, use catalog-service directly for reliable
-      // SQL-based text search. Search-service (Elasticsearch) may not have indexed
-      // lots properly, so catalog is the authoritative source for keyword filtering.
+      // For keyword queries, prefer search-service (Elasticsearch) because it
+      // includes bidCount and auctionEndTime. Fall back to catalog-service only
+      // if search-service returns nothing (not indexed yet).
       if (filters.q) {
         try {
-          const catalogParams: Record<string, string | number> = {
-            page: filters.page ? filters.page - 1 : 0,
-            pageSize: filters.limit || 20,
-          }
-          catalogParams.search = filters.q
-          if (filters.category) catalogParams.categorySlug = filters.category
-
-          const raw = await api<Record<string, unknown>>('/lots', { params: catalogParams })
+          const raw = await api<Record<string, unknown>>('/search/lots', { params })
           const data = unwrapApiResponse(raw)
 
           result = {
             items: (Array.isArray(data.items) ? data.items : []) as Record<string, unknown>[],
-            total: (typeof data.totalItems === 'number' ? data.totalItems : typeof data.total === 'number' ? data.total : 0),
+            total: (typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : 0),
             totalPages: (typeof data.totalPages === 'number' ? data.totalPages : 0),
             page: (typeof data.page === 'number' ? data.page : 1),
+            aggregations: data.aggregations as SearchAggregations | undefined,
           }
         } catch {
-          // Catalog search failed — fall back to search-service
+          // Search-service unavailable — fall back to catalog
           result = { items: [], total: 0, totalPages: 0, page: 1 }
         }
 
-        // If catalog returned results, use them; otherwise try search-service
+        // If search-service returned nothing, fall back to catalog-service
         if (result.items.length === 0) {
           try {
-            const raw = await api<Record<string, unknown>>('/search/lots', { params })
+            const catalogParams: Record<string, string | number> = {
+              page: filters.page ? filters.page - 1 : 0,
+              pageSize: filters.limit || 20,
+            }
+            catalogParams.search = filters.q
+            if (filters.category) catalogParams.categorySlug = filters.category
+
+            const raw = await api<Record<string, unknown>>('/lots', { params: catalogParams })
             const data = unwrapApiResponse(raw)
 
             result = {
               items: (Array.isArray(data.items) ? data.items : []) as Record<string, unknown>[],
-              total: (typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : 0),
+              total: (typeof data.totalItems === 'number' ? data.totalItems : typeof data.total === 'number' ? data.total : 0),
               totalPages: (typeof data.totalPages === 'number' ? data.totalPages : 0),
               page: (typeof data.page === 'number' ? data.page : 1),
-              aggregations: data.aggregations as SearchAggregations | undefined,
             }
           } catch {
-            // Search-service also failed — keep empty result
+            // Both services failed — keep empty result
           }
         }
       } else {
@@ -126,6 +126,36 @@ export function useSearch() {
       result.items = result.items.map((item) =>
         mapAuctionResponse(item) as unknown as Record<string, unknown>
       )
+
+      // Enrich items that have no endTime with auction data from auction-engine.
+      // Search-service ES documents may lack auctionEndTime if they were indexed
+      // before the auction was created (catalog event arrives before auction event).
+      const needsEnrichment = result.items.filter(
+        (item) => !item.endTime && item.id
+      )
+      if (needsEnrichment.length > 0) {
+        await Promise.all(
+          needsEnrichment.map(async (item) => {
+            try {
+              // item.id is the catalog lotId for search results (no auctionId in ES)
+              const lotId = (item.catalogLotId || item.id) as string
+              const raw = await api<Record<string, unknown>>(`/auctions/by-lot/${lotId}`)
+              const auctionData = unwrapApiResponse(raw) as Record<string, unknown>
+              if (auctionData.endTime) {
+                item.endTime = auctionData.endTime
+              }
+              if (auctionData.currentHighBid != null) {
+                item.currentBid = auctionData.currentHighBid
+              }
+              if (auctionData.bidCount != null) {
+                item.bidCount = auctionData.bidCount
+              }
+            } catch {
+              // Lot may not have an associated auction
+            }
+          }),
+        )
+      }
 
       if (result.aggregations) {
         aggregations.value = result.aggregations

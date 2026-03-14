@@ -31,6 +31,7 @@ export type LotStatus = 'draft' | 'pending_review' | 'approved' | 'active' | 'so
 
 export interface Lot {
   id: string
+  auctionId: string | null
   brand: string
   title: string
   description: string
@@ -98,6 +99,7 @@ export interface LotsFilter {
  */
 export interface RawLotData {
   id?: string
+  auctionId?: string | null
   title?: string
   description?: string
   category?: string

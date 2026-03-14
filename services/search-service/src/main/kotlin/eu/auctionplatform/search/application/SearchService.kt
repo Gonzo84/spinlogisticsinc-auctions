@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient
 import co.elastic.clients.elasticsearch._types.FieldValue
 import co.elastic.clients.elasticsearch._types.GeoDistanceType
 import co.elastic.clients.elasticsearch._types.SortOrder
+import co.elastic.clients.elasticsearch._types.mapping.FieldType
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation
 import co.elastic.clients.elasticsearch._types.aggregations.AggregationRange
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket
@@ -508,19 +509,19 @@ class SearchService @Inject constructor(
     ): SearchRequest.Builder {
         return when (sort) {
             SortOption.CLOSING_SOONEST -> builder.sort { s ->
-                s.field { f -> f.field("auctionEndTime").order(SortOrder.Asc) }
+                s.field { f -> f.field("auctionEndTime").order(SortOrder.Asc).missing(FieldValue.of("_last")).unmappedType(FieldType.Date) }
             }
             SortOption.PRICE_ASC -> builder.sort { s ->
-                s.field { f -> f.field("currentBid").order(SortOrder.Asc) }
+                s.field { f -> f.field("currentBid").order(SortOrder.Asc).missing(FieldValue.of("_last")).unmappedType(FieldType.Float) }
             }
             SortOption.PRICE_DESC -> builder.sort { s ->
-                s.field { f -> f.field("currentBid").order(SortOrder.Desc) }
+                s.field { f -> f.field("currentBid").order(SortOrder.Desc).missing(FieldValue.of("_last")).unmappedType(FieldType.Float) }
             }
             SortOption.NEWEST -> builder.sort { s ->
-                s.field { f -> f.field("createdAt").order(SortOrder.Desc) }
+                s.field { f -> f.field("createdAt").order(SortOrder.Desc).missing(FieldValue.of("_last")).unmappedType(FieldType.Date) }
             }
             SortOption.BID_COUNT_DESC -> builder.sort { s ->
-                s.field { f -> f.field("bidCount").order(SortOrder.Desc) }
+                s.field { f -> f.field("bidCount").order(SortOrder.Desc).missing(FieldValue.of("_last")).unmappedType(FieldType.Long) }
             }
             SortOption.RELEVANCE -> builder // Use default _score sorting
         }

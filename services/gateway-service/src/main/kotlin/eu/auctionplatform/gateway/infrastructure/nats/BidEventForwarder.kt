@@ -167,6 +167,7 @@ class BidEventForwarder @Inject constructor(
                 "currency" to (node.path("bidCurrency").asText(null) ?: node.path("currency").asText("EUR")),
                 "isProxy" to node.path("isProxy").asBoolean(false),
                 "bidCount" to node.path("bidCount").asInt(0),
+                "lotId" to node.path("lotId").asText(null),
                 "timestamp" to node.path("timestamp").asText(null)
             ),
             "serverTime" to java.time.Instant.now().toString()

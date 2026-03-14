@@ -13,6 +13,7 @@ import eu.auctionplatform.catalog.api.dto.toSummaryResponse
 import eu.auctionplatform.catalog.application.service.LotService
 import eu.auctionplatform.catalog.domain.model.LotStatus
 import eu.auctionplatform.catalog.infrastructure.persistence.repository.LotImageRepository
+import jakarta.validation.Valid
 import jakarta.annotation.security.PermitAll
 import jakarta.annotation.security.RolesAllowed
 import jakarta.inject.Inject
@@ -170,7 +171,7 @@ class LotResource {
     @RolesAllowed("seller_verified", "seller_pending", "broker", "admin_ops", "admin_super")
     fun createLot(
         @HeaderParam("Authorization") authorization: String,
-        request: CreateLotRequest
+        @Valid request: CreateLotRequest
     ): Response {
         val sellerId = extractUserId(authorization)
         val lot = lotService.createLot(sellerId, request)

@@ -104,6 +104,26 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
   }
 }
 
+async function enrichAuctionsWithLotData(
+  api: typeof $fetch,
+  auctions: Record<string, unknown>[],
+): Promise<ReturnType<typeof mapAuctionResponse>[]> {
+  const enriched = await Promise.all(
+    auctions.map(async (auction) => {
+      const lotId = (auction.lotId ?? '') as string
+      if (!lotId) return mapAuctionResponse(auction)
+      try {
+        const lotRaw = await api<Record<string, unknown>>(`/lots/${lotId}`)
+        const lotData = unwrapApiResponse(lotRaw) as Record<string, unknown>
+        return mapAuctionResponse(auction, lotData)
+      } catch {
+        return mapAuctionResponse(auction)
+      }
+    }),
+  )
+  return enriched
+}
+
 const { data: featuredAuctions } = useAsyncData('featured-auctions', async () => {
   const { $api } = useNuxtApp()
   const api = $api as typeof $fetch
@@ -114,7 +134,7 @@ const { data: featuredAuctions } = useAsyncData('featured-auctions', async () =>
     })
     const data = unwrapApiResponse(raw)
     const items = Array.isArray(data.items) ? data.items as Record<string, unknown>[] : []
-    const mapped = items.map((item) => mapAuctionResponse(item))
+    const mapped = await enrichAuctionsWithLotData(api, items)
     const seen = new Set<string>()
     const deduped = mapped.filter((lot) => {
       if (seen.has(lot.title)) return false
@@ -129,7 +149,7 @@ const { data: featuredAuctions } = useAsyncData('featured-auctions', async () =>
       })
       const fallbackData = unwrapApiResponse(fallbackRaw)
       const fallbackItems = Array.isArray(fallbackData.items) ? fallbackData.items as Record<string, unknown>[] : []
-      const fallbackMapped = fallbackItems.map((item) => mapAuctionResponse(item))
+      const fallbackMapped = await enrichAuctionsWithLotData(api, fallbackItems)
       const fallbackSeen = new Set<string>()
       return fallbackMapped.filter((lot) => {
         if (fallbackSeen.has(lot.title)) return false
@@ -146,17 +166,43 @@ const { data: featuredAuctions } = useAsyncData('featured-auctions', async () =>
 }, {
   default: () => [],
   server: false,
+  getCachedData: () => undefined,
 })
 
 const { data: newLots } = useAsyncData('new-lots', async () => {
+  const { $api } = useNuxtApp()
+  const api = $api as typeof $fetch
   // Show both ACTIVE lots (with auctions) and APPROVED lots (newly listed, awaiting auction)
   const activeLots = await fetchLotsFromCatalog({ status: 'ACTIVE', page: 0, pageSize: 8 })
   const approvedLots = await fetchLotsFromCatalog({ status: 'APPROVED', page: 0, pageSize: 8 })
   // Merge and take the 8 newest by combining both lists
-  return [...activeLots, ...approvedLots].slice(0, 8)
+  const combined = [...activeLots, ...approvedLots].slice(0, 8)
+
+  // Enrich ACTIVE lots with auction data (endTime, currentBid) via /auctions/by-lot/{lotId}
+  const enriched = await Promise.all(
+    combined.map(async (lot) => {
+      if (!lot.id || lot.endTime) return lot
+      try {
+        const raw = await api<Record<string, unknown>>(`/auctions/by-lot/${lot.id}`)
+        const auctionData = unwrapApiResponse(raw) as Record<string, unknown>
+        if (auctionData.endTime) {
+          return {
+            ...lot,
+            endTime: auctionData.endTime as string,
+            currentBid: (auctionData.currentHighBid ?? lot.currentBid) as number,
+          }
+        }
+      } catch {
+        // Lot may not have an associated auction (APPROVED status)
+      }
+      return lot
+    }),
+  )
+  return enriched
 }, {
   default: () => [],
   server: false,
+  getCachedData: () => undefined,
 })
 
 function selectCountry(code: string) {

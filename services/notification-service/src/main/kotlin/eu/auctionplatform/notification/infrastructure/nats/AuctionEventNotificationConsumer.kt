@@ -359,7 +359,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
     private fun handleAwardRevoked(message: Message) {
         val payload = parsePayload(message) ?: return
 
-        val winnerId = payload["winnerId"]?.toString() ?: return
+        val winnerId = payload["originalWinnerId"]?.toString() ?: return
         val aggregateId = payload["aggregateId"]?.toString() ?: ""
         val reason = payload["reason"]?.toString() ?: ""
         val hammerPrice = payload["hammerPrice"]?.toString() ?: "0"

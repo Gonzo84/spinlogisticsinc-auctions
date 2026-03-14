@@ -37,9 +37,10 @@ export function useAuction() {
       if (!auctionData) {
         try {
           const lotUuid = lotRaw.id ?? id
-          const auctionList = await api<Record<string, unknown>>(`/auctions`, {
+          const auctionListRaw = await api<Record<string, unknown>>(`/auctions`, {
             params: { lotId: lotUuid, size: 1 },
           })
+          const auctionList = unwrapApiResponse(auctionListRaw)
           const items = (auctionList.items ?? []) as Record<string, unknown>[]
           if (items.length > 0) {
             // Fetch the full auction detail using the found auctionId

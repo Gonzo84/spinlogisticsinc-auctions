@@ -2,6 +2,8 @@ package eu.auctionplatform.catalog.api.dto
 
 import com.fasterxml.jackson.annotation.JsonAlias
 import eu.auctionplatform.catalog.domain.model.LotStatus
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -12,18 +14,27 @@ import java.util.UUID
 
 /**
  * Request payload for creating a new lot.
+ * Fields are nullable with Bean Validation annotations so that missing fields
+ * produce proper 400 error responses with field-level details instead of
+ * empty bodies from Jackson deserialization failures.
  */
 data class CreateLotRequest(
-    val brand: String,
-    val title: String,
-    val description: String,
-    val categoryId: UUID,
+    @field:NotBlank(message = "Brand is required")
+    val brand: String? = null,
+    @field:NotBlank(message = "Title is required")
+    val title: String? = null,
+    @field:NotBlank(message = "Description is required")
+    val description: String? = null,
+    @field:NotNull(message = "Category ID is required")
+    val categoryId: UUID? = null,
     val specifications: Map<String, Any> = emptyMap(),
     val locationLat: Double? = null,
     val locationLng: Double? = null,
     val locationAddress: String? = null,
-    val locationCountry: String,
-    val locationCity: String,
+    @field:NotBlank(message = "Location country is required")
+    val locationCountry: String? = null,
+    @field:NotBlank(message = "Location city is required")
+    val locationCity: String? = null,
     @JsonAlias("reservePriceAmount")
     val reservePrice: BigDecimal? = null,
     @JsonAlias("startingBidAmount")

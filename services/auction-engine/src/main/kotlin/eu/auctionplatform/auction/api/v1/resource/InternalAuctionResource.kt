@@ -75,8 +75,9 @@ class InternalAuctionResource {
         return Response.ok(ApiResponse.ok(toDetailResponse(readModel))).build()
     }
 
-    private fun toDetailResponse(model: AuctionReadModel): AuctionDetailResponse =
-        AuctionDetailResponse(
+    private fun toDetailResponse(model: AuctionReadModel): AuctionDetailResponse {
+        val isAwarded = model.status == "AWARDED"
+        return AuctionDetailResponse(
             auctionId = model.auctionId.toString(),
             lotId = model.lotId.toString(),
             brand = model.brand,
@@ -95,7 +96,10 @@ class InternalAuctionResource {
             featuredAt = model.featuredAt,
             awardedAt = model.awardedAt,
             autoAwarded = model.autoAwarded,
+            winnerId = if (isAwarded) model.currentHighBidderId?.toString() else null,
+            hammerPrice = if (isAwarded) model.currentHighBid else null,
             createdAt = model.createdAt,
             updatedAt = model.updatedAt
         )
+    }
 }
