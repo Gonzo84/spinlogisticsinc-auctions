@@ -156,7 +156,9 @@ class CategoryResource {
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("pageSize") @DefaultValue("20") pageSize: Int
     ): Response {
-        val (lots, total) = categoryService.getLotsInCategory(id, page, pageSize)
+        val safePage = maxOf(page, 0)
+        val safePageSize = pageSize.coerceIn(1, 100)
+        val (lots, total) = categoryService.getLotsInCategory(id, safePage, safePageSize)
 
         val summaries = lots.map { lot ->
             val primaryImage = lotImageRepository.findPrimaryByLotId(lot.id)
@@ -166,8 +168,8 @@ class CategoryResource {
         val pagedResponse = PagedResponse(
             items = summaries,
             total = total,
-            page = page,
-            pageSize = pageSize
+            page = safePage,
+            pageSize = safePageSize
         )
 
         return Response.ok(ApiResponse.ok(pagedResponse)).build()

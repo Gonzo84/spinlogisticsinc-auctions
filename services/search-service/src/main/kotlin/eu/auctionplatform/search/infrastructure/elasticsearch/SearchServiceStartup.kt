@@ -83,7 +83,7 @@ class SearchServiceStartup @Inject constructor(
         val pageSize = 100
 
         while (true) {
-            val url = "$catalogServiceUrl/api/v1/lots?page=$page&pageSize=$pageSize"
+            val url = "$catalogServiceUrl/api/v1/lots?page=$page&pageSize=$pageSize&status=APPROVED"
             LOG.debugf("Fetching lots page %d from catalog-service: %s", page, url)
 
             val request = HttpRequest.newBuilder()

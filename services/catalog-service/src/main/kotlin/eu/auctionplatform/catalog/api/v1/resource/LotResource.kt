@@ -90,18 +90,25 @@ class LotResource {
             lotService.resolveCategorySlug(slug)
         }
 
+        val safePage = maxOf(page, 0)
+        val safePageSize = pageSize.coerceIn(1, 100)
+
+        // Public/buyer requests (no sellerId, no explicit status) default to APPROVED only.
+        // Sellers pass their sellerId; admins pass explicit status filters.
+        val effectiveStatus = status ?: if (sellerId == null) LotStatus.APPROVED else null
+
         val filter = LotListFilter(
             brand = brand,
             categoryId = resolvedCategoryId,
             country = country,
-            status = status,
+            status = effectiveStatus,
             sellerId = sellerId,
             auctionId = auctionId,
             search = search,
             sortBy = sortBy,
             sortDir = sortDir,
-            page = page,
-            pageSize = pageSize
+            page = safePage,
+            pageSize = safePageSize
         )
 
         val (lots, total) = lotService.listLots(filter)
@@ -114,8 +121,8 @@ class LotResource {
         val pagedResponse = PagedResponse(
             items = summaries,
             total = total,
-            page = page,
-            pageSize = pageSize
+            page = safePage,
+            pageSize = safePageSize
         )
 
         return Response.ok(ApiResponse.ok(pagedResponse)).build()

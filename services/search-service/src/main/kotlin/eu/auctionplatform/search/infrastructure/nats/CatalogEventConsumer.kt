@@ -150,7 +150,7 @@ class CatalogEventConsumer @Inject constructor(
             bidCount = node.optionalInt("bidCount") ?: 0,
             reserveStatus = node.optionalText("reserveStatus") ?: "no_reserve",
             auctionEndTime = node.optionalInstant("auctionEndTime"),
-            status = node.optionalText("status") ?: "active",
+            status = node.optionalText("status") ?: "draft",
             co2AvoidedKg = node.optionalFloat("co2AvoidedKg"),
             specifications = node.optionalMap("specifications"),
             images = node.optionalImageList("images"),

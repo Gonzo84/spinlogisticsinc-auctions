@@ -100,7 +100,7 @@ async function fetchWatchlist() {
             return {
               id: (lot as Record<string, unknown>).id as string ?? item.lotId!,
               title: (lot as Record<string, unknown>).title as string ?? '',
-              imageUrl: ((lot as Record<string, unknown>).primaryImageUrl as string) ?? ((lot as Record<string, unknown>).images as Array<{ url: string }> | undefined)?.[0]?.url ?? '',
+              imageUrl: ((lot as Record<string, unknown>).primaryImageUrl as string) ?? ((lot as Record<string, unknown>).images as Array<{ imageUrl?: string; url?: string }> | undefined)?.[0]?.imageUrl ?? ((lot as Record<string, unknown>).images as Array<{ url?: string }> | undefined)?.[0]?.url ?? '',
               startingBid: (lot as Record<string, unknown>).startingBid as number ?? 0,
               location: `${(lot as Record<string, unknown>).locationCity ?? ''}, ${(lot as Record<string, unknown>).locationCountry ?? ''}`,
             } satisfies WatchlistLot

@@ -141,7 +141,7 @@ export function useLots() {
     const raw = await get<unknown>(`/auctions/${resolvedAuctionId}/bids`)
     const data = unwrapApiResponse<LotBid[] | { items?: LotBid[] }>(raw)
     const bids = Array.isArray(data) ? data : (data?.items ?? [])
-    lotBids.value = bids
+    lotBids.value = [...bids].sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
     return bids
   }
 

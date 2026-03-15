@@ -109,17 +109,21 @@ function formatDate(dateStr: string): string {
   })
 }
 
-// Build bid activity chart data from bids
+// Build bid activity chart data from bids (chronological order for time-series)
+const bidsChronological = computed(() =>
+  [...lotBids.value].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+)
+
 const bidChartLabels = computed(() => {
-  if (lotBids.value.length === 0) return []
-  return lotBids.value.slice(-20).map((b) =>
+  if (bidsChronological.value.length === 0) return []
+  return bidsChronological.value.slice(-20).map((b) =>
     new Date(b.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   )
 })
 
 const bidChartData = computed(() => {
-  if (lotBids.value.length === 0) return []
-  return lotBids.value.slice(-20).map((b) => b.amount)
+  if (bidsChronological.value.length === 0) return []
+  return bidsChronological.value.slice(-20).map((b) => b.amount)
 })
 
 async function handleSubmitForReview() {

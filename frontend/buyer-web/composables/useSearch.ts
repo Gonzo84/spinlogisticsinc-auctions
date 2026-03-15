@@ -63,6 +63,7 @@ export function useSearch() {
               pageSize: filters.limit || 20,
             }
             catalogParams.search = filters.q
+            catalogParams.status = 'APPROVED'
             if (filters.category) catalogParams.categorySlug = filters.category
 
             const raw = await api<Record<string, unknown>>('/lots', { params: catalogParams })
@@ -103,6 +104,7 @@ export function useSearch() {
               page: filters.page ? filters.page - 1 : 0,
               pageSize: filters.limit || 20,
             }
+            catalogParams.status = 'APPROVED'
             if (filters.category) catalogParams.categorySlug = filters.category
 
             const raw = await api<Record<string, unknown>>('/lots', { params: catalogParams })
