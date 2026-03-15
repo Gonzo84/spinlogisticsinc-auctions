@@ -268,6 +268,20 @@ cd frontend/admin-dashboard && npx vitest
 
 61. **Buyer-web keyword search must prefer search-service over catalog-service.** Catalog-service has no auction data (`bidCount`, `auctionEndTime`). Search-service ES documents include both. When the user enters a keyword query, try search-service first; fall back to catalog only when search-service returns empty results. Additionally, enrich search results that still lack `endTime` by calling `/auctions/by-lot/{lotId}` per item as a resilient fallback.
 
+62. **All Docker Compose services must depend on `keycloak: condition: service_healthy`.** Without this, services that require OIDC (especially payment-service with its `oidc-client` config) start before Keycloak is ready and crash or hang indefinitely. The `services-dependencies.yaml` must include a Keycloak health dependency for every service.
+
+63. **Auction store `bidCount` must use server-authoritative count, not local array length.** `bids.value.length` only reflects bids loaded in the current session. After placing a bid, `addBid()` must increment `currentAuction.bidCount` by 1 (optimistic update), and `bidCount` computed should prefer `currentAuction.bidCount` over `bids.value.length`. Otherwise, bid count appears to decrease after bidding.
+
+64. **Homepage lot enrichment must skip lots without `auctionId`.** Calling `/auctions/by-lot/{lotId}` for every lot produces 404 console errors for lots that have no auction. Check `lot.auctionId` before making the enrichment call. Similarly, `LotCard.vue` should conditionally render `AuctionTimer` only when `lot.endTime` exists, showing "No auction" text otherwise.
+
+65. **`CreateLotRequest.startingBid` needs `@JsonAlias("startingPrice")`.** Frontend and API callers may use either `startingBid` or `startingPrice` as the field name. Without the alias, the value is silently ignored and defaults to 1.00.
+
+66. **Nuxt SSR hydration mismatches from timers/counters require `<ClientOnly>` wrapper.** Dynamic content like `AuctionTimer` countdown, `CO2Counter` animation, and `HeroCarousel` with live data causes hydration mismatches. Wrap these sections in `<ClientOnly>` with skeleton `#fallback` templates.
+
+67. **Frontend brand dropdowns must include all `Brand.kt` enum values.** When adding new brands to `Brand.kt`, also update the `PLATFORM_BRANDS` array in `admin-dashboard/AuctionCreateView.vue` (and any other frontend brand selectors). Currently: troostwijk, surplex, industrial-auctions, spc, custom.
+
+68. **Featured auctions carousel should filter out closed/awarded auctions client-side.** Due to NATS propagation delay, the `featured=true` query may return auctions that have already been auto-unfeatured on close. Add `.filter(a => a.status === 'active')` before display.
+
 ### Deployment
 
 - Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)
