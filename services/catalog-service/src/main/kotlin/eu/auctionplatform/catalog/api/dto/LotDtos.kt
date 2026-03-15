@@ -37,7 +37,7 @@ data class CreateLotRequest(
     val locationCity: String? = null,
     @JsonAlias("reservePriceAmount")
     val reservePrice: BigDecimal? = null,
-    @JsonAlias("startingBidAmount")
+    @JsonAlias("startingBidAmount", "startingPrice")
     val startingBid: BigDecimal = BigDecimal.ONE,
     val co2AvoidedKg: Double? = null,
     val pickupInfo: String? = null,

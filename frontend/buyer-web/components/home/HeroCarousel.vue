@@ -20,8 +20,19 @@
           </button>
         </div>
       </div>
+      <!-- Loading skeleton while fetching -->
+      <div v-if="loading" class="grid grid-cols-3 gap-6">
+        <div v-for="n in 3" :key="n" class="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse">
+          <div class="aspect-[4/3] bg-gray-200" />
+          <div class="p-4">
+            <div class="h-4 bg-gray-200 rounded w-3/4 mb-3" />
+            <div class="h-3 bg-gray-200 rounded w-1/2 mb-2" />
+            <div class="h-6 bg-gray-200 rounded w-1/3" />
+          </div>
+        </div>
+      </div>
       <!-- Empty state when no featured auctions -->
-      <div v-if="auctions.length === 0" class="text-center py-12">
+      <div v-else-if="auctions.length === 0" class="text-center py-12">
         <i class="pi pi-box text-6xl text-gray-300 mb-4" />
         <p class="text-gray-500 text-lg mb-2">{{ $t('home.noFeaturedAuctions') }}</p>
         <p class="text-gray-400 text-sm">{{ $t('home.checkBackSoon') }}</p>
@@ -87,9 +98,12 @@ interface FeaturedAuction {
   endTime: string
 }
 
-defineProps<{
+withDefaults(defineProps<{
   auctions: FeaturedAuction[]
-}>()
+  loading?: boolean
+}>(), {
+  loading: false,
+})
 
 const carouselIndex = ref(0)
 </script>

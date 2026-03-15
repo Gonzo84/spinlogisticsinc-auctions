@@ -14,7 +14,7 @@ export const useAuctionStore = defineStore('auction', () => {
   })
 
   const bidCount = computed((): number => {
-    return bids.value.length || currentAuction.value?.bidCount || 0
+    return currentAuction.value?.bidCount ?? bids.value.length
   })
 
   const isActive = computed((): boolean => {
@@ -58,7 +58,7 @@ export const useAuctionStore = defineStore('auction', () => {
       currentAuction.value = {
         ...currentAuction.value,
         currentBid: bid.amount,
-        bidCount: bids.value.length,
+        bidCount: (currentAuction.value.bidCount ?? 0) + 1,
       }
     }
   }

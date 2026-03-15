@@ -76,8 +76,11 @@
             {{ lot.bidCount }} {{ $t('auction.bids') }}
           </p>
         </div>
-        <div class="shrink-0">
-          <AuctionTimer :end-time="lot.endTime ?? ''" compact />
+        <div v-if="lot.endTime" class="shrink-0">
+          <AuctionTimer :end-time="lot.endTime" compact />
+        </div>
+        <div v-else class="shrink-0">
+          <span class="text-xs font-medium text-gray-400">{{ $t('auction.noAuction', 'No auction') }}</span>
         </div>
       </div>
     </div>

@@ -75,6 +75,7 @@
     "live": "IN CORSO",
     "closed": "CHIUSA",
     "ended": "Terminata",
+    "noAuction": "Nessuna asta",
     "extended": "Prolungata!",
     "days": "g",
     "hours": "h",

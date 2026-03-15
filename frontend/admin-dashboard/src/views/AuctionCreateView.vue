@@ -31,6 +31,7 @@ const PLATFORM_BRANDS = [
   { code: 'troostwijk', label: 'Troostwijk' },
   { code: 'surplex', label: 'Surplex' },
   { code: 'industrial-auctions', label: 'Industrial Auctions' },
+  { code: 'spc', label: 'SPC' },
   { code: 'custom', label: 'Custom' },
 ]
 

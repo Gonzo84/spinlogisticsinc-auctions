@@ -38,8 +38,13 @@
     <!-- Category Pills -->
     <HomeCategoryGrid />
 
-    <!-- Featured Auctions Carousel -->
-    <HomeHeroCarousel :auctions="featuredAuctions" />
+    <!-- Featured Auctions Carousel (client-only to avoid hydration mismatch from timers) -->
+    <ClientOnly>
+      <HomeHeroCarousel :auctions="featuredAuctions" :loading="featuredStatus === 'pending'" />
+      <template #fallback>
+        <HomeHeroCarousel :auctions="[]" :loading="true" />
+      </template>
+    </ClientOnly>
 
     <!-- New Lots Grid -->
     <section class="py-10 px-4">
@@ -50,18 +55,22 @@
             {{ $t('home.viewAll') }} &rarr;
           </NuxtLink>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <AuctionLotCard
-            v-for="lot in newLots"
-            :key="lot.id"
-            :lot="lot"
-          />
-        </div>
+        <ClientOnly>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <AuctionLotCard
+              v-for="lot in newLots"
+              :key="lot.id"
+              :lot="lot"
+            />
+          </div>
+        </ClientOnly>
       </div>
     </section>
 
-    <!-- CO2 Savings Counter -->
-    <HomeCO2Counter />
+    <!-- CO2 Savings Counter (client-only to avoid hydration mismatch from animated counter) -->
+    <ClientOnly>
+      <HomeCO2Counter />
+    </ClientOnly>
 
     <!-- How It Works -->
     <HomeHowItWorks />
@@ -91,6 +100,7 @@ async function fetchLotsFromCatalog(params: Record<string, string | number>) {
       imageUrl: (lot.primaryImageUrl ?? '') as string,
       currentBid: (lot.startingBid ?? 0) as number,
       endTime: '',
+      auctionId: (lot.auctionId ?? '') as string,
     }))
     // Deduplicate by title to handle repeated seed data runs
     const seen = new Set<string>()
@@ -124,7 +134,7 @@ async function enrichAuctionsWithLotData(
   return enriched
 }
 
-const { data: featuredAuctions } = useAsyncData('featured-auctions', async () => {
+const { data: featuredAuctions, status: featuredStatus } = useAsyncData('featured-auctions', async () => {
   const { $api } = useNuxtApp()
   const api = $api as typeof $fetch
   try {
@@ -135,8 +145,10 @@ const { data: featuredAuctions } = useAsyncData('featured-auctions', async () =>
     const data = unwrapApiResponse(raw)
     const items = Array.isArray(data.items) ? data.items as Record<string, unknown>[] : []
     const mapped = await enrichAuctionsWithLotData(api, items)
+    // Filter out closed/awarded auctions (stale data from NATS propagation delay)
+    const activeOnly = mapped.filter((a) => a.status === 'active')
     const seen = new Set<string>()
-    const deduped = mapped.filter((lot) => {
+    const deduped = activeOnly.filter((lot) => {
       if (seen.has(lot.title)) return false
       seen.add(lot.title)
       return true
@@ -178,10 +190,10 @@ const { data: newLots } = useAsyncData('new-lots', async () => {
   // Merge and take the 8 newest by combining both lists
   const combined = [...activeLots, ...approvedLots].slice(0, 8)
 
-  // Enrich ACTIVE lots with auction data (endTime, currentBid) via /auctions/by-lot/{lotId}
+  // Enrich lots that have an auction with auction data (endTime, currentBid)
   const enriched = await Promise.all(
     combined.map(async (lot) => {
-      if (!lot.id || lot.endTime) return lot
+      if (!lot.id || lot.endTime || !lot.auctionId) return lot
       try {
         const raw = await api<Record<string, unknown>>(`/auctions/by-lot/${lot.id}`)
         const auctionData = unwrapApiResponse(raw) as Record<string, unknown>
@@ -193,7 +205,7 @@ const { data: newLots } = useAsyncData('new-lots', async () => {
           }
         }
       } catch {
-        // Lot may not have an associated auction (APPROVED status)
+        // Auction data unavailable — show lot without timer
       }
       return lot
     }),

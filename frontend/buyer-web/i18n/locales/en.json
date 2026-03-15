@@ -75,6 +75,7 @@
     "live": "LIVE",
     "closed": "CLOSED",
     "ended": "Ended",
+    "noAuction": "No auction",
     "extended": "Extended!",
     "days": "d",
     "hours": "h",
