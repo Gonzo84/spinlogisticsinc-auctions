@@ -51,6 +51,9 @@ export default defineNuxtConfig({
       keycloakUrl: process.env.NUXT_PUBLIC_KEYCLOAK_URL || 'http://localhost:8180',
       keycloakRealm: process.env.NUXT_PUBLIC_KEYCLOAK_REALM || 'auction-platform',
       keycloakClientId: process.env.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'buyer-web',
+      sellerPortalUrl: process.env.NUXT_PUBLIC_SELLER_PORTAL_URL || 'http://localhost:5174',
+      adminDashboardUrl: process.env.NUXT_PUBLIC_ADMIN_DASHBOARD_URL || 'http://localhost:5175',
+      brokerPortalUrl: process.env.NUXT_PUBLIC_BROKER_PORTAL_URL || 'http://localhost:3003',
     },
   },
 

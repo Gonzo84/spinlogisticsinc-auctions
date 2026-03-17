@@ -11,7 +11,9 @@
     "watchlist": "Lista praćenja",
     "notifications": "Obaveštenja",
     "markAllRead": "Označi sve kao pročitano",
-    "noNotifications": "Još nema obaveštenja"
+    "noNotifications": "Još nema obaveštenja",
+    "sellerPortal": "Portal za prodavce",
+    "adminDashboard": "Admin tabla"
   },
   "home": {
     "pageTitle": "Aukcije kontejnera i opreme",
@@ -376,5 +378,16 @@
       "hoursAgo": "pre {value}č",
       "daysAgo": "pre {value}d"
     }
+  },
+  "auth": {
+    "wrongAccountTitle": "Pogrešan nalog",
+    "signedInAs": "Prijavljeni ste kao",
+    "wrongAccountMessage": "Ova tržnica zahteva kupčev nalog za licitiranje i kupovinu.",
+    "switchAccount": "Promeni nalog",
+    "registerAsBuyer": "Registruj se kao kupac",
+    "goToCorrectPortal": "Ili idite na svoj portal:",
+    "sellerPortal": "Portal za prodavce",
+    "adminDashboard": "Admin tabla",
+    "brokerPortal": "Portal za posrednike"
   }
 }

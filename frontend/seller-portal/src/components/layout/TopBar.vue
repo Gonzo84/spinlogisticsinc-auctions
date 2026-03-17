@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, inject, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import type Keycloak from 'keycloak-js'
 import { useAuth } from '@/composables/useAuth'
 import { useNotifications } from '@/composables/useNotifications'
 
@@ -9,6 +10,9 @@ const router = useRouter()
 const emit = defineEmits<{
   'toggle-sidebar': []
 }>()
+
+const keycloak = inject<Keycloak>('keycloak')
+const userRoles: string[] = keycloak?.tokenParsed?.realm_access?.roles ?? []
 
 const { userName, companyName, logout } = useAuth()
 const {
@@ -31,12 +35,27 @@ function toggleNotifPopover(event: Event) {
   notifPopover.value.toggle(event)
 }
 
+const portalLinks = [
+  ...(userRoles.some(r => r === 'buyer_active' || r === 'buyer_pending_kyc') ? [{
+    label: 'Buyer Marketplace',
+    icon: 'pi pi-external-link',
+    url: import.meta.env.VITE_BUYER_WEB_URL || 'http://localhost:3000',
+  }] : []),
+  ...(userRoles.some(r => r === 'admin_ops' || r === 'admin_super') ? [{
+    label: 'Admin Dashboard',
+    icon: 'pi pi-external-link',
+    url: import.meta.env.VITE_ADMIN_DASHBOARD_URL || 'http://localhost:5175',
+  }] : []),
+]
+
 const profileItems = ref([
   {
     label: 'Settings',
     icon: 'pi pi-cog',
     command: () => router.push('/profile'),
   },
+  ...(portalLinks.length > 0 ? [{ separator: true }, ...portalLinks] : []),
+  { separator: true },
   {
     label: 'Sign out',
     icon: 'pi pi-sign-out',

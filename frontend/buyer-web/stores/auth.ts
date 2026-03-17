@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, readonly, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { User } from '~/types/user'
 
@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref<string | null>(null)
   const isAuthenticated = ref(false)
   const roles = ref<string[]>([])
+  const wrongRole = ref<{ email: string; roles: string[]; name: string } | null>(null)
 
   const fullName = computed((): string => {
     if (!user.value) return ''
@@ -58,6 +59,14 @@ export const useAuthStore = defineStore('auth', () => {
     roles.value = []
   }
 
+  function setWrongRole(payload: { email: string; roles: string[]; name: string }) {
+    wrongRole.value = payload
+  }
+
+  function clearWrongRole() {
+    wrongRole.value = null
+  }
+
   return {
     user,
     token,
@@ -72,5 +81,8 @@ export const useAuthStore = defineStore('auth', () => {
     updateToken,
     updateUser,
     clearSession,
+    wrongRole: readonly(wrongRole),
+    setWrongRole,
+    clearWrongRole,
   }
 })

@@ -6,7 +6,7 @@
         <NuxtLink
           v-for="category in CATEGORIES"
           :key="category.slug"
-          :to="{ path: '/search', query: { category: category.slug } }"
+          :to="{ path: localePath('/search'), query: { category: category.slug } }"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gray-100 hover:bg-primary-50 hover:text-primary text-gray-700 font-medium text-sm transition-colors"
         >
           <span>{{ category.icon }}</span>
@@ -19,4 +19,6 @@
 
 <script setup lang="ts">
 import { CATEGORIES } from '~/utils/constants'
+
+const localePath = useLocalePath()
 </script>

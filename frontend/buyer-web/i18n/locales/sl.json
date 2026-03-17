@@ -11,7 +11,9 @@
     "watchlist": "Seznam želja",
     "notifications": "Obvestila",
     "markAllRead": "Označi vse kot prebrano",
-    "noNotifications": "Ni še obvestil"
+    "noNotifications": "Ni še obvestil",
+    "sellerPortal": "Portal za prodajalce",
+    "adminDashboard": "Nadzorna plošča"
   },
   "home": {
     "pageTitle": "Dražbe kontejnerjev in opreme",
@@ -376,5 +378,16 @@
       "hoursAgo": "pred {value} u",
       "daysAgo": "pred {value} d"
     }
+  },
+  "auth": {
+    "wrongAccountTitle": "Napačen račun",
+    "signedInAs": "Prijavljeni ste kot",
+    "wrongAccountMessage": "Ta tržnica zahteva kupčevski račun za oddajanje ponudb in nakupe.",
+    "switchAccount": "Zamenjaj račun",
+    "registerAsBuyer": "Registriraj se kot kupec",
+    "goToCorrectPortal": "Ali pojdite na svoj portal:",
+    "sellerPortal": "Portal za prodajalce",
+    "adminDashboard": "Nadzorna plošča",
+    "brokerPortal": "Portal za posrednike"
   }
 }

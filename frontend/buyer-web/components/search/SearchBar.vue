@@ -93,6 +93,7 @@
 import type { SearchSuggestion } from '~/types/search'
 
 const route = useRoute()
+const localePath = useLocalePath()
 const { suggest, suggestions, loading: searchLoading, clearSuggestions } = useSearch()
 
 const query = ref((route.query.q as string) || '')
@@ -126,7 +127,7 @@ async function handleSearch() {
   inputRef.value?.blur()
 
   await navigateTo({
-    path: '/search',
+    path: localePath('/search'),
     query: { q: query.value.trim() },
   })
 }
@@ -136,10 +137,10 @@ function selectSuggestion(suggestion: SearchSuggestion) {
   clearSuggestions()
 
   if (suggestion.type === 'lot' && suggestion.id) {
-    navigateTo(`/lots/${suggestion.id}`)
+    navigateTo(localePath(`/lots/${suggestion.id}`))
   } else if (suggestion.type === 'category') {
     navigateTo({
-      path: '/search',
+      path: localePath('/search'),
       query: { category: suggestion.text.toLowerCase() },
     })
   } else {

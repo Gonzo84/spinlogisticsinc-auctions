@@ -152,14 +152,33 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     const authStore = useAuthStore(nuxtApp.$pinia as ReturnType<typeof import('pinia').createPinia>)
 
     if (authenticated) {
-      // Ensure tokens are fresh after restoration
-      try {
-        await keycloak.updateToken(30)
-        persistTokens()
-      } catch {
+      // Check if user has buyer role — reject cross-portal SSO sessions
+      const realmRoles: string[] = keycloak.tokenParsed?.realm_access?.roles ?? []
+      const hasBuyerRole = realmRoles.includes('buyer_active') || realmRoles.includes('buyer_pending_kyc')
+
+      if (!hasBuyerRole) {
+        // Wrong role — persist info for the wrong-account page, clear tokens, redirect
+        const wrongRoleData = {
+          email: keycloak.tokenParsed?.email || '',
+          roles: realmRoles.filter((r: string) => !r.startsWith('default-roles-')),
+          name: [keycloak.tokenParsed?.given_name, keycloak.tokenParsed?.family_name].filter(Boolean).join(' ') || '',
+        }
+        authStore.setWrongRole(wrongRoleData)
+        sessionStorage.setItem('kc_wrong_role', JSON.stringify(wrongRoleData))
+        keycloak.clearToken()
         clearPersistedTokens()
+        // Defer navigation — navigateTo() doesn't work reliably inside plugin init
+        setTimeout(() => { window.location.href = '/auth/wrong-account' }, 0)
+      } else {
+        // Ensure tokens are fresh after restoration
+        try {
+          await keycloak.updateToken(30)
+          persistTokens()
+        } catch {
+          clearPersistedTokens()
+        }
+        setupAuthSession(authStore)
       }
-      setupAuthSession(authStore)
 
       // Clean OIDC hash fragment and query params from URL after successful authentication
       setTimeout(() => {
@@ -197,7 +216,21 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
     // Handle successful auth after login redirect
     keycloak.onAuthSuccess = () => {
-      setupAuthSession(authStore)
+      const realmRoles: string[] = keycloak.tokenParsed?.realm_access?.roles ?? []
+      const hasBuyerRole = realmRoles.includes('buyer_active') || realmRoles.includes('buyer_pending_kyc')
+      if (!hasBuyerRole) {
+        authStore.setWrongRole({
+          email: keycloak.tokenParsed?.email || '',
+          roles: realmRoles.filter((r: string) => !r.startsWith('default-roles-')),
+          name: [keycloak.tokenParsed?.given_name, keycloak.tokenParsed?.family_name].filter(Boolean).join(' ') || '',
+        })
+        keycloak.clearToken()
+        clearPersistedTokens()
+        navigateTo('/auth/wrong-account')
+      } else {
+        authStore.clearWrongRole()
+        setupAuthSession(authStore)
+      }
     }
   } catch (error) {
     console.error('[keycloak] Initialization failed:', error)

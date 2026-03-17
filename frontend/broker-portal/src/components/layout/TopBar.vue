@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import type Keycloak from 'keycloak-js'
 
 const router = useRouter()
 
@@ -9,10 +10,26 @@ const emit = defineEmits<{
   'toggle-sidebar': []
 }>()
 
+const keycloak = inject<Keycloak>('keycloak')
+const userRoles: string[] = keycloak?.tokenParsed?.realm_access?.roles ?? []
+
 const { userName, companyName, logout } = useAuth()
 
 const searchQuery = ref('')
 const profileMenu = ref()
+
+const portalLinks = [
+  ...(userRoles.some(r => r === 'buyer_active' || r === 'buyer_pending_kyc') ? [{
+    label: 'Buyer Marketplace',
+    icon: 'pi pi-external-link',
+    url: import.meta.env.VITE_BUYER_WEB_URL || 'http://localhost:3000',
+  }] : []),
+  ...(userRoles.some(r => r === 'seller_verified' || r === 'seller_pending') ? [{
+    label: 'Seller Portal',
+    icon: 'pi pi-external-link',
+    url: import.meta.env.VITE_SELLER_PORTAL_URL || 'http://localhost:5174',
+  }] : []),
+]
 
 const profileItems = ref([
   {
@@ -20,6 +37,8 @@ const profileItems = ref([
     icon: 'pi pi-cog',
     command: () => router.push('/profile'),
   },
+  ...(portalLinks.length > 0 ? [{ separator: true }, ...portalLinks] : []),
+  { separator: true },
   {
     label: 'Sign out',
     icon: 'pi pi-sign-out',

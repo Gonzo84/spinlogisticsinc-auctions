@@ -238,7 +238,9 @@ class SettlementService @Inject constructor(
             "commission" to settlement.commission,
             "commissionRate" to settlement.commissionRate,
             "hammerPrice" to payment.hammerPrice,
-            "currency" to payment.currency
+            "currency" to payment.currency,
+            "lotId" to payment.lotId.toString(),
+            "lotTitle" to (payment.lotTitle ?: "Lot ${payment.lotId}")
         )
 
         writeOutboxEntry(

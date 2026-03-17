@@ -176,11 +176,14 @@ class PaymentEventSellerConsumer @Inject constructor(
             try { UUID.fromString(it) } catch (_: IllegalArgumentException) { null }
         }
 
+        // Extract lotTitle from the event payload (added to SettlementReadyEvent)
+        val lotTitle = node.optionalText("lotTitle")
+
         // Insert settlement record (with paymentId for later status updates)
         sellerProfileRepository.insertSettlement(
             sellerId = sellerProfileId,
             lotId = lotId ?: UUID.randomUUID(), // fallback if no lotId
-            lotTitle = null,
+            lotTitle = lotTitle,
             hammerPrice = hammerPrice,
             commission = commission,
             commissionRate = commissionRate,

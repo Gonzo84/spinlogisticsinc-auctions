@@ -11,7 +11,9 @@
     "watchlist": "Watchlist",
     "notifications": "Notifications",
     "markAllRead": "Mark all read",
-    "noNotifications": "No notifications yet"
+    "noNotifications": "No notifications yet",
+    "sellerPortal": "Seller Portal",
+    "adminDashboard": "Admin Dashboard"
   },
   "home": {
     "pageTitle": "Auctions for Containers & Equipment",
@@ -376,5 +378,16 @@
       "hoursAgo": "{value}h ago",
       "daysAgo": "{value}d ago"
     }
+  },
+  "auth": {
+    "wrongAccountTitle": "Wrong Account",
+    "signedInAs": "Signed in as",
+    "wrongAccountMessage": "This marketplace requires a buyer account to place bids and make purchases.",
+    "switchAccount": "Switch Account",
+    "registerAsBuyer": "Register as Buyer",
+    "goToCorrectPortal": "Or go to your portal:",
+    "sellerPortal": "Seller Portal",
+    "adminDashboard": "Admin Dashboard",
+    "brokerPortal": "Broker Portal"
   }
 }

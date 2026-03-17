@@ -131,6 +131,7 @@ class UserService {
      */
     fun getUserById(id: UUID): User {
         val entity = userRepository.findById(id)
+            ?: userRepository.findByKeycloakId(id.toString())
             ?: throw NotFoundException(
                 code = "USER_NOT_FOUND",
                 message = "User with id '$id' not found."

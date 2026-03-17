@@ -36,7 +36,7 @@
         <i class="pi pi-box text-6xl text-gray-300 mb-4" />
         <p class="text-gray-500 text-lg mb-2">{{ $t('home.noFeaturedAuctions') }}</p>
         <p class="text-gray-400 text-sm">{{ $t('home.checkBackSoon') }}</p>
-        <NuxtLink to="/search" class="inline-block mt-4 text-primary font-medium hover:underline">
+        <NuxtLink :to="localePath('/search')" class="inline-block mt-4 text-primary font-medium hover:underline">
           {{ $t('home.viewAll') }} &rarr;
         </NuxtLink>
       </div>
@@ -52,7 +52,7 @@
             class="min-w-[calc(33.333%-1rem)] flex-shrink-0"
           >
             <NuxtLink
-              :to="`/lots/${auction.catalogLotId || auction.id}`"
+              :to="localePath(`/lots/${auction.catalogLotId || auction.id}`)"
               class="block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
             >
               <div class="relative aspect-[4/3] bg-gray-200">
@@ -88,6 +88,8 @@
 
 <script setup lang="ts">
 import { formatCurrency } from '~/utils/format'
+
+const localePath = useLocalePath()
 
 interface FeaturedAuction {
   id: string

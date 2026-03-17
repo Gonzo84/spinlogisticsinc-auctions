@@ -282,6 +282,8 @@ cd frontend/admin-dashboard && npx vitest
 
 68. **Featured auctions carousel should filter out closed/awarded auctions client-side.** Due to NATS propagation delay, the `featured=true` query may return auctions that have already been auto-unfeatured on close. Add `.filter(a => a.status === 'active')` before display.
 
+69. **Keycloak SSO session conflict resolved with frontend role gates.** All 4 frontends now check `realm_access.roles` after Keycloak authentication. If the user has the wrong role (e.g., seller visiting buyer-web), they see a "Wrong Account" page with "Switch Account" (uses `prompt=login` OIDC parameter to force re-authentication) and links to their correct portal. buyer-web uses a Nuxt page (`/auth/wrong-account`); Vite SPAs render plain HTML before Vue mounts. Cross-portal navigation links are in user/profile menus for multi-role users. Portal URLs are configurable via env vars (`NUXT_PUBLIC_SELLER_PORTAL_URL`, `VITE_BUYER_WEB_URL`, etc.).
+
 ### Deployment
 
 - Docker images use `eclipse-temurin:21-jre-alpine` with Quarkus fast-jar (multi-stage build: `docker/Dockerfile.service-full`)

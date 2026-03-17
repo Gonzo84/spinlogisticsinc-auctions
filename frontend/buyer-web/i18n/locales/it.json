@@ -11,7 +11,9 @@
     "watchlist": "Lista Preferiti",
     "notifications": "Notifiche",
     "markAllRead": "Segna tutte come lette",
-    "noNotifications": "Nessuna notifica al momento"
+    "noNotifications": "Nessuna notifica al momento",
+    "sellerPortal": "Portale Venditori",
+    "adminDashboard": "Dashboard Admin"
   },
   "home": {
     "pageTitle": "Aste di container e attrezzature",
@@ -376,5 +378,16 @@
       "hoursAgo": "{value}h fa",
       "daysAgo": "{value}g fa"
     }
+  },
+  "auth": {
+    "wrongAccountTitle": "Account errato",
+    "signedInAs": "Connesso come",
+    "wrongAccountMessage": "Questo marketplace richiede un account acquirente per fare offerte e acquisti.",
+    "switchAccount": "Cambia account",
+    "registerAsBuyer": "Registrati come acquirente",
+    "goToCorrectPortal": "Oppure vai al tuo portale:",
+    "sellerPortal": "Portale Venditori",
+    "adminDashboard": "Dashboard Admin",
+    "brokerPortal": "Portale Broker"
   }
 }

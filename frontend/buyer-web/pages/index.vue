@@ -51,7 +51,7 @@
       <div class="max-w-7xl mx-auto">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-2xl font-bold text-gray-900">{{ $t('home.newLots') }}</h2>
-          <NuxtLink to="/search?sort=newest" class="text-primary font-medium hover:underline">
+          <NuxtLink :to="localePath('/search') + '?sort=newest'" class="text-primary font-medium hover:underline">
             {{ $t('home.viewAll') }} &rarr;
           </NuxtLink>
         </div>
@@ -83,6 +83,7 @@ import { unwrapApiResponse } from '~/utils/api-response'
 import { mapAuctionResponse } from '~/utils/auction-mapper'
 
 const { t } = useI18n()
+const localePath = useLocalePath()
 
 const selectedCountry = ref<string | null>(null)
 
@@ -193,7 +194,7 @@ const { data: newLots } = useAsyncData('new-lots', async () => {
   // Enrich lots that have an auction with auction data (endTime, currentBid)
   const enriched = await Promise.all(
     combined.map(async (lot) => {
-      if (!lot.id || lot.endTime || !lot.auctionId) return lot
+      if (!lot.id || lot.endTime) return lot
       try {
         const raw = await api<Record<string, unknown>>(`/auctions/by-lot/${lot.id}`)
         const auctionData = unwrapApiResponse(raw) as Record<string, unknown>
@@ -219,7 +220,7 @@ const { data: newLots } = useAsyncData('new-lots', async () => {
 
 function selectCountry(code: string) {
   selectedCountry.value = selectedCountry.value === code ? null : code
-  navigateTo({ path: '/search', query: { country: selectedCountry.value || undefined } })
+  navigateTo({ path: localePath('/search'), query: { country: selectedCountry.value || undefined } })
 }
 
 useHead({

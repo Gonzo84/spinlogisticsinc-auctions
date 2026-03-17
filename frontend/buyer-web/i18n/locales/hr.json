@@ -11,7 +11,9 @@
     "watchlist": "Popis praćenja",
     "notifications": "Obavijesti",
     "markAllRead": "Označi sve pročitanim",
-    "noNotifications": "Još nema obavijesti"
+    "noNotifications": "Još nema obavijesti",
+    "sellerPortal": "Portal za prodavatelje",
+    "adminDashboard": "Administratorska ploča"
   },
   "home": {
     "pageTitle": "Aukcije kontejnera i opreme",
@@ -376,5 +378,16 @@
       "hoursAgo": "prije {value}h",
       "daysAgo": "prije {value}d"
     }
+  },
+  "auth": {
+    "wrongAccountTitle": "Pogrešan račun",
+    "signedInAs": "Prijavljeni ste kao",
+    "wrongAccountMessage": "Ova tržnica zahtijeva kupčev račun za licitiranje i kupnju.",
+    "switchAccount": "Promijeni račun",
+    "registerAsBuyer": "Registriraj se kao kupac",
+    "goToCorrectPortal": "Ili idite na svoj portal:",
+    "sellerPortal": "Portal za prodavatelje",
+    "adminDashboard": "Administratorska ploča",
+    "brokerPortal": "Portal za posrednike"
   }
 }

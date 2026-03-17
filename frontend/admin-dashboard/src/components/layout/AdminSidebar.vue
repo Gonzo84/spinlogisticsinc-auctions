@@ -11,6 +11,9 @@ const emit = defineEmits<{
 
 const route = useRoute()
 
+const buyerWebUrl = import.meta.env.VITE_BUYER_WEB_URL || 'http://localhost:3000'
+const sellerPortalUrl = import.meta.env.VITE_SELLER_PORTAL_URL || 'http://localhost:5174'
+
 interface NavSection {
   title: string
   items: NavItem[]
@@ -138,6 +141,41 @@ function isActive(path: string): boolean {
         </ul>
       </div>
     </nav>
+
+    <!-- Cross-portal links -->
+    <div class="border-t border-gray-200 px-3 py-3">
+      <p v-if="!collapsed" class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+        Portals
+      </p>
+      <ul class="space-y-1">
+        <li>
+          <a
+            :href="buyerWebUrl"
+            v-tooltip.right="collapsed ? 'Buyer Marketplace' : undefined"
+            :class="[
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700',
+              collapsed && 'justify-center px-2',
+            ]"
+          >
+            <i class="pi pi-external-link text-lg shrink-0" />
+            <span v-if="!collapsed" class="truncate">Buyer Marketplace</span>
+          </a>
+        </li>
+        <li>
+          <a
+            :href="sellerPortalUrl"
+            v-tooltip.right="collapsed ? 'Seller Portal' : undefined"
+            :class="[
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700',
+              collapsed && 'justify-center px-2',
+            ]"
+          >
+            <i class="pi pi-external-link text-lg shrink-0" />
+            <span v-if="!collapsed" class="truncate">Seller Portal</span>
+          </a>
+        </li>
+      </ul>
+    </div>
 
     <!-- Collapse toggle -->
     <div class="border-t border-gray-200 p-3">

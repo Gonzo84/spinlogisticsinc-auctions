@@ -11,7 +11,9 @@
     "watchlist": "Merkliste",
     "notifications": "Benachrichtigungen",
     "markAllRead": "Alle als gelesen markieren",
-    "noNotifications": "Noch keine Benachrichtigungen"
+    "noNotifications": "Noch keine Benachrichtigungen",
+    "sellerPortal": "Verkäuferportal",
+    "adminDashboard": "Admin-Dashboard"
   },
   "home": {
     "pageTitle": "Auktionen für Container und Ausrüstung",
@@ -376,5 +378,16 @@
       "hoursAgo": "{value}h her",
       "daysAgo": "{value}T her"
     }
+  },
+  "auth": {
+    "wrongAccountTitle": "Falsches Konto",
+    "signedInAs": "Angemeldet als",
+    "wrongAccountMessage": "Dieser Marktplatz erfordert ein Käuferkonto, um Gebote abzugeben und Einkäufe zu tätigen.",
+    "switchAccount": "Konto wechseln",
+    "registerAsBuyer": "Als Käufer registrieren",
+    "goToCorrectPortal": "Oder gehen Sie zu Ihrem Portal:",
+    "sellerPortal": "Verkäuferportal",
+    "adminDashboard": "Admin-Dashboard",
+    "brokerPortal": "Maklerportal"
   }
 }

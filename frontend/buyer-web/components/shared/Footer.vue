@@ -63,17 +63,17 @@
           <h3 class="text-white font-semibold mb-4">{{ $t('footer.quickLinks') }}</h3>
           <ul class="space-y-2">
             <li>
-              <NuxtLink to="/search" class="text-sm hover:text-white transition-colors">
+              <NuxtLink :to="localePath('/search')" class="text-sm hover:text-white transition-colors">
                 {{ $t('footer.browseAuctions') }}
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/search?sort=closing_soonest" class="text-sm hover:text-white transition-colors">
+              <NuxtLink :to="localePath('/search') + '?sort=closing_soonest'" class="text-sm hover:text-white transition-colors">
                 {{ $t('footer.closingSoon') }}
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/search?featured=true" class="text-sm hover:text-white transition-colors">
+              <NuxtLink :to="localePath('/search') + '?featured=true'" class="text-sm hover:text-white transition-colors">
                 {{ $t('footer.featuredLots') }}
               </NuxtLink>
             </li>
@@ -154,4 +154,5 @@
 </template>
 
 <script setup lang="ts">
+const localePath = useLocalePath()
 </script>

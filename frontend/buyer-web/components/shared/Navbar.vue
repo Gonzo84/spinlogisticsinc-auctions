@@ -187,6 +187,25 @@
                   <i class="pi pi-user w-4 h-4 text-gray-400" />
                   {{ $t('nav.profile') }}
                 </NuxtLink>
+                <!-- Cross-portal links for multi-role users -->
+                <a
+                  v-if="hasRole('seller_verified') || hasRole('seller_pending')"
+                  :href="sellerPortalUrl"
+                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  @click="showUserDropdown = false"
+                >
+                  <i class="pi pi-external-link w-4 h-4 text-gray-400" />
+                  {{ $t('nav.sellerPortal') }}
+                </a>
+                <a
+                  v-if="hasRole('admin_ops') || hasRole('admin_super')"
+                  :href="adminDashboardUrl"
+                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  @click="showUserDropdown = false"
+                >
+                  <i class="pi pi-external-link w-4 h-4 text-gray-400" />
+                  {{ $t('nav.adminDashboard') }}
+                </a>
                 <div class="border-t my-1" role="separator" />
                 <Button
                   role="menuitem"
@@ -242,7 +261,10 @@ import { formatTimeAgo as getTimeAgo } from '~/utils/format'
 
 const route = useRoute()
 const { t, locale, setLocale } = useI18n()
-const { isAuthenticated, user, fullName, initials, login, logout } = useAuth()
+const { isAuthenticated, user, fullName, initials, login, logout, hasRole } = useAuth()
+const runtimeConfig = useRuntimeConfig()
+const sellerPortalUrl = (runtimeConfig.public.sellerPortalUrl as string) || 'http://localhost:5174'
+const adminDashboardUrl = (runtimeConfig.public.adminDashboardUrl as string) || 'http://localhost:5175'
 const { unreadCount, hasUnread, recentNotifications, getNotifications, markAsRead, markAllAsRead } = useNotifications()
 
 const showLangDropdown = ref(false)

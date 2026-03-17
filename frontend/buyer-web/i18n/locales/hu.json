@@ -11,7 +11,9 @@
     "watchlist": "Figyelőlista",
     "notifications": "Értesítések",
     "markAllRead": "Mind olvasottnak jelölés",
-    "noNotifications": "Még nincsenek értesítések"
+    "noNotifications": "Még nincsenek értesítések",
+    "sellerPortal": "Eladói portál",
+    "adminDashboard": "Admin felület"
   },
   "home": {
     "pageTitle": "Konténer és ipari berendezés aukciók",
@@ -376,5 +378,16 @@
       "hoursAgo": "{value}ó-e",
       "daysAgo": "{value}n-e"
     }
+  },
+  "auth": {
+    "wrongAccountTitle": "Rossz fiók",
+    "signedInAs": "Bejelentkezve mint",
+    "wrongAccountMessage": "Ez a piactér vásárlói fiókot igényel licitáláshoz és vásárláshoz.",
+    "switchAccount": "Fiók váltás",
+    "registerAsBuyer": "Regisztráció vásárlóként",
+    "goToCorrectPortal": "Vagy lépjen a portáljára:",
+    "sellerPortal": "Eladói portál",
+    "adminDashboard": "Admin felület",
+    "brokerPortal": "Bróker portál"
   }
 }
