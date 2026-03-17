@@ -298,7 +298,16 @@
     "unknownError": "Došlo je do nepoznate greške. Pokušajte ponovo.",
     "authenticationFailed": "Autentifikacija nije mogla biti dovršena.",
     "tryAgain": "Pokušaj ponovo",
-    "backToHome": "Natrag na početnu"
+    "backToHome": "Natrag na početnu",
+    "wrongAccountTitle": "Pogrešan račun",
+    "signedInAs": "Prijavljeni ste kao",
+    "wrongAccountMessage": "Ova tržnica zahtijeva kupčev račun za licitiranje i kupnju.",
+    "switchAccount": "Promijeni račun",
+    "registerAsBuyer": "Registriraj se kao kupac",
+    "goToCorrectPortal": "Ili idite na svoj portal:",
+    "sellerPortal": "Portal za prodavatelje",
+    "adminDashboard": "Administratorska ploča",
+    "brokerPortal": "Portal za posrednike"
   },
   "profile": {
     "title": "Postavke profila",
@@ -378,16 +387,5 @@
       "hoursAgo": "prije {value}h",
       "daysAgo": "prije {value}d"
     }
-  },
-  "auth": {
-    "wrongAccountTitle": "Pogrešan račun",
-    "signedInAs": "Prijavljeni ste kao",
-    "wrongAccountMessage": "Ova tržnica zahtijeva kupčev račun za licitiranje i kupnju.",
-    "switchAccount": "Promijeni račun",
-    "registerAsBuyer": "Registriraj se kao kupac",
-    "goToCorrectPortal": "Ili idite na svoj portal:",
-    "sellerPortal": "Portal za prodavatelje",
-    "adminDashboard": "Administratorska ploča",
-    "brokerPortal": "Portal za posrednike"
   }
 }

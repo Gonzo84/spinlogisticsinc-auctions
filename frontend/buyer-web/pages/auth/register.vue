@@ -40,7 +40,7 @@
         <!-- Business-specific fields -->
         <template v-if="accountType === 'business'">
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.companyName') }} *</label>
+            <label class="label">{{ $t('auth.companyName') }} *</label>
             <InputText
               v-model="form.companyName"
               required
@@ -51,7 +51,7 @@
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.vatNumber') }}</label>
+              <label class="label">{{ $t('auth.vatNumber') }}</label>
               <InputText
                 v-model="form.vatNumber"
                 class="w-full"
@@ -59,7 +59,7 @@
               />
             </div>
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.chamberOfCommerce') }}</label>
+              <label class="label">{{ $t('auth.chamberOfCommerce') }}</label>
               <InputText
                 v-model="form.cocNumber"
                 class="w-full"
@@ -72,7 +72,7 @@
         <!-- Name -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.firstName') }} *</label>
+            <label class="label">{{ $t('auth.firstName') }} *</label>
             <InputText
               v-model="form.firstName"
               required
@@ -80,7 +80,7 @@
             />
           </div>
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.lastName') }} *</label>
+            <label class="label">{{ $t('auth.lastName') }} *</label>
             <InputText
               v-model="form.lastName"
               required
@@ -91,7 +91,7 @@
 
         <!-- Email -->
         <div>
-          <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.email') }} *</label>
+          <label class="label">{{ $t('auth.email') }} *</label>
           <InputText
             v-model="form.email"
             type="email"
@@ -103,7 +103,7 @@
 
         <!-- Phone -->
         <div>
-          <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.phone') }} *</label>
+          <label class="label">{{ $t('auth.phone') }} *</label>
           <InputText
             v-model="form.phone"
             type="tel"
@@ -115,7 +115,7 @@
 
         <!-- Country -->
         <div>
-          <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.country') }} *</label>
+          <label class="label">{{ $t('auth.country') }} *</label>
           <Select
             v-model="form.country"
             :options="countryOptions"
@@ -129,7 +129,7 @@
         <!-- Address (Business only) -->
         <template v-if="accountType === 'business'">
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.address') }}</label>
+            <label class="label">{{ $t('auth.address') }}</label>
             <InputText
               v-model="form.address"
               class="w-full"
@@ -138,14 +138,14 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.postalCode') }}</label>
+              <label class="label">{{ $t('auth.postalCode') }}</label>
               <InputText
                 v-model="form.postalCode"
                 class="w-full"
               />
             </div>
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('auth.city') }}</label>
+              <label class="label">{{ $t('auth.city') }}</label>
               <InputText
                 v-model="form.city"
                 class="w-full"

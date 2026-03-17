@@ -15,7 +15,7 @@
 
     <template v-else>
       <!-- Profile Header -->
-      <div class="bg-white border rounded-xl p-6 mb-6">
+      <div class="card mb-6">
         <div class="flex items-center gap-4">
           <Avatar :label="initials" size="xlarge" shape="circle" class="bg-primary-100 text-primary font-bold" />
           <div>
@@ -30,20 +30,20 @@
 
       <!-- Personal Info -->
       <form class="space-y-6" @submit.prevent="handleSave">
-        <div class="bg-white border rounded-xl p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('profile.personalInfo') }}</h3>
+        <div class="card">
+          <h3 class="section-title">{{ $t('profile.personalInfo') }}</h3>
 
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.firstName') }}</label>
+                <label class="label">{{ $t('profile.firstName') }}</label>
                 <InputText
                   v-model="form.firstName"
                   class="w-full"
                 />
               </div>
               <div>
-                <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.lastName') }}</label>
+                <label class="label">{{ $t('profile.lastName') }}</label>
                 <InputText
                   v-model="form.lastName"
                   class="w-full"
@@ -52,7 +52,7 @@
             </div>
 
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.email') }}</label>
+              <label class="label">{{ $t('profile.email') }}</label>
               <InputText
                 :model-value="user.email"
                 type="email"
@@ -63,7 +63,7 @@
             </div>
 
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.phone') }}</label>
+              <label class="label">{{ $t('profile.phone') }}</label>
               <InputText
                 v-model="form.phone"
                 type="tel"
@@ -72,7 +72,7 @@
             </div>
 
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.country') }}</label>
+              <label class="label">{{ $t('profile.country') }}</label>
               <Select
                 v-model="form.country"
                 :options="countryOptions"
@@ -86,12 +86,12 @@
         </div>
 
         <!-- Business Details -->
-        <div v-if="user.accountType === 'business'" class="bg-white border rounded-xl p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('profile.businessDetails') }}</h3>
+        <div v-if="user.accountType === 'business'" class="card">
+          <h3 class="section-title">{{ $t('profile.businessDetails') }}</h3>
 
           <div class="space-y-4">
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.companyName') }}</label>
+              <label class="label">{{ $t('profile.companyName') }}</label>
               <InputText
                 v-model="form.company"
                 class="w-full"
@@ -99,7 +99,7 @@
             </div>
 
             <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('profile.vatNumber') }}</label>
+              <label class="label">{{ $t('profile.vatNumber') }}</label>
               <InputText
                 v-model="form.vatNumber"
                 class="w-full"
@@ -110,8 +110,8 @@
         </div>
 
         <!-- Notification Preferences -->
-        <div class="bg-white border rounded-xl p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('profile.notifications') }}</h3>
+        <div class="card">
+          <h3 class="section-title">{{ $t('profile.notifications') }}</h3>
 
           <div class="space-y-3">
             <label class="flex items-center justify-between cursor-pointer">
@@ -160,17 +160,14 @@
 
         <!-- Save Button -->
         <div class="flex justify-end">
-          <button
+          <Button
             type="submit"
-            class="px-8 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-800 transition-colors disabled:opacity-50"
+            :label="saving ? $t('common.saving') : $t('profile.saveChanges')"
+            :loading="saving"
             :disabled="saving"
-          >
-            <span v-if="saving" class="flex items-center gap-2">
-              <i class="pi pi-spinner pi-spin" />
-              {{ $t('common.saving') }}
-            </span>
-            <span v-else>{{ $t('profile.saveChanges') }}</span>
-          </button>
+            size="large"
+            class="px-8"
+          />
         </div>
       </form>
     </template>

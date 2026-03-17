@@ -13,7 +13,76 @@
 }
 
 @layer tailwind-base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-gray-50 font-sans text-gray-900 antialiased;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Raleway', 'Open Sans', system-ui, sans-serif;
+  }
+
+  h1 {
+    @apply text-2xl font-bold text-gray-900;
+  }
+
+  h2 {
+    @apply text-xl font-semibold text-gray-800;
+  }
+
+  h3 {
+    @apply text-lg font-semibold text-gray-800;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-500;
+  }
+}
+
+@layer tailwind-utilities {
+  /* Card container — consistent across all portals */
+  .card {
+    @apply rounded-xl border border-gray-200 bg-white p-6 shadow-sm;
+  }
+
+  /* Form label — consistent spacing and typography */
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-gray-700;
+  }
+
+  /* Page structure */
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-gray-900;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-gray-800 mb-4;
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 9999px;
   }
 }

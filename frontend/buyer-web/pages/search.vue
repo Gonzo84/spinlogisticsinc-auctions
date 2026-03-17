@@ -58,36 +58,37 @@
       <!-- Main Content -->
       <div class="flex-1 min-w-0">
         <!-- Sort Bar -->
-        <div class="flex items-center justify-between mb-4 bg-white rounded-lg border p-3">
+        <div class="flex items-center justify-between mb-4 card !p-3">
           <div class="flex items-center gap-4">
             <label class="text-sm text-gray-600 shrink-0">{{ $t('search.sort') }}:</label>
-            <select
+            <Select
               v-model="sortBy"
-              class="text-sm border-0 bg-transparent font-medium text-gray-900 focus:ring-0 cursor-pointer"
+              :options="sortOptions"
+              optionLabel="label"
+              optionValue="value"
+              class="w-44 !border-0 !shadow-none !bg-transparent"
               @change="applySort"
-            >
-              <option value="closing_soonest">{{ $t('search.closingSoonest') }}</option>
-              <option value="price_asc">{{ $t('search.priceAsc') }}</option>
-              <option value="price_desc">{{ $t('search.priceDesc') }}</option>
-              <option value="newest">{{ $t('search.newest') }}</option>
-              <option value="bid_count">{{ $t('search.bidCount') }}</option>
-            </select>
+            />
           </div>
-          <div class="flex items-center gap-2">
-            <button
-              class="p-2 rounded-md transition-colors"
-              :class="viewMode === 'grid' ? 'bg-primary-50 text-primary' : 'text-gray-400 hover:text-gray-600'"
+          <div class="flex items-center gap-1">
+            <Button
+              icon="pi pi-th-large"
+              :text="viewMode !== 'grid'"
+              :severity="viewMode === 'grid' ? undefined : 'secondary'"
+              size="small"
+              rounded
+              aria-label="Grid view"
               @click="viewMode = 'grid'"
-            >
-              <i class="pi pi-th-large text-xl" />
-            </button>
-            <button
-              class="p-2 rounded-md transition-colors"
-              :class="viewMode === 'list' ? 'bg-primary-50 text-primary' : 'text-gray-400 hover:text-gray-600'"
+            />
+            <Button
+              icon="pi pi-list"
+              :text="viewMode !== 'list'"
+              :severity="viewMode === 'list' ? undefined : 'secondary'"
+              size="small"
+              rounded
+              aria-label="List view"
               @click="viewMode = 'list'"
-            >
-              <i class="pi pi-list text-xl" />
-            </button>
+            />
           </div>
         </div>
 
@@ -121,35 +122,34 @@
 
         <!-- Pagination -->
         <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-8">
-          <button
-            class="px-4 py-2 rounded-lg border font-medium text-sm disabled:opacity-40"
+          <Button
+            :label="$t('common.back')"
+            outlined
+            size="small"
             :disabled="currentPage <= 1"
             @click="goToPage(currentPage - 1)"
-          >
-            {{ $t('common.back') }}
-          </button>
+          />
 
           <template v-for="page in visiblePages" :key="page">
             <span v-if="page === '...'" class="px-2 text-gray-400">...</span>
-            <button
+            <Button
               v-else
-              class="w-10 h-10 rounded-lg text-sm font-medium transition-colors"
-              :class="page === currentPage
-                ? 'bg-primary text-white'
-                : 'border hover:bg-gray-50'"
+              :label="String(page)"
+              :outlined="page !== currentPage"
+              :text="page !== currentPage"
+              size="small"
+              class="!w-10 !h-10"
               @click="goToPage(page as number)"
-            >
-              {{ page }}
-            </button>
+            />
           </template>
 
-          <button
-            class="px-4 py-2 rounded-lg border font-medium text-sm disabled:opacity-40"
+          <Button
+            :label="$t('common.next')"
+            outlined
+            size="small"
             :disabled="currentPage >= totalPages"
             @click="goToPage(currentPage + 1)"
-          >
-            {{ $t('common.next') }}
-          </button>
+          />
         </div>
       </div>
     </div>
@@ -175,6 +175,14 @@ const currentPage = ref(1)
 
 const query = computed(() => (route.query.q as string) || '')
 const sortBy = ref((route.query.sort as string) || 'closing_soonest')
+
+const sortOptions = computed(() => [
+  { label: t('search.closingSoonest'), value: 'closing_soonest' },
+  { label: t('search.priceAsc'), value: 'price_asc' },
+  { label: t('search.priceDesc'), value: 'price_desc' },
+  { label: t('search.newest'), value: 'newest' },
+  { label: t('search.bidCount'), value: 'bid_count' },
+])
 
 const activeFilters = computed<SearchFilters>(() => ({
   q: (route.query.q as string) || undefined,

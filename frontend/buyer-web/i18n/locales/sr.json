@@ -298,7 +298,16 @@
     "unknownError": "Došlo je do nepoznate greške. Pokušajte ponovo.",
     "authenticationFailed": "Autentifikacija nije mogla biti dovršena.",
     "tryAgain": "Pokušaj ponovo",
-    "backToHome": "Nazad na početnu"
+    "backToHome": "Nazad na početnu",
+    "wrongAccountTitle": "Pogrešan nalog",
+    "signedInAs": "Prijavljeni ste kao",
+    "wrongAccountMessage": "Ova tržnica zahteva kupčev nalog za licitiranje i kupovinu.",
+    "switchAccount": "Promeni nalog",
+    "registerAsBuyer": "Registruj se kao kupac",
+    "goToCorrectPortal": "Ili idite na svoj portal:",
+    "sellerPortal": "Portal za prodavce",
+    "adminDashboard": "Admin tabla",
+    "brokerPortal": "Portal za posrednike"
   },
   "profile": {
     "title": "Podešavanja profila",
@@ -378,16 +387,5 @@
       "hoursAgo": "pre {value}č",
       "daysAgo": "pre {value}d"
     }
-  },
-  "auth": {
-    "wrongAccountTitle": "Pogrešan nalog",
-    "signedInAs": "Prijavljeni ste kao",
-    "wrongAccountMessage": "Ova tržnica zahteva kupčev nalog za licitiranje i kupovinu.",
-    "switchAccount": "Promeni nalog",
-    "registerAsBuyer": "Registruj se kao kupac",
-    "goToCorrectPortal": "Ili idite na svoj portal:",
-    "sellerPortal": "Portal za prodavce",
-    "adminDashboard": "Admin tabla",
-    "brokerPortal": "Portal za posrednike"
   }
 }

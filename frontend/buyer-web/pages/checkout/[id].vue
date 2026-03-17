@@ -50,8 +50,8 @@
 
     <!-- Step 1: Verify Purchase Details -->
     <div v-else-if="currentStep === 0" class="space-y-6">
-      <div class="bg-white border rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('checkout.verifyDetails') }}</h2>
+      <div class="card">
+        <h2 class="section-title">{{ $t('checkout.verifyDetails') }}</h2>
 
         <div v-if="order" class="space-y-4">
           <!-- Lot Summary -->
@@ -96,24 +96,25 @@
       </div>
 
       <div class="flex justify-end">
-        <button
-          class="px-8 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-800 transition-colors"
+        <Button
+          :label="$t('checkout.continue')"
+          icon="pi pi-arrow-right"
+          icon-pos="right"
+          size="large"
           @click="nextStep"
-        >
-          {{ $t('checkout.continue') }}
-        </button>
+        />
       </div>
     </div>
 
     <!-- Step 2: VAT Information -->
     <div v-else-if="currentStep === 1" class="space-y-6">
-      <div class="bg-white border rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('checkout.vatInformation') }}</h2>
+      <div class="card">
+        <h2 class="section-title">{{ $t('checkout.vatInformation') }}</h2>
 
         <div class="space-y-4">
           <!-- VAT Type -->
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-2 block">{{ $t('checkout.vatType') }}</label>
+            <label class="label">{{ $t('checkout.vatType') }}</label>
             <div class="flex gap-3">
               <label
                 class="flex-1 flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors"
@@ -140,7 +141,7 @@
 
           <!-- VAT Number (Business only) -->
           <div v-if="vatForm.type === 'business'">
-            <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('checkout.vatNumber') }}</label>
+            <label class="label">{{ $t('checkout.vatNumber') }}</label>
             <div class="relative">
               <InputText
                 v-model="vatForm.vatNumber"
@@ -161,7 +162,7 @@
 
           <!-- Billing Address -->
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">{{ $t('checkout.billingAddress') }}</label>
+            <label class="label">{{ $t('checkout.billingAddress') }}</label>
             <InputText
               v-model="vatForm.companyName"
               class="w-full mb-2"
@@ -197,25 +198,27 @@
       </div>
 
       <div class="flex justify-between">
-        <button
-          class="px-6 py-3 border font-medium rounded-lg hover:bg-gray-50 transition-colors"
+        <Button
+          :label="$t('common.back')"
+          icon="pi pi-arrow-left"
+          outlined
+          size="large"
           @click="prevStep"
-        >
-          {{ $t('common.back') }}
-        </button>
-        <button
-          class="px-8 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-800 transition-colors"
+        />
+        <Button
+          :label="$t('checkout.continue')"
+          icon="pi pi-arrow-right"
+          icon-pos="right"
+          size="large"
           @click="nextStep"
-        >
-          {{ $t('checkout.continue') }}
-        </button>
+        />
       </div>
     </div>
 
     <!-- Step 3: Terms & Conditions -->
     <div v-else-if="currentStep === 2" class="space-y-6">
-      <div class="bg-white border rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('checkout.termsConditions') }}</h2>
+      <div class="card">
+        <h2 class="section-title">{{ $t('checkout.termsConditions') }}</h2>
 
         <div class="prose prose-sm max-w-none text-gray-600 max-h-64 overflow-y-auto mb-6 p-4 bg-gray-50 rounded-lg">
           <h3>{{ $t('checkout.generalTermsTitle') }}</h3>
@@ -260,26 +263,28 @@
       </div>
 
       <div class="flex justify-between">
-        <button
-          class="px-6 py-3 border font-medium rounded-lg hover:bg-gray-50 transition-colors"
+        <Button
+          :label="$t('common.back')"
+          icon="pi pi-arrow-left"
+          outlined
+          size="large"
           @click="prevStep"
-        >
-          {{ $t('common.back') }}
-        </button>
-        <button
-          class="px-8 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        <Button
+          :label="$t('checkout.continue')"
+          icon="pi pi-arrow-right"
+          icon-pos="right"
+          size="large"
           :disabled="!allTermsAccepted"
           @click="nextStep"
-        >
-          {{ $t('checkout.continue') }}
-        </button>
+        />
       </div>
     </div>
 
     <!-- Step 4: Payment -->
     <div v-else-if="currentStep === 3" class="space-y-6">
-      <div class="bg-white border rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('checkout.payment') }}</h2>
+      <div class="card">
+        <h2 class="section-title">{{ $t('checkout.payment') }}</h2>
 
         <!-- Order Summary -->
         <div class="p-4 bg-gray-50 rounded-lg mb-6">
@@ -291,7 +296,7 @@
 
         <!-- Payment Method -->
         <div class="space-y-3">
-          <label class="text-sm font-medium text-gray-700 block">{{ $t('checkout.paymentMethod') }}</label>
+          <label class="label">{{ $t('checkout.paymentMethod') }}</label>
 
           <label
             class="flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors"
@@ -338,25 +343,22 @@
       </div>
 
       <div class="flex justify-between">
-        <button
-          class="px-6 py-3 border font-medium rounded-lg hover:bg-gray-50 transition-colors"
+        <Button
+          :label="$t('common.back')"
+          icon="pi pi-arrow-left"
+          outlined
+          size="large"
           @click="prevStep"
-        >
-          {{ $t('common.back') }}
-        </button>
-        <button
-          class="px-8 py-3 bg-secondary text-white font-bold rounded-lg hover:bg-secondary-700 transition-colors disabled:opacity-50"
+        />
+        <Button
+          :label="processing ? $t('checkout.processing') : `${$t('checkout.payNow')} ${formatCurrency(order?.total || 0)}`"
+          :loading="processing"
           :disabled="!paymentMethod || processing"
+          severity="success"
+          size="large"
+          icon="pi pi-lock"
           @click="handlePayment"
-        >
-          <span v-if="processing" class="flex items-center gap-2">
-            <i class="pi pi-spinner pi-spin" />
-            {{ $t('checkout.processing') }}
-          </span>
-          <span v-else>
-            {{ $t('checkout.payNow') }} {{ formatCurrency(order?.total || 0) }}
-          </span>
-        </button>
+        />
       </div>
     </div>
   </div>

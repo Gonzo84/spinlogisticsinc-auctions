@@ -298,7 +298,16 @@
     "unknownError": "An unknown error occurred. Please try again.",
     "authenticationFailed": "Authentication could not be completed.",
     "tryAgain": "Try Again",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "wrongAccountTitle": "Wrong Account",
+    "signedInAs": "Signed in as",
+    "wrongAccountMessage": "This marketplace requires a buyer account to place bids and make purchases.",
+    "switchAccount": "Switch Account",
+    "registerAsBuyer": "Register as Buyer",
+    "goToCorrectPortal": "Or go to your portal:",
+    "sellerPortal": "Seller Portal",
+    "adminDashboard": "Admin Dashboard",
+    "brokerPortal": "Broker Portal"
   },
   "profile": {
     "title": "Profile Settings",
@@ -378,16 +387,5 @@
       "hoursAgo": "{value}h ago",
       "daysAgo": "{value}d ago"
     }
-  },
-  "auth": {
-    "wrongAccountTitle": "Wrong Account",
-    "signedInAs": "Signed in as",
-    "wrongAccountMessage": "This marketplace requires a buyer account to place bids and make purchases.",
-    "switchAccount": "Switch Account",
-    "registerAsBuyer": "Register as Buyer",
-    "goToCorrectPortal": "Or go to your portal:",
-    "sellerPortal": "Seller Portal",
-    "adminDashboard": "Admin Dashboard",
-    "brokerPortal": "Broker Portal"
   }
 }

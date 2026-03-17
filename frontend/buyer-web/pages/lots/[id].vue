@@ -20,8 +20,8 @@
     <div v-else-if="error" class="text-center py-16">
       <h2 class="text-xl font-semibold text-gray-900 mb-2">{{ $t('common.error') }}</h2>
       <p class="text-gray-500 mb-4">{{ $t('lot.notFound') }}</p>
-      <NuxtLink to="/search" class="px-6 py-2 bg-primary text-white rounded-lg font-medium">
-        {{ $t('search.browseAll') }}
+      <NuxtLink to="/search">
+        <Button :label="$t('search.browseAll')" />
       </NuxtLink>
     </div>
 
@@ -150,14 +150,14 @@
         </div>
 
         <!-- Description -->
-        <div class="bg-white rounded-xl border p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ $t('lot.description') }}</h2>
+        <div class="card">
+          <h2 class="section-title !mb-3">{{ $t('lot.description') }}</h2>
           <div class="prose prose-sm max-w-none text-gray-700" v-html="lot.description" />
         </div>
 
         <!-- Specifications -->
-        <div class="bg-white rounded-xl border p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('lot.specifications') }}</h2>
+        <div class="card">
+          <h2 class="section-title">{{ $t('lot.specifications') }}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
             <div
               v-for="spec in lot.specifications"
@@ -171,8 +171,8 @@
         </div>
 
         <!-- Location -->
-        <div class="bg-white rounded-xl border p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ $t('lot.location') }}</h2>
+        <div class="card">
+          <h2 class="section-title !mb-3">{{ $t('lot.location') }}</h2>
           <div class="flex items-start gap-3 mb-4">
             <i class="pi pi-map-marker text-xl text-gray-400 mt-0.5 shrink-0" />
             <div>
@@ -188,8 +188,8 @@
         </div>
 
         <!-- Seller Info -->
-        <div class="bg-white rounded-xl border p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('lot.seller') }}</h2>
+        <div class="card">
+          <h2 class="section-title">{{ $t('lot.seller') }}</h2>
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary font-bold text-lg">
               {{ lot.seller?.name?.charAt(0) || 'S' }}
@@ -209,7 +209,7 @@
         </div>
 
         <!-- Bid History (Collapsible) -->
-        <div class="bg-white rounded-xl border overflow-hidden">
+        <div class="card !p-0 overflow-hidden">
           <button
             class="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
             @click="showBidHistory = !showBidHistory"

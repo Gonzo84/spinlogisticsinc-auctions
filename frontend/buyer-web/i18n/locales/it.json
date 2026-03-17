@@ -298,7 +298,16 @@
     "unknownError": "Si è verificato un errore sconosciuto. Riprova.",
     "authenticationFailed": "L'autenticazione non è stata completata.",
     "tryAgain": "Riprova",
-    "backToHome": "Torna alla home"
+    "backToHome": "Torna alla home",
+    "wrongAccountTitle": "Account errato",
+    "signedInAs": "Connesso come",
+    "wrongAccountMessage": "Questo marketplace richiede un account acquirente per fare offerte e acquisti.",
+    "switchAccount": "Cambia account",
+    "registerAsBuyer": "Registrati come acquirente",
+    "goToCorrectPortal": "Oppure vai al tuo portale:",
+    "sellerPortal": "Portale Venditori",
+    "adminDashboard": "Dashboard Admin",
+    "brokerPortal": "Portale Broker"
   },
   "profile": {
     "title": "Impostazioni profilo",
@@ -378,16 +387,5 @@
       "hoursAgo": "{value}h fa",
       "daysAgo": "{value}g fa"
     }
-  },
-  "auth": {
-    "wrongAccountTitle": "Account errato",
-    "signedInAs": "Connesso come",
-    "wrongAccountMessage": "Questo marketplace richiede un account acquirente per fare offerte e acquisti.",
-    "switchAccount": "Cambia account",
-    "registerAsBuyer": "Registrati come acquirente",
-    "goToCorrectPortal": "Oppure vai al tuo portale:",
-    "sellerPortal": "Portale Venditori",
-    "adminDashboard": "Dashboard Admin",
-    "brokerPortal": "Portale Broker"
   }
 }

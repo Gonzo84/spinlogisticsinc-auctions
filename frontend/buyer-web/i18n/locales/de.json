@@ -298,7 +298,16 @@
     "unknownError": "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "authenticationFailed": "Die Authentifizierung konnte nicht abgeschlossen werden.",
     "tryAgain": "Erneut Versuchen",
-    "backToHome": "Zur\u00fcck zur Startseite"
+    "backToHome": "Zur\u00fcck zur Startseite",
+    "wrongAccountTitle": "Falsches Konto",
+    "signedInAs": "Angemeldet als",
+    "wrongAccountMessage": "Dieser Marktplatz erfordert ein Käuferkonto, um Gebote abzugeben und Einkäufe zu tätigen.",
+    "switchAccount": "Konto wechseln",
+    "registerAsBuyer": "Als Käufer registrieren",
+    "goToCorrectPortal": "Oder gehen Sie zu Ihrem Portal:",
+    "sellerPortal": "Verkäuferportal",
+    "adminDashboard": "Admin-Dashboard",
+    "brokerPortal": "Maklerportal"
   },
   "profile": {
     "title": "Profileinstellungen",
@@ -378,16 +387,5 @@
       "hoursAgo": "{value}h her",
       "daysAgo": "{value}T her"
     }
-  },
-  "auth": {
-    "wrongAccountTitle": "Falsches Konto",
-    "signedInAs": "Angemeldet als",
-    "wrongAccountMessage": "Dieser Marktplatz erfordert ein Käuferkonto, um Gebote abzugeben und Einkäufe zu tätigen.",
-    "switchAccount": "Konto wechseln",
-    "registerAsBuyer": "Als Käufer registrieren",
-    "goToCorrectPortal": "Oder gehen Sie zu Ihrem Portal:",
-    "sellerPortal": "Verkäuferportal",
-    "adminDashboard": "Admin-Dashboard",
-    "brokerPortal": "Maklerportal"
   }
 }

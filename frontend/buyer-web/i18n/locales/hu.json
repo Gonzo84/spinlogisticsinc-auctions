@@ -298,7 +298,16 @@
     "unknownError": "Ismeretlen hiba történt. Kérjük, próbálja újra.",
     "authenticationFailed": "A hitelesítés nem sikerült.",
     "tryAgain": "Próbálja újra",
-    "backToHome": "Vissza a kezdőlapra"
+    "backToHome": "Vissza a kezdőlapra",
+    "wrongAccountTitle": "Rossz fiók",
+    "signedInAs": "Bejelentkezve mint",
+    "wrongAccountMessage": "Ez a piactér vásárlói fiókot igényel licitáláshoz és vásárláshoz.",
+    "switchAccount": "Fiók váltás",
+    "registerAsBuyer": "Regisztráció vásárlóként",
+    "goToCorrectPortal": "Vagy lépjen a portáljára:",
+    "sellerPortal": "Eladói portál",
+    "adminDashboard": "Admin felület",
+    "brokerPortal": "Bróker portál"
   },
   "profile": {
     "title": "Profilbeállítások",
@@ -378,16 +387,5 @@
       "hoursAgo": "{value}ó-e",
       "daysAgo": "{value}n-e"
     }
-  },
-  "auth": {
-    "wrongAccountTitle": "Rossz fiók",
-    "signedInAs": "Bejelentkezve mint",
-    "wrongAccountMessage": "Ez a piactér vásárlói fiókot igényel licitáláshoz és vásárláshoz.",
-    "switchAccount": "Fiók váltás",
-    "registerAsBuyer": "Regisztráció vásárlóként",
-    "goToCorrectPortal": "Vagy lépjen a portáljára:",
-    "sellerPortal": "Eladói portál",
-    "adminDashboard": "Admin felület",
-    "brokerPortal": "Bróker portál"
   }
 }

@@ -42,6 +42,11 @@ export default defineNuxtConfig({
 
   tailwindcss: {
     configPath: 'tailwind.config.ts',
+    // Prevent the module from injecting a second (unlayered) copy of Tailwind.
+    // main.css already wraps @tailwind directives inside @layer tailwind-base /
+    // tailwind-utilities so that PrimeVue's @layer primevue is not overridden
+    // by Preflight's universal reset (border:0, padding:0).
+    cssPath: false,
   },
 
   runtimeConfig: {
