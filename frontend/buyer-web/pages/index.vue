@@ -194,7 +194,7 @@ const { data: newLots } = useAsyncData('new-lots', async () => {
   // Enrich lots that have an auction with auction data (endTime, currentBid)
   const enriched = await Promise.all(
     combined.map(async (lot) => {
-      if (!lot.id || lot.endTime) return lot
+      if (!lot.auctionId || lot.endTime) return lot
       try {
         const raw = await api<Record<string, unknown>>(`/auctions/by-lot/${lot.id}`)
         const auctionData = unwrapApiResponse(raw) as Record<string, unknown>

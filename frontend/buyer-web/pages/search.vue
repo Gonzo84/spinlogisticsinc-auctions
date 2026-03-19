@@ -97,19 +97,42 @@
           <ProgressSpinner />
         </div>
 
-        <!-- Results Grid -->
-        <div
-          v-else-if="lots.length > 0"
-          :class="viewMode === 'grid'
-            ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'
-            : 'flex flex-col gap-4'"
-        >
-          <AuctionLotCard
-            v-for="lot in lots"
-            :key="(lot.id as string)"
-            :lot="(lot as Partial<Auction> & { id: string })"
-            :view-mode="viewMode"
-          />
+        <!-- Results Grid — wrapped in ClientOnly to prevent hydration mismatches from timers/bid counts (gotcha #66) -->
+        <div v-else-if="lots.length > 0">
+          <ClientOnly>
+            <div
+              :class="viewMode === 'grid'
+                ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'
+                : 'flex flex-col gap-4'"
+            >
+              <AuctionLotCard
+                v-for="lot in lots"
+                :key="(lot.id as string)"
+                :lot="(lot as Partial<Auction> & { id: string })"
+                :view-mode="viewMode"
+              />
+            </div>
+            <template #fallback>
+              <div
+                :class="viewMode === 'grid'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'
+                  : 'flex flex-col gap-4'"
+              >
+                <div v-for="n in 6" :key="n" class="bg-white rounded-xl border overflow-hidden animate-pulse">
+                  <div class="aspect-[4/3] bg-gray-200" />
+                  <div class="p-4 space-y-2">
+                    <div class="h-3 bg-gray-200 rounded w-16" />
+                    <div class="h-4 bg-gray-200 rounded w-3/4" />
+                    <div class="h-3 bg-gray-200 rounded w-1/2" />
+                    <div class="flex justify-between mt-3">
+                      <div class="h-5 bg-gray-200 rounded w-20" />
+                      <div class="h-5 bg-gray-200 rounded w-16" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </ClientOnly>
         </div>
 
         <!-- No Results -->

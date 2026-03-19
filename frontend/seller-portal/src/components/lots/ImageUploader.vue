@@ -78,9 +78,13 @@ function openFilePicker() {
   fileInputRef.value?.click()
 }
 
-async function processFiles(files: FileList) {
+async function processFiles(fileList: FileList) {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp']
   const maxSize = 10 * 1024 * 1024 // 10 MB
+
+  // Copy to array — FileList is a live reference that becomes invalid
+  // when the input is cleared (input.value = '') in handleFileSelect
+  const files = Array.from(fileList)
 
   for (let i = 0; i < files.length; i++) {
     if (!canAddMore.value) break
