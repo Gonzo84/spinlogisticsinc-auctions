@@ -1,4 +1,4 @@
-# SPC Auctions EU Auction Platform - Monthly Hosting Cost Analysis
+# SPC Auctions SPC Auctions - Monthly Hosting Cost Analysis
 
 > Last updated: March 2026 | Prices in EUR (excl. VAT unless noted)
 

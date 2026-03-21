@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "=========================================="
-echo " EU Auction Platform — Full Stack Startup"
+echo " SPC Auctions — Full Stack Startup"
 echo "=========================================="
 
 # Step 1: Build all backend services

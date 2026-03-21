@@ -1,4 +1,4 @@
-# EU Auction Platform — Valuation Analysis
+# SPC Auctions — Valuation Analysis
 
 **Date:** 2026-03-13
 **Purpose:** Comprehensive pricing analysis for potential sale of the platform

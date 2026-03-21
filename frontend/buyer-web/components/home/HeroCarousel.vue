@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-gray-900">{{ $t('home.featuredAuctions') }}</h2>
-        <div v-if="auctions.length > 0" class="flex gap-2">
+        <div v-if="auctions.length > 3" class="flex gap-2">
           <button
             class="p-2 rounded-full border hover:bg-white transition-colors"
             :disabled="carouselIndex === 0"
@@ -21,7 +21,7 @@
         </div>
       </div>
       <!-- Loading skeleton while fetching -->
-      <div v-if="loading" class="grid grid-cols-3 gap-6">
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div v-for="n in 3" :key="n" class="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse">
           <div class="aspect-[4/3] bg-gray-200" />
           <div class="p-4">
@@ -43,25 +43,29 @@
       <!-- Carousel content -->
       <div v-else class="overflow-hidden">
         <div
-          class="flex gap-6 transition-transform duration-300"
-          :style="{ transform: `translateX(-${carouselIndex * 33.33}%)` }"
+          class="carousel-track"
+          :style="{ transform: `translateX(calc(-${carouselIndex} * (100% / 3 + 8px)))` }"
         >
           <div
             v-for="auction in auctions"
             :key="auction.id"
-            class="min-w-[calc(33.333%-1rem)] flex-shrink-0"
+            class="carousel-card"
           >
             <NuxtLink
               :to="localePath(`/lots/${auction.catalogLotId || auction.id}`)"
-              class="block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+              class="block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden h-full"
             >
-              <div class="relative aspect-[4/3] bg-gray-200">
+              <div class="relative aspect-[4/3] bg-gray-200 overflow-hidden">
                 <img
-                  :src="auction.imageUrl"
+                  v-if="getImageUrl(auction)"
+                  :src="getImageUrl(auction)"
                   :alt="auction.title"
                   class="w-full h-full object-cover"
                   loading="lazy"
                 >
+                <div v-else class="w-full h-full flex items-center justify-center">
+                  <i class="pi pi-image text-4xl text-gray-400" />
+                </div>
                 <div class="absolute top-3 left-3">
                   <span class="px-2 py-1 bg-accent text-white text-xs font-bold rounded">
                     {{ $t('home.featured') }}
@@ -95,7 +99,9 @@ interface FeaturedAuction {
   id: string
   catalogLotId?: string
   title: string
-  imageUrl: string
+  imageUrl?: string
+  primaryImageUrl?: string
+  images?: Array<{ url: string; thumbnail?: string }>
   currentBid: number
   endTime: string
 }
@@ -107,5 +113,26 @@ withDefaults(defineProps<{
   loading: false,
 })
 
+function getImageUrl(auction: FeaturedAuction): string {
+  return auction.images?.[0]?.url
+    || auction.primaryImageUrl
+    || auction.imageUrl
+    || ''
+}
+
 const carouselIndex = ref(0)
 </script>
+
+<style scoped>
+.carousel-track {
+  display: flex;
+  gap: 1.5rem;
+  transition: transform 300ms ease;
+}
+
+.carousel-card {
+  /* Exactly 1/3 of parent minus gap compensation */
+  flex: 0 0 calc((100% - 3rem) / 3);
+  min-width: 0;
+}
+</style>

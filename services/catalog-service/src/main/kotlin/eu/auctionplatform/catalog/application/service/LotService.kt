@@ -64,6 +64,21 @@ class LotService {
     private fun publishLotEvent(eventType: String, lot: Lot) {
         try {
             val subject = "catalog.lot.$eventType"
+
+            // Include images so search-service can index them
+            val images = try {
+                lotImageRepository.findByLotId(lot.id).map { img ->
+                    mapOf(
+                        "url" to img.imageUrl,
+                        "thumbnailUrl" to img.thumbnailUrl,
+                        "isPrimary" to img.isPrimary
+                    )
+                }
+            } catch (ex: Exception) {
+                LOG.warnf("Failed to load images for lot %s: %s", lot.id, ex.message)
+                emptyList()
+            }
+
             val payload = mapOf(
                 "lotId" to lot.id.toString(),
                 "title" to lot.title,
@@ -78,7 +93,8 @@ class LotService {
                 "co2AvoidedKg" to lot.co2AvoidedKg,
                 "sellerId" to lot.sellerId.toString(),
                 "createdAt" to lot.createdAt.toString(),
-                "specifications" to lot.specifications
+                "specifications" to lot.specifications,
+                "images" to images
             )
             val json = JsonMapper.toJson(payload)
             val headers = io.nats.client.impl.Headers()

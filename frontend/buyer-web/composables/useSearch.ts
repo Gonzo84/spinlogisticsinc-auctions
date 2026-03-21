@@ -129,31 +129,53 @@ export function useSearch() {
         mapAuctionResponse(item) as unknown as Record<string, unknown>
       )
 
-      // Enrich items that have no endTime with auction data from auction-engine.
-      // Search-service ES documents may lack auctionEndTime if they were indexed
-      // before the auction was created (catalog event arrives before auction event).
+      // Enrich items that have no images or no endTime from catalog/auction APIs.
+      // Search-service ES documents may lack images (not sent via NATS) and
+      // auctionEndTime (catalog event arrives before auction event).
       const needsEnrichment = result.items.filter(
-        (item) => !item.endTime && item.id
+        (item) => !item.endTime || !(item.images as unknown[])?.length
       )
       if (needsEnrichment.length > 0) {
         await Promise.all(
           needsEnrichment.map(async (item) => {
-            try {
-              // item.id is the catalog lotId for search results (no auctionId in ES)
-              const lotId = (item.catalogLotId || item.id) as string
-              const raw = await api<Record<string, unknown>>(`/auctions/by-lot/${lotId}`)
-              const auctionData = unwrapApiResponse(raw) as Record<string, unknown>
-              if (auctionData.endTime) {
-                item.endTime = auctionData.endTime
+            const lotId = (item.catalogLotId || item.id) as string
+            if (!lotId) return
+
+            // Enrich with catalog lot data (images, primaryImageUrl)
+            if (!(item.images as unknown[])?.length) {
+              try {
+                const lotRaw = await api<Record<string, unknown>>(`/lots/${lotId}`)
+                const lotData = unwrapApiResponse(lotRaw) as Record<string, unknown>
+                if (lotData.images && (lotData.images as unknown[]).length > 0) {
+                  const lotImages = lotData.images as Array<Record<string, unknown>>
+                  item.images = lotImages.map((img) => ({
+                    url: (img.imageUrl ?? img.url ?? '') as string,
+                    thumbnail: (img.thumbnailUrl ?? '') as string,
+                  }))
+                  item.primaryImageUrl = (lotData.primaryImageUrl ?? '') as string
+                }
+              } catch {
+                // Catalog lookup failed — continue without images
               }
-              if (auctionData.currentHighBid != null) {
-                item.currentBid = auctionData.currentHighBid
+            }
+
+            // Enrich with auction data (endTime, bids)
+            if (!item.endTime) {
+              try {
+                const raw = await api<Record<string, unknown>>(`/auctions/by-lot/${lotId}`)
+                const auctionData = unwrapApiResponse(raw) as Record<string, unknown>
+                if (auctionData.endTime) {
+                  item.endTime = auctionData.endTime
+                }
+                if (auctionData.currentHighBid != null) {
+                  item.currentBid = auctionData.currentHighBid
+                }
+                if (auctionData.bidCount != null) {
+                  item.bidCount = auctionData.bidCount
+                }
+              } catch {
+                // Lot may not have an associated auction
               }
-              if (auctionData.bidCount != null) {
-                item.bidCount = auctionData.bidCount
-              }
-            } catch {
-              // Lot may not have an associated auction
             }
           }),
         )

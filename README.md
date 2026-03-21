@@ -1,4 +1,4 @@
-# Tradex - EU B2B Online Auction Platform
+# SPC Auctions - EU B2B Online Auction Platform
 
 A full-stack B2B auction platform for the European market, built with Kotlin/Quarkus microservices and Vue/Nuxt frontends. Designed for industrial equipment, machinery, and commercial asset auctions with full EU regulatory compliance (GDPR, PSD2, DSA, VAT).
 

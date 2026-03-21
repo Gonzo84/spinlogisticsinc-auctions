@@ -29,7 +29,11 @@ export function mapAuctionResponse(auction: Record<string, unknown>, lot?: Recor
     category: (lot?.categoryId ?? auction.category ?? '') as string,
     country: (lot?.locationCountry ?? auction.country ?? '') as string,
     location: lot ? `${lot.locationCity ?? ''}, ${lot.locationCountry ?? ''}`.replace(/^, |, $/, '') : (auction.location ?? '') as string,
-    images: lotImages?.map((img: Record<string, unknown>) => ({ url: img.imageUrl as string, thumbnail: img.thumbnailUrl as string })) ?? auction.images as Auction['images'] ?? [],
+    images: lotImages?.map((img: Record<string, unknown>) => ({ url: img.imageUrl as string, thumbnail: img.thumbnailUrl as string }))
+      ?? (auction.images as Auction['images'])
+      ?? (auction.thumbnailUrl ? [{ url: auction.thumbnailUrl as string, thumbnail: auction.thumbnailUrl as string }] : [])
+      ?? [],
+    primaryImageUrl: (lot?.primaryImageUrl ?? auction.primaryImageUrl ?? auction.thumbnailUrl ?? '') as string,
     currentBid: (auction.currentHighBid ?? auction.currentBid ?? lot?.startingBid ?? auction.startingBid ?? 0) as number,
     startingPrice: (auction.startingBid ?? lot?.startingBid ?? auction.startingPrice ?? 0) as number,
     bidCount: (auction.bidCount ?? 0) as number,

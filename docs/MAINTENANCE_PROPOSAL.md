@@ -1,4 +1,4 @@
-# SPC Auctions EU Auction Platform - Maintenance & Support Proposal
+# SPC Auctions SPC Auctions - Maintenance & Support Proposal
 
 > Internal pricing guide - not for client distribution as-is
 

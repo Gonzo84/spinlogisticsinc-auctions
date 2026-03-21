@@ -1,6 +1,6 @@
 # SPC Rebranding Plan
 
-> **Comprehensive plan for rebranding the EU Auction Platform to SPC, storitveno prodajni center, d.o.o.**
+> **Comprehensive plan for rebranding the SPC Auctions to SPC, storitveno prodajni center, d.o.o.**
 > Prepared: March 2026
 
 ---
@@ -147,11 +147,11 @@
 - **Key themes:** Reliability, speed ("24-hour response"), quality verification, competitive pricing, one-stop-shop
 - **Trust signals:** EBONITETE.SI certificate (excellent financial reliability), SafeSigned seal, A+ credit rating, 900+ customers
 
-### 2.2 Current Platform Brand (EU Auction Platform)
+### 2.2 Current Platform Brand (SPC Auctions)
 
 | Element | Current Value |
 |---------|---------------|
-| **Name** | "EU Auction Platform" / "EU Auction" |
+| **Name** | "SPC Auctions" / "EU Auction" |
 | **Primary Color** | Blue scale (`#2563eb` / Tailwind blue-600) |
 | **Logo** | `pi pi-bolt` icon in blue rounded square |
 | **Typography** | Inter (400-700) |
@@ -167,7 +167,7 @@
 | **Font (body)** | Inter | Open Sans | Swap Google Fonts link |
 | **Font (headings)** | Inter | Raleway | Add Raleway, configure font-family |
 | **Logo** | Generic bolt icon | SPC company logo | Replace in Navbar, Footer, favicon |
-| **Brand name** | "EU Auction Platform" | "SPC Aukcije" / "SPC Auctions" | Update all 35+ references |
+| **Brand name** | "SPC Auctions" | "SPC Aukcije" / "SPC Auctions" | Update all 35+ references |
 | **Button radius** | `border-radius: lg` | `border-radius: 9999px` (pill) | Update preset.ts |
 | **Languages** | en, nl, de, fr, pl, it, ro | sl, hr, de, en, it, sr, hu | Replace/add locales |
 | **Countries** | NL, DE, BE, FR, PL, IT, RO | SI, HR, AT, DE, IT, BA, RS, HU | Update country list |
@@ -459,21 +459,21 @@ Available in `docs/presentation/assets/`:
 
 ### 7.1 Brand Name References (35+ locations)
 
-Every instance of "EU Auction Platform" or "EU Auction" must be replaced:
+Every instance of "SPC Auctions" or "EU Auction" must be replaced:
 
 | Location | Current Text | New Text |
 |----------|-------------|----------|
-| `buyer-web/nuxt.config.ts:59` | "EU Auction Platform - Buy Industrial Equipment" | "SPC Aukcije - Industrijska oprema na drazbi" |
+| `buyer-web/nuxt.config.ts:59` | "SPC Auctions - Buy Industrial Equipment" | "SPC Aukcije - Industrijska oprema na drazbi" |
 | `buyer-web/nuxt.config.ts:63` | "B2B online auction platform for industrial equipment across Europe" | "B2B platforma za spletne drazbe industrijske opreme v Evropi" |
-| `buyer-web/app.vue:12` | "EU Auction Platform" (title suffix) | "SPC Aukcije" |
-| `buyer-web/error.vue:70` | "EU Auction Platform" | "SPC Aukcije" |
-| `seller-portal/index.html:7` | "Seller Portal - EU Auction Platform" | "Portal za prodajalce - SPC Aukcije" |
-| `admin-dashboard/index.html:7` | "Admin Dashboard - EU Auction Platform" | "Nadzorna plosca - SPC Aukcije" |
-| `admin-dashboard/router/index.ts:89` | "Admin Dashboard - EU Auction Platform" | "Nadzorna plosca - SPC Aukcije" |
+| `buyer-web/app.vue:12` | "SPC Auctions" (title suffix) | "SPC Aukcije" |
+| `buyer-web/error.vue:70` | "SPC Auctions" | "SPC Aukcije" |
+| `seller-portal/index.html:7` | "Seller Portal - SPC Auctions" | "Portal za prodajalce - SPC Aukcije" |
+| `admin-dashboard/index.html:7` | "Admin Dashboard - SPC Auctions" | "Nadzorna plosca - SPC Aukcije" |
+| `admin-dashboard/router/index.ts:89` | "Admin Dashboard - SPC Auctions" | "Nadzorna plosca - SPC Aukcije" |
 | `Navbar.vue:10` | "EU Auction" | "SPC" (with logo) |
 | `Footer.vue:11` | "EU Auction" | "SPC" (with logo) |
-| `i18n/locales/en.json:329` | "EU Auction Platform. All rights reserved." | "SPC d.o.o. All rights reserved." |
-| `i18n/locales/de.json:329` | "EU Auction Platform. Alle Rechte vorbehalten." | "SPC d.o.o. Alle Rechte vorbehalten." |
+| `i18n/locales/en.json:329` | "SPC Auctions. All rights reserved." | "SPC d.o.o. All rights reserved." |
+| `i18n/locales/de.json:329` | "SPC Auctions. Alle Rechte vorbehalten." | "SPC d.o.o. Alle Rechte vorbehalten." |
 | (+ 5 more locale files) | Same pattern | Same pattern |
 | `en.json:313` (footer.about) | "Europe's leading B2B online auction platform..." | "SPC - Vodilna B2B platforma za drazbe kontejnerjev in industrijske opreme v srednji Evropi." |
 
@@ -761,11 +761,11 @@ These are internal and don't affect users, but for consistency:
 
 | Page | Current | SPC |
 |------|---------|-----|
-| Homepage | "EU Auction Platform - Buy Industrial Equipment" | "SPC Aukcije - Kontejnerji in oprema na drazbi" |
-| Search | "Search - EU Auction Platform" | "Iskanje - SPC Aukcije" |
-| Lot detail | "{lot name} \| EU Auction Platform" | "{lot name} \| SPC Aukcije" |
-| Seller Portal | "Seller Portal - EU Auction Platform" | "Portal za prodajalce - SPC" |
-| Admin Dashboard | "Admin Dashboard - EU Auction Platform" | "Nadzorna plosca - SPC" |
+| Homepage | "SPC Auctions - Buy Industrial Equipment" | "SPC Aukcije - Kontejnerji in oprema na drazbi" |
+| Search | "Search - SPC Auctions" | "Iskanje - SPC Aukcije" |
+| Lot detail | "{lot name} \| SPC Auctions" | "{lot name} \| SPC Aukcije" |
+| Seller Portal | "Seller Portal - SPC Auctions" | "Portal za prodajalce - SPC" |
+| Admin Dashboard | "Admin Dashboard - SPC Auctions" | "Nadzorna plosca - SPC" |
 
 ### 12.2 Meta Description
 
@@ -985,7 +985,7 @@ The platform's compliance-service already handles GDPR technically. Legal pages 
 
 | # | Task | Files | Effort |
 |---|------|-------|--------|
-| 2.1 | Replace "EU Auction Platform" in all page titles | `nuxt.config.ts`, `index.html` x2, `app.vue`, `error.vue`, `router/index.ts` | 1h |
+| 2.1 | Replace "SPC Auctions" in all page titles | `nuxt.config.ts`, `index.html` x2, `app.vue`, `error.vue`, `router/index.ts` | 1h |
 | 2.2 | Update footer copyright in all 7 locale files | `en.json`, `de.json`, `fr.json`, etc. | 30m |
 | 2.3 | Update footer about text | `en.json` + locale files | 30m |
 | 2.4 | Update social media links in Footer | `Footer.vue` | 30m |
@@ -993,7 +993,7 @@ The platform's compliance-service already handles GDPR technically. Legal pages 
 | 2.6 | Update hero section copy | Locale files | 1h |
 | 2.7 | Update meta description | `nuxt.config.ts` | 15m |
 
-**Phase 2 Deliverable:** All user-visible text says "SPC" instead of "EU Auction Platform".
+**Phase 2 Deliverable:** All user-visible text says "SPC" instead of "SPC Auctions".
 
 ### Phase 3: Internationalization (3-5 days)
 
@@ -1154,7 +1154,7 @@ The platform's compliance-service already handles GDPR technically. Legal pages 
 
 ### Content Verification
 
-- [ ] "EU Auction Platform" appears NOWHERE in the UI
+- [ ] "SPC Auctions" appears NOWHERE in the UI
 - [ ] Page titles say "SPC Aukcije" (all 3 apps)
 - [ ] Footer copyright says "SPC d.o.o."
 - [ ] Footer social links point to SPC's actual profiles
