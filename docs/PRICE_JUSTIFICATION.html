@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPC Auctions — Why EUR 15,000</title>
+<style>
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.6;
+    background: #fff;
+    font-size: 14px;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 40px 50px;
+    position: relative;
+    page-break-after: always;
+  }
+
+  .page:last-child {
+    page-break-after: auto;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #2563eb;
+  }
+
+  .header-left h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e40af;
+    letter-spacing: -0.5px;
+  }
+
+  .header-left .subtitle {
+    font-size: 15px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  .header-right {
+    text-align: right;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .header-right .date {
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  h2 {
+    font-size: 19px;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 28px 0 14px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+    margin: 16px 0 8px 0;
+  }
+
+  p {
+    margin-bottom: 10px;
+    color: #334155;
+    font-size: 13.5px;
+  }
+
+  /* Hero statement */
+  .hero-statement {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin: 20px 0 28px 0;
+    text-align: center;
+  }
+
+  .hero-statement .tagline {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .hero-statement .sub {
+    font-size: 14px;
+    opacity: 0.85;
+  }
+
+  /* Comparison table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 18px 0;
+  }
+
+  th {
+    background: #f1f5f9;
+    color: #1e40af;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    color: #334155;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr.highlight-row {
+    background: #f0f6ff;
+  }
+
+  tr.highlight-row td {
+    font-weight: 700;
+    color: #1e40af;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  /* Argument cards */
+  .argument {
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #2563eb;
+  }
+
+  .argument .arg-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+
+  .argument .arg-desc {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.55;
+  }
+
+  /* Revenue box */
+  .revenue-box {
+    background: #f0fdf4;
+    border: 2px solid #86efac;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+
+  .revenue-box h3 {
+    color: #166534;
+    margin-top: 0;
+    font-size: 15px;
+  }
+
+  .revenue-box p {
+    color: #15803d;
+    margin-bottom: 0;
+    font-size: 13.5px;
+  }
+
+  /* Contrast box */
+  .contrast-box {
+    background: #fef2f2;
+    border: 2px solid #fca5a5;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 14px 0;
+  }
+
+  .contrast-box h3 {
+    color: #991b1b;
+    margin-top: 0;
+    font-size: 14px;
+  }
+
+  .contrast-box p {
+    color: #b91c1c;
+    margin-bottom: 0;
+    font-size: 13px;
+  }
+
+  /* Bottom line box */
+  .bottom-line {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 22px 28px;
+    margin: 20px 0;
+  }
+
+  .bottom-line h3 {
+    color: #fff;
+    margin-top: 0;
+    font-size: 16px;
+  }
+
+  .bottom-line p {
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 0;
+    font-size: 14px;
+  }
+
+  /* Footer */
+  .footer {
+    position: absolute;
+    bottom: 30px;
+    left: 50px;
+    right: 50px;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  /* Stat row */
+  .stat-row {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+  }
+
+  .stat-card .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #1e40af;
+  }
+
+  .stat-card .stat-label {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 2px solid #e2e8f0;
+    margin: 24px 0;
+  }
+
+  ul {
+    margin: 6px 0 10px 18px;
+    font-size: 13px;
+    color: #475569;
+  }
+
+  ul li {
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>SPC Auctions</h1>
+      <div class="subtitle">Investment Case — Why EUR 15,000</div>
+    </div>
+    <div class="header-right">
+      <div class="date">20 March 2026</div>
+      <div>Confidential</div>
+    </div>
+  </div>
+
+  <div class="hero-statement">
+    <div class="tagline">A EUR 150,000+ platform for 10% of its build cost</div>
+    <div class="sub">This is not a discount — it's a strategic opportunity</div>
+  </div>
+
+  <h2>What It Would Cost to Build This</h2>
+
+  <p>The SPC Auctions platform comprises 110,000 lines of code across 13 microservices and 4 frontend applications. Building this from scratch would require a senior development team working 8–12 months.</p>
+
+  <table>
+    <tr>
+      <th>Approach</th>
+      <th>Timeline</th>
+      <th class="text-right">Estimated Cost</th>
+    </tr>
+    <tr>
+      <td>In-house team (2–3 senior developers)</td>
+      <td>10–12 months</td>
+      <td class="text-right">EUR 150,000 – 250,000</td>
+    </tr>
+    <tr>
+      <td>Agency / outsource (EU rates)</td>
+      <td>8–10 months</td>
+      <td class="text-right">EUR 80,000 – 120,000</td>
+    </tr>
+    <tr>
+      <td>Offshore development</td>
+      <td>10–14 months</td>
+      <td class="text-right">EUR 40,000 – 60,000</td>
+    </tr>
+    <tr class="highlight-row">
+      <td>SPC Auctions — ready today</td>
+      <td>Immediate</td>
+      <td class="text-right">EUR 15,000</td>
+    </tr>
+  </table>
+
+  <p>Even the cheapest offshore option is <strong>3–4x the asking price</strong>, with significantly lower architectural quality. Event sourcing, CQRS, hexagonal architecture, and real-time WebSocket bidding are rarely delivered by budget teams.</p>
+
+  <h2>Six Reasons This Is Worth More Than EUR 15,000</h2>
+
+  <div class="argument">
+    <div class="arg-title">1. It's a working product — not a prototype</div>
+    <div class="arg-desc">
+      Buyers can search, bid in real-time, and check out. Sellers can list items and track sales. Admins manage the entire operation. This isn't wireframes and promises — it's a running system you can demo today.
+    </div>
+  </div>
+
+  <div class="argument">
+    <div class="arg-title">2. Enterprise-grade architecture with audit trail</div>
+    <div class="arg-desc">
+      Event sourcing provides a complete, immutable history of every action. CQRS separates reads from writes for performance. Hexagonal architecture makes each service independently testable and replaceable. This is the kind of architecture that large auction houses run on — getting it wrong and fixing it later costs more than building it right from scratch.
+    </div>
+  </div>
+
+  <div class="argument">
+    <div class="arg-title">3. EU compliance is built in — not bolted on</div>
+    <div class="arg-desc">
+      GDPR data export and deletion, AML screening interfaces, DSA content reporting, PSD2 payment compliance, and VAT calculations for all 27 EU member states. A competitor starting today would spend months just on the compliance layer — and for a platform operating in Europe, this isn't optional, it's legally required.
+    </div>
+  </div>
+
+  <div class="argument">
+    <div class="arg-title">4. Real-time bidding — the hardest part to build</div>
+    <div class="arg-desc">
+      WebSocket-based live bidding with anti-sniping protection, proxy bidding, bid masking, and automatic auction extensions. This is the most technically complex component of any auction platform, and it works end-to-end. Building and debugging real-time bidding alone typically takes 2–3 months of senior developer time.
+    </div>
+  </div>
+
+  <div class="footer">
+    SPC Auctions — Investment Case &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Page 1 of 2
+  </div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>SPC Auctions</h1>
+      <div class="subtitle">Revenue Potential & Time-to-Market</div>
+    </div>
+    <div class="header-right">
+      <div class="date">20 March 2026</div>
+    </div>
+  </div>
+
+  <div class="argument">
+    <div class="arg-title">5. Time-to-market advantage</div>
+    <div class="arg-desc">
+      A competitor starting from zero today won't have a working platform for 10–12 months. You can be live in the market within weeks of completing Phase 1 integrations. In the B2B equipment auction space, being first in a niche market is worth far more than EUR 15,000.
+    </div>
+  </div>
+
+  <div class="argument">
+    <div class="arg-title">6. Modern tech stack with 10+ year longevity</div>
+    <div class="arg-desc">
+      Kotlin, Quarkus, Vue 3, PostgreSQL, Elasticsearch, Kubernetes — all current, well-supported technologies backed by major organizations. This isn't built on a trendy framework that will be abandoned in 2 years. The stack is designed for long-term maintainability.
+    </div>
+  </div>
+
+  <h2>The Revenue Math</h2>
+
+  <p>B2B auction platforms typically generate revenue from three sources:</p>
+
+  <table>
+    <tr>
+      <th>Revenue Stream</th>
+      <th>Industry Standard</th>
+      <th class="text-right">Example</th>
+    </tr>
+    <tr>
+      <td>Buyer premium (on top of hammer price)</td>
+      <td>15–20%</td>
+      <td class="text-right">EUR 750 – 1,000 per EUR 5,000 lot</td>
+    </tr>
+    <tr>
+      <td>Seller commission</td>
+      <td>5–15%</td>
+      <td class="text-right">EUR 250 – 750 per EUR 5,000 lot</td>
+    </tr>
+    <tr>
+      <td>Listing / promotion fees</td>
+      <td>EUR 10–50 per lot</td>
+      <td class="text-right">EUR 500 – 2,500 per 50 lots</td>
+    </tr>
+  </table>
+
+  <div class="revenue-box">
+    <h3>One Auction Day Pays for the Platform</h3>
+    <p>
+      A single auction event with 50 lots averaging EUR 5,000 each generates <strong>EUR 25,000 – 50,000 in platform fees</strong> from buyer premiums and seller commissions combined. The EUR 15,000 platform investment is recovered on day one of commercial operation.
+    </p>
+  </div>
+
+  <h2>The Cost of Not Acting</h2>
+
+  <div class="contrast-box">
+    <h3>Every month without a platform is lost revenue</h3>
+    <p>
+      If the platform could generate even EUR 10,000/month in fees (a conservative estimate for B2B equipment auctions), then every month spent building from scratch instead of launching costs EUR 10,000 in missed opportunity. Over a 10-month build cycle, that's EUR 100,000 in foregone revenue — on top of the development cost.
+    </p>
+  </div>
+
+  <h2>Why It's Priced at EUR 15,000</h2>
+
+  <p>The goal is to get this platform into commercial operation — not to maximize the sale price. The payment structure reflects shared commitment:</p>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">7,500</div>
+      <div class="stat-label">EUR now — platform transfer</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">7,500</div>
+      <div class="stat-label">EUR on Phase 1 delivery</div>
+    </div>
+  </div>
+
+  <p>Half the price is tied to <strong>concrete deliverables</strong> — live payments, identity verification, compliance, and production deployment. You pay for results, not promises.</p>
+
+  <div class="bottom-line">
+    <h3>The Bottom Line</h3>
+    <p>
+      The question isn't whether EUR 15,000 is too much — it's how much revenue you're leaving on the table every month you don't have this platform running. If the answer is more than EUR 15,000 — and in B2B auctions, it almost certainly is — then the math is simple.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <p style="text-align: center; color: #94a3b8; font-size: 12px;">
+    This document accompanies the SPC Auctions Price Proposal dated 20 March 2026.<br>
+    All figures based on industry benchmarks and standard EU B2B auction platform economics.
+  </p>
+
+  <div class="footer">
+    SPC Auctions — Investment Case &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Page 2 of 2
+  </div>
+</div>
+
+</body>
+</html>

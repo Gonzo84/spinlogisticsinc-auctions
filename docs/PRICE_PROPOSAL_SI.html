@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPC Auctions — Cenovna ponudba</title>
+<style>
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.6;
+    background: #fff;
+    font-size: 14px;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 40px 50px;
+    position: relative;
+    page-break-after: always;
+  }
+
+  .page:last-child {
+    page-break-after: auto;
+  }
+
+  /* Header bar */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #2563eb;
+  }
+
+  .header-left h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e40af;
+    letter-spacing: -0.5px;
+  }
+
+  .header-left .subtitle {
+    font-size: 15px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  .header-right {
+    text-align: right;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .header-right .date {
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  /* Sections */
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 30px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #334155;
+    margin: 20px 0 10px 0;
+  }
+
+  p {
+    margin-bottom: 12px;
+    color: #334155;
+  }
+
+  /* Price hero box */
+  .price-hero {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin: 24px 0 32px 0;
+    text-align: center;
+  }
+
+  .price-hero .label {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.85;
+    margin-bottom: 8px;
+  }
+
+  .price-hero .amount {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+
+  .price-hero .currency {
+    font-size: 20px;
+    font-weight: 400;
+    opacity: 0.8;
+  }
+
+  .price-hero .note {
+    font-size: 13px;
+    opacity: 0.75;
+    margin-top: 8px;
+  }
+
+  /* Payment split boxes */
+  .payment-split {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0 28px 0;
+  }
+
+  .payment-box {
+    flex: 1;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 24px;
+    position: relative;
+    background: #fff;
+  }
+
+  .payment-box.highlight {
+    border-color: #2563eb;
+    background: #f0f6ff;
+  }
+
+  .payment-box .step {
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .payment-box .box-amount {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1e40af;
+    margin-bottom: 4px;
+  }
+
+  .payment-box .box-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 10px;
+  }
+
+  .payment-box .box-desc {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  .payment-box ul {
+    margin: 8px 0 0 16px;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .payment-box ul li {
+    margin-bottom: 4px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px 0;
+  }
+
+  th {
+    background: #f1f5f9;
+    color: #1e40af;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    color: #334155;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-done {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .badge-planned {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  /* What's included section */
+  .included-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 16px 0;
+  }
+
+  .included-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 3px solid #2563eb;
+  }
+
+  .included-item .icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .included-item .text {
+    font-size: 13px;
+    color: #334155;
+  }
+
+  .included-item .text strong {
+    display: block;
+    font-size: 13px;
+    color: #1e293b;
+  }
+
+  /* Phase 1 items */
+  .phase-item {
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+  }
+
+  .phase-item .phase-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+
+  .phase-item .phase-desc {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  /* Footer */
+  .footer {
+    position: absolute;
+    bottom: 30px;
+    left: 50px;
+    right: 50px;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  /* Summary box */
+  .summary-box {
+    background: #f0fdf4;
+    border: 2px solid #86efac;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+
+  .summary-box h3 {
+    color: #166534;
+    margin-top: 0;
+  }
+
+  .summary-box p {
+    color: #15803d;
+    margin-bottom: 0;
+    font-size: 14px;
+  }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 2px solid #e2e8f0;
+    margin: 28px 0;
+  }
+
+  /* Compact list */
+  ul.compact {
+    margin: 8px 0 16px 20px;
+    font-size: 13px;
+    color: #475569;
+  }
+
+  ul.compact li {
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- STRAN 1 -->
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>SPC Auctions</h1>
+      <div class="subtitle">Prevzem platforme — Cenovna ponudba</div>
+    </div>
+    <div class="header-right">
+      <div class="date">20. marec 2026</div>
+      <div>Zaupno</div>
+      <div>Pripravljeno za potencialnega kupca</div>
+    </div>
+  </div>
+
+  <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
+    Ta dokument opisuje cenovno strukturo za prevzem platforme SPC Auctions — popolnoma funkcionalen EU B2B spletni avkcijski sistem, zgrajen s podjetniško arhitekturo, pripravljen za komercialno uporabo.
+  </p>
+
+  <div class="price-hero">
+    <div class="label">Skupna cena</div>
+    <div class="amount">15.000 <span class="currency">EUR</span></div>
+    <div class="note">Razdeljena na dva mejnikova plačila</div>
+  </div>
+
+  <div class="payment-split">
+    <div class="payment-box highlight">
+      <div class="step">Plačilo 1</div>
+      <div class="box-amount">7.500 <span style="font-size:16px;color:#64748b;">EUR</span></div>
+      <div class="box-label">Platforma v trenutnem stanju</div>
+      <div class="box-desc">
+        Zapadlo ob podpisu pogodbe. Pokriva prenos celotne, popolnoma funkcionalne platforme v njenem trenutnem stanju.
+      </div>
+      <ul>
+        <li>Polno lastništvo izvorne kode</li>
+        <li>Vseh 13 mikrostoritev + 4 spletne aplikacije</li>
+        <li>Infrastruktura in konfiguracijske datoteke</li>
+        <li>Celotna dokumentacija in tehnični vodniki</li>
+      </ul>
+    </div>
+    <div class="payment-box">
+      <div class="step">Plačilo 2</div>
+      <div class="box-amount">7.500 <span style="font-size:16px;color:#64748b;">EUR</span></div>
+      <div class="box-label">Dokončanje faze 1</div>
+      <div class="box-desc">
+        Zapadlo ob dokončanju vseh zahtev faze 1 — elementov, potrebnih preden platforma lahko komercialno obdeluje realne transakcije v EU.
+      </div>
+      <ul>
+        <li>Obdelava plačil v živo (Adyen)</li>
+        <li>Preverjanje identitete (KYC)</li>
+        <li>Preverjanje pranja denarja (AML)</li>
+        <li>Produkcijsko pošiljanje e-pošte</li>
+        <li>Dokončanje GDPR + varnostna utrditev</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Kaj dobite danes (Plačilo 1)</h2>
+
+  <p>Osnovna platforma je <strong>popolnoma zgrajena in funkcionalna</strong>. Naslednje zmogljivosti delujejo od konca do konca:</p>
+
+  <div class="included-grid">
+    <div class="included-item">
+      <div class="text">
+        <strong>Avkcijski mehanizem v realnem času</strong>
+        Event-sourced licitiranje, anti-sniping, proxy ponudbe, WebSocket posodobitve v živo
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>Celoten plačilni tok</strong>
+        Blagajna, EU DDV (27 držav), kupčeva premija, poravnava, izdajanje računov
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>4 spletni portali</strong>
+        Kupec (Nuxt SSR), Prodajalec, Administrator, Posrednik — vsi popolnoma funkcionalni
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>Iskanje in odkrivanje</strong>
+        Elasticsearch iskanje po celotnem besedilu, fasetno filtriranje, predlogi
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>Sistem uporabnikov in avtentikacije</strong>
+        Keycloak OIDC, 8 vlog, Casbin RBAC na storitev
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>Okvir za skladnost</strong>
+        GDPR, AML, DSA vmesniki zgrajeni — pripravljeni za integracijo ponudnikov
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>Sistem obveščanja</strong>
+        E-poštne predloge, obvestila o preplačitvi, rezultati avkcij, potrdila plačil
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>Upravljanje medijev</strong>
+        S3-kompatibilen prenos slik, presigned URL-ji, generiranje pomanjšanih slik
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>Analitika in poročanje</strong>
+        Nadzorne plošče prihodkov, sledenje obsegu ponudb, metrike rasti uporabnikov
+      </div>
+    </div>
+    <div class="included-item">
+      <div class="text">
+        <strong>DevOps in CI/CD</strong>
+        Docker, Kubernetes/Helm, GitHub Actions, varnostno skeniranje, nadzor
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    SPC Auctions — Cenovna ponudba &nbsp;|&nbsp; Zaupno &nbsp;|&nbsp; Stran 1 od 3
+  </div>
+</div>
+
+<!-- STRAN 2 -->
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>SPC Auctions</h1>
+      <div class="subtitle">Faza 1 — Zahteve za komercialni zagon</div>
+    </div>
+    <div class="header-right">
+      <div class="date">20. marec 2026</div>
+    </div>
+  </div>
+
+  <p>Faza 1 pokriva elemente, ki morajo biti dokončani preden platforma lahko obdeluje realne transakcije in komercialno deluje v EU. Drugo plačilo v višini <strong>7.500 EUR</strong> zapade ob izročitvi teh elementov.</p>
+
+  <div class="phase-item">
+    <div class="phase-title">1. Obdelava plačil v živo (Adyen)</div>
+    <div class="phase-desc">
+      Povezava platforme z Adyen za sprejem realnih plačil — kreditne/debetne kartice, iDEAL, SEPA, Bancontact in druge evropske plačilne metode. Vključuje 3D Secure (PSD2), samodejne vračilo in časovnico poravnav prodajalcem. Plačilni tok je popolnoma zgrajen; to ga poveže z živim procesorjem.
+    </div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-title">2. Preverjanje identitete (KYC)</div>
+    <div class="phase-desc">
+      Integracija ponudnika KYC (Onfido, Jumio ali IDnow) za avtomatizirano preverjanje identitete — preverjanje foto dokumenta, detekcija živosti, preverjanje naslova in ocena tveganja. Licitiranje blokirano do potrditve identitete. Zahtevano s strani EU finančnih predpisov.
+    </div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-title">3. Preverjanje pranja denarja (AML)</div>
+    <div class="phase-desc">
+      Povezava s ponudnikom AML (ComplyAdvantage, Refinitiv ali LexisNexis) za preverjanje proti sankcijskim seznamom, preverjanje politično izpostavljenih oseb (PEP), spremljanje negativnih medijev in zaznavanje sumljivih transakcij. Zahtevano z direktivo EU o preprečevanju pranja denarja (AMLD6).
+    </div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-title">4. Produkcijsko pošiljanje e-pošte</div>
+    <div class="phase-desc">
+      Prehod iz razvojnega zajemanja pošte na produkcijsko e-poštno storitev (AWS SES, SendGrid ali Mailgun). Brendirane predloge, sledenje dostave, upravljanje zavrnjenih sporočil in GDPR-skladno upravljanje odjav.
+    </div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-title">5. Dokončanje skladnosti z GDPR</div>
+    <div class="phase-desc">
+      Dokončanje avtomatiziranega cevovoda za obdelavo podatkov — izvoz podatkov med storitvami (člen 20), avtomatiziran izbris podatkov (člen 17), uveljavljanje 30-dnevnega roka, integracija pravilnika o zasebnosti in popolna revizijska sled za regulativni pregled.
+    </div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-title">6. Notranja varnostna utrditev</div>
+    <div class="phase-desc">
+      Dodajanje avtenticirane komunikacije med storitvami (mTLS ali JWT). Vsaka notranja zahteva postane preverjena in sledljiva. Izpolnjuje varnostne zahteve za finančne platforme in podjetniške revizorje.
+    </div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-title">7. Aktivacija avtomatiziranega namestitvenega cevovoda</div>
+    <div class="phase-desc">
+      Aktivacija produkcijske stopnje namestitve — CI/CD cevovod (gradnja, testiranje, skeniranje, pakiranje) je že dokončan. To ga poveže s produkcijsko infrastrukturo z namestitivjo z enim klikom in samodejnim povratkom na prejšnjo verzijo.
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <h3>Kaj prinese faza 1</h3>
+    <p>Po dokončanju faze 1 je platforma pripravljena na <strong>obdelavo pravega denarja, preverjanje pravih uporabnikov, skladnost z EU predpisi in samodejno namestitev v produkcijo</strong>. To je točka komercialnega zagona.</p>
+  </div>
+
+  <div class="footer">
+    SPC Auctions — Cenovna ponudba &nbsp;|&nbsp; Zaupno &nbsp;|&nbsp; Stran 2 od 3
+  </div>
+</div>
+
+<!-- STRAN 3 -->
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>SPC Auctions</h1>
+      <div class="subtitle">Pregled platforme in vrednostni kontekst</div>
+    </div>
+    <div class="header-right">
+      <div class="date">20. marec 2026</div>
+    </div>
+  </div>
+
+  <h2>Platforma v številkah</h2>
+
+  <table>
+    <tr>
+      <th>Metrika</th>
+      <th class="text-right">Vrednost</th>
+    </tr>
+    <tr>
+      <td>Skupno število vrstic kode</td>
+      <td class="text-right"><strong>~110.000</strong></td>
+    </tr>
+    <tr>
+      <td>Kotlin zaledni del</td>
+      <td class="text-right">41.000 vrstic / 272 datotek</td>
+    </tr>
+    <tr>
+      <td>Vue/TypeScript čelni del</td>
+      <td class="text-right">54.000 vrstic / 370 datotek</td>
+    </tr>
+    <tr>
+      <td>Mikrostoritve</td>
+      <td class="text-right">13 (heksagonalna arhitektura, event sourcing)</td>
+    </tr>
+    <tr>
+      <td>Čelne aplikacije</td>
+      <td class="text-right">4 (Nuxt SSR + 3 Vite SPA)</td>
+    </tr>
+    <tr>
+      <td>Podatkovne migracije</td>
+      <td class="text-right">84 datotek</td>
+    </tr>
+    <tr>
+      <td>Domenski dogodki</td>
+      <td class="text-right">40+ tipiziranih pogodb o dogodkih</td>
+    </tr>
+    <tr>
+      <td>Dokumentacija</td>
+      <td class="text-right">7.700+ vrstic / 33 datotek</td>
+    </tr>
+    <tr>
+      <td>Podprti jeziki (i18n)</td>
+      <td class="text-right">8</td>
+    </tr>
+  </table>
+
+  <h2>Tehnološki sklad</h2>
+
+  <table>
+    <tr>
+      <th>Plast</th>
+      <th>Tehnologija</th>
+    </tr>
+    <tr><td>Zaledni del</td><td>Kotlin 2.3, Java 21, Quarkus 3.30</td></tr>
+    <tr><td>Čelni del</td><td>Vue 3, Nuxt 3, Pinia, PrimeVue 4, TailwindCSS</td></tr>
+    <tr><td>Sporočanje</td><td>NATS JetStream (dogodkovno vodene mikrostoritve)</td></tr>
+    <tr><td>Avtentikacija</td><td>Keycloak (OIDC/JWT) + Casbin RBAC</td></tr>
+    <tr><td>Podatkovna baza</td><td>PostgreSQL 16 (ena na storitev, Flyway migracije)</td></tr>
+    <tr><td>Iskanje</td><td>Elasticsearch 8</td></tr>
+    <tr><td>Hramba</td><td>MinIO (S3-kompatibilen)</td></tr>
+    <tr><td>Opazljivost</td><td>OpenTelemetry, Prometheus, Grafana</td></tr>
+    <tr><td>DevOps</td><td>Docker, Kubernetes, Helm, GitHub Actions CI/CD</td></tr>
+  </table>
+
+  <h2>Povzetek plačil</h2>
+
+  <table>
+    <tr>
+      <th>Mejnik</th>
+      <th>Sprožilec</th>
+      <th class="text-right">Znesek</th>
+    </tr>
+    <tr>
+      <td><strong>Plačilo 1</strong> — Prenos platforme</td>
+      <td>Ob podpisu pogodbe</td>
+      <td class="text-right"><strong>7.500 EUR</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Plačilo 2</strong> — Izročitev faze 1</td>
+      <td>Ob dokončanju faze 1</td>
+      <td class="text-right"><strong>7.500 EUR</strong></td>
+    </tr>
+    <tr style="background: #f0f6ff;">
+      <td><strong>Skupaj</strong></td>
+      <td></td>
+      <td class="text-right"><strong style="font-size: 16px;">15.000 EUR</strong></td>
+    </tr>
+  </table>
+
+  <div class="summary-box" style="margin-top: 24px;">
+    <h3>Kaj to pomeni za vas</h3>
+    <p>
+      Za 15.000 EUR pridobite celotno, podjetniško EU avkcijsko platformo — primerljivi sistemi stanejo 50.000–150.000+ EUR za izgradnjo od začetka. Plačilo 1 vam da takojšnje lastništvo delujoče platforme. Plačilo 2 je vezano na konkretne izročke, ki platformo naredijo komercialno operativno. Plačate za rezultate, ne za obljube.
+    </p>
+  </div>
+
+  <hr class="divider" style="margin-top: 32px;">
+
+  <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">
+    Ta ponudba velja 30 dni od zgornjega datuma.<br>
+    Vse cene so brez DDV, kjer je ta obvezen.
+  </p>
+
+  <div class="footer">
+    SPC Auctions — Cenovna ponudba &nbsp;|&nbsp; Zaupno &nbsp;|&nbsp; Stran 3 od 3
+  </div>
+</div>
+
+</body>
+</html>
