@@ -89,7 +89,7 @@ class InvoiceHtmlGenerator {
             <body>
                 <div class="header">
                     <div>
-                        <h1>EU Auction Platform</h1>
+                        <h1>SPC Auctions</h1>
                         <p>$invoiceTypeLabel</p>
                     </div>
                     <div class="invoice-meta">
@@ -162,7 +162,7 @@ class InvoiceHtmlGenerator {
                 <p><strong>Due Date:</strong> ${DATE_FORMATTER.format(payment.dueDate)}</p>
 
                 <div class="footer">
-                    <p>EU Auction Platform &mdash; This is a computer-generated invoice.</p>
+                    <p>SPC Auctions &mdash; This is a computer-generated invoice.</p>
                     <p>Invoice ${invoice.invoiceNumber} issued on $issuedDate</p>
                 </div>
             </body>

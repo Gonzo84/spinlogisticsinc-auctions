@@ -1,4 +1,4 @@
-# EU Auction Platform - Design & UX Audit
+# SPC Auctions - Design & UX Audit
 
 ## Executive Summary
 

@@ -1,8 +1,8 @@
 {
   "id": "auction-platform",
   "realm": "auction-platform",
-  "displayName": "EU Auction Platform",
-  "displayNameHtml": "<strong>EU Auction Platform</strong>",
+  "displayName": "SPC Auctions",
+  "displayNameHtml": "<strong>SPC Auctions</strong>",
   "enabled": true,
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,

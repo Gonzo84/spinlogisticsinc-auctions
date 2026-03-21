@@ -1,4 +1,4 @@
-# SPC Auctions EU Auction Platform - Ponudba za vzdrzevanje in podporo
+# SPC Auctions SPC Auctions - Ponudba za vzdrzevanje in podporo
 
 > Interni cenik - ni namenjen za neposredno distribucijo stranki
 

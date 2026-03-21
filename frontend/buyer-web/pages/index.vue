@@ -3,7 +3,7 @@
     <!-- Hero Section -->
     <section class="relative bg-gradient-to-br from-primary-700 via-primary to-primary-800 text-white py-20 px-4">
       <div class="max-w-5xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-white">
           {{ $t('home.heroTitle') }}
         </h1>
         <p class="text-lg md:text-xl text-primary-100 mb-8 max-w-2xl mx-auto">

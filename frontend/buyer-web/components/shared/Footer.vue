@@ -5,7 +5,7 @@
         <!-- About -->
         <div>
           <div class="flex items-center gap-2 mb-4">
-            <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto brightness-0 invert" />
+            <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto" />
             <span class="text-lg font-bold text-white">SPC Aukcije</span>
           </div>
           <p class="text-sm leading-relaxed text-gray-400 mb-4">
