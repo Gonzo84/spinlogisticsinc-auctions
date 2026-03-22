@@ -30,7 +30,7 @@ object TestFixtures {
         firstName = firstName,
         lastName = lastName,
         language = "en",
-        currency = "EUR",
+        currency = "USD",
         status = status,
         depositStatus = depositStatus,
         createdAt = Instant.now(),
@@ -59,6 +59,6 @@ object TestFixtures {
         "lastName" to lastName,
         "accountType" to accountType,
         "language" to "en",
-        "currency" to "EUR"
+        "currency" to "USD"
     )
 }

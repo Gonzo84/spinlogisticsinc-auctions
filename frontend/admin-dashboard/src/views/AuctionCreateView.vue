@@ -32,6 +32,13 @@ const PLATFORM_BRANDS = [
   { code: 'surplex', label: 'Surplex' },
   { code: 'industrial-auctions', label: 'Industrial Auctions' },
   { code: 'spc', label: 'SPC' },
+  { code: 'spin-logistics', label: 'Spin Logistics' },
+  { code: 'ritchie-bros', label: 'Ritchie Bros' },
+  { code: 'purple-wave', label: 'Purple Wave' },
+  { code: 'bidadoo', label: 'Bidadoo' },
+  { code: 'govplanet', label: 'GovPlanet' },
+  { code: 'proxibid', label: 'Proxibid' },
+  { code: 'iron-planet', label: 'Iron Planet' },
   { code: 'custom', label: 'Custom' },
 ]
 
@@ -49,8 +56,8 @@ const breadcrumbItems = [
 const form = reactive({
   startTime: null as Date | null,
   endTime: null as Date | null,
-  currency: 'EUR',
-  brand: 'troostwijk',
+  currency: 'USD',
+  brand: 'spin-logistics',
 })
 
 const lotOptions = computed(() =>
@@ -289,7 +296,7 @@ function handleCancel() {
                   Starting Bid
                 </dt>
                 <dd class="text-gray-900">
-                  EUR {{ selectedLot.startingBid }}
+                  USD {{ selectedLot.startingBid }}
                 </dd>
                 <dt class="text-gray-500">
                   Location

@@ -10,9 +10,9 @@ import java.math.BigDecimal
  *
  * @property activeLots          Number of lots currently live in auction.
  * @property totalBids           Total number of bids received across all seller's lots.
- * @property totalHammerSales    Total hammer price (winning bid amounts) in EUR.
+ * @property totalHammerSales    Total hammer price (winning bid amounts) in USD.
  * @property pendingSettlements  Number of won auctions awaiting settlement/payment.
- * @property totalSettled        Total amount settled (paid out) to the seller in EUR.
+ * @property totalSettled        Total amount settled (paid out) to the seller in USD.
  */
 data class SellerDashboard(
     val activeLots: Int = 0,

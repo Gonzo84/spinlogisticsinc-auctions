@@ -81,7 +81,7 @@ class PaymentResource @Inject constructor(
     /**
      * Initiates checkout for one or more won lots.
      *
-     * Creates payment records with calculated VAT and buyer premium for
+     * Creates payment records with calculated sales tax and buyer premium for
      * each lot. Returns a checkout summary with payment details.
      *
      * @param request The checkout request containing lot IDs and buyer details.
@@ -683,7 +683,7 @@ class PaymentResource @Inject constructor(
                 ?: throw jakarta.ws.rs.BadRequestException(
                     "Could not resolve sellerId for lot $lotId — ensure seller info is available"
                 )
-            val sellerCountry = lotInfo?.sellerCountry ?: request.buyerCountry
+            val sellerState = lotInfo?.sellerState ?: request.buyerState!!
             val lotTitle = lotInfo?.title
 
             LOG.infof(
@@ -697,11 +697,9 @@ class PaymentResource @Inject constructor(
                 sellerId = sellerId,
                 hammerPrice = hammerPrice,
                 currency = request.currency,
-                buyerCountry = request.buyerCountry,
-                sellerCountry = sellerCountry,
-                buyerType = request.buyerType,
-                sellerType = "BUSINESS",
-                buyerVatId = request.buyerVatId,
+                buyerState = request.buyerState!!,
+                sellerState = sellerState,
+                exemptionCertificateId = request.exemptionCertificateId,
                 lotTitle = lotTitle,
                 buyerName = null,
                 sellerName = null
@@ -720,7 +718,7 @@ class PaymentResource @Inject constructor(
 
             // Look up auction result (hammer price, winner, auctionId)
             val auctionResult = auctionLotLookupService.fetchAuctionResultByLot(lotId)
-            // Look up lot details (sellerId, title, country)
+            // Look up lot details (sellerId, title, state)
             val lotInfo = auctionLotLookupService.fetchLotInfo(lotId)
 
             val hammerPrice = auctionResult?.hammerPrice ?: BigDecimal.ZERO
@@ -732,7 +730,7 @@ class PaymentResource @Inject constructor(
                 ?: throw jakarta.ws.rs.BadRequestException(
                     "Could not resolve sellerId for lot $lotId — ensure seller info is available"
                 )
-            val sellerCountry = lotInfo?.sellerCountry ?: request.buyerCountry
+            val sellerState = lotInfo?.sellerState ?: request.buyerState!!
             val lotTitle = lotInfo?.title
 
             if (hammerPrice == BigDecimal.ZERO) {
@@ -754,11 +752,9 @@ class PaymentResource @Inject constructor(
                 sellerId = sellerId,
                 hammerPrice = hammerPrice,
                 currency = request.currency,
-                buyerCountry = request.buyerCountry,
-                sellerCountry = sellerCountry,
-                buyerType = request.buyerType,
-                sellerType = "BUSINESS",
-                buyerVatId = request.buyerVatId,
+                buyerState = request.buyerState!!,
+                sellerState = sellerState,
+                exemptionCertificateId = request.exemptionCertificateId,
                 lotTitle = lotTitle,
                 buyerName = null,
                 sellerName = null
@@ -806,9 +802,9 @@ class PaymentResource @Inject constructor(
         lotId = payment.lotId.toString(),
         hammerPrice = payment.hammerPrice,
         buyerPremium = payment.buyerPremium,
-        vatAmount = payment.vatAmount,
-        vatRate = payment.vatRate,
-        vatScheme = payment.vatScheme.name,
+        taxAmount = payment.taxAmount,
+        taxRate = payment.taxRate,
+        taxScheme = payment.taxScheme.name,
         totalAmount = payment.totalAmount
     )
 
@@ -821,9 +817,9 @@ class PaymentResource @Inject constructor(
             lotId = payment.lotId.toString(),
             hammerPrice = payment.hammerPrice,
             buyerPremium = payment.buyerPremium,
-            vatAmount = payment.vatAmount,
-            vatRate = payment.vatRate,
-            vatScheme = payment.vatScheme.name,
+            taxAmount = payment.taxAmount,
+            taxRate = payment.taxRate,
+            taxScheme = payment.taxScheme.name,
             totalAmount = payment.totalAmount,
             currency = payment.currency,
             status = payment.status.name,

@@ -29,7 +29,8 @@ export default defineNuxtConfig({
       { code: 'sr', name: 'Srpski', file: 'sr.json' },
       { code: 'hu', name: 'Magyar', file: 'hu.json' },
     ],
-    defaultLocale: 'sl',
+    defaultLocale: 'en',
+    langDir: 'locales',
     // @ts-expect-error lazy is valid but not in generated types for this i18n version
     lazy: true,
     strategy: 'prefix_except_default',
@@ -64,25 +65,22 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'SPC Aukcije - Kontejnerji in oprema na dražbi',
+      title: 'Spin Logistics - Your Trusted Logistics Partner',
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       meta: [
-        { name: 'description', content: 'SPC Aukcije - B2B platforma za spletne dražbe kontejnerjev, klimatske opreme in gradbenih strojev. Dražite in kupujte rabljeno industrijsko opremo v srednji Evropi.' },
+        { name: 'description', content: 'Spin Logistics Inc. — Interstate freight carrier. General freight, metal sheet, building materials hauling across the US. Based in Chicago, IL.' },
         { name: 'format-detection', content: 'telephone=no' },
-        { property: 'og:site_name', content: 'SPC Aukcije' },
-        { property: 'og:locale', content: 'sl_SI' },
-        { property: 'og:locale:alternate', content: 'hr_HR' },
-        { property: 'og:locale:alternate', content: 'de_DE' },
-        { property: 'og:locale:alternate', content: 'en_GB' },
+        { property: 'og:site_name', content: 'Spin Logistics' },
+        { property: 'og:locale', content: 'en_US' },
       ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Raleway:wght@500;600;700&display=swap' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap' },
       ],
       htmlAttrs: {
-        lang: 'sl',
+        lang: 'en',
       },
     },
   },

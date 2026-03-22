@@ -120,12 +120,12 @@ class PaymentRepository @Inject constructor(
                 stmt.setBigDecimal(6, payment.hammerPrice)
                 stmt.setBigDecimal(7, payment.buyerPremium)
                 stmt.setBigDecimal(8, payment.buyerPremiumRate)
-                stmt.setBigDecimal(9, payment.vatAmount)
-                stmt.setBigDecimal(10, payment.vatRate)
-                stmt.setString(11, payment.vatScheme.name)
+                stmt.setBigDecimal(9, payment.taxAmount)
+                stmt.setBigDecimal(10, payment.taxRate)
+                stmt.setString(11, payment.taxScheme.name)
                 stmt.setBigDecimal(12, payment.totalAmount)
                 stmt.setString(13, payment.currency)
-                stmt.setString(14, payment.country)
+                stmt.setString(14, payment.state)
                 stmt.setString(15, payment.paymentMethod)
                 stmt.setString(16, payment.pspReference)
                 stmt.setString(17, payment.status.name)
@@ -338,7 +338,11 @@ class PaymentRepository @Inject constructor(
     private fun ResultSet.toPaymentList(): List<Payment> {
         val payments = mutableListOf<Payment>()
         while (next()) {
-            payments.add(toPayment())
+            try {
+                payments.add(toPayment())
+            } catch (e: Exception) {
+                LOG.warnf("Skipping unmappable payment row: %s", e.message)
+            }
         }
         return payments
     }
@@ -346,24 +350,24 @@ class PaymentRepository @Inject constructor(
     private fun ResultSet.toPayment(): Payment = Payment(
         id = getObject("id", UUID::class.java),
         buyerId = getObject("buyer_id", UUID::class.java),
-        sellerId = getObject("seller_id", UUID::class.java),
+        sellerId = getObject("seller_id", UUID::class.java) ?: UUID(0L, 0L),
         auctionId = getObject("auction_id", UUID::class.java),
         lotId = getObject("lot_id", UUID::class.java),
-        hammerPrice = getBigDecimal("hammer_price"),
-        buyerPremium = getBigDecimal("buyer_premium"),
-        buyerPremiumRate = getBigDecimal("buyer_premium_rate"),
-        vatAmount = getBigDecimal("vat_amount"),
-        vatRate = getBigDecimal("vat_rate"),
-        vatScheme = VatScheme.valueOf(getString("vat_scheme")),
-        totalAmount = getBigDecimal("total_amount"),
-        currency = getString("currency"),
-        country = getString("country"),
+        hammerPrice = getBigDecimal("hammer_price") ?: BigDecimal.ZERO,
+        buyerPremium = getBigDecimal("buyer_premium") ?: BigDecimal.ZERO,
+        buyerPremiumRate = getBigDecimal("buyer_premium_rate") ?: BigDecimal.ZERO,
+        taxAmount = getBigDecimal("vat_amount") ?: BigDecimal.ZERO,
+        taxRate = getBigDecimal("vat_rate") ?: BigDecimal.ZERO,
+        taxScheme = try { VatScheme.valueOf(getString("vat_scheme") ?: "TAXABLE") } catch (_: IllegalArgumentException) { VatScheme.TAXABLE },
+        totalAmount = getBigDecimal("total_amount") ?: BigDecimal.ZERO,
+        currency = getString("currency") ?: "USD",
+        state = getString("country") ?: "",
         paymentMethod = getString("payment_method"),
         pspReference = getString("psp_reference"),
-        status = PaymentStatus.valueOf(getString("status")),
-        dueDate = getTimestamp("due_date").toInstant(),
+        status = try { PaymentStatus.valueOf(getString("status") ?: "PENDING") } catch (_: IllegalArgumentException) { PaymentStatus.PENDING },
+        dueDate = getTimestamp("due_date")?.toInstant() ?: Instant.now(),
         paidAt = getTimestamp("paid_at")?.toInstant(),
-        createdAt = getTimestamp("created_at").toInstant(),
+        createdAt = getTimestamp("created_at")?.toInstant() ?: Instant.now(),
         lotTitle = getString("lot_title"),
         buyerName = getString("buyer_name"),
         sellerName = getString("seller_name")

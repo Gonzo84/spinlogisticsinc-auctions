@@ -16,20 +16,19 @@
       <div class="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-10 pointer-events-none" />
     </section>
 
-    <!-- Country Selector Bar -->
+    <!-- State Selector Bar -->
     <section class="bg-white border-b py-4 px-4">
       <div class="max-w-7xl mx-auto">
         <div class="flex items-center gap-2 overflow-x-auto pb-2">
-          <span class="text-sm font-medium text-gray-500 shrink-0">{{ $t('home.browseByCountry') }}:</span>
+          <span class="text-sm font-medium text-gray-500 shrink-0">{{ $t('home.browseByState') }}:</span>
           <button
-            v-for="country in COUNTRIES"
-            :key="country.code"
+            v-for="state in popularStates"
+            :key="state"
             class="flex items-center gap-2 px-4 py-2 rounded-full border hover:border-primary hover:bg-primary-50 transition-colors shrink-0"
-            :class="{ 'border-primary bg-primary-50': selectedCountry === country.code }"
-            @click="selectCountry(country.code)"
+            :class="{ 'border-primary bg-primary-50': selectedCountry === state }"
+            @click="selectCountry(state)"
           >
-            <span class="text-xl">{{ country.flag }}</span>
-            <span class="text-sm font-medium">{{ $t('countries.' + country.code) }}</span>
+            <span class="text-sm font-medium">{{ $t('states.' + state) }}</span>
           </button>
         </div>
       </div>
@@ -78,7 +77,6 @@
 </template>
 
 <script setup lang="ts">
-import { COUNTRIES } from '~/utils/constants'
 import { unwrapApiResponse } from '~/utils/api-response'
 import { mapAuctionResponse } from '~/utils/auction-mapper'
 
@@ -86,6 +84,8 @@ const { t } = useI18n()
 const localePath = useLocalePath()
 
 const selectedCountry = ref<string | null>(null)
+
+const popularStates = ['CA', 'TX', 'FL', 'NY', 'IL', 'PA', 'OH', 'GA', 'NC', 'MI']
 
 async function fetchLotsFromCatalog(params: Record<string, string | number>) {
   const { $api } = useNuxtApp()

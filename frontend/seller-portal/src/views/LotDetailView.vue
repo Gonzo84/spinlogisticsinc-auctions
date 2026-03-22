@@ -12,6 +12,7 @@ const { currentLot, lotBids, loading, error, fetchLot, fetchLotBids, submitForRe
 
 const lotId = computed(() => route.params.id as string)
 const selectedImageIndex = ref(0)
+const submitting = ref(false)
 
 const breadcrumbItems = computed(() => [
   { label: 'My Lots', route: '/lots' },
@@ -88,7 +89,7 @@ const statusConfig = computed(() => {
 
 function formatCurrency(value: number | null): string {
   if (value === null) return '--'
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
 
 function formatDateTime(dateStr: string): string {
@@ -127,24 +128,17 @@ const bidChartData = computed(() => {
 })
 
 async function handleSubmitForReview() {
-  if (!lot.value) return
-  confirm.require({
-    message: 'Submit this lot for review?',
-    header: 'Confirm Submission',
-    acceptLabel: 'Submit',
-    rejectLabel: 'Cancel',
-    acceptProps: {
-      severity: 'success',
-    },
-    rejectProps: {
-      severity: 'secondary',
-      outlined: true,
-    },
-    accept: async () => {
-      await submitForReview(lot.value!.id)
-      await fetchLot(lotId.value)
-    },
-  })
+  if (!lot.value || submitting.value) return
+  submitting.value = true
+  try {
+    await submitForReview(lot.value.id)
+    await fetchLot(lotId.value)
+  } catch (err: unknown) {
+    // Error is already captured in the composable's error ref
+    console.error('Failed to submit lot for review:', err)
+  } finally {
+    submitting.value = false
+  }
 }
 
 function handleDelete() {
@@ -169,6 +163,7 @@ function selectImage(index: number) {
 
 <template>
   <div>
+    <ConfirmDialog />
     <!-- Breadcrumb -->
     <div class="mb-6">
       <Breadcrumb :model="breadcrumbItems">
@@ -242,6 +237,8 @@ function selectImage(index: number) {
             v-if="lot.status === 'draft'"
             label="Submit for Review"
             severity="success"
+            :loading="submitting"
+            :disabled="submitting"
             @click="handleSubmitForReview"
           />
           <Button
@@ -348,7 +345,7 @@ function selectImage(index: number) {
             <RevenueChart
               :labels="bidChartLabels"
               :data="bidChartData"
-              label="Bid Amount (EUR)"
+              label="Bid Amount (USD)"
               color="#22c55e"
               :height="250"
             />

@@ -23,20 +23,20 @@ class CompanyRepository : PanacheRepositoryBase<CompanyEntity, UUID> {
         find("userId", userId).firstResult()
 
     /**
-     * Finds a company by its VAT identification number.
+     * Finds a company by its Employer Identification Number.
      *
-     * @param vatId The EU VAT ID to search for.
+     * @param ein The US EIN to search for.
      * @return The matching company entity, or `null` if not found.
      */
-    fun findByVatId(vatId: String): CompanyEntity? =
-        find("vatId", vatId).firstResult()
+    fun findByEin(ein: String): CompanyEntity? =
+        find("ein", ein).firstResult()
 
     /**
-     * Checks whether a company with the given VAT ID already exists.
+     * Checks whether a company with the given EIN already exists.
      *
-     * @param vatId The EU VAT ID to check.
-     * @return `true` if a company with this VAT ID exists.
+     * @param ein The US EIN to check.
+     * @return `true` if a company with this EIN exists.
      */
-    fun existsByVatId(vatId: String): Boolean =
-        count("vatId", vatId) > 0
+    fun existsByEin(ein: String): Boolean =
+        count("ein", ein) > 0
 }

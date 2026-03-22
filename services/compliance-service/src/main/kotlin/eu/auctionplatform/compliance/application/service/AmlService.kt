@@ -17,6 +17,15 @@ import java.util.concurrent.TimeUnit
  *
  * Orchestrates the creation of AML screening checks, integration with external
  * AML providers, and the filing of suspicious activity reports (SARs).
+ *
+ * US compliance context:
+ * - BSA (Bank Secrecy Act): requires financial institutions to assist in
+ *   detecting and preventing money laundering.
+ * - FinCEN (Financial Crimes Enforcement Network): administers BSA, receives
+ *   Suspicious Activity Reports (SARs) and Currency Transaction Reports (CTRs).
+ * - OFAC (Office of Foreign Assets Control): maintains the SDN (Specially
+ *   Designated Nationals) list. All transactions must be screened against the
+ *   SDN list before processing.
  */
 @ApplicationScoped
 class AmlService {
@@ -27,8 +36,8 @@ class AmlService {
     companion object {
         private val LOG: Logger = Logger.getLogger(AmlService::class.java)
 
-        /** Default AML screening provider name. */
-        private const val DEFAULT_PROVIDER = "ComplyAdvantage"
+        /** Default AML screening provider — OFAC SDN list (US requirement). */
+        private const val DEFAULT_PROVIDER = "OFAC_SDN"
 
         /** Delay in seconds before async screening completion (simulates provider latency). */
         private const val ASYNC_COMPLETION_DELAY_SECONDS = 3L
@@ -164,4 +173,74 @@ class AmlService {
      */
     fun getScreeningsByUser(userId: UUID): List<AmlScreening> =
         amlScreeningRepository.findByUserId(userId)
+
+    // --- US-specific: OFAC / FinCEN ---
+
+    /**
+     * Screens a user against the OFAC Specially Designated Nationals (SDN) list.
+     *
+     * Required by US sanctions regulations — all transactions must be screened
+     * against the SDN list before processing. The screening uses the OFAC_SDN
+     * provider and follows the same async completion pattern as [triggerScreening].
+     *
+     * @param userId The user to screen against the OFAC SDN list.
+     * @return The newly created AML screening record (status = PENDING).
+     */
+    fun screenAgainstOfac(userId: UUID): AmlScreening {
+        val screening = AmlScreening(
+            id = IdGenerator.generateUUIDv7(),
+            userId = userId,
+            provider = "OFAC_SDN",
+            status = AmlScreeningStatus.PENDING,
+            checkId = "ofac_${IdGenerator.generateString().take(12)}"
+        )
+
+        amlScreeningRepository.insert(screening)
+
+        LOG.infof(
+            "OFAC SDN screening triggered: id=%s, userId=%s, checkId=%s",
+            screening.id, userId, screening.checkId
+        )
+
+        // Schedule async completion (simulates OFAC list lookup latency)
+        scheduleAsyncCompletion(screening.id)
+
+        return screening
+    }
+
+    /**
+     * Files a Suspicious Activity Report (SAR) with FinCEN for a user.
+     *
+     * As required by the Bank Secrecy Act (BSA), financial institutions must
+     * file SARs with FinCEN when they detect suspicious activity. This creates
+     * an AML screening record in FLAGGED status. In production, this would also
+     * submit a BSA e-filing to FinCEN.
+     *
+     * This is functionally equivalent to [fileReport] but uses FinCEN-specific
+     * naming and provider code for US regulatory compliance.
+     *
+     * @param userId  The user being reported.
+     * @param details Description of the suspicious activity for the SAR narrative.
+     * @return The AML screening record representing the FinCEN SAR.
+     */
+    fun fileSar(userId: UUID, details: String): AmlScreening {
+        val screening = AmlScreening(
+            id = IdGenerator.generateUUIDv7(),
+            userId = userId,
+            provider = "FINCEN_SAR",
+            status = AmlScreeningStatus.FLAGGED,
+            checkId = "sar_${IdGenerator.generateString().take(12)}",
+            completedAt = java.time.Instant.now(),
+            riskLevel = "HIGH"
+        )
+
+        amlScreeningRepository.insert(screening)
+
+        LOG.warnf(
+            "FinCEN SAR filed: id=%s, userId=%s, details=%s",
+            screening.id, userId, details.take(100)
+        )
+
+        return screening
+    }
 }

@@ -227,22 +227,14 @@ async function doApproveLot(lotId: string) {
   }
 }
 
-function approveLot(lotId: string) {
+async function approveLot(lotId: string) {
   const lot = pendingLots.value.find((l) => l.id === lotId)
-  confirm.require({
-    message: `Are you sure you want to approve "${lot?.title ?? 'this lot'}"?`,
-    header: 'Approve Lot',
-    icon: 'pi pi-check-circle',
-    acceptClass: 'p-button-success',
-    accept: async () => {
-      await doApproveLot(lotId)
-      toast.add({
-        severity: 'success',
-        summary: 'Lot Approved',
-        detail: `"${lot?.title}" has been approved successfully.`,
-        life: 3000,
-      })
-    },
+  await doApproveLot(lotId)
+  toast.add({
+    severity: 'success',
+    summary: 'Lot Approved',
+    detail: `"${lot?.title}" has been approved successfully.`,
+    life: 3000,
   })
 }
 
@@ -273,7 +265,7 @@ async function confirmReject() {
 
 function formatCurrency(value: number | null): string {
   if (value === null) return '--'
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
 
 function formatDate(dateStr: string): string {

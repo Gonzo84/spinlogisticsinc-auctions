@@ -686,7 +686,7 @@ class AuctionResource @Inject constructor(
             bidId = data["bidId"]?.toString() ?: entity.eventId.toString(),
             bidderId = data["bidderId"]?.toString() ?: "",
             amount = BigDecimal(data["bidAmount"]?.toString() ?: data["amount"]?.toString() ?: "0"),
-            currency = data["bidCurrency"]?.toString() ?: data["currency"]?.toString() ?: "EUR",
+            currency = data["bidCurrency"]?.toString() ?: data["currency"]?.toString() ?: "USD",
             isProxy = data["isProxy"] as? Boolean ?: (entity.eventType == "ProxyBidTriggeredEvent"),
             timestamp = entity.createdAt,
             status = "PLACED"

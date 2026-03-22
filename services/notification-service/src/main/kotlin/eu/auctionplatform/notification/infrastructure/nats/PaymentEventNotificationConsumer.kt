@@ -112,7 +112,7 @@ class PaymentEventNotificationConsumer @Inject constructor(
 
         val buyerId = payload["buyerId"]?.toString() ?: return
         val totalAmount = payload["totalAmount"]?.toString() ?: "0"
-        val currency = payload["currency"]?.toString() ?: "EUR"
+        val currency = payload["currency"]?.toString() ?: "USD"
         val orderId = payload["orderId"]?.toString() ?: ""
         val auctionId = payload["auctionId"]?.toString() ?: ""
 
@@ -151,7 +151,7 @@ class PaymentEventNotificationConsumer @Inject constructor(
 
         val sellerId = payload["sellerId"]?.toString() ?: return
         val settlementAmount = payload["netAmount"]?.toString() ?: "0"
-        val currency = payload["currency"]?.toString() ?: "EUR"
+        val currency = payload["currency"]?.toString() ?: "USD"
         val settlementId = payload["settlementId"]?.toString() ?: ""
 
         val sellerUuid = UUID.fromString(sellerId)

@@ -8,12 +8,13 @@ import java.util.Locale
 
 /**
  * Immutable value object representing a monetary amount in a specific currency.
+ * Adapted for US market — default currency is USD, formatting uses US locale.
  *
  * Arithmetic is only permitted between [Money] instances of the **same** currency;
  * mixing currencies throws [IllegalArgumentException].
  *
  * The [amount] is always stored with the number of fraction digits defined by the
- * currency (e.g. 2 for EUR, 0 for JPY).
+ * currency (e.g. 2 for USD, 0 for JPY).
  */
 class Money private constructor(
     val amount: BigDecimal,
@@ -82,11 +83,11 @@ class Money private constructor(
     // ---------------------------------------------------------------------------
 
     /**
-     * Formats the money value using the given [locale] (defaults to [Locale.GERMANY]
-     * which uses comma as decimal separator and dot as grouping separator, matching
-     * common EU conventions).
+     * Formats the money value using the given [locale] (defaults to [Locale.US]
+     * which uses period as decimal separator and comma as grouping separator,
+     * e.g. $1,234.56).
      */
-    fun format(locale: Locale = Locale.GERMANY): String {
+    fun format(locale: Locale = Locale.US): String {
         val formatter = NumberFormat.getCurrencyInstance(locale)
         formatter.currency = currency
         formatter.minimumFractionDigits = currency.defaultFractionDigits
@@ -112,8 +113,8 @@ class Money private constructor(
 
     companion object {
 
-        /** Default currency for the EU auction platform. */
-        val DEFAULT_CURRENCY: Currency = Currency.getInstance("EUR")
+        /** Default currency for the US auction platform. */
+        val DEFAULT_CURRENCY: Currency = Currency.getInstance("USD")
 
         /**
          * Creates a [Money] instance, scaling the [amount] to the currency's

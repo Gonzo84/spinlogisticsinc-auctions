@@ -14,14 +14,14 @@ Stop and remove all project-related services in parallel:
 ### 1. Docker containers
 Stop and remove all containers from both compose files. Only remove volumes if the argument `volumes` was passed (e.g. `/kill-all volumes`). Otherwise volumes persist.
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform && \
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics && \
 docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env down --remove-orphans 2>/dev/null; \
 docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env down --remove-orphans 2>/dev/null; \
 echo "Docker containers stopped and removed"
 ```
 If the argument includes `volumes`, add `-v` flag to both `down` commands:
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform && \
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics && \
 docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env down -v --remove-orphans 2>/dev/null; \
 docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env down -v --remove-orphans 2>/dev/null; \
 echo "Docker containers stopped and removed (volumes deleted)"

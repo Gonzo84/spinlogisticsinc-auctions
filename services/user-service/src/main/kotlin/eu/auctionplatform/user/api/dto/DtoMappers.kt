@@ -35,11 +35,12 @@ fun Company.toResponse(): CompanyResponse = CompanyResponse(
     userId = userId,
     companyName = companyName,
     registrationNo = registrationNo,
-    vatId = vatId,
-    country = country,
+    ein = ein,
+    state = state,
     address = address,
     city = city,
     postalCode = postalCode,
+    entityType = entityType,
     verified = verified
 )
 

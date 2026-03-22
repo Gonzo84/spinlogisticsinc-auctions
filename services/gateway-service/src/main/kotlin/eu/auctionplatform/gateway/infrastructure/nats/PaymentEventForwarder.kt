@@ -95,7 +95,7 @@ class PaymentEventForwarder @Inject constructor(
                 "settlementId" to node.path("settlementId").asText(null),
                 "status" to "SETTLED",
                 "amount" to node.path("amount").asText(null),
-                "currency" to node.path("currency").asText("EUR"),
+                "currency" to node.path("currency").asText("USD"),
                 "settledAt" to node.path("settledAt").asText(null)
             ),
             "serverTime" to Instant.now().toString()
@@ -115,7 +115,7 @@ class PaymentEventForwarder @Inject constructor(
             "data" to mapOf(
                 "settlementId" to node.path("settlementId").asText(null),
                 "amount" to node.path("amount").asText(null),
-                "currency" to node.path("currency").asText("EUR"),
+                "currency" to node.path("currency").asText("USD"),
                 "lotId" to node.path("lotId").asText(null)
             ),
             "serverTime" to Instant.now().toString()
@@ -134,7 +134,7 @@ class PaymentEventForwarder @Inject constructor(
                 "paymentId" to node.path("paymentId").asText(null),
                 "buyerId" to node.path("buyerId").asText(null),
                 "amount" to node.path("totalAmount").asText(null),
-                "currency" to node.path("currency").asText("EUR"),
+                "currency" to node.path("currency").asText("USD"),
                 "status" to "COMPLETED"
             ),
             "serverTime" to Instant.now().toString()

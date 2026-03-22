@@ -316,11 +316,21 @@ function clearAllFilters() {
   router.push({ path: '/search' })
 }
 
+// Trigger search only on the client — $api is a client-only plugin and is
+// undefined during SSR.  Using onMounted + watch (without immediate) avoids
+// the watcher firing during server-side rendering where $api is unavailable,
+// which caused performSearch to silently reject and leave loading=true.
+onMounted(() => {
+  currentPage.value = Number(route.query.page) || 1
+  sortBy.value = (route.query.sort as string) || 'closing_soonest'
+  fetchResults()
+})
+
 watch(() => route.query, () => {
   currentPage.value = Number(route.query.page) || 1
   sortBy.value = (route.query.sort as string) || 'closing_soonest'
   fetchResults()
-}, { immediate: true })
+})
 
 useHead({
   title: computed(() => query.value ? t('search.titleWithQuery', { query: query.value }) : t('search.title')),

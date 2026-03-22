@@ -185,7 +185,7 @@ class UserService {
             firstName = firstName.ifEmpty { "User" },
             lastName = lastName.ifEmpty { keycloakId.take(8) },
             language = "en",
-            currency = "EUR",
+            currency = "USD",
             status = UserStatus.ACTIVE,
             depositStatus = DepositStatus.NONE,
             createdAt = Instant.now(),
@@ -291,10 +291,10 @@ class UserService {
             )
         }
 
-        if (companyRepository.existsByVatId(request.vatId)) {
+        if (companyRepository.existsByEin(request.ein)) {
             throw ConflictException(
-                code = "VAT_ID_ALREADY_EXISTS",
-                message = "A company with VAT ID '${request.vatId}' is already registered."
+                code = "EIN_ALREADY_EXISTS",
+                message = "A company with EIN '${request.ein}' is already registered."
             )
         }
 
@@ -303,18 +303,19 @@ class UserService {
             userId = userId,
             companyName = request.companyName,
             registrationNo = request.registrationNo,
-            vatId = request.vatId,
-            country = request.country,
+            ein = request.ein,
+            state = request.state,
             address = request.address,
             city = request.city,
             postalCode = request.postalCode,
+            entityType = request.entityType ?: "",
             verified = false
         )
 
         companyRepository.persist(CompanyEntity.fromDomain(company))
 
-        LOG.infof("Added company for user: userId=%s, companyId=%s, vatId=%s",
-            userId, company.id, company.vatId)
+        LOG.infof("Added company for user: userId=%s, companyId=%s, ein=%s",
+            userId, company.id, company.ein)
 
         return company
     }

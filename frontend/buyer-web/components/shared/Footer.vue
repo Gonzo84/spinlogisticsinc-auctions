@@ -5,8 +5,8 @@
         <!-- About -->
         <div>
           <div class="flex items-center gap-2 mb-4">
-            <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto" />
-            <span class="text-lg font-bold text-white">SPC Aukcije</span>
+            <img src="/images/spin-logo.png" alt="Spin Logistics" class="h-9 w-auto" />
+            <span class="text-lg font-bold text-white">Spin Logistics</span>
           </div>
           <p class="text-sm leading-relaxed text-gray-400 mb-4">
             {{ $t('footer.about') }}
@@ -15,21 +15,21 @@
           <div class="space-y-1.5 text-sm text-gray-400 mb-4">
             <div class="flex items-center gap-2">
               <i class="pi pi-phone w-4 h-4" />
-              <a href="tel:+38617777666" class="hover:text-white transition-colors">+386 1 77 77 666</a>
+              <a href="tel:+13128585888" class="hover:text-white transition-colors">(312) 858-5888</a>
             </div>
             <div class="flex items-center gap-2">
               <i class="pi pi-envelope w-4 h-4" />
-              <a href="mailto:info@spc.si" class="hover:text-white transition-colors">info@spc.si</a>
+              <a href="mailto:safety@spinlogisticsinc.net" class="hover:text-white transition-colors">safety@spinlogisticsinc.net</a>
             </div>
             <div class="flex items-center gap-2">
               <i class="pi pi-map-marker w-4 h-4" />
-              <span>Premrlova ulica 11, 1000 Ljubljana</span>
+              <span>130 N La Grange Rd, Suite 315, La Grange, IL 60525</span>
             </div>
           </div>
           <!-- Social Links -->
           <div class="flex items-center gap-3">
             <a
-              href="https://facebook.com/SPContainer"
+              href="https://www.facebook.com/p/Spin-Logistics-Inc-100089021411848/"
               target="_blank"
               rel="noopener noreferrer"
               class="w-9 h-9 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-colors"
@@ -38,7 +38,7 @@
               <i class="pi pi-facebook w-4 h-4" />
             </a>
             <a
-              href="https://instagram.com/spcontainers"
+              href="https://www.instagram.com/spin_logistics_inc/"
               target="_blank"
               rel="noopener noreferrer"
               class="w-9 h-9 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-colors"
@@ -47,7 +47,7 @@
               <i class="pi pi-instagram w-4 h-4" />
             </a>
             <a
-              href="https://linkedin.com"
+              href="https://www.linkedin.com/company/spin-logistics"
               target="_blank"
               rel="noopener noreferrer"
               class="w-9 h-9 rounded-full bg-gray-800 hover:bg-primary flex items-center justify-center transition-colors"

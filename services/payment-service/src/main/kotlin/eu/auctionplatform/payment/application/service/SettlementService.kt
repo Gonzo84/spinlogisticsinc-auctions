@@ -143,7 +143,7 @@ class SettlementService @Inject constructor(
         }
 
         LOG.infof(
-            "Processing settlement %s for seller %s (net=%s EUR)",
+            "Processing settlement %s for seller %s (net=%s USD)",
             settlementId, settlement.sellerId, settlement.netAmount
         )
 
@@ -278,7 +278,7 @@ class SettlementService @Inject constructor(
             "commission" to settlement.commission,
             "commissionRate" to settlement.commissionRate,
             "hammerPrice" to settlement.netAmount.add(settlement.commission),
-            "currency" to "EUR",
+            "currency" to "USD",
             "bankReference" to bankReference,
             "settledAt" to (settlement.settledAt ?: Instant.now()).toString()
         )

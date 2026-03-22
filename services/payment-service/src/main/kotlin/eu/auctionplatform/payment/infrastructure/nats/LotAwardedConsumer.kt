@@ -92,7 +92,7 @@ class LotAwardedConsumer @Inject constructor(
         val lotId = payload["lotId"]?.toString()
         val auctionId = payload["auctionId"]?.toString()
         val hammerPrice = payload["hammerPrice"]?.toString()?.let { BigDecimal(it) }
-        val currency = payload["currency"]?.toString() ?: "EUR"
+        val currency = payload["currency"]?.toString() ?: "USD"
         val buyerPremiumRate = payload["buyerPremiumRate"]?.toString()?.let { BigDecimal(it) }
             ?: CheckoutService.DEFAULT_BUYER_PREMIUM_RATE
 
@@ -117,7 +117,7 @@ class LotAwardedConsumer @Inject constructor(
             // Resolve seller from catalog-service via lot lookup
             val lotInfo = auctionLotLookupService.fetchLotInfo(lotUuid)
             val sellerId = lotInfo?.sellerId
-            val sellerCountry = lotInfo?.sellerCountry ?: "NL"
+            val sellerState = lotInfo?.sellerState ?: "TX"
 
             if (sellerId == null) {
                 LOG.errorf("Cannot resolve sellerId for lot %s — skipping checkout. Will retry on next award event.", lotId)
@@ -130,11 +130,9 @@ class LotAwardedConsumer @Inject constructor(
                 sellerId = sellerId,
                 hammerPrice = hammerPrice,
                 currency = currency,
-                buyerCountry = "NL",
-                sellerCountry = sellerCountry,
-                buyerType = "BUSINESS",
-                sellerType = "BUSINESS",
-                buyerVatId = null
+                buyerState = "TX",
+                sellerState = sellerState,
+                exemptionCertificateId = null
             )
 
             // 1. Initiate checkout with real event data

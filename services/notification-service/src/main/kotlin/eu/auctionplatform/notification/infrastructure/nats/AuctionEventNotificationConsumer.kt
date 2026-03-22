@@ -163,7 +163,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
 
         val bidderId = payload["bidderId"]?.toString() ?: return
         val bidAmount = payload["bidAmount"]?.toString() ?: "0"
-        val bidCurrency = payload["bidCurrency"]?.toString() ?: "EUR"
+        val bidCurrency = payload["bidCurrency"]?.toString() ?: "USD"
         val aggregateId = payload["aggregateId"]?.toString() ?: ""
         val previousHighBidderId = payload["previousHighBidderId"]?.toString()
 
@@ -234,7 +234,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
             ?: "0"
         val bidCurrency = payload["currency"]?.toString()
             ?: payload["bidCurrency"]?.toString()
-            ?: "EUR"
+            ?: "USD"
         val aggregateId = payload["aggregateId"]?.toString() ?: ""
         val maxAmount = payload["maxAmount"]?.toString()
             ?: payload["maxAutoBidAmount"]?.toString()
@@ -281,7 +281,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
         val reserveMet = payload["reserveMet"]?.toString()?.toBoolean() ?: false
         val aggregateId = payload["aggregateId"]?.toString() ?: ""
         val finalBidAmount = payload["finalBidAmount"]?.toString() ?: "0"
-        val finalBidCurrency = payload["finalBidCurrency"]?.toString() ?: "EUR"
+        val finalBidCurrency = payload["finalBidCurrency"]?.toString() ?: "USD"
 
         if (winnerId.isNullOrBlank() || !reserveMet) {
             LOG.debugf(
@@ -363,7 +363,7 @@ class AuctionEventNotificationConsumer @Inject constructor(
         val aggregateId = payload["aggregateId"]?.toString() ?: ""
         val reason = payload["reason"]?.toString() ?: ""
         val hammerPrice = payload["hammerPrice"]?.toString() ?: "0"
-        val currency = payload["currency"]?.toString() ?: "EUR"
+        val currency = payload["currency"]?.toString() ?: "USD"
 
         val winnerUuid = UUID.fromString(winnerId)
         val winnerEmail = userEmailResolver.resolveEmail(winnerUuid)

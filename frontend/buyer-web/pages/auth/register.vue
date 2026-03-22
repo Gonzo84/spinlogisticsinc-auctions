@@ -4,8 +4,8 @@
       <!-- Header -->
       <div class="text-center mb-8">
         <NuxtLink to="/" class="inline-flex items-center gap-2 mb-6">
-          <img src="/images/spc-logo.png" alt="SPC" class="h-10 w-auto" />
-          <span class="text-xl font-bold text-gray-900">SPC Aukcije</span>
+          <img src="/images/spin-logo.png" alt="Spin Logistics" class="h-10 w-auto" />
+          <span class="text-xl font-bold text-gray-900">Spin Logistics</span>
         </NuxtLink>
         <h1 class="text-2xl font-bold text-gray-900">{{ $t('auth.createAccount') }}</h1>
         <p class="text-gray-500 mt-1">{{ $t('auth.registerSubtitle') }}</p>
@@ -49,21 +49,33 @@
             />
           </div>
 
+          <div>
+            <label class="label">{{ $t('auth.entityType') }} *</label>
+            <Select
+              v-model="form.entityType"
+              :options="entityTypeOptions"
+              optionLabel="label"
+              optionValue="value"
+              :placeholder="$t('auth.selectEntityType')"
+              class="w-full"
+            />
+          </div>
+
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="label">{{ $t('auth.vatNumber') }}</label>
+              <label class="label">{{ $t('auth.ein') }}</label>
               <InputText
-                v-model="form.vatNumber"
+                v-model="form.ein"
                 class="w-full"
-                placeholder="NL123456789B01"
+                placeholder="XX-XXXXXXX"
               />
             </div>
             <div>
-              <label class="label">{{ $t('auth.chamberOfCommerce') }}</label>
+              <label class="label">{{ $t('auth.stateRegistration') }}</label>
               <InputText
-                v-model="form.cocNumber"
+                v-model="form.stateRegistration"
                 class="w-full"
-                :placeholder="$t('auth.cocPlaceholder')"
+                :placeholder="$t('auth.stateRegistrationPlaceholder')"
               />
             </div>
           </div>
@@ -109,20 +121,21 @@
             type="tel"
             required
             class="w-full"
-            placeholder="+31 6 12345678"
+            placeholder="+1 (312) 555-0123"
           />
         </div>
 
-        <!-- Country -->
+        <!-- State -->
         <div>
-          <label class="label">{{ $t('auth.country') }} *</label>
+          <label class="label">{{ $t('auth.state') }} *</label>
           <Select
-            v-model="form.country"
-            :options="countryOptions"
+            v-model="form.state"
+            :options="stateOptions"
             optionLabel="label"
             optionValue="value"
-            :placeholder="$t('auth.selectCountry')"
+            :placeholder="$t('auth.selectState')"
             class="w-full"
+            filter
           />
         </div>
 
@@ -201,27 +214,78 @@ const accountType = ref<'business' | 'private'>('business')
 const submitting = ref(false)
 const registerError = ref<string | null>(null)
 
-const countryOptions = [
-  { label: 'Netherlands', value: 'NL' },
-  { label: 'Germany', value: 'DE' },
-  { label: 'France', value: 'FR' },
-  { label: 'Belgium', value: 'BE' },
-  { label: 'Poland', value: 'PL' },
-  { label: 'Italy', value: 'IT' },
-  { label: 'Romania', value: 'RO' },
-  { label: 'Spain', value: 'ES' },
-  { label: 'Austria', value: 'AT' },
+const stateOptions = [
+  { label: 'Alabama', value: 'AL' },
+  { label: 'Alaska', value: 'AK' },
+  { label: 'Arizona', value: 'AZ' },
+  { label: 'Arkansas', value: 'AR' },
+  { label: 'California', value: 'CA' },
+  { label: 'Colorado', value: 'CO' },
+  { label: 'Connecticut', value: 'CT' },
+  { label: 'Delaware', value: 'DE' },
+  { label: 'District of Columbia', value: 'DC' },
+  { label: 'Florida', value: 'FL' },
+  { label: 'Georgia', value: 'GA' },
+  { label: 'Hawaii', value: 'HI' },
+  { label: 'Idaho', value: 'ID' },
+  { label: 'Illinois', value: 'IL' },
+  { label: 'Indiana', value: 'IN' },
+  { label: 'Iowa', value: 'IA' },
+  { label: 'Kansas', value: 'KS' },
+  { label: 'Kentucky', value: 'KY' },
+  { label: 'Louisiana', value: 'LA' },
+  { label: 'Maine', value: 'ME' },
+  { label: 'Maryland', value: 'MD' },
+  { label: 'Massachusetts', value: 'MA' },
+  { label: 'Michigan', value: 'MI' },
+  { label: 'Minnesota', value: 'MN' },
+  { label: 'Mississippi', value: 'MS' },
+  { label: 'Missouri', value: 'MO' },
+  { label: 'Montana', value: 'MT' },
+  { label: 'Nebraska', value: 'NE' },
+  { label: 'Nevada', value: 'NV' },
+  { label: 'New Hampshire', value: 'NH' },
+  { label: 'New Jersey', value: 'NJ' },
+  { label: 'New Mexico', value: 'NM' },
+  { label: 'New York', value: 'NY' },
+  { label: 'North Carolina', value: 'NC' },
+  { label: 'North Dakota', value: 'ND' },
+  { label: 'Ohio', value: 'OH' },
+  { label: 'Oklahoma', value: 'OK' },
+  { label: 'Oregon', value: 'OR' },
+  { label: 'Pennsylvania', value: 'PA' },
+  { label: 'Rhode Island', value: 'RI' },
+  { label: 'South Carolina', value: 'SC' },
+  { label: 'South Dakota', value: 'SD' },
+  { label: 'Tennessee', value: 'TN' },
+  { label: 'Texas', value: 'TX' },
+  { label: 'Utah', value: 'UT' },
+  { label: 'Vermont', value: 'VT' },
+  { label: 'Virginia', value: 'VA' },
+  { label: 'Washington', value: 'WA' },
+  { label: 'West Virginia', value: 'WV' },
+  { label: 'Wisconsin', value: 'WI' },
+  { label: 'Wyoming', value: 'WY' },
+]
+
+const entityTypeOptions = [
+  { label: t('auth.entityLLC'), value: 'LLC' },
+  { label: t('auth.entityCCorp'), value: 'C-Corp' },
+  { label: t('auth.entitySCorp'), value: 'S-Corp' },
+  { label: t('auth.entityLP'), value: 'LP' },
+  { label: t('auth.entitySoleProp'), value: 'Sole Proprietorship' },
 ]
 
 const form = reactive({
   companyName: '',
-  vatNumber: '',
-  cocNumber: '',
+  ein: '',
+  stateRegistration: '',
+  entityType: '',
   firstName: '',
   lastName: '',
   email: '',
   phone: '',
-  country: '',
+  state: '',
   address: '',
   postalCode: '',
   city: '',

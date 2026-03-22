@@ -8,7 +8,7 @@ import java.util.UUID
  * Represents a payment for a won auction lot.
  *
  * A payment is created when a buyer wins a lot and enters checkout. It
- * captures the hammer price, buyer premium, calculated VAT, and total
+ * captures the hammer price, buyer premium, calculated sales tax, and total
  * amount due. The payment lifecycle is tracked through [PaymentStatus].
  *
  * @property id Unique payment identifier.
@@ -19,12 +19,12 @@ import java.util.UUID
  * @property hammerPrice The final bid (hammer) price.
  * @property buyerPremium The buyer premium amount (hammerPrice * buyerPremiumRate).
  * @property buyerPremiumRate The percentage rate used to calculate the buyer premium (e.g. 0.15 for 15%).
- * @property vatAmount The calculated VAT amount.
- * @property vatRate The effective VAT rate applied (e.g. 0.21 for 21%).
- * @property vatScheme The VAT scheme that was applied (standard, reverse charge, etc.).
- * @property totalAmount The total amount due (hammerPrice + buyerPremium + vatAmount).
- * @property currency ISO 4217 currency code (e.g. "EUR").
- * @property country The country code used for VAT determination.
+ * @property taxAmount The calculated sales tax amount.
+ * @property taxRate The effective sales tax rate applied (e.g. 6.25 for 6.25%).
+ * @property taxScheme The tax scheme that was applied (taxable, exempt, no-tax state, etc.).
+ * @property totalAmount The total amount due (hammerPrice + buyerPremium + taxAmount).
+ * @property currency ISO 4217 currency code (e.g. "USD").
+ * @property state The US state code used for sales tax determination.
  * @property paymentMethod The payment method chosen by the buyer (e.g. "card", "bank_transfer").
  * @property pspReference The payment service provider reference (Adyen).
  * @property status Current payment lifecycle status.
@@ -44,12 +44,12 @@ data class Payment(
     val hammerPrice: BigDecimal,
     val buyerPremium: BigDecimal,
     val buyerPremiumRate: BigDecimal,
-    val vatAmount: BigDecimal,
-    val vatRate: BigDecimal,
-    val vatScheme: VatScheme,
+    val taxAmount: BigDecimal,
+    val taxRate: BigDecimal,
+    val taxScheme: VatScheme,
     val totalAmount: BigDecimal,
     val currency: String,
-    val country: String,
+    val state: String,
     val paymentMethod: String?,
     val pspReference: String?,
     val status: PaymentStatus,

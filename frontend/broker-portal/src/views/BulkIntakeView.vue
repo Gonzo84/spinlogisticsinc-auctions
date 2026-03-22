@@ -57,12 +57,12 @@ const csvColumns = [
   { column: 'title', required: 'Yes', description: 'Lot title' },
   { column: 'categoryId', required: 'Yes', description: 'Category UUID' },
   { column: 'description', required: 'No', description: 'Lot description' },
-  { column: 'reservePrice', required: 'No', description: 'Reserve price in EUR' },
-  { column: 'startingBid', required: 'No', description: 'Starting bid in EUR' },
+  { column: 'reservePrice', required: 'No', description: 'Reserve price in USD' },
+  { column: 'startingBid', required: 'No', description: 'Starting bid in USD' },
   { column: 'brand', required: 'No', description: 'Brand (e.g., troostwijk)' },
   { column: 'locationAddress', required: 'No', description: 'Street address' },
   { column: 'locationCity', required: 'No', description: 'City name' },
-  { column: 'locationCountry', required: 'No', description: 'ISO country code (NL, DE, etc.)' },
+  { column: 'locationCountry', required: 'No', description: 'ISO country code (US, CA, etc.)' },
 ]
 
 async function handleSubmit(data: BulkLotIntakeRequest) {

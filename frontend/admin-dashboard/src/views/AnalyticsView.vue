@@ -18,7 +18,7 @@ onMounted(() => {
 })
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
 
 function formatPercent(value: number): string {
@@ -141,7 +141,7 @@ const registrationData = computed(() => (Array.isArray(registrationTrends.value)
             :labels="registrationLabels"
             :data="registrationData"
             label="New Registrations"
-            color="#004d71"
+            color="#388E3C"
             :height="280"
           />
         </div>
@@ -191,7 +191,7 @@ const registrationData = computed(() => (Array.isArray(registrationTrends.value)
         <RevenueChart
           :labels="revenueLabels"
           :data="commissionData"
-          label="Commission (EUR)"
+          label="Commission (USD)"
           color="#9333ea"
           :height="280"
         />

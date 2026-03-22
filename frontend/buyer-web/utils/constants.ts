@@ -1,35 +1,3 @@
-export const COUNTRY_FLAGS: Record<string, string> = {
-  SI: '\uD83C\uDDF8\uD83C\uDDEE',
-  HR: '\uD83C\uDDED\uD83C\uDDF7',
-  AT: '\uD83C\uDDE6\uD83C\uDDF9',
-  DE: '\uD83C\uDDE9\uD83C\uDDEA',
-  IT: '\uD83C\uDDEE\uD83C\uDDF9',
-  BA: '\uD83C\uDDE7\uD83C\uDDE6',
-  RS: '\uD83C\uDDF7\uD83C\uDDF8',
-  HU: '\uD83C\uDDED\uD83C\uDDFA',
-}
-
-export function getCountryFlag(code: string): string {
-  return COUNTRY_FLAGS[code] || code
-}
-
-export interface CountryEntry {
-  code: string
-  flag: string
-  name: string
-}
-
-export const COUNTRIES: CountryEntry[] = [
-  { code: 'SI', flag: COUNTRY_FLAGS.SI, name: 'Slovenija' },
-  { code: 'HR', flag: COUNTRY_FLAGS.HR, name: 'Hrvatska' },
-  { code: 'AT', flag: COUNTRY_FLAGS.AT, name: 'Avstrija' },
-  { code: 'DE', flag: COUNTRY_FLAGS.DE, name: 'Nemčija' },
-  { code: 'IT', flag: COUNTRY_FLAGS.IT, name: 'Italija' },
-  { code: 'BA', flag: COUNTRY_FLAGS.BA, name: 'BiH' },
-  { code: 'RS', flag: COUNTRY_FLAGS.RS, name: 'Srbija' },
-  { code: 'HU', flag: COUNTRY_FLAGS.HU, name: 'Madžarska' },
-]
-
 export interface CategoryEntry {
   slug: string
   icon: string
@@ -37,24 +5,47 @@ export interface CategoryEntry {
 }
 
 export const CATEGORIES: CategoryEntry[] = [
-  { slug: 'office-containers', icon: '\uD83C\uDFE2', i18nKey: 'categories.officeContainers' },
-  { slug: 'shipping-containers', icon: '\uD83D\uDCE6', i18nKey: 'categories.shippingContainers' },
-  { slug: 'sanitary-containers', icon: '\uD83D\uDEBF', i18nKey: 'categories.sanitaryContainers' },
-  { slug: 'storage-containers', icon: '\uD83D\uDD12', i18nKey: 'categories.storageContainers' },
-  { slug: 'modular-structures', icon: '\uD83C\uDFD7\uFE0F', i18nKey: 'categories.modularStructures' },
-  { slug: 'climate-control', icon: '\u2744\uFE0F', i18nKey: 'categories.climateControl' },
-  { slug: 'construction-equipment', icon: '\uD83D\uDD27', i18nKey: 'categories.constructionEquipment' },
-  { slug: 'fencing', icon: '\uD83D\uDEE1\uFE0F', i18nKey: 'categories.fencing' },
+  { slug: 'containers-modular', icon: '📦', i18nKey: 'categories.containersModular' },
+  { slug: 'construction-equipment', icon: '🏗️', i18nKey: 'categories.constructionEquipment' },
+  { slug: 'cranes-lifting', icon: '🏗️', i18nKey: 'categories.cranesLifting' },
+  { slug: 'aerial-platforms', icon: '⬆️', i18nKey: 'categories.aerialPlatforms' },
+  { slug: 'material-handling', icon: '🏭', i18nKey: 'categories.materialHandling' },
+  { slug: 'trucks', icon: '🚛', i18nKey: 'categories.trucks' },
+  { slug: 'trailers', icon: '🚚', i18nKey: 'categories.trailers' },
+  { slug: 'agriculture', icon: '🌾', i18nKey: 'categories.agriculture' },
+  { slug: 'forestry-logging', icon: '🌲', i18nKey: 'categories.forestryLogging' },
+  { slug: 'mining-quarry', icon: '⛏️', i18nKey: 'categories.miningQuarry' },
+  { slug: 'oil-gas', icon: '🛢️', i18nKey: 'categories.oilGas' },
+  { slug: 'power-climate', icon: '⚡', i18nKey: 'categories.powerClimate' },
+  { slug: 'metalworking', icon: '⚙️', i18nKey: 'categories.metalworking' },
+  { slug: 'woodworking-plastics', icon: '🪵', i18nKey: 'categories.woodworkingPlastics' },
+  { slug: 'food-processing', icon: '🍽️', i18nKey: 'categories.foodProcessing' },
+  { slug: 'medical-lab', icon: '🏥', i18nKey: 'categories.medicalLab' },
+  { slug: 'vehicles-fleet', icon: '🚗', i18nKey: 'categories.vehiclesFleet' },
+  { slug: 'attachments-parts', icon: '🔩', i18nKey: 'categories.attachmentsParts' },
 ]
 
-export const DISTANCE_OPTIONS = [0, 50, 100, 250, 500, 1000]
+export const DISTANCE_OPTIONS = [0, 25, 50, 100, 250, 500]
 
 export const PRICE_RANGES = [
-  { label: '< 1K', min: undefined, max: 1000 },
-  { label: '1K-5K', min: 1000, max: 5000 },
-  { label: '5K-25K', min: 5000, max: 25000 },
-  { label: '25K-100K', min: 25000, max: 100000 },
-  { label: '> 100K', min: 100000, max: undefined },
+  { label: '< $1K', min: undefined, max: 1000 },
+  { label: '$1K-$5K', min: 1000, max: 5000 },
+  { label: '$5K-$25K', min: 5000, max: 25000 },
+  { label: '$25K-$100K', min: 25000, max: 100000 },
+  { label: '> $100K', min: 100000, max: undefined },
 ]
 
 export const TARGET_CO2_SAVINGS = 2_847_350
+
+/**
+ * Returns a flag emoji for the given country code.
+ * Kept for backward compatibility with LotCard and lot detail pages.
+ */
+export function getCountryFlag(code: string): string {
+  if (!code || code.length !== 2) return code || ''
+  // Convert 2-letter country code to regional indicator emoji
+  const codePoints = [...code.toUpperCase()].map(
+    (c) => 0x1f1e6 + c.charCodeAt(0) - 65,
+  )
+  return String.fromCodePoint(...codePoints)
+}

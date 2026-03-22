@@ -96,7 +96,7 @@ data class AdyenNotificationItem(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AdyenAmount(
     @JsonProperty("currency")
-    val currency: String = "EUR",
+    val currency: String = "USD",
 
     @JsonProperty("value")
     val value: Long = 0

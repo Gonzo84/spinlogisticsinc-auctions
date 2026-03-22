@@ -42,9 +42,9 @@ data class CreateAuctionRequest(
     @JsonProperty("startingBid")
     val startingBid: BigDecimal? = null,
 
-    /** ISO 4217 currency code (defaults to EUR). */
+    /** ISO 4217 currency code (defaults to USD). */
     @JsonProperty("currency")
-    val currency: String = "EUR",
+    val currency: String = "USD",
 
     /**
      * Optional minimum price that must be met for the lot to be awarded.
@@ -70,9 +70,9 @@ data class PlaceBidRequest(
     @JsonProperty("amount")
     val amount: BigDecimal,
 
-    /** ISO 4217 currency code (defaults to EUR). */
+    /** ISO 4217 currency code (defaults to USD). */
     @JsonProperty("currency")
-    val currency: String = "EUR"
+    val currency: String = "USD"
 )
 
 /**
@@ -86,7 +86,7 @@ data class SetAutoBidRequest(
     @JsonProperty("maxAmount")
     val maxAmount: BigDecimal,
 
-    /** ISO 4217 currency code (defaults to EUR). */
+    /** ISO 4217 currency code (defaults to USD). */
     @JsonProperty("currency")
-    val currency: String = "EUR"
+    val currency: String = "USD"
 )

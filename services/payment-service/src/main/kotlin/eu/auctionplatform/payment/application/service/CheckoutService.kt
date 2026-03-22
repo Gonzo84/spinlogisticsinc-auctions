@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong
  * Orchestrates the checkout flow for won auction lots.
  *
  * Responsibilities:
- * - Create payment records with correct VAT calculation.
+ * - Create payment records with correct sales tax calculation.
  * - Initiate payment processing via the PSP (Adyen).
  * - Handle incoming payment webhooks from Adyen.
  * - Generate invoices upon payment completion.
@@ -63,13 +63,13 @@ class CheckoutService @Inject constructor(
     /**
      * Initiates checkout for one or more won lots.
      *
-     * Creates a [Payment] record for each lot with the calculated VAT,
+     * Creates a [Payment] record for each lot with the calculated sales tax,
      * buyer premium, and total amount. All payments are created with
      * [PaymentStatus.PENDING].
      *
      * @param buyerId The buyer's UUID.
      * @param lotDetails List of lot details (lotId, auctionId, hammerPrice,
-     *        sellerCountry, buyerCountry, buyerType, sellerType, buyerVatId).
+     *        buyerState, sellerState, exemptionCertificateId).
      * @return List of created payment records.
      */
     fun initiateCheckout(
@@ -82,23 +82,33 @@ class CheckoutService @Inject constructor(
         val dueDate = now.plusSeconds(PAYMENT_DUE_DAYS * 24 * 60 * 60)
 
         val payments = lotDetails.map { lot ->
+            // Check for existing payment for this lot to avoid duplicates
+            // (e.g., auto-checkout via LotAwardedConsumer already created one)
+            val existingPayments = paymentRepository.findByLotId(lot.lotId)
+            val activeExisting = existingPayments.firstOrNull { it.status != PaymentStatus.FAILED && it.status != PaymentStatus.REFUNDED }
+            if (activeExisting != null) {
+                LOG.infof(
+                    "Payment %s already exists for lot %s (status=%s) — returning existing payment",
+                    activeExisting.id, lot.lotId, activeExisting.status
+                )
+                return@map activeExisting
+            }
+
             val buyerPremium = lot.hammerPrice
                 .multiply(DEFAULT_BUYER_PREMIUM_RATE)
                 .setScale(2, RoundingMode.HALF_UP)
 
-            val vatResult = vatCalculationService.calculateVat(
+            val taxResult = vatCalculationService.calculateTax(
                 hammerPrice = lot.hammerPrice,
                 buyerPremium = buyerPremium,
-                buyerCountry = lot.buyerCountry,
-                sellerCountry = lot.sellerCountry,
-                buyerType = lot.buyerType,
-                sellerType = lot.sellerType,
-                buyerVatId = lot.buyerVatId
+                buyerState = lot.buyerState,
+                sellerState = lot.sellerState,
+                exemptionCertificateId = lot.exemptionCertificateId
             )
 
             val totalAmount = lot.hammerPrice
                 .add(buyerPremium)
-                .add(vatResult.vatAmount)
+                .add(taxResult.taxAmount)
                 .setScale(2, RoundingMode.HALF_UP)
 
             val payment = Payment(
@@ -110,12 +120,12 @@ class CheckoutService @Inject constructor(
                 hammerPrice = lot.hammerPrice,
                 buyerPremium = buyerPremium,
                 buyerPremiumRate = DEFAULT_BUYER_PREMIUM_RATE,
-                vatAmount = vatResult.vatAmount,
-                vatRate = vatResult.vatRate,
-                vatScheme = vatResult.vatScheme,
+                taxAmount = taxResult.taxAmount,
+                taxRate = taxResult.taxRate,
+                taxScheme = taxResult.taxScheme,
                 totalAmount = totalAmount,
                 currency = lot.currency,
-                country = lot.buyerCountry,
+                state = lot.buyerState,
                 paymentMethod = null,
                 pspReference = null,
                 status = PaymentStatus.PENDING,
@@ -130,9 +140,9 @@ class CheckoutService @Inject constructor(
             paymentRepository.save(payment)
 
             LOG.infof(
-                "Created payment %s for lot %s (total=%s %s, vat=%s, scheme=%s)",
+                "Created payment %s for lot %s (total=%s %s, tax=%s, scheme=%s)",
                 payment.id, lot.lotId, totalAmount, lot.currency,
-                vatResult.vatAmount, vatResult.vatScheme
+                taxResult.taxAmount, taxResult.taxScheme
             )
 
             payment
@@ -362,7 +372,7 @@ class CheckoutService @Inject constructor(
             "auctionId" to payment.auctionId.toString(),
             "hammerPrice" to payment.hammerPrice,
             "buyerPremium" to payment.buyerPremium,
-            "vatAmount" to payment.vatAmount,
+            "taxAmount" to payment.taxAmount,
             "totalAmount" to payment.totalAmount,
             "currency" to payment.currency,
             "paymentMethod" to paymentMethod
@@ -413,12 +423,10 @@ data class LotCheckoutDetail(
     val auctionId: UUID,
     val sellerId: UUID,
     val hammerPrice: BigDecimal,
-    val currency: String = "EUR",
-    val buyerCountry: String,
-    val sellerCountry: String,
-    val buyerType: String,
-    val sellerType: String,
-    val buyerVatId: String?,
+    val currency: String = "USD",
+    val buyerState: String,
+    val sellerState: String,
+    val exemptionCertificateId: String?,
     val lotTitle: String? = null,
     val buyerName: String? = null,
     val sellerName: String? = null

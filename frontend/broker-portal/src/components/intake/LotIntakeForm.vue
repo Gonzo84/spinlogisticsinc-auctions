@@ -118,8 +118,8 @@ defineExpose({ resetForm })
           id="reservePrice"
           v-model="form.reservePrice"
           mode="currency"
-          currency="EUR"
-          locale="en-EU"
+          currency="USD"
+          locale="en-US"
           placeholder="0.00"
           class="w-full"
         />
@@ -133,8 +133,8 @@ defineExpose({ resetForm })
           id="startingBid"
           v-model="form.startingBid"
           mode="currency"
-          currency="EUR"
-          locale="en-EU"
+          currency="USD"
+          locale="en-US"
           placeholder="0.00"
           class="w-full"
         />
@@ -189,7 +189,7 @@ defineExpose({ resetForm })
         <InputText
           id="locationCountry"
           v-model="form.locationCountry"
-          placeholder="NL, DE, etc."
+          placeholder="US, CA, etc."
           class="w-full"
           maxlength="3"
         />

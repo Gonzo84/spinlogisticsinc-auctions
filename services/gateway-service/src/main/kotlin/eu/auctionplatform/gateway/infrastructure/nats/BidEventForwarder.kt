@@ -164,7 +164,7 @@ class BidEventForwarder @Inject constructor(
                 "bidId" to node.path("bidId").asText(null),
                 "bidderId" to maskBidderId(node.path("bidderId").asText(null)),
                 "amount" to (node.path("bidAmount").asText(null) ?: node.path("amount").asText(null)),
-                "currency" to (node.path("bidCurrency").asText(null) ?: node.path("currency").asText("EUR")),
+                "currency" to (node.path("bidCurrency").asText(null) ?: node.path("currency").asText("USD")),
                 "isProxy" to node.path("isProxy").asBoolean(false),
                 "bidCount" to node.path("bidCount").asInt(0),
                 "lotId" to node.path("lotId").asText(null),
@@ -220,7 +220,7 @@ class BidEventForwarder @Inject constructor(
             "data" to mapOf(
                 "winningBidId" to node.path("winningBidId").asText(null),
                 "winningAmount" to node.path("winningAmount").asText(null),
-                "currency" to node.path("currency").asText("EUR"),
+                "currency" to node.path("currency").asText("USD"),
                 "bidCount" to node.path("bidCount").asInt(0),
                 "closedAt" to node.path("closedAt").asText(null),
                 "reserveMet" to node.path("reserveMet").asBoolean(true)
@@ -245,7 +245,7 @@ class BidEventForwarder @Inject constructor(
             "data" to mapOf(
                 "winnerId" to maskBidderId(node.path("winnerId").asText(null)),
                 "amount" to node.path("amount").asText(null),
-                "currency" to node.path("currency").asText("EUR"),
+                "currency" to node.path("currency").asText("USD"),
                 "awardedAt" to node.path("awardedAt").asText(null)
             ),
             "serverTime" to java.time.Instant.now().toString()

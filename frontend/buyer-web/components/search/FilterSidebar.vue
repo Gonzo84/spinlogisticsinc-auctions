@@ -33,22 +33,21 @@
       </div>
     </div>
 
-    <!-- Country Multi-Select -->
+    <!-- State Multi-Select -->
     <div>
-      <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ $t('search.country') }}</h3>
-      <div class="space-y-1.5">
+      <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ $t('search.state') }}</h3>
+      <div class="space-y-1.5 max-h-48 overflow-y-auto scrollbar-thin">
         <label
-          v-for="country in countries"
-          :key="country.code"
+          v-for="state in usStates"
+          :key="state.code"
           class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer"
         >
           <Checkbox
-            :modelValue="selectedCountries.includes(country.code)"
-            @update:modelValue="toggleCountry(country.code)"
+            :modelValue="selectedCountries.includes(state.code)"
+            @update:modelValue="toggleCountry(state.code)"
             :binary="true"
           />
-          <span class="text-base">{{ country.flag }}</span>
-          <span class="text-sm text-gray-700">{{ country.name }}</span>
+          <span class="text-sm text-gray-700">{{ state.name }}</span>
         </label>
       </div>
     </div>
@@ -63,7 +62,7 @@
             :placeholder="$t('search.min')"
             inputClass="w-full"
             mode="currency"
-            currency="EUR"
+            currency="USD"
             locale="en-US"
             @blur="applyPriceRange"
           />
@@ -75,7 +74,7 @@
             :placeholder="$t('search.max')"
             inputClass="w-full"
             mode="currency"
-            currency="EUR"
+            currency="USD"
             locale="en-US"
             @blur="applyPriceRange"
           />
@@ -153,6 +152,7 @@
 
 <script setup lang="ts">
 import type { SearchFilters } from '~/types/search'
+import { CATEGORIES } from '~/utils/constants'
 
 interface Props {
   filters: SearchFilters
@@ -174,11 +174,11 @@ const reserveStatusModel = computed(() => props.filters.reserveStatus || '')
 
 const distanceOptions = computed(() => [
   { label: t('search.anyDistance'), value: 0 },
-  { label: '50 km', value: 50 },
-  { label: '100 km', value: 100 },
-  { label: '250 km', value: 250 },
-  { label: '500 km', value: 500 },
-  { label: '1000 km', value: 1000 },
+  { label: '25 mi', value: 25 },
+  { label: '50 mi', value: 50 },
+  { label: '100 mi', value: 100 },
+  { label: '250 mi', value: 250 },
+  { label: '500 mi', value: 500 },
 ])
 
 const selectedCountries = computed(() => props.filters.country || [])
@@ -196,22 +196,11 @@ const hasActiveFilters = computed(() => {
 
 const categoryCounts = ref<Record<string, number>>({})
 
-const categorySlugs = [
-  { slug: 'office-containers', icon: '\uD83C\uDFE2', nameKey: 'categories.officeContainers' },
-  { slug: 'shipping-containers', icon: '\uD83D\uDCE6', nameKey: 'categories.shippingContainers' },
-  { slug: 'sanitary-containers', icon: '\uD83D\uDEBF', nameKey: 'categories.sanitaryContainers' },
-  { slug: 'storage-containers', icon: '\uD83D\uDD12', nameKey: 'categories.storageContainers' },
-  { slug: 'modular-structures', icon: '\uD83C\uDFD7\uFE0F', nameKey: 'categories.modularStructures' },
-  { slug: 'climate-control', icon: '\u2744\uFE0F', nameKey: 'categories.climateControl' },
-  { slug: 'construction-equipment', icon: '\uD83D\uDD27', nameKey: 'categories.constructionEquipment' },
-  { slug: 'fencing', icon: '\uD83D\uDEE1\uFE0F', nameKey: 'categories.fencing' },
-]
-
 const categories = computed(() =>
-  categorySlugs.map((cat) => ({
+  CATEGORIES.map((cat) => ({
     slug: cat.slug,
     icon: cat.icon,
-    name: t(cat.nameKey),
+    name: t(cat.i18nKey),
     count: categoryCounts.value[cat.slug] ?? 0,
   }))
 )
@@ -236,31 +225,27 @@ onMounted(() => {
   fetchCategoryCounts()
 })
 
-const countryEntries = [
-  { code: 'SI', flag: '\uD83C\uDDF8\uD83C\uDDEE' },
-  { code: 'HR', flag: '\uD83C\uDDED\uD83C\uDDF7' },
-  { code: 'AT', flag: '\uD83C\uDDE6\uD83C\uDDF9' },
-  { code: 'DE', flag: '\uD83C\uDDE9\uD83C\uDDEA' },
-  { code: 'IT', flag: '\uD83C\uDDEE\uD83C\uDDF9' },
-  { code: 'BA', flag: '\uD83C\uDDE7\uD83C\uDDE6' },
-  { code: 'RS', flag: '\uD83C\uDDF7\uD83C\uDDF8' },
-  { code: 'HU', flag: '\uD83C\uDDED\uD83C\uDDFA' },
+const US_STATE_CODES = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
 ]
 
-const countries = computed(() =>
-  countryEntries.map((c) => ({
-    code: c.code,
-    flag: c.flag,
-    name: t(`countries.${c.code}`),
+const usStates = computed(() =>
+  US_STATE_CODES.map((code) => ({
+    code,
+    name: t(`states.${code}`),
   }))
 )
 
 const priceRanges = [
-  { label: '< 1K', min: 0, max: 1000 },
-  { label: '1K - 5K', min: 1000, max: 5000 },
-  { label: '5K - 25K', min: 5000, max: 25000 },
-  { label: '25K - 100K', min: 25000, max: 100000 },
-  { label: '> 100K', min: 100000, max: undefined },
+  { label: '< $1K', min: 0, max: 1000 },
+  { label: '$1K - $5K', min: 1000, max: 5000 },
+  { label: '$5K - $25K', min: 5000, max: 25000 },
+  { label: '$25K - $100K', min: 25000, max: 100000 },
+  { label: '> $100K', min: 100000, max: undefined },
 ]
 
 function toggleCategory(slug: string) {

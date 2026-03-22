@@ -38,7 +38,7 @@ data class User(
     val firstName: String,
     val lastName: String,
     val language: String = "en",
-    val currency: String = "EUR",
+    val currency: String = "USD",
     val status: UserStatus = UserStatus.ACTIVE,
     val depositStatus: DepositStatus = DepositStatus.NONE,
     val createdAt: Instant = Instant.now(),

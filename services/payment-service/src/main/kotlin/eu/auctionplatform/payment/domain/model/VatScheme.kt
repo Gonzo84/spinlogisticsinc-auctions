@@ -1,17 +1,24 @@
 package eu.auctionplatform.payment.domain.model
 
 /**
- * VAT scheme applied to a payment.
+ * US sales tax scheme applied to a payment.
  *
- * - STANDARD: domestic sale, standard VAT rate of seller country.
- * - REVERSE_CHARGE: intra-EU B2B with valid buyer VAT ID; 0% VAT,
- *   buyer self-assesses.
- * - MARGIN_SCHEME: second-hand goods margin scheme (Art. 312-325 VAT Directive).
- * - OSS: One Stop Shop regime for intra-EU B2C sales; destination country rate.
+ * - TAXABLE: Standard taxable sale; destination state base rate applies.
+ * - EXEMPT_RESALE: B2B resale certificate exemption; buyer holds a valid
+ *   resale/exemption certificate, 0% sales tax.
+ * - EXEMPT_MANUFACTURING: Manufacturing equipment exemption; varies by state,
+ *   buyer holds a manufacturing exemption certificate.
+ * - EXEMPT_GOVERNMENT: Government or nonprofit exemption; buyer is a
+ *   government entity or qualified nonprofit organization.
+ * - NO_TAX_STATE: Destination state has no general sales tax
+ *   (AK local only, DE, MT, NH, OR).
+ * - EXPORT: Non-US buyer; no US sales tax applies (0%).
  */
 enum class VatScheme {
-    STANDARD,
-    REVERSE_CHARGE,
-    MARGIN_SCHEME,
-    OSS
+  TAXABLE,
+  EXEMPT_RESALE,
+  EXEMPT_MANUFACTURING,
+  EXEMPT_GOVERNMENT,
+  NO_TAX_STATE,
+  EXPORT,
 }

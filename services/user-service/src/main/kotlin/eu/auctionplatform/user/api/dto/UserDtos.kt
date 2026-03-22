@@ -22,7 +22,7 @@ data class RegisterUserRequest(
     val firstName: String,
     val lastName: String,
     val language: String = "en",
-    val currency: String = "EUR"
+    val currency: String = "USD"
 )
 
 /**
@@ -43,11 +43,12 @@ data class UpdateProfileRequest(
 data class AddCompanyRequest(
     val companyName: String,
     val registrationNo: String,
-    val vatId: String,
-    val country: String,
+    val ein: String,
+    val state: String,
     val address: String,
     val city: String,
-    val postalCode: String
+    val postalCode: String,
+    val entityType: String? = null
 )
 
 /**
@@ -55,7 +56,7 @@ data class AddCompanyRequest(
  */
 data class InitiateDepositRequest(
     val amount: BigDecimal = BigDecimal("200.00"),
-    val currency: String = "EUR",
+    val currency: String = "USD",
     val pspReference: String? = null
 )
 
@@ -99,11 +100,12 @@ data class CompanyResponse(
     val userId: UUID,
     val companyName: String,
     val registrationNo: String,
-    val vatId: String,
-    val country: String,
+    val ein: String,
+    val state: String,
     val address: String,
     val city: String,
     val postalCode: String,
+    val entityType: String,
     val verified: Boolean
 )
 

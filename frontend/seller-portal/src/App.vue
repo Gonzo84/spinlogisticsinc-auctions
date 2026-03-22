@@ -77,11 +77,11 @@ function closeMobileSidebar() {
     >
       <!-- Logo -->
       <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-4">
-        <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto shrink-0" />
+        <img src="/images/spin-logo.png" alt="Spin Logistics" class="h-9 w-auto shrink-0" />
         <span
           v-if="!sidebarCollapsed"
           class="text-lg font-bold text-gray-900"
-        >SPC Prodaja</span>
+        >Spin Logistics Seller</span>
       </div>
 
       <!-- Navigation -->

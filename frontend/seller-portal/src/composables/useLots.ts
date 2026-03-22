@@ -93,7 +93,7 @@ export function useLots() {
       currentBid: data.currentBid ?? null,
       bidCount: data.bidCount ?? 0,
       viewerCount: data.viewerCount ?? 0,
-      currency: data.currency ?? 'EUR',
+      currency: data.currency ?? 'USD',
       status: ((data.status ?? 'draft').toLowerCase()) as LotStatus,
       location: data.location ?? {
         address: data.locationAddress ?? '',

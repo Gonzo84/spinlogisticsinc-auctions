@@ -141,7 +141,18 @@ adyen:
   client-key: ${ADYEN_CLIENT_KEY:test-client-key}
   return-url: ${ADYEN_RETURN_URL:http://localhost:3000/payment/return}
   webhook-url: ${ADYEN_WEBHOOK_URL:http://localhost:8084/api/v1/payments/webhook}
-  currency: EUR
+  currency: USD
+
+# -----------------------------------------------------------------------------
+# US Sales Tax Configuration
+# -----------------------------------------------------------------------------
+tax:
+  provider: ${TAX_PROVIDER:internal}  # internal | avalara | taxjar
+  avalara:
+    account-id: ${AVALARA_ACCOUNT_ID:}
+    license-key: ${AVALARA_LICENSE_KEY:}
+    environment: ${AVALARA_ENV:sandbox}
+  default-state: ${TAX_DEFAULT_STATE:NY}
 
 # =============================================================================
 # Profile: dev

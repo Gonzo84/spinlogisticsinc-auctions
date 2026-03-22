@@ -32,14 +32,14 @@ class SellerProfileRepository @Inject constructor(
         private val LOG: Logger = Logger.getLogger(SellerProfileRepository::class.java)
 
         private const val SELECT_PROFILE_COLUMNS = """
-            id, user_id, company_name, registration_no, vat_id,
-            country, status, verified_at, created_at
+            id, user_id, company_name, registration_no, ein,
+            state, status, verified_at, created_at
         """
 
         private const val INSERT_PROFILE = """
             INSERT INTO app.seller_profiles
-                (id, user_id, company_name, registration_no, vat_id,
-                 country, status, verified_at, created_at)
+                (id, user_id, company_name, registration_no, ein,
+                 state, status, verified_at, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
@@ -51,8 +51,8 @@ class SellerProfileRepository @Inject constructor(
             SELECT $SELECT_PROFILE_COLUMNS FROM app.seller_profiles WHERE user_id = ?
         """
 
-        private const val SELECT_BY_VAT_ID = """
-            SELECT $SELECT_PROFILE_COLUMNS FROM app.seller_profiles WHERE vat_id = ?
+        private const val SELECT_BY_EIN = """
+            SELECT $SELECT_PROFILE_COLUMNS FROM app.seller_profiles WHERE ein = ?
         """
 
         private const val UPDATE_STATUS = """
@@ -61,7 +61,7 @@ class SellerProfileRepository @Inject constructor(
 
         private const val UPDATE_PROFILE = """
             UPDATE app.seller_profiles
-               SET company_name = ?, registration_no = ?, vat_id = ?, country = ?
+               SET company_name = ?, registration_no = ?, ein = ?, state = ?
              WHERE id = ?
         """
 
@@ -263,8 +263,8 @@ class SellerProfileRepository @Inject constructor(
                 stmt.setObject(2, profile.userId)
                 stmt.setString(3, profile.companyName)
                 stmt.setString(4, profile.registrationNo)
-                stmt.setString(5, profile.vatId)
-                stmt.setString(6, profile.country)
+                stmt.setString(5, profile.ein)
+                stmt.setString(6, profile.state)
                 stmt.setString(7, profile.status.name)
                 stmt.setTimestamp(8, profile.verifiedAt?.let { Timestamp.from(it) })
                 stmt.setTimestamp(9, Timestamp.from(profile.createdAt))
@@ -304,12 +304,12 @@ class SellerProfileRepository @Inject constructor(
     }
 
     /**
-     * Finds a seller profile by VAT ID.
+     * Finds a seller profile by EIN.
      */
-    fun findByVatId(vatId: String): SellerProfile? {
+    fun findByEin(ein: String): SellerProfile? {
         dataSource.connection.use { conn ->
-            conn.prepareStatement(SELECT_BY_VAT_ID).use { stmt ->
-                stmt.setString(1, vatId)
+            conn.prepareStatement(SELECT_BY_EIN).use { stmt ->
+                stmt.setString(1, ein)
                 stmt.executeQuery().use { rs ->
                     return if (rs.next()) rs.toSellerProfile() else null
                 }
@@ -354,8 +354,8 @@ class SellerProfileRepository @Inject constructor(
             conn.prepareStatement(UPDATE_PROFILE).use { stmt ->
                 stmt.setString(1, profile.companyName)
                 stmt.setString(2, profile.registrationNo)
-                stmt.setString(3, profile.vatId)
-                stmt.setString(4, profile.country)
+                stmt.setString(3, profile.ein)
+                stmt.setString(4, profile.state)
                 stmt.setObject(5, profile.id)
                 stmt.executeUpdate()
             }
@@ -870,8 +870,8 @@ class SellerProfileRepository @Inject constructor(
         userId = getObject("user_id", UUID::class.java),
         companyName = getString("company_name"),
         registrationNo = getString("registration_no"),
-        vatId = getString("vat_id"),
-        country = getString("country"),
+        ein = getString("ein"),
+        state = getString("state"),
         status = SellerStatus.valueOf(getString("status")),
         verifiedAt = getTimestamp("verified_at")?.toInstant(),
         createdAt = getTimestamp("created_at").toInstant()

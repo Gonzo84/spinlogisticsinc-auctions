@@ -1,8 +1,8 @@
 {
   "id": "auction-platform",
   "realm": "auction-platform",
-  "displayName": "SPC Auctions",
-  "displayNameHtml": "<strong>SPC Auctions</strong>",
+  "displayName": "Spin Logistics",
+  "displayNameHtml": "<strong>Spin Logistics</strong>",
   "enabled": true,
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
@@ -14,13 +14,7 @@
   "rememberMe": true,
   "internationalizationEnabled": true,
   "supportedLocales": [
-    "en",
-    "nl",
-    "de",
-    "fr",
-    "pl",
-    "it",
-    "ro"
+    "en"
   ],
   "defaultLocale": "en",
   "bruteForceProtected": true,

@@ -52,7 +52,7 @@ class UserEntity(
     var language: String = "en",
 
     @Column(name = "currency", nullable = false)
-    var currency: String = "EUR",
+    var currency: String = "USD",
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

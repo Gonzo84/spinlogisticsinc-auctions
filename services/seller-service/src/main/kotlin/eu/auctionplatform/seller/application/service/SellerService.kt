@@ -128,11 +128,11 @@ class SellerService @Inject constructor(
         if (request.companyName.isBlank()) {
             errors["companyName"] = "Company name is required"
         }
-        if (request.country.isBlank()) {
-            errors["country"] = "Country is required"
+        if (request.state.isBlank()) {
+            errors["state"] = "State is required"
         }
-        if (request.country.isNotBlank() && request.country.length != 2) {
-            errors["country"] = "Country must be an ISO 3166-1 alpha-2 code"
+        if (request.state.isNotBlank() && request.state.length != 2) {
+            errors["state"] = "State must be a 2-letter US state code"
         }
         if (errors.isNotEmpty()) {
             throw ValidationException(errors)
@@ -150,8 +150,8 @@ class SellerService @Inject constructor(
             userId = userId,
             companyName = request.companyName,
             registrationNo = request.registrationNo,
-            vatId = request.vatId,
-            country = request.country,
+            ein = request.ein,
+            state = request.state,
             status = SellerStatus.PENDING,
             createdAt = Instant.now()
         )
@@ -179,12 +179,12 @@ class SellerService @Inject constructor(
         val resolvedCompanyName = companyName.ifBlank {
             email.substringBefore("@").replaceFirstChar { c -> c.uppercase() }
         }
-        val resolvedCountry = country.ifBlank { "NL" }.take(2).uppercase()
+        val resolvedState = country.ifBlank { "NY" }.take(2).uppercase()
 
         val profile = SellerProfile(
             userId = userId,
             companyName = resolvedCompanyName,
-            country = resolvedCountry,
+            state = resolvedState,
             status = SellerStatus.VERIFIED,
             createdAt = Instant.now()
         )
@@ -347,7 +347,7 @@ class SellerService @Inject constructor(
                                 commission = rs.getBigDecimal("commission") ?: BigDecimal.ZERO,
                                 commissionRate = rs.getBigDecimal("commission_rate") ?: BigDecimal("0.10"),
                                 netAmount = rs.getBigDecimal("net_amount") ?: BigDecimal.ZERO,
-                                currency = rs.getString("currency") ?: "EUR",
+                                currency = rs.getString("currency") ?: "USD",
                                 status = rs.getString("status") ?: "PENDING",
                                 settledAt = rs.getTimestamp("settled_at")?.toInstant()
                             )

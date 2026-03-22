@@ -4,13 +4,22 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Type of GDPR data-subject request.
+ * Type of privacy data-subject request.
+ *
+ * Covers both GDPR (EU) and CCPA (US, California Civil Code 1798.100-199) request types.
  */
 enum class GdprRequestType {
+    // --- GDPR (EU) ---
     /** Right to data portability (Art. 20 GDPR). */
     EXPORT,
     /** Right to erasure / "right to be forgotten" (Art. 17 GDPR). */
-    ERASURE
+    ERASURE,
+
+    // --- CCPA (US) ---
+    /** "Do Not Sell My Personal Information" opt-out (CCPA 1798.120). */
+    OPT_OUT,
+    /** Consumer deletion request (CCPA 1798.105). Similar to GDPR erasure but uses opt-out model. */
+    DELETION
 }
 
 /**
@@ -26,9 +35,10 @@ enum class GdprRequestStatus {
 /**
  * Immutable domain model representing a GDPR data-subject request.
  *
- * A request is created when a user exercises their rights under the GDPR,
- * either requesting a full data export (Art. 20 portability) or requesting
- * erasure of their personal data (Art. 17 "right to be forgotten").
+ * A request is created when a user exercises their rights under the GDPR (EU)
+ * or CCPA (US/California), including data export (GDPR Art. 20), erasure
+ * (GDPR Art. 17), opt-out of data sale (CCPA 1798.120), or deletion
+ * (CCPA 1798.105).
  *
  * @property id              Unique request identifier (UUIDv7).
  * @property userId          The data subject's internal user identifier.

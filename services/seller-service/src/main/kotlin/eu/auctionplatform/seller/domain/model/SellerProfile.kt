@@ -13,8 +13,8 @@ import java.util.UUID
  * @property userId          Reference to the user account in the user service.
  * @property companyName     Registered company name.
  * @property registrationNo  Business registration / chamber of commerce number.
- * @property vatId           EU VAT identification number (for cross-border B2B).
- * @property country         ISO 3166-1 alpha-2 country code.
+ * @property ein             US Employer Identification Number (EIN).
+ * @property state           US state code (e.g. "NY", "CA").
  * @property status          Verification status of the seller profile.
  * @property verifiedAt      Timestamp when the seller was verified (null if pending).
  * @property createdAt       Timestamp when the profile was created.
@@ -24,8 +24,8 @@ data class SellerProfile(
     val userId: UUID,
     val companyName: String,
     val registrationNo: String? = null,
-    val vatId: String? = null,
-    val country: String,
+    val ein: String? = null,
+    val state: String,
     val status: SellerStatus = SellerStatus.PENDING,
     val verifiedAt: Instant? = null,
     val createdAt: Instant = Instant.now()

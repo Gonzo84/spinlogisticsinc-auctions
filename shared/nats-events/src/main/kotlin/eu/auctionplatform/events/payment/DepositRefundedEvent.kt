@@ -53,7 +53,7 @@ data class DepositRefundedEvent(
 
     /** ISO 4217 currency code. */
     @JsonProperty("currency")
-    val currency: String = "EUR",
+    val currency: String = "USD",
 
     /** PSP reference for the refund transaction, if available. */
     @JsonProperty("pspReference")

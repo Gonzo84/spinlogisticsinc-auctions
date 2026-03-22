@@ -2,6 +2,8 @@
 
 **Stack**: Vue 3 + TypeScript | Kotlin 2.3 + Quarkus 3 | REST (JAX-RS) | PostgreSQL 16 | Keycloak | NATS JetStream | MinIO | Redis | Elasticsearch
 
+**Market**: US B2B industrial equipment auctions | USD currency | US sales tax (Avalara/TaxJar) | CCPA/state privacy laws | en-US locale only
+
 > This document is the single source of truth for coding style, patterns, and architectural decisions across all services in this platform. AI agents MUST follow these conventions when generating or modifying code. Maintained by the project owner -- updates here override any conflicting defaults.
 
 ---
@@ -113,10 +115,13 @@ Use these terms consistently across all services:
 | Authenticated user | `userId` / `subjectId` | `user`, `principal`, `sub` |
 | Auction lot | `lot` | `item`, `product`, `listing` |
 | Bid amount | `amount` | `price`, `value`, `bidPrice` |
-| Currency | `currency` (ISO 4217) | `curr`, `currencyCode` |
+| Currency | `currency` (ISO 4217, default `USD`) | `curr`, `currencyCode` |
 | File content type | `mimeType` or `contentType` | `type`, `fileType` |
 | File size | `sizeBytes` | `size`, `length`, `fileSize` |
 | Location city | `locationCity` (backend flat) / `location.city` (frontend nested) | `city` alone |
+| Location state | `state` (backend) / `location.state` (frontend nested) | `country`, `region`, `province` |
+| Business tax ID | `ein` (US EIN, format `XX-XXXXXXX`) | `vatId`, `taxId`, `taxNumber` |
+| Business entity type | `entityType` (`LLC`, `C-Corp`, `S-Corp`, `LP`, `Sole Prop`) | `companyType`, `legalForm` |
 | Catalog lot UUID | `catalogLotId` (frontend) / `lotId` (backend events) | `lotNumber`, `lotId` in frontend types (ambiguous) |
 | Auction-engine UUID | `auctionId` | `id` alone in auction contexts (ambiguous) |
 
@@ -417,7 +422,7 @@ const item = raw?.data ?? raw
 
 #### Backend Field Normalization
 
-Catalog-service uses flat fields (`locationCity`, `locationCountry`). Frontends use nested `location` object. Always transform:
+Catalog-service uses flat fields (`locationCity`, `locationState`). Frontends use nested `location` object. Always transform:
 
 ```typescript
 function normalizeLot(data: any): Lot {
@@ -426,7 +431,7 @@ function normalizeLot(data: any): Lot {
     location: data.location ?? {
       address: data.locationAddress ?? '',
       city: data.locationCity ?? '',
-      country: data.locationCountry ?? '',
+      state: data.locationState ?? '',
     },
   }
 }
@@ -434,7 +439,7 @@ function normalizeLot(data: any): Lot {
 function toBackendPayload(data: LotFormData) {
   return {
     locationCity: data.location?.city ?? '',
-    locationCountry: data.location?.country ?? '',
+    locationState: data.location?.state ?? '',
     // ... flat fields for backend
   }
 }
@@ -465,12 +470,14 @@ keycloak.login({ redirectUri: window.location.origin + to.path })
 
 ### 3.9 i18n
 
-**buyer-web** uses i18n with translation files in `i18n/locales/`.
+**buyer-web** uses i18n with a single `en.json` translation file in `i18n/locales/`. The platform targets the US market (en-US) only.
 
+- **Single locale**: English (en-US). EU locale files (sl, hr, de, it, sr, hu) are deprecated.
 - Dot-separated, feature-scoped keys: `auction.timeRemaining`, `common.save`.
 - Named interpolation: `t('auction.errors.bidFailed', { reason: err.message })`.
 - Never hardcode user-facing strings in templates or TypeScript.
 - Use `t()` in `<script>`, `{{ t('key') }}` in templates.
+- Use US English spelling: catalog (not catalogue), color (not colour), center (not centre).
 
 ### 3.10 CSS & Styling (Tailwind)
 
@@ -979,8 +986,10 @@ updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 | Timestamps | `TIMESTAMPTZ` | Always timezone-aware |
 | Money/amounts | `NUMERIC(19,4)` | Never use `FLOAT` or `DOUBLE` |
 | Status columns | `VARCHAR(20) NOT NULL DEFAULT 'DRAFT'` | Stored as enum strings |
-| Country codes | `VARCHAR(3)` | ISO alpha-2/3 codes ("NL", "DE"), NOT full names |
-| Currency codes | `VARCHAR(3)` | ISO 4217 ("EUR", "USD") |
+| State codes | `VARCHAR(2)` | US state abbreviations ("NY", "CA", "TX"), NOT full names |
+| EIN (tax ID) | `VARCHAR(10)` | US Employer Identification Number format "XX-XXXXXXX" |
+| Entity type | `VARCHAR(20)` | US business entity type ("LLC", "C-Corp", "S-Corp", "LP", "Sole Prop") |
+| Currency codes | `VARCHAR(3)` | ISO 4217 (default "USD") |
 
 ### 7.4 Migration Naming (Flyway)
 
@@ -1152,6 +1161,7 @@ user.registered
 user.kyc.verified
 media.image.uploaded
 compliance.gdpr.erasure
+compliance.ccpa.opt-out
 ```
 
 ### 10.2 Stream Configuration
@@ -1166,7 +1176,7 @@ Eight JetStream streams, one per domain, initialized by `NatsStreamInitializer`:
 | `USER` | `user.>` | Registration, KYC |
 | `MEDIA` | `media.>` | Image uploads, processing |
 | `NOTIFY` | `notify.>` | Notification triggers |
-| `COMPLIANCE` | `compliance.>` | GDPR, AML events |
+| `COMPLIANCE` | `compliance.>` | CCPA, GDPR, AML/OFAC events |
 | `CO2` | `co2.>` | Emission calculations |
 
 Default stream config:
@@ -1354,6 +1364,17 @@ GitHub Actions pipeline (`.github/workflows/ci.yml`). Use path filters to run on
 | Authentication Failures | PKCE for SPA; short token lifetimes; account lockout in Keycloak |
 | SSRF | Validate/allowlist URLs for media uploads; MinIO only accessible via internal network |
 
+### 14.1.1 US Regulatory Compliance
+
+| Regulation | Implementation |
+|-----------|---------------|
+| CCPA/state privacy | Opt-out mechanisms in compliance-service; "Do Not Sell" support; DSAR handling |
+| PCI DSS 4.0 | Stripe hosted payment fields (SAQ-A scope); MFA for cardholder data access |
+| BSA/FinCEN AML | OFAC SDN screening via compliance-service; SAR filing support |
+| CAN-SPAM | Physical address in all commercial emails; opt-out honored within 10 business days |
+| UCC 2-328 | Auction rules enforced programmatically (with/without reserve, bid retraction, shill bidding prohibition) |
+| WCAG 2.1 AA | Keyboard navigation, screen readers, color contrast, form labels, accessible auction timers |
+
 ### 14.2 CSP Headers
 
 Gateway-service should set security headers:
@@ -1427,7 +1448,7 @@ What becomes easier or harder?
 These are real bugs that were found and fixed. AI agents MUST be aware of them:
 
 1. **Catalog pagination is 0-based** -- `page=0` is the first page. Frontends showing page 1 must send `page=0`.
-2. **Country codes are VARCHAR(3)** -- use ISO codes ("NL", "DE"), never full names ("Netherlands").
+2. **State codes are VARCHAR(2)** -- use US state abbreviations ("NY", "CA", "TX"), never full names ("New York"). EIN format is "XX-XXXXXXX" (VARCHAR(10)).
 3. **`sellerId` in catalog-service is Keycloak UUID** -- not the internal user-service UUID.
 4. **LotSummaryResponse vs LotResponse** -- summary (list view) has fewer fields than detail. If you need a field in lists, add it to both the DTO and the mapper.
 5. **Auto-registration pattern** -- user-service and seller-service auto-create profiles on first `/me` access from JWT claims. New services with `/me` endpoints should follow this pattern.
@@ -1437,9 +1458,13 @@ These are real bugs that were found and fixed. AI agents MUST be aware of them:
 9. **Keycloak password** -- test user password is `password123`, not `test`.
 10. **Port mapping** -- gateway-service is 8080, auction-engine is 8081, then sequential. See section 12.2 for the full list.
 11. **Keycloak inject timing** -- `inject('keycloak')` MUST be captured during `setup()`, never inside async callbacks or axios interceptors.
-12. **Lot field normalization** -- backend uses flat fields (`locationCity`, `locationCountry`), frontend expects nested `location` object. Always use `normalizeLot()` and `toBackendPayload()` transforms.
+12. **Lot field normalization** -- backend uses flat fields (`locationCity`, `locationState`), frontend expects nested `location` object. Always use `normalizeLot()` and `toBackendPayload()` transforms.
 13. **Auction-engine field names** -- returns `auctionId` not `id`, `endTime` not `endDate`. Needs normalization on the frontend.
 14. **`lotId` vs `auctionId` confusion** -- catalog lot UUID and auction-engine UUID are different. Never fall back to `aggregateId` for `lotId` in NATS consumers. Frontend navigation must use `catalogLotId`. See CONVENTIONS.md section 2.4 and `docs/LOT_AUCTION_ID_AUDIT.md`.
+15. **US sales tax is jurisdiction-level** -- state base rates in `VatRate.kt` are for development only. Production MUST use Avalara/TaxJar API for accurate state+county+city+special district rates (10,000+ jurisdictions). Never hardcode tax rates for production use.
+16. **EIN validation format** -- `^\d{2}-\d{7}$` (e.g., `12-3456789`). The `companies.ein` column is VARCHAR(10). Do not accept EU VAT number format.
+17. **US date/time display** -- Always use MM/DD/YYYY format and 12-hour AM/PM time in frontend. Backend stores UTC (no change). Auction creation must include timezone selector for US time zones (ET, CT, MT, PT, AKT, HST).
+18. **DSA service disabled by default** -- `compliance.dsa.enabled=false` for US deployment. DSA (Digital Services Act) is EU-only. Content moderation still works via `reportContent()` but transparency reports are disabled.
 
 ---
 
@@ -1467,6 +1492,11 @@ These are real bugs that were found and fixed. AI agents MUST be aware of them:
 - Do NOT create custom status badge components -- use PrimeVue `Tag` with `getStatusSeverity()` from `@auction-platform/design-tokens`.
 - Do NOT use `aggregateId` as a fallback for `lotId` in NATS event consumers -- `aggregateId` is always the auction-engine `auctionId` (or `settlementId` in payment events), never the catalog lot UUID.
 - Do NOT silently substitute `lotId` for `sellerId` or `auctionId` in payment-service -- fail loudly with an exception or early return.
+- Do NOT use EU-specific terminology in code or UI -- use US equivalents: `ein` not `vatId`, `state` not `country`, `salesTax` not `vat`, `USD` not `EUR`.
+- Do NOT add non-English locale files -- the platform targets US market (en-US) only.
+- Do NOT use EU date format (DD/MM/YYYY or DD.MM.YYYY) -- use US format MM/DD/YYYY with 12-hour AM/PM time.
+- Do NOT use metric units as primary display -- show imperial units first with metric in parentheses (e.g., `15,000 lbs (6,804 kg)`).
+- Do NOT hardcode VAT rates -- use the sales tax service integration (Avalara/TaxJar) for jurisdiction-level rates in production.
 
 ---
 
@@ -1487,7 +1517,7 @@ These are real bugs that were found and fixed. AI agents MUST be aware of them:
 | Add a domain event | n/a | `shared/nats-events/.../events/{domain}/` + register in `BaseEvent` |
 | Add a Casbin policy | n/a | Update `casbin_policy.csv` in service resources |
 | Add a DB migration | n/a | `src/main/resources/db/migration/V{n}__{description}.sql` |
-| Add a translation key | `i18n/locales/en.json` (buyer-web only) | n/a |
+| Add a translation key | `i18n/locales/en.json` (buyer-web, en-US only) | n/a |
 
 ## Appendix B: Key Architectural Decisions Summary
 
@@ -1507,6 +1537,12 @@ These are real bugs that were found and fixed. AI agents MUST be aware of them:
 | Field injection in JAX-RS resources | Quarkus RESTEasy requires no-arg constructor; constructor injection for all other beans |
 | UUIDv7 for all IDs | Time-sortable; no coordination required; index-friendly |
 | `to.path` not `to.fullPath` in auth guards | Avoids Keycloak `redirect_uri` query string overflow |
+| USD default currency | US market target; EUR no longer default. `Money.kt` uses `Locale.US` formatting |
+| US sales tax over EU VAT | External tax service (Avalara/TaxJar) for 10,000+ US jurisdictions replaces static EU VAT rates |
+| EIN over VAT ID | US business identification via Employer Identification Number (XX-XXXXXXX format) |
+| State-based addressing | US state codes (2-letter) replace EU country codes for location and tax nexus |
+| Single locale (en-US) | US market does not require multi-language support; EU locales deprecated |
+| CCPA + state privacy laws | Replaces GDPR as primary privacy framework; opt-out model instead of opt-in consent |
 
 ---
 
@@ -1535,3 +1571,13 @@ These are real bugs that were found and fixed. AI agents MUST be aware of them:
 - [Casbin RBAC Documentation](https://casbin.org/docs/rbac/)
 - [NATS JetStream Documentation](https://docs.nats.io/nats-concepts/jetstream)
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
+
+### US Market & Compliance
+- [UCC Section 2-328 - Sale by Auction](https://www.law.cornell.edu/ucc/2/2-328)
+- [CCPA/CPRA - California Privacy Rights Act](https://oag.ca.gov/privacy/ccpa)
+- [Avalara Sales Tax API](https://www.avalara.com/us/en/products/sales-and-use-tax/tax-calculation.html)
+- [Stripe Connect for Marketplaces](https://stripe.com/connect)
+- [OFAC Sanctions List](https://ofac.treasury.gov/specially-designated-nationals-and-blocked-persons-list-sdn-human-readable-lists)
+- [FinCEN BSA Requirements](https://www.fincen.gov/resources/statutes-and-regulations/bank-secrecy-act)
+- [IRS 1099-K Reporting](https://www.irs.gov/forms-pubs/about-form-1099-k)
+- See `docs/US_MARKET_ADAPTATION_PLAN.md` for the full adaptation plan with legal, tax, and infrastructure details

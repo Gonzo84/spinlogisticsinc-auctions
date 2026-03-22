@@ -8,155 +8,138 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 /**
- * Result of a VAT calculation.
+ * Result of a US sales tax calculation.
  *
- * @property vatAmount The calculated VAT amount.
- * @property vatRate The effective VAT rate applied.
- * @property vatScheme The VAT scheme that was determined.
+ * @property taxAmount The calculated sales tax amount.
+ * @property taxRate The effective sales tax rate applied (percentage, e.g. 6.25).
+ * @property taxScheme The tax scheme that was determined.
  */
-data class VatCalculationResult(
-    val vatAmount: BigDecimal,
-    val vatRate: BigDecimal,
-    val vatScheme: VatScheme
+data class TaxCalculationResult(
+  val taxAmount: BigDecimal,
+  val taxRate: BigDecimal,
+  val taxScheme: VatScheme,
 )
 
 /**
- * Calculates VAT for EU auction transactions based on the buyer/seller
- * locations, account types, and applicable VAT regime.
+ * Calculates US sales tax for auction transactions based on buyer/seller
+ * locations and exemption status.
  *
- * ## EU VAT rules for auctions (simplified)
+ * ## US sales tax rules for auctions (simplified)
  *
- * | Scenario                          | Scheme          | Rate              |
- * |-----------------------------------|-----------------|-------------------|
- * | Domestic B2B                      | STANDARD        | Seller country    |
- * | Intra-EU B2B (valid VAT ID)       | REVERSE_CHARGE  | 0%                |
- * | Domestic B2C                      | STANDARD        | Seller country    |
- * | Intra-EU B2C                      | OSS             | Destination (buyer) country |
+ * | Scenario                                  | Scheme               | Rate                |
+ * |-------------------------------------------|----------------------|---------------------|
+ * | Buyer is outside the US (non-US state)     | EXPORT               | 0%                  |
+ * | Buyer has resale exemption certificate     | EXEMPT_RESALE        | 0%                  |
+ * | Buyer has manufacturing exemption cert     | EXEMPT_MANUFACTURING | 0%                  |
+ * | Buyer is government/nonprofit              | EXEMPT_GOVERNMENT    | 0%                  |
+ * | Destination state has no sales tax         | NO_TAX_STATE         | 0%                  |
+ * | Standard taxable sale                      | TAXABLE              | Destination state   |
  *
- * The margin scheme (Art. 312-325 VAT Directive) for second-hand goods,
- * art, and antiques is supported but must be explicitly requested by the
- * seller.
+ * Sales tax is destination-based: the buyer's state determines the rate.
+ *
+ * TODO: Integrate Avalara AvaTax or TaxJar for production jurisdiction-level
+ *       (county/city/district) rate calculation. Base state rates alone are
+ *       insufficient for full US sales tax compliance.
  */
 @ApplicationScoped
 class VatCalculationService {
 
-    companion object {
-        private val LOG: Logger = Logger.getLogger(VatCalculationService::class.java)
+  companion object {
+    private val LOG: Logger = Logger.getLogger(VatCalculationService::class.java)
 
-        /** Account type constants. */
-        const val ACCOUNT_TYPE_BUSINESS = "BUSINESS"
-        const val ACCOUNT_TYPE_CONSUMER = "CONSUMER"
-    }
+    /** Percentage divisor for converting rate to multiplier. */
+    private val HUNDRED: BigDecimal = BigDecimal.valueOf(100)
+  }
 
-    /**
-     * Calculates the VAT for a transaction based on EU rules.
-     *
-     * The taxable base is the sum of [hammerPrice] and [buyerPremium].
-     *
-     * @param hammerPrice The final hammer (bid) price.
-     * @param buyerPremium The buyer premium amount.
-     * @param buyerCountry ISO 3166-1 alpha-2 country code of the buyer.
-     * @param sellerCountry ISO 3166-1 alpha-2 country code of the seller.
-     * @param buyerType Account type of the buyer ("BUSINESS" or "CONSUMER").
-     * @param sellerType Account type of the seller ("BUSINESS" or "CONSUMER").
-     * @param buyerVatId The buyer's VAT identification number (null if not provided).
-     * @return [VatCalculationResult] containing the VAT amount, rate, and scheme.
-     */
-    fun calculateVat(
-        hammerPrice: BigDecimal,
-        buyerPremium: BigDecimal,
-        buyerCountry: String,
-        sellerCountry: String,
-        buyerType: String,
-        sellerType: String,
-        buyerVatId: String?
-    ): VatCalculationResult {
-        val taxableBase = hammerPrice.add(buyerPremium)
-        val isDomestic = buyerCountry.equals(sellerCountry, ignoreCase = true)
-        val isBuyerBusiness = buyerType.equals(ACCOUNT_TYPE_BUSINESS, ignoreCase = true)
-        val hasValidVatId = !buyerVatId.isNullOrBlank()
+  /**
+   * Calculates the sales tax for a transaction based on US rules.
+   *
+   * The taxable base is the sum of [hammerPrice] and [buyerPremium].
+   *
+   * @param hammerPrice The final hammer (bid) price.
+   * @param buyerPremium The buyer premium amount.
+   * @param buyerState US state 2-letter code of the buyer (destination).
+   * @param sellerState US state 2-letter code of the seller (origin).
+   * @param exemptionCertificateId The buyer's exemption certificate ID
+   *        (resale, manufacturing, or government), null if none.
+   * @return [TaxCalculationResult] containing the tax amount, rate, and scheme.
+   */
+  fun calculateTax(
+    hammerPrice: BigDecimal,
+    buyerPremium: BigDecimal,
+    buyerState: String,
+    sellerState: String,
+    exemptionCertificateId: String?,
+  ): TaxCalculationResult {
+    val taxableBase = hammerPrice.add(buyerPremium)
+    val hasExemptionCert = !exemptionCertificateId.isNullOrBlank()
+    val isNoTaxState = VatRates.isNoTaxState(buyerState)
 
-        LOG.debugf(
-            "Calculating VAT: taxableBase=%s, buyerCountry=%s, sellerCountry=%s, " +
-                "buyerType=%s, sellerType=%s, buyerVatId=%s, isDomestic=%s",
-            taxableBase, buyerCountry, sellerCountry, buyerType, sellerType,
-            buyerVatId?.take(4)?.plus("***"), isDomestic
+    LOG.debugf(
+      "Calculating sales tax: taxableBase=%s, buyerState=%s, sellerState=%s, " +
+        "exemptionCertId=%s, isNoTaxState=%s",
+      taxableBase, buyerState, sellerState,
+      exemptionCertificateId?.take(4)?.plus("***"), isNoTaxState,
+    )
+
+    val isValidUsState = VatRates.isValidUsState(buyerState)
+
+    return when {
+      // Non-US buyer (buyerState is not a recognised US state code) — export, 0% tax
+      !isValidUsState -> {
+        LOG.infof(
+          "Applying EXPORT: buyerState=%s is not a recognised US state, 0%% tax",
+          buyerState,
         )
+        TaxCalculationResult(
+          taxAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+          taxRate = BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
+          taxScheme = VatScheme.EXPORT,
+        )
+      }
 
-        return when {
-            // Intra-EU B2B with valid VAT ID -> Reverse charge
-            !isDomestic && isBuyerBusiness && hasValidVatId -> {
-                LOG.infof(
-                    "Applying REVERSE_CHARGE: intra-EU B2B from %s to %s (VAT ID provided)",
-                    sellerCountry, buyerCountry
-                )
-                VatCalculationResult(
-                    vatAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
-                    vatRate = BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
-                    vatScheme = VatScheme.REVERSE_CHARGE
-                )
-            }
+      // Buyer holds a valid exemption certificate (resale/manufacturing/gov)
+      hasExemptionCert -> {
+        LOG.infof(
+          "Applying EXEMPT_RESALE: buyer has exemption certificate, " +
+            "buyerState=%s, sellerState=%s",
+          buyerState, sellerState,
+        )
+        TaxCalculationResult(
+          taxAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+          taxRate = BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
+          taxScheme = VatScheme.EXEMPT_RESALE,
+        )
+      }
 
-            // Intra-EU B2C -> OSS regime (destination country rate)
-            !isDomestic && !isBuyerBusiness -> {
-                val rate = VatRates.getRate(buyerCountry.uppercase())
-                val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                LOG.infof(
-                    "Applying OSS: intra-EU B2C from %s to %s (rate=%s)",
-                    sellerCountry, buyerCountry, rate
-                )
-                VatCalculationResult(
-                    vatAmount = vatAmount,
-                    vatRate = rate.setScale(4, RoundingMode.HALF_UP),
-                    vatScheme = VatScheme.OSS
-                )
-            }
+      // Destination state has no general sales tax
+      isNoTaxState -> {
+        LOG.infof(
+          "Applying NO_TAX_STATE: destination state %s has no sales tax",
+          buyerState,
+        )
+        TaxCalculationResult(
+          taxAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+          taxRate = BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
+          taxScheme = VatScheme.NO_TAX_STATE,
+        )
+      }
 
-            // Domestic B2B -> Standard VAT rate of seller country
-            isDomestic && isBuyerBusiness -> {
-                val rate = VatRates.getRate(sellerCountry.uppercase())
-                val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                LOG.infof(
-                    "Applying STANDARD: domestic B2B in %s (rate=%s)",
-                    sellerCountry, rate
-                )
-                VatCalculationResult(
-                    vatAmount = vatAmount,
-                    vatRate = rate.setScale(4, RoundingMode.HALF_UP),
-                    vatScheme = VatScheme.STANDARD
-                )
-            }
-
-            // Domestic B2C -> Standard VAT rate of seller country
-            isDomestic && !isBuyerBusiness -> {
-                val rate = VatRates.getRate(sellerCountry.uppercase())
-                val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                LOG.infof(
-                    "Applying STANDARD: domestic B2C in %s (rate=%s)",
-                    sellerCountry, rate
-                )
-                VatCalculationResult(
-                    vatAmount = vatAmount,
-                    vatRate = rate.setScale(4, RoundingMode.HALF_UP),
-                    vatScheme = VatScheme.STANDARD
-                )
-            }
-
-            // Intra-EU B2B without valid VAT ID -> Standard rate of seller country
-            // (buyer should provide VAT ID for reverse charge; without it, standard applies)
-            else -> {
-                val rate = VatRates.getRate(sellerCountry.uppercase())
-                val vatAmount = taxableBase.multiply(rate).setScale(2, RoundingMode.HALF_UP)
-                LOG.infof(
-                    "Applying STANDARD: intra-EU B2B without VAT ID, from %s to %s (rate=%s)",
-                    sellerCountry, buyerCountry, rate
-                )
-                VatCalculationResult(
-                    vatAmount = vatAmount,
-                    vatRate = rate.setScale(4, RoundingMode.HALF_UP),
-                    vatScheme = VatScheme.STANDARD
-                )
-            }
-        }
+      // Standard taxable sale — apply destination state base rate
+      else -> {
+        val rate = VatRates.getRate(buyerState.uppercase())
+        val rateMultiplier = rate.divide(HUNDRED, 6, RoundingMode.HALF_UP)
+        val taxAmount = taxableBase.multiply(rateMultiplier).setScale(2, RoundingMode.HALF_UP)
+        LOG.infof(
+          "Applying TAXABLE: standard sale to %s (rate=%s%%)",
+          buyerState, rate,
+        )
+        TaxCalculationResult(
+          taxAmount = taxAmount,
+          taxRate = rate.setScale(4, RoundingMode.HALF_UP),
+          taxScheme = VatScheme.TAXABLE,
+        )
+      }
     }
+  }
 }

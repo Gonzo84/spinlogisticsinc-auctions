@@ -9,7 +9,7 @@
 <script setup lang="ts">
 useHead({
   titleTemplate: (titleChunk) => {
-    return titleChunk ? `${titleChunk} | SPC Aukcije` : 'SPC Aukcije'
+    return titleChunk ? `${titleChunk} | Spin Logistics` : 'Spin Logistics'
   },
 })
 </script>

@@ -188,7 +188,7 @@ class AuctionReadModelRepository @Inject constructor(
             UPDATE app.auction_read_model
                SET status = 'AWARDED',
                    current_high_bid = COALESCE(?, current_high_bid),
-                   current_high_bidder_id = COALESCE(?::uuid, current_high_bidder_id),
+                   current_high_bidder_id = COALESCE(?, current_high_bidder_id),
                    awarded_at = ?,
                    auto_awarded = ?,
                    updated_at = ?
@@ -373,7 +373,7 @@ class AuctionReadModelRepository @Inject constructor(
                 dataSource.connection.use { conn ->
                     conn.prepareStatement(UPDATE_AWARDED).use { stmt ->
                         stmt.setBigDecimal(1, event.winningBidAmount)
-                        stmt.setString(2, event.winnerId)
+                        stmt.setObject(2, UUID.fromString(event.winnerId))
                         stmt.setTimestamp(3, Timestamp.from(event.timestamp))
                         stmt.setBoolean(4, autoAwarded)
                         stmt.setTimestamp(5, Timestamp.from(now))

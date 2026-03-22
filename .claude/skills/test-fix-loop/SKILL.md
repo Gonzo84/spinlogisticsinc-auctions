@@ -127,7 +127,7 @@ This prevents stale browser windows from prior subagents interfering with the ne
 Example Task prompt:
 ```
 Run the /test-happy-path skill with argument "<mode>".
-The working directory is /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform.
+The working directory is /home/radionica/Radionica/Tradex/Tradex/spin-logistics.
 After testing completes, report back:
 - Number of steps: PASS / FAIL / PARTIAL / SKIP
 - Number of bugs found (by severity)
@@ -177,7 +177,7 @@ Increment `iteration`. If `iteration > MAX_ITERATIONS`, **go to Step 5 (Max Iter
 Example Task prompt:
 ```
 Run the /fix-bugs skill.
-The working directory is /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform.
+The working directory is /home/radionica/Radionica/Tradex/Tradex/spin-logistics.
 After fixing completes, report back:
 - Number of bugs fixed
 - Number of bugs skipped (unfixable)

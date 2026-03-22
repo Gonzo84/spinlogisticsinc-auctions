@@ -13,7 +13,7 @@ Start the entire platform: Docker infrastructure, backend services, and all 3 fr
 
 ### 1. Start infrastructure
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform && \
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics && \
 docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env up -d
 ```
 
@@ -28,20 +28,20 @@ done
 
 ### 3. Start backend services
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform && \
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics && \
 docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d --build
 ```
 
 ### 4. Start all 3 frontends (in parallel, background)
 Run each frontend dev server in the background using the Bash tool with `run_in_background: true`:
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform/frontend/buyer-web && npm run dev
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics/frontend/buyer-web && npm run dev
 ```
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform/frontend/seller-portal && npm run dev
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics/frontend/seller-portal && npm run dev
 ```
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform/frontend/admin-dashboard && npm run dev
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics/frontend/admin-dashboard && npm run dev
 ```
 
 ### 5. Verify

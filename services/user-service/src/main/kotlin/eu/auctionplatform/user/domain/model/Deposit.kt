@@ -25,7 +25,7 @@ data class Deposit(
     val id: UUID,
     val userId: UUID,
     val amount: BigDecimal = BigDecimal("200.00"),
-    val currency: String = "EUR",
+    val currency: String = "USD",
     val paidAt: Instant? = null,
     val refundRequestedAt: Instant? = null,
     val refundedAt: Instant? = null,

@@ -33,7 +33,7 @@ Read these files to understand what's already documented:
 
 - `CLAUDE.md` — Project instructions, critical gotchas, architecture
 - `CONVENTIONS.md` — Coding conventions, patterns, what NOT to do
-- `~/.claude/projects/-home-radionica-Radionica-Tradex-Tradex-eu-auction-platform/memory/MEMORY.md` — Persistent memory
+- `~/.claude/projects/-home-radionica-Radionica-Tradex-Tradex-spin-logistics/memory/MEMORY.md` — Persistent memory
 
 ### Step 3: Analyze for New Knowledge
 

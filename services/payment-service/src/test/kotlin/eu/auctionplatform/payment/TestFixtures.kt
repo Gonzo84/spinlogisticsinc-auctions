@@ -13,7 +13,7 @@ object TestFixtures {
     ) = mapOf(
         "buyerId" to buyerId.toString(),
         "lotIds" to lotIds.map { it.toString() },
-        "currency" to "EUR",
+        "currency" to "USD",
         "brand" to "troostwijk"
     )
 }

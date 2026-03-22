@@ -9,7 +9,7 @@ import java.util.TreeMap
 /**
  * Business constants for auction bid processing.
  *
- * All monetary values default to EUR. The minimum increment rules follow a tiered
+ * All monetary values default to USD. The minimum increment rules follow a tiered
  * structure common in European B2B industrial auctions, ensuring bid increments
  * scale proportionally to the lot's current price level.
  *
@@ -48,20 +48,20 @@ object AuctionConstants {
     // Deposit thresholds
     // -----------------------------------------------------------------------
 
-    private val EUR: Currency = Currency.getInstance("EUR")
+    private val USD: Currency = Currency.getInstance("USD")
 
     /**
      * If an auction's current high bid reaches or exceeds this threshold,
      * all subsequent bidders must have a deposit on file before they can
      * place a bid.
      */
-    val DEPOSIT_THRESHOLD: Money = Money.of(BigDecimal("4000"), EUR)
+    val DEPOSIT_THRESHOLD: Money = Money.of(BigDecimal("4000"), USD)
 
     /**
      * The fixed deposit amount required from bidders when the [DEPOSIT_THRESHOLD]
      * is active.
      */
-    val DEPOSIT_AMOUNT: Money = Money.of(BigDecimal("200"), EUR)
+    val DEPOSIT_AMOUNT: Money = Money.of(BigDecimal("200"), USD)
 
     // -----------------------------------------------------------------------
     // Minimum bid increment rules
@@ -70,10 +70,10 @@ object AuctionConstants {
     /**
      * Sorted map of price-range lower bounds (inclusive) to their corresponding
      * minimum bid increment. The key is the lower bound of the price range in
-     * whole EUR. Lookup is performed via [TreeMap.floorEntry] to find the
+     * whole USD. Lookup is performed via [TreeMap.floorEntry] to find the
      * applicable tier for any given bid amount.
      *
-     * | Price range (EUR) | Minimum increment (EUR) |
+     * | Price range (USD) | Minimum increment (USD) |
      * |-------------------|-------------------------|
      * |        0 –     99 |                       1 |
      * |      100 –    499 |                       5 |
@@ -85,14 +85,14 @@ object AuctionConstants {
      * |  100 000+         |                     500 |
      */
     val MIN_INCREMENT_RULES: TreeMap<BigDecimal, Money> = TreeMap<BigDecimal, Money>().apply {
-        put(BigDecimal("0"), Money.of(BigDecimal("1"), EUR))
-        put(BigDecimal("100"), Money.of(BigDecimal("5"), EUR))
-        put(BigDecimal("500"), Money.of(BigDecimal("10"), EUR))
-        put(BigDecimal("1000"), Money.of(BigDecimal("25"), EUR))
-        put(BigDecimal("5000"), Money.of(BigDecimal("50"), EUR))
-        put(BigDecimal("10000"), Money.of(BigDecimal("100"), EUR))
-        put(BigDecimal("50000"), Money.of(BigDecimal("250"), EUR))
-        put(BigDecimal("100000"), Money.of(BigDecimal("500"), EUR))
+        put(BigDecimal("0"), Money.of(BigDecimal("1"), USD))
+        put(BigDecimal("100"), Money.of(BigDecimal("5"), USD))
+        put(BigDecimal("500"), Money.of(BigDecimal("10"), USD))
+        put(BigDecimal("1000"), Money.of(BigDecimal("25"), USD))
+        put(BigDecimal("5000"), Money.of(BigDecimal("50"), USD))
+        put(BigDecimal("10000"), Money.of(BigDecimal("100"), USD))
+        put(BigDecimal("50000"), Money.of(BigDecimal("250"), USD))
+        put(BigDecimal("100000"), Money.of(BigDecimal("500"), USD))
     }
 
     /**
@@ -100,7 +100,7 @@ object AuctionConstants {
      *
      * The increment is determined by locating the highest tier whose lower bound
      * does not exceed the current bid's amount. For example, a current bid of
-     * EUR 750 falls in the 500–999 tier and requires a minimum increment of EUR 10.
+     * USD 750 falls in the 500–999 tier and requires a minimum increment of USD 10.
      *
      * @param currentBid The current highest bid amount in the auction.
      * @return The minimum increment that must be added to [currentBid] for a new

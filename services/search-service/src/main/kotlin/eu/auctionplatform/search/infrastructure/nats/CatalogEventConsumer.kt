@@ -157,7 +157,7 @@ class CatalogEventConsumer @Inject constructor(
             createdAt = node.optionalInstant("createdAt") ?: Instant.now(),
             sellerId = node.optionalText("sellerId"),
             lotNumber = node.optionalText("lotNumber"),
-            currency = node.optionalText("currency") ?: "EUR"
+            currency = node.optionalText("currency") ?: "USD"
         )
 
         lotIndexService.indexDocument(document)

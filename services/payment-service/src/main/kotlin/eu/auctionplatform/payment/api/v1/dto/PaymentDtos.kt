@@ -35,23 +35,18 @@ data class CheckoutRequest(
     @JsonProperty("items")
     val items: List<CheckoutItemRequest> = emptyList(),
 
-    /** Buyer's country code (ISO 3166-1 alpha-2). */
-    @field:NotBlank(message = "Buyer country is required")
-    @JsonProperty("buyerCountry")
-    val buyerCountry: String,
+    /** US state code (2-letter) of the buyer (destination for sales tax). */
+    @field:NotBlank(message = "Buyer state is required")
+    @JsonProperty("buyerState")
+    val buyerState: String? = null,
 
-    /** Buyer's account type: "BUSINESS" or "CONSUMER". */
-    @field:NotBlank(message = "Buyer type is required")
-    @JsonProperty("buyerType")
-    val buyerType: String,
+    /** Buyer's exemption certificate ID (resale, manufacturing, or government), null if none. */
+    @JsonProperty("exemptionCertificateId")
+    val exemptionCertificateId: String? = null,
 
-    /** Buyer's VAT identification number (required for reverse charge). */
-    @JsonProperty("buyerVatId")
-    val buyerVatId: String? = null,
-
-    /** ISO 4217 currency code (defaults to EUR). */
+    /** ISO 4217 currency code (defaults to USD). */
     @JsonProperty("currency")
-    val currency: String = "EUR"
+    val currency: String = "USD"
 )
 
 /**
@@ -111,9 +106,9 @@ data class DepositRequest(
     @JsonProperty("amount")
     val amount: BigDecimal,
 
-    /** ISO 4217 currency code (defaults to EUR). */
+    /** ISO 4217 currency code (defaults to USD). */
     @JsonProperty("currency")
-    val currency: String = "EUR",
+    val currency: String = "USD",
 
     /** Payment method for the deposit. */
     @field:NotBlank(message = "Payment method is required")
@@ -180,14 +175,14 @@ data class PaymentSummary(
     @JsonProperty("buyerPremium")
     val buyerPremium: BigDecimal,
 
-    @JsonProperty("vatAmount")
-    val vatAmount: BigDecimal,
+    @JsonProperty("taxAmount")
+    val taxAmount: BigDecimal,
 
-    @JsonProperty("vatRate")
-    val vatRate: BigDecimal,
+    @JsonProperty("taxRate")
+    val taxRate: BigDecimal,
 
-    @JsonProperty("vatScheme")
-    val vatScheme: String,
+    @JsonProperty("taxScheme")
+    val taxScheme: String,
 
     @JsonProperty("totalAmount")
     val totalAmount: BigDecimal
@@ -220,14 +215,14 @@ data class PaymentStatusResponse(
     @JsonProperty("buyerPremium")
     val buyerPremium: BigDecimal,
 
-    @JsonProperty("vatAmount")
-    val vatAmount: BigDecimal,
+    @JsonProperty("taxAmount")
+    val taxAmount: BigDecimal,
 
-    @JsonProperty("vatRate")
-    val vatRate: BigDecimal,
+    @JsonProperty("taxRate")
+    val taxRate: BigDecimal,
 
-    @JsonProperty("vatScheme")
-    val vatScheme: String,
+    @JsonProperty("taxScheme")
+    val taxScheme: String,
 
     @JsonProperty("totalAmount")
     val totalAmount: BigDecimal,

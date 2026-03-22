@@ -67,6 +67,6 @@ function retry() {
 }
 
 useHead({
-  title: `${props.error?.statusCode || 'Error'} | SPC Aukcije`,
+  title: `${props.error?.statusCode || 'Error'} | Spin Logistics`,
 })
 </script>

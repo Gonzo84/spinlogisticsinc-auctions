@@ -31,11 +31,14 @@ class CompanyEntity(
     @Column(name = "registration_no")
     var registrationNo: String = "",
 
-    @Column(name = "vat_id")
-    var vatId: String = "",
+    @Column(name = "ein")
+    var ein: String = "",
 
-    @Column(name = "country", nullable = false)
-    var country: String = "",
+    @Column(name = "state", nullable = false)
+    var state: String = "",
+
+    @Column(name = "entity_type")
+    var entityType: String = "",
 
     @Column(name = "address")
     var address: String = "",
@@ -59,11 +62,12 @@ class CompanyEntity(
         userId = userId,
         companyName = companyName,
         registrationNo = registrationNo,
-        vatId = vatId,
-        country = country,
+        ein = ein,
+        state = state,
         address = address,
         city = city,
         postalCode = postalCode,
+        entityType = entityType,
         verified = verified
     )
 
@@ -75,11 +79,12 @@ class CompanyEntity(
             userId = company.userId,
             companyName = company.companyName,
             registrationNo = company.registrationNo,
-            vatId = company.vatId,
-            country = company.country,
+            ein = company.ein,
+            state = company.state,
             address = company.address,
             city = company.city,
             postalCode = company.postalCode,
+            entityType = company.entityType,
             verified = company.verified
         )
     }

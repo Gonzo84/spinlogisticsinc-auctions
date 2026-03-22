@@ -48,6 +48,9 @@ const errors = ref<Record<string, string>>({})
 
 
 const countries = [
+  { code: 'US', name: 'United States' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'MX', name: 'Mexico' },
   { code: 'AT', name: 'Austria' },
   { code: 'BE', name: 'Belgium' },
   { code: 'BG', name: 'Bulgaria' },
@@ -313,12 +316,12 @@ function handleSubmit() {
           <label
             class="label"
             for="lot-starting-bid"
-          >Starting Bid (EUR) *</label>
+          >Starting Bid (USD) *</label>
           <InputNumber
             id="lot-starting-bid"
             v-model="form.startingBid"
             mode="currency"
-            currency="EUR"
+            currency="USD"
             locale="en-US"
             :min="1"
             :invalid="!!errors.startingBid"
@@ -337,7 +340,7 @@ function handleSubmit() {
             <label
               class="text-sm font-medium text-gray-700"
               for="lot-reserve-price"
-            >Reserve Price (EUR)</label>
+            >Reserve Price (USD)</label>
             <label class="flex items-center gap-2">
               <Checkbox
                 v-model="hasReserve"
@@ -351,7 +354,7 @@ function handleSubmit() {
             id="lot-reserve-price"
             v-model="form.reservePrice"
             mode="currency"
-            currency="EUR"
+            currency="USD"
             locale="en-US"
             :min="0"
             :invalid="!!errors.reservePrice"
@@ -402,7 +405,7 @@ function handleSubmit() {
             id="lot-city"
             v-model="form.location.city"
             :invalid="!!errors.city"
-            placeholder="Amsterdam"
+            placeholder="Houston"
             class="w-full"
           />
           <p
@@ -467,7 +470,6 @@ function handleSubmit() {
         :label="isSubmitting ? 'Saving...' : submitLabel"
         :icon="isSubmitting ? 'pi pi-spin pi-spinner' : undefined"
         :disabled="isSubmitting"
-        @click.prevent="handleSubmit"
       />
     </div>
   </form>

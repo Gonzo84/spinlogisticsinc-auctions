@@ -18,11 +18,20 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Application service for GDPR data-subject request management.
+ * Application service for privacy data-subject request management.
  *
- * Handles the right to data portability (Art. 20) and the right to erasure
- * (Art. 17) by orchestrating request creation, processing, and event
- * publishing for cross-service data deletion.
+ * Handles both GDPR (EU) and CCPA (US/California) privacy requests:
+ * - GDPR: right to data portability (Art. 20) and right to erasure (Art. 17).
+ * - CCPA: "Do Not Sell My Personal Information" opt-out (1798.120) and
+ *   consumer deletion requests (1798.105).
+ *
+ * Key CCPA differences from GDPR:
+ * - CCPA uses an opt-out model (consumers must opt out of data sale),
+ *   whereas GDPR requires opt-in consent.
+ * - CCPA covers B2B data for California residents (as of Jan 2023).
+ * - CCPA deletion requests have narrower exemptions than GDPR erasure.
+ * - CCPA applies to businesses meeting revenue/data-volume thresholds,
+ *   not all data controllers.
  */
 @ApplicationScoped
 class GdprService {
@@ -259,6 +268,110 @@ class GdprService {
             PagedResponse(items = items, total = total, page = effectivePage, pageSize = effectiveSize)
         }
     }
+
+    // --- CCPA (US) ---
+
+    /**
+     * Creates a CCPA "Do Not Sell My Personal Information" opt-out request
+     * (California Civil Code 1798.120).
+     *
+     * Unlike GDPR consent (opt-in), CCPA requires businesses to honor
+     * consumer opt-out requests and stop selling their personal information.
+     * B2B data is also covered for California residents.
+     *
+     * The request is created in PENDING status and a NATS event is published
+     * on `compliance.ccpa.opt-out` so downstream services can stop data sale
+     * for this user.
+     *
+     * @param userId The consumer's user identifier.
+     * @return The newly created opt-out request.
+     */
+    fun requestOptOut(userId: UUID): GdprRequest {
+        val request = GdprRequest(
+            id = IdGenerator.generateUUIDv7(),
+            userId = userId,
+            type = GdprRequestType.OPT_OUT,
+            status = GdprRequestStatus.PENDING,
+            reason = "Do Not Sell My Personal Information (CCPA 1798.120)",
+            requestedAt = Instant.now()
+        )
+
+        gdprRequestRepository.insert(request)
+
+        // Publish opt-out event so all services stop selling this user's data
+        val event = CcpaOptOutEvent(
+            eventId = IdGenerator.generateString(),
+            aggregateId = userId.toString(),
+            aggregateType = "User",
+            brand = "platform",
+            timestamp = Instant.now(),
+            version = 1L,
+            requestId = request.id.toString(),
+            userId = userId.toString()
+        )
+
+        natsPublisher.publish(CCPA_OPT_OUT_SUBJECT, event)
+
+        LOG.infof("CCPA opt-out request created: id=%s, userId=%s", request.id, userId)
+
+        return request
+    }
+
+    /**
+     * Creates a CCPA consumer deletion request (California Civil Code 1798.105).
+     *
+     * Similar to GDPR erasure (Art. 17), but CCPA deletion has narrower
+     * exemptions and applies specifically to California consumers. The request
+     * is created in PENDING status and must be processed within 45 days
+     * (with a possible 45-day extension).
+     *
+     * @param userId The consumer's user identifier.
+     * @param reason The reason for the deletion request.
+     * @return The newly created deletion request.
+     */
+    fun requestDeletion(userId: UUID, reason: String): GdprRequest {
+        if (reason.isBlank()) {
+            throw ValidationException(
+                field = "reason",
+                error = "Deletion request reason must not be blank."
+            )
+        }
+
+        val request = GdprRequest(
+            id = IdGenerator.generateUUIDv7(),
+            userId = userId,
+            type = GdprRequestType.DELETION,
+            status = GdprRequestStatus.PENDING,
+            reason = reason,
+            requestedAt = Instant.now()
+        )
+
+        gdprRequestRepository.insert(request)
+
+        LOG.infof("CCPA deletion request created: id=%s, userId=%s", request.id, userId)
+
+        return request
+    }
+}
+
+/** NATS subject for CCPA opt-out events. */
+private const val CCPA_OPT_OUT_SUBJECT = "compliance.ccpa.opt-out"
+
+/**
+ * Domain event published when a CCPA opt-out request is filed.
+ * All services that sell or share personal data must stop doing so for the identified user.
+ */
+data class CcpaOptOutEvent(
+    override val eventId: String,
+    override val aggregateId: String,
+    override val aggregateType: String,
+    override val brand: String,
+    override val timestamp: Instant,
+    override val version: Long,
+    val requestId: String,
+    val userId: String
+) : DomainEvent {
+    override val eventType: String = "CcpaOptOutEvent"
 }
 
 /**

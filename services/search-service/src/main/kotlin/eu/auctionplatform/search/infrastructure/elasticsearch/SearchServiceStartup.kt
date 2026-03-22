@@ -141,7 +141,7 @@ class SearchServiceStartup @Inject constructor(
                         createdAt = item.get("createdAt")?.asText()?.let {
                             try { Instant.parse(it) } catch (_: Exception) { null }
                         } ?: Instant.now(),
-                        currency = item.get("currency")?.asText() ?: "EUR"
+                        currency = item.get("currency")?.asText() ?: "USD"
                     )
 
                     lotIndexService.indexDocument(document)

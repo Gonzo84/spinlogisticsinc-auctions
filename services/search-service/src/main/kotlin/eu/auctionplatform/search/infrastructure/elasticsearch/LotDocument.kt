@@ -60,7 +60,7 @@ data class LotDocument(
     val createdAt: Instant? = null,
     val sellerId: String? = null,
     val lotNumber: String? = null,
-    val currency: String = "EUR"
+    val currency: String = "USD"
 )
 
 /**

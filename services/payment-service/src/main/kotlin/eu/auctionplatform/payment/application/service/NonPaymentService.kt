@@ -196,7 +196,7 @@ class NonPaymentService @Inject constructor(
             "lotId" to (payment?.lotId?.toString() ?: ""),
             "auctionId" to (payment?.auctionId?.toString() ?: ""),
             "forfeitAmount" to forfeitAmount,
-            "currency" to (payment?.currency ?: "EUR")
+            "currency" to (payment?.currency ?: "USD")
         )
 
         return try {

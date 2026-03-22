@@ -143,7 +143,7 @@ class PaymentEventSellerConsumer @Inject constructor(
         val sellerIdStr = node.requiredText("sellerId")
         val netAmount = node.requiredDecimal("netAmount")
         val commission = node.optionalDecimal("commission") ?: BigDecimal.ZERO
-        val currency = node.optionalText("currency") ?: "EUR"
+        val currency = node.optionalText("currency") ?: "USD"
         val paymentIdStr = node.optionalText("paymentId")
 
         val sellerId = UUID.fromString(sellerIdStr)

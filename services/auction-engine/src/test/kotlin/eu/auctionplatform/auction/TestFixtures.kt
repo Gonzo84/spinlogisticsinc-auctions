@@ -12,7 +12,7 @@ object TestFixtures {
     fun createAuctionRequest(
         lotId: UUID = LOT_ID,
         startingBid: BigDecimal = BigDecimal("100.00"),
-        currency: String = "EUR"
+        currency: String = "USD"
     ) = mapOf(
         "lotId" to lotId.toString(),
         "title" to "Test Auction Lot",
@@ -30,6 +30,6 @@ object TestFixtures {
     ) = mapOf(
         "amount" to amount.toString(),
         "bidderId" to bidderId.toString(),
-        "currency" to "EUR"
+        "currency" to "USD"
     )
 }

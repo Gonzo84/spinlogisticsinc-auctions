@@ -90,11 +90,11 @@ function isActive(path: string): boolean {
   >
     <!-- Logo -->
     <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-4">
-      <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto shrink-0" />
+      <img src="/images/spin-logo.png" alt="Spin Logistics" class="h-9 w-auto shrink-0" />
       <span
         v-if="!collapsed"
         class="text-lg font-bold text-gray-900"
-      >SPC Admin</span>
+      >Spin Logistics Admin</span>
     </div>
 
     <!-- Navigation -->

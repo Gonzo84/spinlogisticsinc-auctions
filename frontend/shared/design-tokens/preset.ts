@@ -4,17 +4,17 @@ import Aura from '@primeuix/themes/aura'
 export const AuctionPlatformPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '#e6f2f8',
-      100: '#b3d9e8',
-      200: '#80bfd8',
-      300: '#4da6c8',
-      400: '#268db5',
-      500: '#0077a3',
-      600: '#006a92',
-      700: '#004d71',
-      800: '#003e5a',
-      900: '#002f44',
-      950: '#001f2e',
+      50: '#E8F5E9',
+      100: '#C8E6C9',
+      200: '#A5D6A7',
+      300: '#81C784',
+      400: '#66BB6A',
+      500: '#4CAF50',
+      600: '#43A047',
+      700: '#388E3C',
+      800: '#2E7D32',
+      900: '#1B5E20',
+      950: '#0D3B12',
     },
     colorScheme: {
       light: {

@@ -18,8 +18,8 @@ import java.util.UUID
 data class SellerRegistrationRequest(
     val companyName: String,
     val registrationNo: String? = null,
-    val vatId: String? = null,
-    val country: String
+    val ein: String? = null,
+    val state: String
 )
 
 /**
@@ -30,8 +30,8 @@ data class SellerProfileResponse(
     val userId: UUID,
     val companyName: String,
     val registrationNo: String?,
-    val vatId: String?,
-    val country: String,
+    val ein: String?,
+    val state: String,
     val status: String,
     val commissionRate: BigDecimal?,
     val verifiedAt: Instant?,

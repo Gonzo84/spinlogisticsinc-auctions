@@ -241,13 +241,13 @@ class AuctionLotLookupService(
 
             val title = data["title"] as? String
             val sellerId = (data["sellerId"] as? String)?.let { UUID.fromString(it) }
-            val sellerCountry = data["locationCountry"] as? String
+            val sellerState = data["locationState"] as? String
 
             LotInfo(
                 lotId = lotId,
                 title = title ?: "Lot $lotId",
                 sellerId = sellerId,
-                sellerCountry = sellerCountry ?: "NL"
+                sellerState = sellerState ?: "TX"
             )
         } catch (e: Exception) {
             LOG.warnf("Failed to fetch lot info for %s: %s", lotId, e.message)
@@ -274,5 +274,5 @@ data class LotInfo(
     val lotId: UUID,
     val title: String,
     val sellerId: UUID?,
-    val sellerCountry: String
+    val sellerState: String
 )

@@ -64,7 +64,7 @@ data class BidPlacedEvent(
     @JsonProperty("amount")
     val amount: BigDecimal,
 
-    /** ISO 4217 currency code, e.g. "EUR". */
+    /** ISO 4217 currency code, e.g. "USD". */
     @JsonProperty("currency")
     val currency: String,
 

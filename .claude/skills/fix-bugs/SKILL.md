@@ -40,7 +40,7 @@ Check if Docker backend services are running. If not, start them:
 running=$(docker ps --filter "name=auction-platform" --format "{{.Names}}" 2>/dev/null | wc -l)
 if [ "$running" -lt 10 ]; then
   echo "Backend services not running, starting..."
-  cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform && \
+  cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics && \
   docker compose -f docker/compose/docker-compose-infrastructure.yaml --env-file docker/compose/.env up -d && \
   docker compose -f docker/compose/docker-compose-full.yaml --env-file docker/compose/.env up -d --build
 else
@@ -131,13 +131,13 @@ After all bugs in the current report are fixed, do a quick build check to catch 
 
 **Backend (if backend files were changed):**
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform && ./gradlew build -x test 2>&1 | tail -20
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics && ./gradlew build -x test 2>&1 | tail -20
 ```
 
 **Frontend (if frontend files were changed):**
 For each affected frontend app:
 ```bash
-cd /home/radionica/Radionica/Tradex/Tradex/eu-auction-platform/frontend/<app> && npx vue-tsc --noEmit 2>&1 | tail -20
+cd /home/radionica/Radionica/Tradex/Tradex/spin-logistics/frontend/<app> && npx vue-tsc --noEmit 2>&1 | tail -20
 ```
 
 If build fails, fix the compilation error before proceeding.

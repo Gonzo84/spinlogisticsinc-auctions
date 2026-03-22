@@ -224,7 +224,15 @@ data class BidConfirmationResponse(
     /** Whether an anti-sniping extension was triggered by this bid. */
     @JsonProperty("extensionApplied")
     val extensionApplied: Boolean
-)
+) {
+    /** Alias for [amount] — some consumers expect `bidAmount`. */
+    @get:JsonProperty("bidAmount")
+    val bidAmount: BigDecimal get() = amount
+
+    /** Bid status derived from reserve status. */
+    @get:JsonProperty("status")
+    val status: String get() = "PLACED"
+}
 
 /**
  * Confirmation response returned after configuring an automatic (proxy) bid.

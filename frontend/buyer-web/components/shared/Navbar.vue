@@ -4,8 +4,8 @@
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
-          <img src="/images/spc-logo.png" alt="SPC" class="h-9 w-auto" />
-          <span class="text-lg font-bold text-gray-900 hidden sm:block">SPC Aukcije</span>
+          <img src="/images/spin-logo.png" alt="Spin Logistics" class="h-9 w-auto" />
+          <span class="text-lg font-bold text-gray-900 hidden sm:block">Spin Logistics</span>
         </NuxtLink>
 
         <!-- Search Bar (desktop) -->

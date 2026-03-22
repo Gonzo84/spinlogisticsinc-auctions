@@ -20,7 +20,7 @@ onMounted(() => {
 })
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
 
 function formatPercent(value: number): string {
@@ -174,7 +174,7 @@ const revenueChartData = computed(() =>
           <RevenueChart
             :labels="avgPriceChartLabels"
             :data="avgPriceChartData"
-            label="Avg. Hammer Price (EUR)"
+            label="Avg. Hammer Price (USD)"
             color="#9333ea"
             :height="300"
           />

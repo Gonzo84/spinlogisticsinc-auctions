@@ -115,7 +115,7 @@ class AuctionEventUserConsumer @Inject constructor(
         val auctionId = payload["aggregateId"]?.toString() ?: payload["auctionId"]?.toString() ?: ""
         val lotId = payload["lotId"]?.toString()
         val bidAmount = payload["bidAmount"]?.toString() ?: payload["amount"]?.toString() ?: "0"
-        val currency = payload["bidCurrency"]?.toString() ?: payload["currency"]?.toString() ?: "EUR"
+        val currency = payload["bidCurrency"]?.toString() ?: payload["currency"]?.toString() ?: "USD"
         val timestamp = payload["timestamp"]?.toString()?.let {
             try { Instant.parse(it) } catch (_: Exception) { Instant.now() }
         } ?: Instant.now()
@@ -161,7 +161,7 @@ class AuctionEventUserConsumer @Inject constructor(
         }
         val auctionId = payload["aggregateId"]?.toString() ?: payload["auctionId"]?.toString()
         val hammerPrice = payload["finalBidAmount"]?.toString() ?: payload["hammerPrice"]?.toString()
-        val currency = payload["finalBidCurrency"]?.toString() ?: payload["currency"]?.toString() ?: "EUR"
+        val currency = payload["finalBidCurrency"]?.toString() ?: payload["currency"]?.toString() ?: "USD"
         val timestamp = payload["timestamp"]?.toString()?.let {
             try { Instant.parse(it) } catch (_: Exception) { Instant.now() }
         } ?: Instant.now()

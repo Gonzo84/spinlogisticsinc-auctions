@@ -30,7 +30,7 @@ class DepositEntity(
     var amount: BigDecimal = BigDecimal("200.00"),
 
     @Column(name = "currency", nullable = false)
-    var currency: String = "EUR",
+    var currency: String = "USD",
 
     @Column(name = "paid_at")
     var paidAt: Instant? = null,
